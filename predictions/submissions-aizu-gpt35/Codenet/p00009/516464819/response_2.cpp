@@ -1,0 +1,48 @@
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <list>
+#include <vector>
+using namespace std;
+
+void sieve(int n, vector<int> &primes) {
+  vector<bool> v(n + 1, true);
+  for (int i = 3, end = sqrt(n); i <= end; i += 2) {
+    if (!v[i])
+      continue;
+    for (int j = i * i, skip = i * 2; j <= n; j += skip)
+      v[j] = false;
+  }
+  primes.push_back(2);
+  for (int i = 3; i <= n; i += 2)
+    if (v[i])
+      primes.push_back(i);
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  vector<int> primes;
+  vector<int> inputs;
+  inputs.reserve(50000);
+
+  int x;
+  while (cin >> x) {
+    inputs.push_back(x);
+  }
+  sieve(*max_element(inputs.begin(), inputs.end()), primes);
+
+  for (const auto &x : inputs) {
+    int count = 0;
+    for (const auto &p : primes) {
+      if (p > x) {
+        break;
+      }
+      count += (p == x);
+    }
+    cout << count << '\n';
+  }
+
+  return 0;
+}

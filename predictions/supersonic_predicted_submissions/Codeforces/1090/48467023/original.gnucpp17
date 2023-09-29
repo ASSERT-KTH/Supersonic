@@ -1,0 +1,189 @@
+#include <bits/stdc++.h>
+using namespace std;
+#define fore(i, l, r) for (int i = int(l); i < int(r); i++)
+#define forn(i, n) fore(i, 0, n)
+#define sz(a) int((a).size())
+#define all(a) (a).begin(), (a).end()
+#define mp make_pair
+#define pb push_back
+#define x first
+#define y second
+typedef long long li;
+typedef long double ld;
+typedef pair<int, int> pt;
+template <class A, class B>
+ostream &operator<<(ostream &out, const pair<A, B> &p) {
+  return out << "(" << p.x << ", " << p.y << ")";
+}
+template <class A> ostream &operator<<(ostream &out, const vector<A> &v) {
+  out << "[";
+  forn(i, sz(v)) {
+    if (i)
+      out << ", ";
+    out << v[i];
+  }
+  return out << "]";
+}
+const int INF = int(1e9);
+const li INF64 = li(1e18);
+const ld EPS = 1e-9;
+const int N = 250 * 1000 + 555;
+int n;
+pair<int, pt> qs[N];
+inline bool read() {
+  if (!(cin >> n))
+    return false;
+  forn(i, n) {
+    cin >> qs[i].x;
+    if (qs[i].x > 1)
+      cin >> qs[i].y.x;
+    if (qs[i].x == 5)
+      cin >> qs[i].y.y;
+  }
+  return true;
+}
+const int M = 30 * 1000 * 1000 + 555;
+struct node {
+  int sum, sval;
+  node *l, *r;
+  node() : sum(0), sval(-1), l(NULL), r(NULL) {}
+  node(int sum, int sval, node *l, node *r)
+      : sum(sum), sval(sval), l(l), r(r) {}
+} nodes[M];
+typedef node *tree;
+int szn = 0;
+tree getNode(int sum, int sval, tree l, tree r) {
+  assert(szn < M);
+  nodes[szn] = node(sum, sval, l, r);
+  return &nodes[szn++];
+}
+inline int getsum(tree t, int len) {
+  if (!t)
+    return 0;
+  if (t->sval != -1)
+    return len * t->sval;
+  return t->sum;
+}
+inline int push(tree t) {
+  int pushed = t->sval;
+  t->sval = -1;
+  return pushed;
+}
+void upd(tree t, int l1, int l2) {
+  t->sum = getsum(t->l, l1) + getsum(t->r, l2);
+}
+tree setVal(tree t, int l, int r, int lf, int rg, int val, int pushed = -1) {
+  tree nt =
+      t ? getNode(t->sum, t->sval, t->l, t->r) : getNode(0, -1, NULL, NULL);
+  if (pushed != -1)
+    nt->sval = pushed;
+  if (l == lf && r == rg) {
+    nt->sval = val;
+    return nt;
+  }
+  int mid = (l + r) >> 1;
+  pushed = push(nt);
+  if (lf < mid)
+    nt->l = setVal(nt->l, l, mid, lf, min(mid, rg), val, pushed);
+  else if (pushed != -1)
+    nt->l = nt->l ? getNode(nt->r->sum, pushed, nt->r->l, nt->r->r)
+                  : getNode(0, pushed, NULL, NULL);
+  if (rg > mid)
+    nt->r = setVal(nt->r, mid, r, max(lf, mid), rg, val, pushed);
+  else if (pushed != -1)
+    nt->r = nt->r ? getNode(nt->l->sum, pushed, nt->l->l, nt->l->r)
+                  : getNode(0, pushed, NULL, NULL);
+  upd(nt, mid - l, r - mid);
+  return nt;
+}
+int getPos(tree t, int l, int r, int lf, int rg) {
+  if (!t)
+    return -1;
+  if (l == lf && r == rg) {
+    if (l + 1 == r)
+      return getsum(t, 1) ? l : -1;
+    if (getsum(t, r - l) == 0)
+      return -1;
+  }
+  if (t->sval != -1)
+    return t->sval > 0 ? rg - 1 : -1;
+  int mid = (l + r) >> 1;
+  int ans = -1;
+  if (rg > mid && ans == -1)
+    ans = max(ans, getPos(t->r, mid, r, max(lf, mid), rg));
+  if (lf < mid && ans == -1)
+    ans = max(ans, getPos(t->l, l, mid, lf, min(mid, rg)));
+  return ans;
+}
+int maxLen = -1;
+bool sub(pair<int, tree> &p, int pw) {
+  if (pw >= p.x)
+    return true;
+  pw = p.x - pw - 1;
+  int pos = getPos(p.y, 0, maxLen, 0, pw + 1);
+  if (pos < 0)
+    return true;
+  tree nt = setVal(p.y, 0, maxLen, pos, pos + 1, 0);
+  if (pos < pw)
+    nt = setVal(nt, 0, maxLen, pos + 1, pw + 1, 1);
+  p = {p.x, nt};
+  return getsum(nt, maxLen) == 0;
+}
+int dead[N];
+pair<int, pair<int, tree>> ps[N];
+inline void solve() {
+  int cnt = 0;
+  maxLen = n + 3;
+  forn(i, n) {
+    int tp = qs[i].x;
+    int a = qs[i].y.x, b = qs[i].y.y;
+    a--, b--;
+    if (tp == 1) {
+      int id = cnt++;
+      dead[id] = -2;
+      ps[id] = {0, {1, getNode(0, -1, NULL, NULL)}};
+      ps[id].y.y = setVal(ps[id].y.y, 0, maxLen, 0, 1, 1);
+    } else if (tp == 2) {
+      if (dead[a] < 0)
+        ps[a].x++;
+    } else if (tp == 3) {
+      if (dead[a] < 0) {
+        ps[a].y.y = setVal(ps[a].y.y, 0, maxLen, ps[a].y.x, ps[a].y.x + 1, 0);
+        ps[a].y.x++;
+      }
+    } else if (tp == 4) {
+      int id = cnt++;
+      dead[id] = -2;
+      ps[id] = ps[a];
+      if (dead[a] >= 0)
+        dead[id] = i;
+    } else {
+      if (dead[a] < 0 && dead[b] < 0) {
+        if (sub(ps[a].y, ps[b].x))
+          dead[a] = i;
+        if (sub(ps[b].y, ps[a].x))
+          dead[b] = i;
+      }
+    }
+  }
+  cout << cnt << endl;
+  forn(i, cnt) cout << dead[i] + 1 << " ";
+  cout << endl;
+}
+int main() {
+#ifdef _DEBUG
+  freopen("input.txt", "r", stdin);
+  int tt = clock();
+#endif
+  ios_base::sync_with_stdio(false);
+  cin.tie(0), cout.tie(0);
+  cout << fixed << setprecision(15);
+  if (read()) {
+    solve();
+#ifdef _DEBUG
+    cerr << "TIME = " << clock() - tt << endl;
+    tt = clock();
+#endif
+  }
+  return 0;
+}

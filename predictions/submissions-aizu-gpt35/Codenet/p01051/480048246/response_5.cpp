@@ -1,0 +1,112 @@
+#define _CRT_SECURE_NO_WARNINGS
+#include <algorithm>
+#include <cstdio>
+#include <functional>
+#include <queue>
+#include <utility>
+#include <vector>
+
+typedef struct {
+  int to, cost;
+} Edge;
+
+typedef std::pair<int, int> P;
+
+constexpr int kMaxSize = 32;
+constexpr int kMaxField = kMaxSize * kMaxSize;
+constexpr int kCostFriendlyInk = 1;
+constexpr int kCostShot = 2;
+constexpr int kCostBlank = 2;
+constexpr int kShotRange = 3;
+constexpr char kWall = '#';
+constexpr char kFriend = 'o';
+constexpr char kEnemy = 'x';
+constexpr char kStart = 'S';
+constexpr char kGoal = 'G';
+constexpr char kBlank = '.';
+
+char field[kMaxField];
+int way[4] = {-1, 1, -kMaxSize, kMaxSize};
+const int kInf = 1 << 16;
+int d[kMaxField];
+std::vector<Edge> cost[kMaxField];
+int R, C;
+
+inline int xy2pos(const int x, const int y) {
+  return x + y * kMaxSize;
+}
+
+void initCost() {
+  for (int y = 1; y <= R; y++) {
+    for (int x = 1; x <= C; x++) {
+      const int pos = xy2pos(x, y);
+      if (field[pos] == kWall) {
+        continue;
+      }
+      for (int i = 0; i < 4; i++) {
+        for (int j = 1; j <= kShotRange; j++) {
+          const int newpos = pos + j * way[i];
+          if (field[newpos] == kWall) {
+            break;
+          }
+          if (j == 1) {
+            if (field[newpos] == kFriend) {
+              cost[pos].emplace_back(Edge{newpos, kCostFriendlyInk});
+            } else if (field[newpos] == kEnemy) {
+              cost[pos].emplace_back(Edge{newpos, kCostShot + kCostFriendlyInk});
+            } else {
+              cost[pos].emplace_back(Edge{newpos, kCostBlank});
+            }
+          } else {
+            const int newcost = (field[newpos] == kEnemy)
+                                    ? kCostShot + kCostFriendlyInk * j
+                                    : std::min(kCostShot + kCostFriendlyInk * j,
+                                               cost[pos].back().cost + kCostBlank);
+            cost[pos].emplace_back(Edge{newpos, newcost});
+          }
+        }
+      }
+    }
+  }
+}
+
+void dijkstra(const int spos) {
+  std::priority_queue<P, std::vector<P>, std::greater<P>> q;
+  std::fill(d, d + kMaxField, kInf);
+  d[spos] = 0;
+  q.emplace(P(0, spos));
+  while (!q.empty()) {
+    const P p = q.top();
+    q.pop();
+    if (d[p.second] < p.first) {
+      continue;
+    }
+    for (const Edge& e : cost[p.second]) {
+      if (d[e.to] > d[p.second] + e.cost) {
+        d[e.to] = d[p.second] + e.cost;
+        q.emplace(P(d[e.to], e.to));
+      }
+    }
+  }
+}
+
+int main() {
+  int start, goal;
+  std::fill(field, field + kMaxField, '#');
+  std::scanf("%d %d", &R, &C);
+  for (int y = 1; y <= R; y++) {
+    for (int x = 1; x <= C; x++) {
+      const int pos = xy2pos(x, y);
+      std::scanf(" %c", &field[pos]);
+      if (field[pos] == kStart) {
+        start = pos;
+      } else if (field[pos] == kGoal) {
+        goal = pos;
+      }
+    }
+  }
+  initCost();
+  dijkstra(start);
+  std::printf("%d\n", d[goal]);
+  return 0;
+}

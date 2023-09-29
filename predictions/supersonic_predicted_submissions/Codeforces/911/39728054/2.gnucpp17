@@ -1,0 +1,193 @@
+#include <bits/stdc++.h>
+using namespace std;
+#define PI 3.14159265
+#define N 200005
+#define ll long long int
+vector<ll> v[N], diam[N], tour, path;
+ll n, h[N], first[N], stmin[2 * N][20], root;
+ll vis1[N], vis2[N], vis3[N], vis4[N];
+ll parent[N], dist[N], root1;
+void height_initialise(ll x, ll y) {
+  h[x] = y;
+  vis1[x] = 1;
+  for (int i = 0; i < v[x].size(); i++) {
+    int node = v[x][i];
+    if (vis1[node] == 0) {
+      height_initialise(node, y + 1);
+    }
+  }
+}
+void distanc(ll x, ll y) {
+  dist[x] = y;
+  vis3[x] = 1;
+  for (int i = 0; i < v[x].size(); i++) {
+    int node = v[x][i];
+    if (vis3[node] == 0) {
+      distanc(node, y + 1);
+    }
+  }
+}
+void euler(ll x, ll y) {
+  vis2[x] = 1;
+  tour.push_back(x);
+  for (int i = 0; i < v[x].size(); i++) {
+    int node = v[x][i];
+    if (vis2[node] == 0) {
+      euler(node, x);
+    }
+  }
+  if (y != 0)
+    tour.push_back(y);
+}
+void euler_tour() {
+  euler(root, 0);
+  for (int i = 0; i < tour.size(); i++) {
+    if (first[tour[i]] == 0) {
+      first[tour[i]] = i;
+    }
+  }
+}
+void sparsemin() {
+  ll i, j, x, y;
+  for (i = 0; i < tour.size(); i++) {
+    stmin[i][0] = tour[i];
+  }
+  for (j = 1; (1 << j) <= tour.size(); j++) {
+    for (i = 0; i <= tour.size() - (1 << j); i++) {
+      x = stmin[i][j - 1];
+      y = stmin[i + (1 << (j - 1))][j - 1];
+      if (h[x] > h[y]) {
+        stmin[i][j] = y;
+      } else {
+        stmin[i][j] = x;
+      }
+    }
+  }
+}
+ll spminquery(ll l, ll r) {
+  ll length, k, x, y;
+  length = r - l + 1;
+  k = log2(length);
+  x = stmin[l][k];
+  y = stmin[l + length - (1 << k)][k];
+  if (h[x] < h[y]) {
+    return x;
+  }
+  return y;
+}
+int bfs(int x, int flag) {
+  int i, y;
+  queue<int> q;
+  q.push(x);
+  int vis[N] = {0};
+  while (q.size()) {
+    x = q.front();
+    q.pop();
+    vis[x] = 1;
+    for (int i = 0; i < v[x].size(); i++) {
+      int node = v[x][i];
+      if (vis[node] == 0) {
+        q.push(node);
+        if (flag == 1) {
+          parent[node] = x;
+        }
+      }
+    }
+    y = x;
+  }
+  return y;
+}
+void diameter() {
+  int x, y, z, i, j;
+  x = bfs(1, 0);
+  y = bfs(x, 1);
+  root1 = y;
+  z = y;
+  while (parent[z] != 0) {
+    path.push_back(z);
+    z = parent[z];
+  }
+  path.push_back(z);
+  reverse(path.begin(), path.end());
+  for (i = 0; i < path.size(); i++) {
+    vis4[path[i]] = 1;
+    diam[i].push_back(path[i]);
+  }
+  root = x;
+  for (i = 0; i < path.size(); i++) {
+    queue<int> q;
+    q.push(path[i]);
+    while (q.size()) {
+      x = q.front();
+      q.pop();
+      vis4[x] = 1;
+      for (j = 0; j < v[x].size(); j++) {
+        int node = v[x][j];
+        if (vis4[node] == 0) {
+          q.push(node);
+          diam[i].push_back(node);
+        }
+      }
+    }
+  }
+}
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(0);
+  cout.tie(0);
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  cin >> n;
+  ll i, j, x, y, z, l, r, q, ans = 0;
+  vector<pair<ll, ll>> an;
+  for (i = 0; i < n - 1; i++) {
+    cin >> x >> y;
+    v[x].push_back(y);
+    v[y].push_back(x);
+  }
+  diameter();
+  height_initialise(root, 0);
+  euler_tour();
+  sparsemin();
+  distanc(root, 0);
+  for (i = 0; i < path.size() / 2; i++) {
+    for (j = diam[i].size() - 1; j > 0; j--) {
+      x = root1;
+      y = diam[i][j];
+      an.push_back(make_pair(x, y));
+      l = first[x];
+      r = first[y];
+      z = spminquery(min(l, r), max(l, r));
+      z = dist[x] + dist[y] - 2 * dist[z];
+      ans += z;
+    }
+  }
+  x = i;
+  for (i = x; i < path.size(); i++) {
+    for (j = diam[i].size() - 1; j > 0; j--) {
+      x = root;
+      y = diam[i][j];
+      an.push_back(make_pair(x, y));
+      l = first[x];
+      r = first[y];
+      z = spminquery(min(l, r), max(l, r));
+      z = dist[x] + dist[y] - 2 * dist[z];
+      ans += z;
+    }
+  }
+  for (i = path.size() - 1; i > 0; i--) {
+    x = root;
+    y = diam[i][0];
+    an.push_back(make_pair(x, y));
+    l = first[x];
+    r = first[y];
+    z = spminquery(min(l, r), max(l, r));
+    z = dist[x] + dist[y] - 2 * dist[z];
+    ans += z;
+  }
+  cout << ans << endl;
+  for (i = 0; i < an.size(); i++) {
+    cout << an[i].first << " " << an[i].second << " " << an[i].second << "\n";
+  }
+  return 0;
+}

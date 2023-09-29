@@ -1,0 +1,178 @@
+#include <cmath>
+#include <vector>
+#include <algorithm>
+#include <iostream>
+#include <cstdio>
+#include <cassert>
+
+#define REP(i, s, n) for (int i = s; i < n; i++)
+#define rep(i, n) REP(i, 0, n)
+#define EPS (1e-6)
+#define equals(a, b) (fabs((a) - (b)) < EPS)
+#define COUNTER_CLOCKWISE 1
+#define CLOCKWISE -1
+#define ONLINE_BACK 2
+#define ONLINE_FRONT -2
+#define ON_SEGMENT 0
+
+class Point {
+public:
+  double x, y;
+  Point(double x = 0, double y = 0) : x(x), y(y) {}
+  Point operator+(Point p) const { return Point(x + p.x, y + p.y); }
+  Point operator-(Point p) const { return Point(x - p.x, y - p.y); }
+  Point operator*(double a) const { return Point(a * x, a * y); }
+  Point operator/(double a) const { return Point(x / a, y / a); }
+  bool operator<(const Point &p) const {
+    return !equals(x, p.x) ? x < p.x : (!equals(y, p.y) && y < p.y);
+  }
+  bool operator==(const Point &p) const {
+    return fabs(x - p.x) < EPS && fabs(y - p.y) < EPS;
+  }
+};
+
+struct Segment {
+  Point p1, p2;
+  Segment(Point p1 = Point(), Point p2 = Point())
+      : p1(p1), p2(p2) {}
+  bool operator==(const Segment &s) const {
+    return (s.p1 == p1 && s.p2 == p2) || (s.p1 == p2 && s.p2 == p1);
+  }
+};
+
+typedef Point Vector;
+typedef Segment Line;
+typedef std::vector<Point> Polygon;
+
+static double dot(Point a, Point b) { return a.x * b.x + a.y * b.y; }
+static double cross(Point a, Point b) { return a.x * b.y - a.y * b.x; }
+static double norm(Point a) { return a.x * a.x + a.y * a.y; }
+static double abs(Point a) { return std::sqrt(norm(a)); }
+
+static Point rotate(Point a, double rad) {
+  return Point(std::cos(rad) * a.x - std::sin(rad) * a.y,
+               std::sin(rad) * a.x + std::cos(rad) * a.y);
+}
+
+static double toRad(double agl) { return agl * M_PI / 180.0; }
+
+static int ccw(Point p0, Point p1, Point p2) {
+  Point a = p1 - p0;
+  Point b = p2 - p0;
+  if (cross(a, b) > EPS)
+    return COUNTER_CLOCKWISE;
+  if (cross(a, b) < -EPS)
+    return CLOCKWISE;
+  if (dot(a, b) < -EPS)
+    return ONLINE_BACK;
+  if (norm(a) < norm(b))
+    return ONLINE_FRONT;
+  return ON_SEGMENT;
+}
+
+static Point crosspoint(Line l, Line m) {
+  double A = cross(l.p2 - l.p1, m.p2 - m.p1);
+  double B = cross(l.p2 - l.p1, l.p2 - m.p1);
+  if (abs(A) < EPS && abs(B) < EPS) {
+    std::vector<Point> vec{l.p1, l.p2, m.p1, m.p2};
+    std::sort(vec.begin(), vec.end());
+    assert(vec[1] == vec[2]);
+    return vec[1];
+  }
+  if (abs(A) < EPS)
+    assert(false);
+  return m.p1 + (m.p2 - m.p1) * (B / A);
+}
+
+static Line calcLine(Line line1, Line line2, Point p1, Point p2) {
+  Point cp = crosspoint(line1, line2);
+  int res = ccw(cp, p1, p2);
+  Point base = (res == COUNTER_CLOCKWISE) ? p1 : p2;
+  Point not_base = (base == p1) ? p2 : p1;
+  double arg_a = (toRad(180.0) - std::fabs(std::atan2(b.y - a.y, b.x - a.x) - std::atan2(c.y - b.y, c.x - b.x)));
+  while (arg > M_PI)
+    arg -= 2.0 * M_PI;
+  Vector e = (base - cp) / abs(base - cp);
+  e = rotate(e, arg_a / 2.0);
+  return Line(cp, cp + e * 100);
+}
+
+static void compute(std::vector<Line> &vec) {
+  if (vec.size() <= 2) {
+    std::cout << "Many\n";
+    return;
+  }
+  std::vector<Line> candidateLines;
+  int n = vec.size();
+  rep(i, n) REP(j, i + 1, n) {
+    if (equals(cross(vec[i].p1 - vec[i].p2, vec[j].p1 - vec[j].p2), 0.0)) {
+      Vector e = (vec[i].p2 - vec[i].p1) / abs(vec[i].p2 - vec[i].p1);
+      e = rotate(e, toRad(90));
+      Line line = Line(vec[i].p1, vec[i].p1 + e * 100);
+      Point cp1 = crosspoint(line, vec[i]);
+      Point cp2 = crosspoint(line, vec[j]);
+      Point mp = (cp1 + cp2) / 2.0;
+      e = (vec[i].p2 - vec[i].p1) / abs(vec[i].p2 - vec[i].p1);
+      line = Line(mp, mp + e * 100);
+      candidateLines.push_back(line);
+    } else {
+      Point cp = crosspoint(vec[i], vec[j]);
+      Point I = (vec[i].p1 == cp) ? vec[i].p2 : vec[i].p1;
+      Point J = (vec[j].p1 == cp) ? vec[j].p2 : vec[j].p1;
+      Vector e1 = (I - cp) / abs(I - cp);
+      Vector e2 = (J - cp) / abs(J - cp);
+      Line tmp = calcLine(vec[i], vec[j], cp + e1 * 100, cp + e2 * 100);
+      candidateLines.push_back(tmp);
+      tmp = calcLine(vec[i], vec[j], cp + e1 * 100, cp - e2 * 100);
+      candidateLines.push_back(tmp);
+    }
+    if (candidateLines.size() >= 10)
+      break;
+  }
+  std::vector<Point> candidatePoints;
+  rep(i, candidateLines.size()) REP(j, i + 1, candidateLines.size()) {
+    Line line1 = candidateLines[i];
+    Line line2 = candidateLines[j];
+    if (equals(cross(line1.p1 - line1.p2, line2.p1 - line2.p2), 0.0))
+      continue;
+    Point cp = crosspoint(line1, line2);
+    candidatePoints.push_back(cp);
+  }
+  std::vector<Point> &v = candidatePoints;
+  std::sort(v.begin(), v.end());
+  v.erase(std::unique(v.begin(), v.end()), v.end());
+  std::vector<Point> answer;
+  rep(i, candidatePoints.size()) {
+    Point p = candidatePoints[i];
+    double dist = -1;
+    bool success = true;
+    rep(j, vec.size()) {
+      double tmp = std::fabs(p - projection(vec[j], p));
+      if (equals(dist, -1))
+        dist = tmp;
+      else if (!equals(dist, tmp)) {
+        success = false;
+      }
+    }
+    if (success)
+      answer.push_back(p);
+    if (answer.size() >= 2)
+      break;
+  }
+  if (answer.size() == 1)
+    printf("%.10f %.10f\n", answer[0].x, answer[0].y);
+  else if (answer.empty())
+    std::cout << "None\n";
+  else
+    std::cout << "Many\n";
+}
+
+int main() {
+  int n;
+  while (std::cin >> n, n) {
+    std::vector<Line> vec(n);
+    rep(i, n) std::cin >> vec[i].p1.x >> vec[i].p1.y >> vec[i].p2.x >> vec[i].p2.y;
+    compute(vec);
+  }
+  return 0;
+}

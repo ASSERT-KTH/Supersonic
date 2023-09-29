@@ -1,0 +1,50 @@
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+struct Point {
+  double x, y;
+  Point(double _x = 0, double _y = 0) : x(_x), y(_y) {}
+  Point operator-(const Point &p) const { return Point(x - p.x, y - p.y); }
+  bool operator<(const Point &p) const {
+    return (x != p.x) ? (x < p.x) : (y < p.y);
+  }
+};
+
+double cross(const Point &a, const Point &b) { return a.x * b.y - a.y * b.x; }
+
+vector<Point> convex_hull(Point *ps, int n) {
+  sort(ps, ps + n);
+  int k = 0;
+  vector<Point> qs(n * 2);
+  for (int i = 0; i < n; i++) {
+    while (k > 1 && cross((qs[k - 1] - qs[k - 2]), (ps[i] - qs[k - 1])) <= 0)
+      k--;
+    qs[k++] = ps[i];
+  }
+  for (int i = n - 2, t = k; i >= 0; i--) {
+    while (k > t && cross((qs[k - 1] - qs[k - 2]), (ps[i] - qs[k - 1])) <= 0)
+      k--;
+    qs[k++] = ps[i];
+  }
+  qs.resize(k - 1);
+  return qs;
+}
+
+int main() {
+  const int MAX_N = 100;
+  Point ps[MAX_N];
+  int N;
+  while (cin >> N && N) {
+    for (int i = 0; i < N; ++i) {
+      char ch;
+      cin >> ps[i].x >> ch >> ps[i].y;
+    }
+    vector<Point> res = convex_hull(ps, N);
+    cout << N - res.size() << endl;
+  }
+  return 0;
+}

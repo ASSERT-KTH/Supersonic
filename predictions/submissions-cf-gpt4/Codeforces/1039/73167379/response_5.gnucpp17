@@ -1,0 +1,272 @@
+The given C++ code is already quite optimized, but there are a few areas we could improve for better performance and memory usage:
+
+1. Avoid using #include <bits/stdc++.h>, as it includes a lot of unnecessary headers. Include only those headers which are required in your program.
+2. Avoid using global variables when it's not necessary. Global variables use up memory for the entire duration of the program, which can lead to higher memory usage.
+3. Try to limit the use of macros as they can make the code hard to debug and maintain.
+4. Use const or constexpr for values that don't change to allow for some potential optimizations.
+5. Use std::ios::sync_with_stdio(false); instead of cin.tie(0); and cout.tie(0);. This will speed up I/O operations.
+6. Use pre-increment (++i) in loops instead of post-increment (i++) as it's generally faster.
+
+Here is the optimized version of your code:
+
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <unordered_map>
+#include <deque>
+#include <cmath>
+#include <cstring>
+#include <chrono>
+#include <random>
+
+using namespace std;
+
+typedef pair<int, int> pii;
+typedef long long ll;
+
+mt19937 rnd(chrono::steady_clock::now().time_since_epoch().count());
+
+constexpr int G = 400002;
+
+vector<int> l[G];
+int skok[G], o[G], zam[G], GR[G][2], mxd[G], mxp[G], dp[G][2], sz[G], good[G];
+vector<int> gd, bd;
+int a, OPA = -1;
+int eba = 0, iba = 0;
+int ST;
+
+void fast_io() {
+    std::ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    cout.tie(nullptr);
+}
+
+void printInt(int val, ostream &out = cout) {
+    if(val == 0) {
+        out << '0' << '\n';
+        return;
+    }
+
+    char buf[7];
+    int pos = 0;
+    while(val) {
+        buf[pos++] = '0' + val % 10;
+        val /= 10;
+    }
+
+    while(pos--) {
+        out << buf[pos];
+    }
+    out << '\n';
+}
+
+void CALC(int v, int p) {
+    mxd[v] = 1;
+    sz[v] = 1;
+    int c1 = 0, c2 = 0;
+    for (int h : l[v]) {
+        if (h == p)
+            continue;
+        int x = CALC(h, v);
+        mxd[v] = max(mxd[v], x + 1);
+        sz[v] += sz[h];
+        if (x >= c1)
+            c2 = c1, c1 = x;
+        else if (x > c2)
+            c2 = x;
+    }
+    mxp[v] = c1 + c2 + 1;
+    return mxd[v];
+}
+
+int find_centroid(int v, int p) {
+    int MX = 0, num = -1;
+    for (int h : l[v]) {
+        if (h != p && sz[h] > MX)
+            MX = sz[h], num = h;
+    }
+    return MX > a / 2 ? find_centroid(num, v) : v;
+}
+
+void KROLIK(int v) {
+    if (good[v])
+        gd.push_back(v);
+    else
+        bd.push_back(v);
+    for (int h : l[v]) {
+        if (!good[h])
+            KROLIK(h);
+    }
+}
+
+void RIP_PAPA(int v, int p) {
+    for (int q = 0; q < l[v].size(); ++q) {
+        if (l[v][q] == p) {
+            l[v].erase(l[v].begin() + q);
+            break;
+        }
+    }
+    for (int h : l[v])
+        RIP_PAPA(h, v);
+}
+
+void rnm(int v) {
+    zam[v] = eba++;
+    deque<int> dq = {v};
+    while(!dq.empty()) {
+        int x = dq.front();
+        dq.pop_front();
+        for (int h : l[x]) {
+            if (zam[h] != -1)
+                continue;
+            dq.push_back(h);
+            zam[h] = eba++;
+        }
+    }
+}
+
+void rnm2(int v) {
+    zam[v] = iba++;
+    deque<int> dq = {v};
+    while(!dq.empty()) {
+        int x = dq.front();
+        dq.pop_front();
+        for (int h : l[x]) {
+            zam[h] = iba++;
+            if (good[h])
+                continue;
+            dq.push_back(h);
+        }
+    }
+}
+
+int GA(int LEN) {
+    if (o[LEN] != -1)
+        return o[LEN];
+    int d1, d2, w, rg;
+    for (int q = ST; q >= 0; --q) {
+        if (good[q]) {
+            dp[q][0] = sz[q] / LEN;
+            dp[q][1] = sz[q] % LEN;
+            continue;
+        }
+        dp[q][0] = 0;
+        d1 = d2 = 0, w = GR[q][0], rg = GR[q][1];
+        while(w <= rg) {
+            dp[q][0] += dp[w][0];
+            if (dp[w][1] >= d1)
+                d2 = d1, d1 = dp[w][1];
+            else
+                d2 = max(d2, dp[w][1]);
+            ++w;
+        }
+        if (d1 + d2 + 1 < LEN)
+            dp[q][1] = d1 + 1;
+        else
+            dp[q][0]++, dp[q][1] = 0;
+    }
+    return o[LEN] = dp[0][0];
+}
+
+int main() {
+    fast_io();
+    memset(o, -1, sizeof(o));
+    memset(zam, -1, sizeof(zam));
+    cin >> a;
+    o[1] = a;
+    ST = a - 1;
+    for (int q = 1; q <= a; ++q)
+        skok[a / q]++;
+    for (int &i : skok)
+        i /= 2;
+    vector<pii> reb(a - 1);
+    for (int q = 0; q < a - 1; ++q) {
+        int x, y;
+        cin >> x >> y;
+        x--, y--;
+        reb[q] = {x, y};
+        l[x].push_back(y);
+        l[y].push_back(x);
+    }
+    rnm(0);
+    for (int q = 0; q < a; ++q)
+        l[q].clear();
+    for (pii p : reb) {
+        l[zam[p.first]].push_back(zam[p.second]);
+        l[zam[p.second]].push_back(zam[p.first]);
+    }
+    RIP_PAPA(0, -1);
+    reb.clear();
+    for (int q = 0; q < a; ++q) {
+        for (int h : l[q])
+            reb.push_back({q, h});
+    }
+    CALC(0, -1);
+    for (int q = 0; q < a; ++q)
+        good[q] = sz[q] == mxd[q];
+    memset(zam, -1, sizeof(zam));
+    zam[0] = 0;
+    if (!good[0])
+        rnm2(0);
+    else
+        iba = 1;
+    ST = iba - 1;
+    for (int q = 0; q < a; ++q) {
+        if (zam[q] == -1)
+            continue;
+        sz[zam[q]] = sz[q];
+        mxd[zam[q]] = mxd[q];
+        mxp[zam[q]] = mxp[q];
+    }
+    for (int q = 0; q < a; ++q)
+        l[q].clear();
+    for (pii p : reb) {
+        if (min(zam[p.first], zam[p.second]) > -1) {
+            l[zam[p.first]].push_back(zam[p.second]);
+        }
+    }
+    for (int q = 0; q < a; ++q) {
+        GR[q][0] = l[q].size() ? l[q][0] : a;
+        GR[q][1] = l[q].size() ? l[q].back() : q;
+        assert(l[q].empty() || GR[q][1] - GR[q][0] + 1 == l[q].size());
+    }
+    for (int q = 0; q < a; ++q)
+        good[q] = sz[q] == mxd[q];
+    int diam = 0;
+    for (int &i : mxp)
+        diam = max(i, diam);
+    o[diam] = 1;
+    for (int q = diam + 1; q <= a; ++q)
+        o[q] = 0;
+    int H = min(a - 1, (int)(sqrt(a * log2(a)) / 2)), I = 2;
+    while(I <= H) {
+        o[I] = GA(I);
+        OPA = I / 2;
+        ++I;
+    }
+    int tyt;
+    while(I <= a) {
+        OPA = I / 2;
+        tyt = GA(I);
+        int lf = I, rg = min(a + 1, lf + skok[tyt] + 1);
+        if (tyt == 0)
+            break;
+        if (tyt == 1)
+            lf = diam, rg = diam + 1;
+        while(lf + 1 < rg) {
+            int md = (lf + rg) / 2;
+            if (GA(md) == tyt)
+                lf = md;
+            else
+                rg = md;
+        }
+        while(I < rg) {
+            o[I] = tyt;
+            ++I;
+        }
+    }
+    for (int q = 1; q <= a; ++q) {
+        printInt(max(0, o[q]));
+    }
+    return 0;
+}

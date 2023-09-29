@@ -1,0 +1,81 @@
+#include <cstdio>
+#include <vector>
+#include <algorithm>
+#include <cmath>
+using namespace std;
+
+const int MAXN = 100005;
+int sqrtN, n;
+int a[MAXN], pos[MAXN], block[MAXN], cnt[MAXN][320], tag[320];
+
+void add(int i, int val) {
+    cnt[pos[i]][a[i]] -= val;
+    a[i] += val;
+    cnt[pos[i]][a[i]] += val;
+}
+
+void rebuild(int b) {
+    for(int i = b * sqrtN + 1; i <= min(n, (b + 1) * sqrtN); ++i) {
+        a[i] += tag[b];
+        pos[i] = b;
+    }
+    tag[b] = 0;
+}
+
+void change(int l, int r, int val) {
+    if(pos[l] == pos[r]) {
+        if(tag[pos[l]]) rebuild(pos[l]);
+        for(int i = l; i <= r; ++i) add(i, val);
+        return;
+    }
+    if(tag[pos[l]]) rebuild(pos[l]);
+    if(tag[pos[r]]) rebuild(pos[r]);
+    for(int i = l; pos[i] == pos[l]; ++i) add(i, val);
+    for(int i = pos[l] + 1; i < pos[r]; ++i) tag[i] += val;
+    for(int i = r; pos[i] == pos[r]; --i) add(i, val);
+}
+
+int query(int l, int r, int val) {
+    int res = 0;
+    if(pos[l] == pos[r]) {
+        if(tag[pos[l]]) rebuild(pos[l]);
+        for(int i = l; i <= r; ++i) res += (a[i] == val);
+        return res;
+    }
+    if(tag[pos[l]]) rebuild(pos[l]);
+    if(tag[pos[r]]) rebuild(pos[r]);
+    for(int i = l; pos[i] == pos[l]; ++i) res += (a[i] == val);
+    for(int i = pos[l] + 1; i < pos[r]; ++i) res += cnt[i][val + tag[i]];
+    for(int i = r; pos[i] == pos[r]; --i) res += (a[i] == val);
+    return res;
+}
+
+int main() {
+    int m, last = 0;
+    scanf("%d", &n);
+    sqrtN = ceil(sqrt(n));
+    for(int i = 1; i <= n; ++i) {
+        scanf("%d", &a[i]);
+        pos[i] = (i - 1) / sqrtN;
+        cnt[pos[i]][a[i]]++;
+    }
+    for(scanf("%d", &m); m > 0; m--) {
+        int op, l, r, k;
+        scanf("%d", &op);
+        if (op == 1) {
+            scanf("%d%d", &l, &r);
+            l = (l + last - 1) % n + 1;
+            r = (r + last - 1) % n + 1;
+            if(l > r) swap(l, r);
+            change(l, r, 1);
+        } else {
+            scanf("%d%d%d", &l, &r, &k);
+            l = (l + last - 1) % n + 1;
+            r = (r + last - 1) % n + 1;
+            k = (k + last - 1) % n + 1;
+            if(l > r) swap(l, r);
+            printf("%d\n", last = query(l, r, k));
+        }
+    }
+    return 0;
+}

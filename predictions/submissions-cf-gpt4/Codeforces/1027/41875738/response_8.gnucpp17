@@ -1,0 +1,88 @@
+#include <iostream>
+#include <vector>
+#include <stack>
+#include <algorithm>
+#include <climits>
+
+using namespace std;
+
+constexpr int MAX_NODES = 200010;
+constexpr long long MAX_COST = 10000000000;
+
+vector<int> graph[MAX_NODES], reverseGraph[MAX_NODES];
+int cost[MAX_NODES];
+int parent[MAX_NODES];
+bool visited[MAX_NODES];
+
+stack<int> nodesStack;
+
+long long currentCost;
+
+void firstDepthFirstSearch(int source) {
+    visited[source] = true;
+    for (const auto &vertex : graph[source]) {
+        if (!visited[vertex]) {
+            firstDepthFirstSearch(vertex);
+        }
+    }
+    nodesStack.push(source);
+}
+
+void secondDepthFirstSearch(int source, int parentValue) {
+    currentCost = min(currentCost, static_cast<long long>(cost[source]));
+    visited[source] = false;
+    parent[source] = parentValue;
+    for (const auto &vertex : reverseGraph[source]) {
+        if (visited[vertex]) {
+            secondDepthFirstSearch(vertex, parentValue);
+        }
+    }
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(0);
+
+    int numberOfNodes;
+    cin >> numberOfNodes;
+
+    for (int i = 1; i <= numberOfNodes; i++)
+        cin >> cost[i];
+
+    for (int i = 1; i <= numberOfNodes; i++) {
+        int node;
+        cin >> node;
+        graph[i].push_back(node);
+        reverseGraph[node].push_back(i);
+    }
+
+    for (int i = 1; i <= numberOfNodes; i++) {
+        if (!visited[i])
+            firstDepthFirstSearch(i);
+    }
+
+    long long totalCost = 0;
+    while (!nodesStack.empty()) {
+        int topNode = nodesStack.top();
+        nodesStack.pop();
+        if (visited[topNode]) {
+            currentCost = MAX_COST;
+            secondDepthFirstSearch(topNode, topNode);
+            cost[topNode] = currentCost;
+            totalCost += currentCost;
+        }
+    }
+
+    for (int i = 1; i <= numberOfNodes; i++) {
+        for (const auto &child : graph[i]) {
+            if (parent[i] != parent[child]) {
+                totalCost -= cost[parent[i]];
+                cost[parent[i]] = 0;
+            }
+        }
+    }
+
+    cout << totalCost << '\n';
+
+    return 0;
+}

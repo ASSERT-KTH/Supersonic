@@ -1,0 +1,21 @@
+#include <stdio.h>
+
+#define MAX 10
+
+int main(void) {
+    int i, j, product[MAX][MAX];
+
+    for (i = 1; i < MAX; i++) {
+        for (j = 1; j < MAX; j++) {
+            product[i][j] = i * j;
+        }
+    }
+    
+    for (i = 1; i < MAX; i++) {
+        for (j = 1; j < MAX; j++) {
+            printf("%dx%d=%d\n", i, j, product[i][j]);
+        }
+    }
+
+    return 0;
+}

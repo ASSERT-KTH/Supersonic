@@ -1,0 +1,36 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+#define MAXN 20001
+#define MAXM 256
+#define INF 100000000
+
+int dp[MAXN][MAXM];
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+  
+    int n, m;
+    while (cin >> n >> m, n) {
+        vector<int> b(m), a(n + 1);
+        for (auto &i : b) cin >> i;
+        for (int i = 1; i <= n; ++i) cin >> a[i];
+      
+        fill(&dp[0][0], &dp[0][0] + sizeof(dp) / sizeof(int), INF);
+        dp[0][128] = 0;
+
+        for (int i = 0; i < n; ++i) 
+            for (int j = 0; j < MAXM; ++j) 
+                if (dp[i][j] != INF) 
+                    for (const auto &k : b) {
+                        int p = j + k;
+                        p = min(max(p, 0), 255);
+                        dp[i + 1][p] = min(dp[i + 1][p], dp[i][j] + (a[i + 1] - p) * (a[i + 1] - p));
+                    }
+        
+        cout << *min_element(dp[n], dp[n] + MAXM) << "\n";
+    }
+
+    return 0;
+}

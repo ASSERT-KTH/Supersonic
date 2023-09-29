@@ -1,0 +1,83 @@
+#include "bits/stdc++.h"
+using namespace std;
+#ifdef _DEBUG
+#include "dump.hpp"
+#else
+#define dump(...)
+#endif
+#define rep(i, a, b) for (int i = (a); i < (b); i++)
+#define rrep(i, a, b) for (int i = (b)-1; i >= (a); i--)
+#define all(c) begin(c), end(c)
+const int INF = 0x3f3f3f3f;
+const int MAXN = 200001;
+const int LOGN = 20;
+vector<int> to[MAXN];
+int depth[MAXN], parent[MAXN][LOGN];
+void dfs(int u, int p, int d) {
+    parent[u][0] = p;
+    depth[u] = d;
+    for (int v : to[u]) {
+        if (v != p) {
+            dfs(v, u, d + 1);
+        }
+    }
+}
+void init(int root, int n) {
+    memset(parent, -1, sizeof(parent));
+    dfs(root, -1, 0);
+    for (int k = 0; k + 1 < LOGN; k++) {
+        for (int v = 0; v < n; v++) {
+            if (parent[v][k] < 0) {
+                parent[v][k + 1] = -1;
+            }
+            else {
+                parent[v][k + 1] = parent[parent[v][k]][k];
+            }
+        }
+    }
+}
+int get_lca(int u, int v) {
+    if (depth[u] > depth[v]) {
+        swap(u, v);
+    }
+    for (int k = 0; k < LOGN; k++) {
+        if ((depth[v] - depth[u]) >> k & 1) {
+            v = parent[v][k];
+        }
+    }
+    if (u == v) {
+        return u;
+    }
+    for (int k = LOGN - 1; k >= 0; k--) {
+        if (parent[u][k] != parent[v][k]) {
+            u = parent[u][k];
+            v = parent[v][k];
+        }
+    }
+    return parent[u][0];
+}
+signed main() {
+    cin.tie(0);
+    ios::sync_with_stdio(false);
+    int n;
+    cin >> n;
+    rep(i, 0, n) {
+        int k;
+        cin >> k;
+        rep(j, 0, k) {
+            int c;
+            cin >> c;
+            to[i].push_back(c);
+            to[c].push_back(i);
+        }
+    }
+    int q;
+    cin >> q;
+    init(0, n);
+    rep(i, 0, q) {
+        int u, v;
+        cin >> u >> v;
+        cout << get_lca(u, v) << endl;
+    }
+    return 0;
+}

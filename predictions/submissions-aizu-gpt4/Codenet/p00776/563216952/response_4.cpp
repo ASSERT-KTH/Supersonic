@@ -1,0 +1,40 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+
+#define rep(i, a, n) for (int i = a; i < n; i++)
+
+std::vector<std::string> vs;
+
+void dfs(std::string t, int now) {
+    if (now == t.size()) {
+        vs.push_back(t);
+        return;
+    }
+    int d[26] = {};
+    rep(i, 0, now) d[t[i] - 'a']++;
+    if (t[now] != 'z' && d[t[now] + 1 - 'a'] == 0) {
+        t[now] = t[now] + 1;
+        dfs(t, now + 1);
+    }
+    if (t[now] == 'a' || d[t[now] - 'a'] != 0)
+        dfs(t, now + 1);
+}
+
+int main() {
+    std::ios::sync_with_stdio(false);
+    std::cin.tie(0);
+    std::string s;
+    while (std::cin >> s, s != "#") {
+        vs.clear();
+        dfs(s, 0);
+        int ans = vs.size();
+        std::sort(vs.begin(), vs.end());
+        std::cout << ans << '\n';
+        rep(i, 0, std::min(5, ans)) std::cout << vs[i] << '\n';
+        if (ans > 10) {
+            rep(i, ans - 5, ans) std::cout << vs[i] << '\n';
+        }
+    }
+}

@@ -1,0 +1,42 @@
+#include <algorithm>
+#include <vector>
+#include <iostream>
+#include <cstdint>
+
+using uint32 = std::uint_fast32_t;
+#define rep(i, a, b) for (uint32 i = (a); i < (b); ++i)
+
+class StaticRMQ {
+  std::vector<uint32> a;
+  std::vector<std::vector<uint32>> table;
+public:
+  StaticRMQ(const std::vector<uint32>& array) : a(array) {
+    int n = a.size();
+    int logn = std::log2(n);
+    table.resize(logn + 1, std::vector<uint32>(n));
+    for (int i = 0; i < n; ++i)
+      table[0][i] = i;
+    for (int j = 1; j <= logn; ++j)
+      for (int i = 0; i <= n - (1 << j); ++i)
+        table[j][i] = (a[table[j - 1][i]] < a[table[j - 1][i + (1 << (j - 1))]]) ? table[j - 1][i] : table[j - 1][i + (1 << (j - 1))];
+  }
+  uint32 getMinIdx(uint32 l, uint32 r) {
+    uint32 len = r - l + 1;
+    uint32 loglen = std::log2(len);
+    return (a[table[loglen][l]] < a[table[loglen][r - (1 << loglen) + 1]]) ? table[loglen][l] : table[loglen][r - (1 << loglen) + 1];
+  }
+};
+
+int main(void) {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(nullptr);
+  uint32 n, l;
+  std::cin >> n >> l;
+  std::vector<uint32> a(n);
+  rep(i, 0, n) { std::cin >> a[i]; }
+  StaticRMQ S(a);
+  std::cout << a[S.getMinIdx(0, l - 1)];
+  rep(i, 1, n - l + 1) { std::cout << " " << a[S.getMinIdx(i, i + l - 1)]; }
+  std::cout << "\n";
+  return 0;
+}

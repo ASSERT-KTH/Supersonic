@@ -1,0 +1,69 @@
+#include <iostream>
+#include <cmath>
+
+#define EPS (1e-9)
+
+inline double equals(double a, double b) {
+    return std::fabs(a - b) < EPS;
+}
+
+class Point3d {
+public:
+    double x, y, z;
+    Point3d(double x = 0, double y = 0, double z = 0) : x(x), y(y), z(z) {}
+    Point3d operator-(const Point3d &p) const {
+        return Point3d(x - p.x, y - p.y, z - p.z);
+    }
+};
+
+class Plane3d {
+public:
+    Point3d normal_vector;
+    double d;
+    Plane3d(const Point3d &a, const Point3d &b, const Point3d &c) {
+        Point3d v1 = b - a;
+        Point3d v2 = c - a;
+        normal_vector = cross(v1, v2);
+        d = dot(normal_vector, a);
+    }
+    static Point3d cross(const Point3d &a, const Point3d &b) {
+        return Point3d(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+    }
+    static double dot(const Point3d &a, const Point3d &b) {
+        return a.x * b.x + a.y * b.y + a.z * b.z;
+    }
+    bool intersect(const Point3d &p1, const Point3d &p2) const {
+        double dp1 = dot(p1, normal_vector) - d;
+        double dp2 = dot(p2, normal_vector) - d;
+        return dp1 * dp2 < 0;
+    }
+    Point3d crosspoint(const Point3d &p1, const Point3d &p2) const {
+        double dp1 = dot(p1, normal_vector) - d;
+        double dp2 = dot(p2, normal_vector) - d;
+        return p1 + (p2 - p1) * (dp1 / (dp1 - dp2));
+    }
+};
+
+bool point_on_the_triangle3d(const Point3d &tri1, const Point3d &tri2, const Point3d &tri3, const Point3d &p) {
+    Plane3d plane(tri1, tri2, tri3);
+    Point3d cp = plane.crosspoint(tri1, p);
+    double area1 = std::fabs(Plane3d::dot(plane.normal_vector, Plane3d::cross(tri2 - tri1, cp - tri1)));
+    double area2 = std::fabs(Plane3d::dot(plane.normal_vector, Plane3d::cross(tri3 - tri2, cp - tri2)));
+    double area3 = std::fabs(Plane3d::dot(plane.normal_vector, Plane3d::cross(tri1 - tri3, cp - tri3)));
+    double area = std::fabs(Plane3d::dot(plane.normal_vector, Plane3d::cross(tri2 - tri1, tri3 - tri1)));
+    return equals(area, area1 + area2 + area3);
+}
+
+int main() {
+    Point3d S, G, tri[3];
+    std::cin >> S.x >> S.y >> S.z;
+    std::cin >> G.x >> G.y >> G.z;
+    for (int i = 0; i < 3; ++i)
+        std::cin >> tri[i].x >> tri[i].y >> tri[i].z;
+    Plane3d plane(tri[0], tri[1], tri[2]);
+    if (plane.intersect(S, G) && point_on_the_triangle3d(tri[0], tri[1], tri[2], plane.crosspoint(S, G)))
+        std::cout << "MISS" << std::endl;
+    else
+        std::cout << "HIT" << std::endl;
+    return 0;
+}

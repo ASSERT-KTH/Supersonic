@@ -1,0 +1,61 @@
+#include <iostream>
+#include <algorithm>
+#include <vector>
+using namespace std;
+typedef long long ll;
+
+const int MAXN = 2005;
+const ll LINF = 0x3f3f3f3f3f3f3f3f;
+
+ll dp[MAXN][MAXN];
+ll sum[200001];
+int notes[MAXN];
+ll beauty[100001];
+
+ll compute(int i, int j, ll force_of_repulsion) {
+  ll lhs = sum[notes[i]];
+  ll rhs = (notes[j] - 1 < 0 ? 0 : sum[notes[j] - 1]);
+  return (lhs - rhs) / force_of_repulsion;
+}
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+  
+  int num_of_notes, num_of_beauty;
+  ll force_of_repulsion;
+  while (cin >> num_of_notes >> num_of_beauty >> force_of_repulsion) {
+    
+    for (int i = 0; i < num_of_notes; i++) {
+      cin >> notes[i];
+      notes[i]--;
+    }
+    
+    fill(sum, sum + 200001, 0);
+    for (int i = 0; i < num_of_beauty; i++) {
+      cin >> beauty[i];
+      sum[i] = (i - 1 >= 0 ? sum[i - 1] : 0) + beauty[i];
+    }
+    
+    sort(notes, notes + num_of_notes);
+    reverse(notes, notes + num_of_notes);
+    fill(&dp[0][0], &dp[0][0] + sizeof(dp) / sizeof(ll), LINF);
+    
+    dp[0][0] = 0;
+    for (int i = 0; i < num_of_notes; i++) {
+      int next = i + 1;
+      for (int j = 0; j <= i; j++) {
+        dp[next][j] = min(dp[next][j], dp[i][j] + compute(i, next, force_of_repulsion));
+        dp[next][i] = min(dp[next][i], dp[i][j] + compute(j, next, force_of_repulsion));
+      }
+    }
+    
+    ll res = LINF;
+    for (int i = 0; i < num_of_notes; i++) {
+      res = min(dp[num_of_notes - 1][i] + compute(i, num_of_notes - 1, force_of_repulsion), res);
+    }
+    
+    cout << res << "\n";
+  }
+  return 0;
+}

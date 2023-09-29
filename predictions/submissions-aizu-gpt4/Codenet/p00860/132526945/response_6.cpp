@@ -1,0 +1,79 @@
+#include <cctype>
+#include <cstdio>
+#include <cstring>
+#include <queue>
+using namespace std;
+static unsigned short vis[1 << 24];
+static char c[16][20];
+static bool wall[256];
+static int tm0;
+inline bool check(int u, int v) {
+  static const int shift[] = {0, 8, 16};
+  for (int i = 0; i < 3; ++i) {
+    int p1 = (v >> shift[i]) & 255;
+    if (!p1) continue;
+    if (wall[p1]) return false;
+    int j = (i + 1) % 3;
+    int p2 = (v >> shift[j]) & 255;
+    if (p1 == p2) return false;
+    if (p1 == ((u >> shift[j]) & 255) && p2 == ((u >> shift[i]) & 255)) return false;
+  }
+  return true;
+}
+int solve(int start, int goal) {
+  static const int dif[5] = {0, -1, 1, -16, 16};
+  queue<int> q;
+  q.push(start);
+  q.push(-1);
+  ++tm0;
+  vis[start] = tm0;
+  while (true) {
+    int u = q.front();
+    q.pop();
+    if (u < 0) {
+      if (q.front() < 0) break;
+      q.push(-1);
+      ++tm0;
+    } else {
+      for (int i1 = 0; i1 <= (u & 255 ? 4 : 0); ++i1)
+        for (int i2 = 0; i2 <= ((u >> 8) & 255 ? 4 : 0); ++i2)
+          for (int i3 = 0; i3 <= (u >> 16 ? 4 : 0); ++i3) {
+            int v = u + dif[i1] + (dif[i2] << 8) + (dif[i3] << 16);
+            if (vis[v] >= tm0) continue;
+            if (check(u, v)) {
+              if (v == goal) return tm0;
+              vis[v] = tm0;
+              q.push(v);
+            }
+          }
+    }
+  }
+  return -1;
+}
+int main() {
+  int w, h;
+  while (scanf("%d%d%*d ", &w, &h), w) {
+    for (int i = 0; i < h; ++i) {
+      fgets(c[i], 20, stdin);
+    }
+    int goal = 0, start = 0;
+    for (int i = 0; i < h; ++i) {
+      for (int j = 0; j < w; ++j) {
+        bool isWall = c[i][j] == '#';
+        wall[(i << 4) | j] = isWall;
+        if (!isWall) {
+          if (isupper(c[i][j])) goal |= ((i << 4) | j) << ((c[i][j] - 'A') << 3);
+          else if (islower(c[i][j])) start |= ((i << 4) | j) << ((c[i][j] - 'a') << 3);
+        }
+      }
+    }
+    int tm = solve(start, goal);
+    if (tm < 0) return 1;
+    printf("%d\n", tm - tm0 + 1);
+    if (++tm0 > 55000) {
+      memset(vis, 0, sizeof vis);
+      tm0 = 1;
+    }
+  }
+  return 0;
+}

@@ -1,0 +1,45 @@
+#include <cstdint>
+#include <iostream>
+#include <vector>
+using namespace std;
+
+constexpr size_t MAX_SIZE = 500000;
+uint32_t A[MAX_SIZE], L[MAX_SIZE / 2 + 2], R[MAX_SIZE / 2 + 2];
+size_t compared = 0;
+
+void merge(uint32_t left, uint32_t mid, uint32_t right) {
+  size_t n1 = mid - left;
+  size_t n2 = right - mid;
+  copy(A + left, A + mid, L);
+  copy(A + mid, A + right, R);
+  L[n1] = R[n2] = UINT32_MAX;
+  size_t i = 0, j = 0;
+  for (uint32_t k = left; k < right; ++k) {
+    ++compared;
+    A[k] = (L[i] <= R[j] ? L[i++] : R[j++]);
+  }
+}
+
+void mergeSort(uint32_t left, uint32_t right) {
+  if (right - left > 1) {
+    uint32_t mid = (left + right) / 2;
+    mergeSort(left, mid);
+    mergeSort(mid, right);
+    merge(left, mid, right);
+  }
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  uint32_t n;
+  cin >> n;
+  for (uint32_t i = 0; i < n; ++i) cin >> A[i];
+  mergeSort(0, n);
+  for (uint32_t i = 0; i < n; ++i) {
+    if (i) cout << " ";
+    cout << A[i];
+  }
+  cout << "\n" << compared << "\n";
+  return 0;
+}

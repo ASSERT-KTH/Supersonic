@@ -1,0 +1,56 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <cctype>
+
+using namespace std;
+typedef long long ll;
+string S;
+int p, ch[256];
+ll bnf();
+ll getNum() {
+  ll res = 0;
+  while (isdigit(S[p]))
+    res = res * 10 + S[p++] - '0';
+  return res;
+}
+ll get(ll &a, ll b, char c) {
+  if (c == '+')
+    a += b;
+  else if (c == '-')
+    a -= b;
+  else if (c == '*')
+    a *= b;
+  return a;
+}
+ll calc(int c) {
+  ll res, t;
+  if (S[p] == '(')
+    p++, res = bnf(), p++;
+  else
+    res = getNum();
+  while (p < S.size() && S[p] != ')' && ch[S[p]] > c)
+    t = S[p++], get(res, calc(ch[t]), t);
+  return res;
+}
+ll bnf() {
+  ll res = calc(-1);
+  while (p < S.size() && S[p] != ')')
+    get(res, calc(ch[S[p++]]), S[p-1]);
+  return res;
+}
+int main() {
+  cin >> S;
+  vector<int> perm = {0, 1, 2};
+  ll res = LLONG_MIN;
+  do {
+    ch['+'] = perm[0];
+    ch['-'] = perm[1];
+    ch['*'] = perm[2];
+    p = 0;
+    res = max(res, bnf());
+  } while (next_permutation(perm.begin(), perm.end()));
+  cout << res << endl;
+  return 0;
+}

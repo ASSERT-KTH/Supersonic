@@ -1,0 +1,178 @@
+#include <algorithm>
+#include <cassert>
+#include <cmath>
+#include <iostream>
+#include <vector>
+using namespace std;
+const int MOD = 998244353;
+const int APPLY = 450;
+
+struct mod_int {
+  int val;
+  mod_int(long long v = 0) {
+    if (v < 0)
+      v = v % MOD + MOD;
+    if (v >= MOD)
+      v %= MOD;
+    val = v;
+  }
+  explicit operator int() const { return val; }
+  static int mod_inv(int a, int m = MOD) {
+    int g = m, r = a, x = 0, y = 1;
+    while (r != 0) {
+      int q = g / r;
+      g %= r;
+      swap(g, r);
+      x -= q * y;
+      swap(x, y);
+    }
+    return x < 0 ? x + m : x;
+  }
+  mod_int &operator+=(const mod_int &other) {
+    val += other.val;
+    if (val >= MOD)
+      val -= MOD;
+    return *this;
+  }
+  mod_int &operator-=(const mod_int &other) {
+    val -= other.val;
+    if (val < 0)
+      val += MOD;
+    return *this;
+  }
+  static unsigned fast_mod(uint64_t x, unsigned m = MOD) {
+    return x % m;
+  }
+  mod_int &operator*=(const mod_int &other) {
+    val = fast_mod((uint64_t)val * other.val);
+    return *this;
+  }
+  mod_int &operator/=(const mod_int &other) { return *this *= other.inv(); }
+  friend mod_int operator+(const mod_int &a, const mod_int &b) {
+    return mod_int(a) += b;
+  }
+  friend mod_int operator-(const mod_int &a, const mod_int &b) {
+    return mod_int(a) -= b;
+  }
+  friend mod_int operator*(const mod_int &a, const mod_int &b) {
+    return mod_int(a) *= b;
+  }
+  friend mod_int operator/(const mod_int &a, const mod_int &b) {
+    return mod_int(a) /= b;
+  }
+  mod_int inv() const { return mod_inv(val); }
+};
+
+struct LCA {
+  int n = 0;
+  vector<vector<int>> adj;
+  vector<int> parent, depth, subtree_size;
+  vector<int> euler, first_occurrence;
+  vector<int> tour_start, tour_end, tour_list;
+  int tour;
+  void dfs(int node, int par) {
+    parent[node] = par;
+    depth[node] = par < 0 ? 0 : depth[par] + 1;
+    subtree_size[node] = 1;
+    first_occurrence[node] = euler.size();
+    euler.push_back(node);
+    tour_list[tour] = node;
+    tour_start[node] = tour++;
+    if (par >= 0)
+      adj[node].erase(find(adj[node].begin(), adj[node].end(), par));
+    for (int child : adj[node]) {
+      dfs(child, node);
+      subtree_size[node] += subtree_size[child];
+      euler.push_back(node);
+    }
+    tour_end[node] = tour;
+  }
+  void build() {
+    tour = 0;
+    parent.assign(n, -1);
+    for (int i = 0; i < n; i++)
+      if (parent[i] < 0) {
+        dfs(i, -1);
+        euler.push_back(-1);
+      }
+  }
+  bool is_ancestor(int a, int b) const {
+    return tour_start[a] <= tour_start[b] && tour_start[b] < tour_end[a];
+  }
+};
+
+struct query {
+  int type, v;
+  mod_int d;
+};
+
+int N, Q;
+LCA lca;
+vector<mod_int> values, updates, query_d;
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+  cin >> N >> Q;
+  lca.n = N;
+  lca.adj.resize(N);
+  for (int i = 0; i < N - 1; i++) {
+    int u, v;
+    cin >> u >> v;
+    u--;
+    v--;
+    lca.adj[u].push_back(v);
+    lca.adj[v].push_back(u);
+  }
+  lca.build();
+  values.resize(N, 0);
+  vector<query> pending_queries;
+  mod_int inv_N = mod_int(1) / N;
+  for (int q = 0; q < Q; q++) {
+    query qry;
+    cin >> qry.type >> qry.v;
+    qry.v--;
+    if (qry.type == 1) {
+      int d;
+      cin >> d;
+      qry.d = d;
+      pending_queries.push_back(qry);
+    } else if (qry.type == 2) {
+      mod_int answer = values[qry.v];
+      for (query &prev : pending_queries)
+        if (prev.type == 1) {
+          if (prev.v == qry.v) {
+            answer += prev.d;
+          } else if (lca.is_ancestor(prev.v, qry.v)) {
+            int ca = lca.subtree_size[prev.v];
+            mod_int probability = (N - ca) * inv_N;
+            answer += probability * prev.d;
+          } else {
+            mod_int probability = lca.subtree_size[prev.v] * inv_N;
+            answer += probability * prev.d;
+          }
+        }
+      cout << answer << '\n';
+    }
+    if (q % APPLY == 0 && q > 0) {
+      updates.assign(N, 0);
+      query_d.assign(N, 0);
+      for (query &prev : pending_queries)
+        query_d[prev.v] += prev.d;
+      for (int node = 0; node < N; node++)
+        if (query_d[node] != 0) {
+          mod_int base_probability = lca.subtree_size[node] * inv_N;
+          updates[0] += base_probability * query_d[node];
+          updates[node] += (1 - base_probability) * query_d[node];
+          for (int child : lca.adj[node])
+            updates[child] -= lca.subtree_size[child] * inv_N * query_d[node];
+        }
+      for (int node : lca.tour_list) {
+        values[node] += updates[node];
+        for (int child : lca.adj[node])
+          updates[child] += updates[node];
+      }
+      pending_queries.clear();
+    }
+  }
+}

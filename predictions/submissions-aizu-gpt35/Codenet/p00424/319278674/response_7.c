@@ -1,0 +1,26 @@
+#include <stdio.h>
+#include <string.h>
+
+#define MAX_N 1000
+
+int main() {
+    int n, i;
+    char t[MAX_N];
+
+    while (scanf("%d", &n) == 1) {
+        memset(t, 0, MAX_N);
+        for (i = 0; i < n; i++) {
+            char op, val;
+            scanf(" %c %c", &op, &val);
+            t[op] = val;
+        }
+        scanf("%d", &n);
+        for (i = 0; i < n; i++) {
+            char op;
+            scanf(" %c", &op);
+            putchar(t[op]);
+        }
+        putchar('\n');
+    }
+    return 0;
+}

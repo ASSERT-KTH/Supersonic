@@ -1,0 +1,37 @@
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    int n, m;
+    vector<int> o(100);
+    vector<string> b(100);
+    string l;
+    int ans;
+
+    while (true) {
+        cin >> n >> m;
+        if (!n && !m) break;
+        ans = 0;
+
+        unordered_map<string, int> b_lookup;
+        for (int i = 0; i < n; i++) {
+            cin >> b[i] >> o[i];
+            b_lookup[b[i]] = o[i];
+        }
+
+        for (int i = 0; i < m; i++) {
+            cin >> l;
+            if (b_lookup.find(l) != b_lookup.end()) {
+                ans += b_lookup[l];
+            }
+        }
+        cout << ans << endl;
+    }
+
+    return 0;
+}

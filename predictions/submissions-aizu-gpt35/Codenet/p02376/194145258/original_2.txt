@@ -1,0 +1,248 @@
+```c++
+#include <bits/stdc++.h>
+#define MAXN 10000
+#define INF 0x7fffffff
+using namespace std;
+int n, e;
+int dist[MAXN];
+int ptr[MAXN];
+struct Edge {
+    int to, rev;
+    int cap;
+};
+vector<Edge> graph[MAXN];
+vector<int> lists[MAXN];
+struct Node {
+    int val, mini, minId;
+    int lazy;
+    int id;
+    Node *pp, *lp, *rp;
+    Edge *e;
+    Node(int id, int v) : id(id), val(v) {
+        mini = val;
+        minId = id;
+        lazy = 0;
+        pp = lp = rp = nullptr;
+    }
+    void apply(int v) {
+        val += v;
+        mini += v;
+        lazy += v;
+    }
+    void push() {
+        if (lp) lp->apply(lazy);
+        if (rp) rp->apply(lazy);
+        lazy = 0;
+    }
+    bool is_root() {
+        return (!pp || (pp->lp != this && pp->rp != this));
+    }
+    void rotr() {
+        Node *q = pp;
+        Node *r = q->pp;
+        q->push();
+        push();
+        if ((q->lp = rp)) rp->pp = q;
+        rp = q;
+        q->pp = this;
+        if ((pp = r)) {
+            if (r->lp == q) r->lp = this;
+            if (r->rp == q) r->rp = this;
+        }
+        q->update();
+    }
+    void rotl() {
+        Node *q = pp;
+        Node *r = q->pp;
+        q->push();
+        push();
+        if ((q->rp = lp)) lp->pp = q;
+        lp = q;
+        q->pp = this;
+        if ((pp = r)) {
+            if (r->lp == q) r->lp = this;
+            if (r->rp == q) r->rp = this;
+        }
+        q->update();
+    }
+    void splay() {
+        while (!is_root()) {
+            Node *q = pp;
+            if (q->is_root()) {
+                if (q->lp == this) rotr();
+                else rotl();
+            } else {
+                Node *r = q->pp;
+                if (r->lp == q) {
+                    if (q->lp == this) {
+                        q->rotr();
+                        rotr();
+                    } else {
+                        rotl();
+                        rotr();
+                    }
+                } else {
+                    if (q->rp == this) {
+                        q->rotl();
+                        rotl();
+                    } else {
+                        rotr();
+                        rotl();
+                    }
+                }
+            }
+        }
+        push();
+        update();
+    }
+    void update() {
+        mini = val;
+        minId = id;
+        if (lp) {
+            if (mini > lp->mini) {
+                mini = lp->mini;
+                minId = lp->minId;
+            }
+        }
+        if (rp) {
+            if (mini > rp->mini) {
+                mini = rp->mini;
+                minId = rp->minId;
+            }
+        }
+    }
+};
+Node *find_root(Node *x) {
+    x->splay();
+    while (x->lp) {
+        x = x->lp;
+        x->push();
+    }
+    x->splay();
+    return x;
+}
+void cut(Node *c) {
+    c->splay();
+    Node *p = c->lp;
+    c->lp = nullptr;
+    p->pp = nullptr;
+    c->val = INF;
+}
+void link(Node *c, Node *p, int val, Edge *e) {
+    Node *r = nullptr;
+    c->splay();
+    c->pp = p;
+    p->rp = c;
+    c->val = val;
+    c->update();
+    c->e = e;
+}
+int minId(Node *x) {
+    x->splay();
+    return x->minId;
+}
+void add(Node *x, int val) {
+    x->splay();
+    x->apply(val);
+}
+int bfs(int s, int t) {
+    fill(dist, dist + n, -1);
+    queue<int> que;
+    dist[s] = 0;
+    que.push(s);
+    while (!que.empty()) {
+        int u = que.front(); que.pop();
+        if (u == t) return true;
+        for (int i = 0; i < graph[u].size(); i++) {
+            Edge &e = graph[u][i];
+            if (e.cap > 0 && dist[e.to] < 0) {
+                dist[e.to] = dist[u] + 1;
+                que.push(e.to);
+            }
+        }
+    }
+    return false;
+}
+int dfs(Node *v, Node *t, int f) {
+    if (v == t) return f;
+    v->push();
+    for (int i = ptr[v->id]; i < graph[v->id].size(); i++) {
+        Edge &e = graph[v->id][i];
+        if (e.cap > 0 && dist[v->id] < dist[e.to]) {
+            Node *u = find_root(new Node(e.to, INF));
+            if (u == t) {
+                int df = dfs(u, t, min(f, e.cap));
+                if (df > 0) {
+                    e.cap -= df;
+                    graph[e.to][e.rev].cap += df;
+                    return df;
+                }
+            } else {
+                int df = dfs(u, t, min(f, e.cap));
+                if (df > 0) {
+                    e.cap -= df;
+                    graph[e.to][e.rev].cap += df;
+                    return df;
+                }
+            }
+        }
+    }
+    return 0;
+}
+int max_flow(int s, int t) {
+    int flow = 0;
+    while (bfs(s, t)) {
+        for (int i = 0; i < n; i++) {
+            find_root(new Node(i, INF));
+            ptr[i] = 0;
+            lists[i].clear();
+        }
+        while (true) {
+            Node *v = find_root(new Node(s, INF));
+            if (v == find_root(new Node(t, INF))) {
+                flow += v->mini;
+                add(new Node(s, INF), -v->mini);
+                while (true) {
+                    Node *u = find_root(new Node(minId(new Node(s, INF)), INF));
+                    if (u->val > 0) break;
+                    cut(u);
+                    graph[u->e->to][u->e->rev].cap += u->e->cap;
+                    u->e->cap = 0;
+                }
+                continue;
+            }
+            if (ptr[v->id] < graph[v->id].size()) {
+                Edge &e = graph[v->id][ptr[v->id]++];
+                if (dist[e.to] == dist[v->id] + 1 && e.cap > 0) {
+                    Node *u = find_root(new Node(e.to, INF));
+                    link(v, u, e.cap, &e);
+                    lists[e.to].push_back(v->id);
+                }
+            } else {
+                if (v == find_root(new Node(s, INF))) break;
+                for (int i = 0; i < lists[v->id].size(); i++) {
+                    Node *u = find_root(new Node(lists[v->id][i], INF));
+                    if (u->id != v->id && u->id != e.to) {
+                        cut(u);
+                    }
+                }
+                lists[v->id].clear();
+            }
+        }
+    }
+    return flow;
+}
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    cin >> n >> e;
+    for (int i = 0; i < e; i++) {
+        int a, b, c;
+        cin >> a >> b >> c;
+        graph[a].push_back((Edge){b, (int)graph[b].size(), c});
+        graph[b].push_back((Edge){a, (int)graph[a].size() - 1, 0});
+    }
+    cout << max_flow(0, n - 1) << "\n";
+    return 0;
+}
+```

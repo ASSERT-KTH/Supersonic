@@ -1,0 +1,39 @@
+#include <stdio.h>
+#include <limits>
+#include <vector>
+
+constexpr int INF = std::numeric_limits<int>::max();
+std::vector<std::vector<int>> m(101, std::vector<int>(101, INF));
+std::vector<int> p(101);
+
+int matrixChainOrder(int pl) {
+  int n = pl - 1;
+  for (int i = 1; i <= n; i++) {
+    m[i][i] = 0;
+  }
+  for (int l = 2; l <= n; l++) {
+    for (int i = 1; i <= n - l + 1; i++) {
+      int j = i + l - 1;
+      for (int k = i; k < j; k++) {
+        int q = m[i][k] + m[k + 1][j] + p[i - 1] * p[k] * p[j];
+        if (m[i][j] > q)
+          m[i][j] = q;
+      }
+    }
+  }
+  return m[1][n];
+}
+
+int main() {
+  int n;
+  scanf("%d", &n);
+  for (int i = 0; i < n; i++) {
+    scanf("%d", &p[i]);
+    if (i < n - 1)
+      scanf("%d", &p[i+1]);
+  }
+  scanf("%d", &p[n]);
+  int x = matrixChainOrder(n + 1);
+  printf("%d\n", x);
+  return 0;
+}

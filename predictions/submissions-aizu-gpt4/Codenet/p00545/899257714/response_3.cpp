@@ -1,0 +1,42 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <climits>
+using namespace std;
+using ll = long long;
+const ll MIN = -(LONG_LONG_MAX - 1);
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int N, Q;
+    ll T;
+    cin >> N >> T >> Q;
+    vector<ll> people(Q), A(N), D(N);
+    for (int i = 0; i < N; i++) {
+        cin >> A[i] >> D[i];
+    }
+    for (int i = 0; i < Q; i++) {
+        cin >> people[i];
+        people[i]--;
+    }
+    vector<ll> t(N, LONG_LONG_MAX);
+
+    ll west = MIN;
+    for (int i = 0; i < N; i++) {
+        if (D[i] == 1) west = A[i];
+        if (D[i] == 2 && west != MIN) t[i] = max((A[i] + west) / 2, A[i] - T);
+    }
+
+    ll east = MIN;
+    for (int i = N - 1; i >= 0; i--) {
+        if (D[i] == 2) east = A[i];
+        if (D[i] == 1 && east != MIN) t[i] = min((A[i] + east) / 2, A[i] + T);
+    }
+
+    for (int i = 0; i < Q; i++) {
+        cout << min(max(A[people[i]] - T, t[people[i]]), A[people[i]] + T) << "\n";
+    }
+    return 0;
+}

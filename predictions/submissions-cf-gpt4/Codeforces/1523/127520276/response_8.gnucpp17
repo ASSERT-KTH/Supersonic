@@ -1,0 +1,93 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <algorithm>
+using namespace std;
+
+#define MAX_N 50010
+#define INF 1e9
+#define pii pair<int, int>
+#define F first
+#define S second
+
+struct node {
+    pii val;
+    int prior, size;
+    node *l, *r;
+    node(pii v, int p) : val(v), prior(p), size(1), l(NULL), r(NULL) { }
+};
+
+int sz(node *t) { return t ? t->size : 0; }
+void upd_sz(node *t) { if(t) t->size = sz(t->l) + 1 + sz(t->r); }
+
+void split(node *t, node *&l, node *&r, pii key) {
+    if(!t) l = r = NULL;
+    else if(key <= t->val) split(t->l, l, t->l, key), r = t;
+    else split(t->r, t->r, r, key), l = t;
+    upd_sz(t);
+}
+
+void merge(node *&t, node *l, node *r) {
+    if(!l || !r) t = l ? l : r;
+    else if(l->prior > r->prior) merge(l->r, l->r, r), t = l;
+    else merge(r->l, l, r->l), t = r;
+    upd_sz(t);
+}
+
+void insert(node *&t, node *it) {
+    if(!t) t = it;
+    else if(it->prior > t->prior) split(t, it->l, it->r, it->val), t = it;
+    else insert(t->val <= it->val ? t->r : t->l, it);
+    upd_sz(t);
+}
+
+void erase(node *&t, pii key) {
+    if(!t) return;
+    else if(t->val == key) { node *tmp = t; merge(t, t->l, t->r); delete tmp; }
+    else erase(key <= t->val ? t->l : t->r, key);
+    upd_sz(t);
+}
+
+pii find_by_order(node *t, int key) {
+    if(!t) return make_pair(INF, INF);
+    else if(sz(t->l) >= key) return find_by_order(t->l, key);
+    else if(sz(t->l) + 1 == key) return t->val;
+    else return find_by_order(t->r, key - sz(t->l) - 1);
+}
+
+pii arr[MAX_N];
+vector<pii> vec[MAX_N];
+node* treap[MAX_N];
+int ans[MAX_N];
+
+int main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+
+    int n, m;
+    cin >> n >> m;
+
+    for(int i = 1; i <= m; i++) {
+        cin >> arr[i].F >> arr[i].S;
+        vec[arr[i].S - arr[i].F + 1].push_back(arr[i]);
+    }
+
+    for(int i = n; i >= 1; i--) {
+        for(int j = 0; j < vec[i].size(); j++) {
+            for(int k = vec[i][j].F; k < vec[i][j].S; k++) insert(treap[k], new node(vec[i][j], rand()));
+        }
+
+        for(int j = n - i + 1; j <= n; j++) {
+            pii p = find_by_order(treap[j], 1);
+            if(p.F == INF) continue;
+
+            ans[j - n + i] += p.S - j + 1;
+            erase(treap[j], p);
+            if(p.F - 1 >= j - n + i) insert(treap[p.F - 1], new node(p, rand()));
+        }
+    }
+
+    for(int i = 1; i <= n; i++) cout << ans[i] << "\n";
+
+    return 0;
+}

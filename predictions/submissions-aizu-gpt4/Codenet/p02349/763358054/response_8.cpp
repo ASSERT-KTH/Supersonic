@@ -1,0 +1,34 @@
+#include <iostream>
+#include <vector>
+
+using namespace std;
+typedef long long ll;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(0);
+
+    int n, q;
+    cin >> n >> q;
+    vector<ll> S(n+1, 0);
+
+    while(q--) {
+        bool op;
+        cin >> op;
+        if (op) {
+            int k;
+            cin >> k;
+            ll sum = 0;
+            for (; k > 0; k -= k & -k)
+                sum += S[k];
+            cout << sum << '\n';
+        } else {
+            int s, t, x;
+            cin >> s >> t >> x;
+            for (; s <= n; s += s & -s)
+                S[s] += x;
+            for (t = t + 1; t <= n; t += t & -t)
+                S[t] -= x;
+        }
+    }
+}

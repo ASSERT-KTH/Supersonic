@@ -1,0 +1,75 @@
+```c++
+#include <iostream>
+#include <vector>
+#include <deque>
+#include <algorithm>
+
+using namespace std;
+using pint = pair<int, int>;
+
+constexpr int INF = 1e9;
+constexpr int COINS = 6;
+constexpr int MAX_TOTAL = 10000;
+
+int coin_values[COINS] = {1, 5, 10, 50, 100, 500};
+int coin_counts[COINS];
+
+int dp[MAX_TOTAL*2];
+
+int calc_min_coins(int value) {
+    int coins = 0;
+    for (int i = COINS - 1; i >= 0; --i) {
+        coins += value / coin_values[i];
+        value %= coin_values[i];
+    }
+    return coins;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+
+    int P;
+    while (cin >> P && P != 0) {
+        for (int i = 0; i < COINS; ++i) cin >> coin_counts[i];
+
+        fill(dp, dp + MAX_TOTAL*2, INF);
+
+        int cnt = 0;
+        for (int i = COINS - 1; i >= 0; --i) {
+            while (P - coin_values[i] >= 2500 && coin_counts[i]) {
+                cnt++;
+                coin_counts[i]--;
+                P -= coin_values[i];
+            }
+            if (coin_counts[i]) break;
+        }
+
+        dp[0] = 0;
+        for (int i = 0; i < COINS; ++i) {
+            for (int j = 0; j < coin_values[i]; ++j) {
+                deque<pint> deq;
+                for (int k = j; k < MAX_TOTAL; k += coin_values[i]) {
+                    int w = MAX_TOTAL - k / coin_values[i];
+                    dp[k] = min(dp[k], i > 0 ? dp[k - coin_values[i - 1]] : INF);
+                    while (!deq.empty() && deq.front().second < k - coin_values[i] * coin_counts[i])
+                        deq.pop_front();
+                    if (!deq.empty())
+                        dp[k] = min(dp[k], deq.front().first - w);
+                    while (!deq.empty() && deq.back().first + w >= dp[k])
+                        deq.pop_back();
+                    deq.push_back(make_pair(dp[k] + w, k));
+                }
+            }
+        }
+
+        int mi = INF;
+        for (int i = P; i < MAX_TOTAL; i++) {
+            mi = min(mi, dp[i] + calc_min_coins(i - P));
+        }
+        cout << mi + cnt << "\n";
+    }
+
+    return 0;
+}
+```

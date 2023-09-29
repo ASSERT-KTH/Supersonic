@@ -1,0 +1,64 @@
+#include <bits/stdc++.h>
+#define int long long
+#define rep(i, n) for (int i = 0; i < n; i++)
+typedef pair<int, int> P;
+using namespace std;
+
+const int inf = 1e9 + 7;
+
+class t_sort {
+public:
+  int n;
+  vector<int> ans, deg;
+  vector<vector<int>> G;
+
+  void init(int N) {
+    n = N;
+    deg.resize(n);
+    G.resize(n);
+  }
+
+  void add_edge(int from, int to) {
+    G[from].push_back(to);
+    deg[to]++;
+  }
+
+  void tsort() {
+    stack<int> st;
+    rep(i, n) if (deg[i] == 0) st.push(i);
+    while (!st.empty()) {
+      int v = st.top();
+      st.pop();
+      ans.push_back(v);
+      for(auto &i : G[v]) if (--deg[i] == 0) st.push(i);
+    }
+  }
+};
+
+signed main() {
+  ios_base::sync_with_stdio(false);
+  std::cin.tie(nullptr);
+  int n, m;
+  cin >> n >> m;
+  t_sort t;
+  t.init(n);
+  vector<P> edges(m);
+  rep(i, m) {
+    int x, y;
+    cin >> x >> y;
+    x--;
+    y--;
+    t.add_edge(x, y);
+    edges[i] = P(x, y);
+  }
+  t.tsort();
+  vector<int> ans = t.ans;
+  map<int, int> pos;
+  rep(i, n) pos[ans[i]] = i;
+  for(auto &ed : edges) if(pos[ed.first] > pos[ed.second]) {
+    cout << -1;
+    return 0;
+  }
+  for(auto &i : ans) cout << i + 1 << "\n";
+  return 0;
+}

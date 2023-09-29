@@ -1,0 +1,64 @@
+#include <iostream>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+vector<vector<int>> involve;
+vector<int> dfs2(int now, vector<bool>& used) {
+  used[now] = true;
+  vector<int> ans;
+  for (auto i : involve[now]) {
+    if (!used[i]) {
+      vector<int> a = dfs2(i, used);
+      ans.insert(ans.end(), a.begin(), a.end());
+    } else {
+      ans.push_back(i);
+    }
+  }
+  return ans;
+}
+
+int main() {
+  while (true) {
+    int num = 0;
+    unordered_map<string, int> mp;
+    involve.clear();
+    involve.resize(100000);
+    int N;
+    cin >> N;
+    if (N == 0) break;
+    for (int i = 0; i < N; ++i) {
+      string st;
+      cin >> st;
+      string groupname;
+      vector<string> membername;
+      size_t pre = 0, pos;
+      while ((pos = st.find_first_of(":,.", pre)) != string::npos) {
+        string name = st.substr(pre, pos - pre);
+        if (st[pos] == ':') {
+          groupname = name;
+        } else {
+          membername.push_back(name);
+        }
+        pre = pos + 1;
+      }
+      if (!mp.count(groupname)) {
+        mp[groupname] = num++;
+      }
+      for (const auto& name : membername) {
+        if (mp.count(name) == 0) {
+          mp[name] = num++;
+        }
+        involve[mp[groupname]].push_back(mp[name]);
+      }
+    }
+    vector<bool> used(100000, false);
+    vector<int> allnames = dfs2(0, used);
+    sort(allnames.begin(), allnames.end());
+    allnames.erase(unique(allnames.begin(), allnames.end()), allnames.end());
+    cout << allnames.size() << endl;
+  }
+  return 0;
+}

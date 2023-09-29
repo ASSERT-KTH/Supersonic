@@ -1,0 +1,49 @@
+#include <algorithm>
+#include <cstdio>
+#include <cstring>
+using namespace std;
+
+const int MAX_N = 30;
+const int MAX_X = 1000000;
+
+int n, x, a[MAX_N];
+bool dp[MAX_X + 1], prime[MAX_X + 1];
+
+int main() {
+    memset(prime, true, sizeof(prime));
+    prime[0] = false;
+    prime[1] = false;
+    for (int i = 2; i <= MAX_X; i++) {
+        if (prime[i]) {
+            for (int j = i * 2; j <= MAX_X; j += i) {
+                prime[j] = false;
+            }
+        }
+    }
+    while (scanf("%d%d", &n, &x), n) {
+        for (int i = 0; i < n; i++) {
+            scanf("%d", &a[i]);
+        }
+        sort(a, a + n);
+        memset(dp, false, sizeof(dp));
+        dp[0] = true;
+        for (int i = 0; i < n; i++) {
+            for (int j = a[i]; j <= x; j++) {
+                dp[j] |= dp[j - a[i]];
+            }
+        }
+        int ans = -1;
+        for (int i = x; i >= 0; i--) {
+            if (dp[i] && prime[i]) {
+                ans = i;
+                break;
+            }
+        }
+        if (ans == -1) {
+            puts("NA");
+        } else {
+            printf("%d\n", ans);
+        }
+    }
+    return 0;
+}

@@ -1,0 +1,40 @@
+#include <iostream>
+#include <vector>
+using namespace std;
+
+const int MAX_NUM = 51000;
+vector<bool> isPrime(MAX_NUM + 1, false);
+vector<int> primes;
+
+void sieveOfEratosthenes() {
+  isPrime[2] = true;
+  for (int i = 3; i <= MAX_NUM; i += 2) {
+    isPrime[i] = true;
+  }
+  for (int i = 3; i * i <= MAX_NUM; i += 2) {
+    if (isPrime[i]) {
+      for (int j = i * i; j <= MAX_NUM; j += i) {
+        isPrime[j] = false;
+      }
+    }
+  }
+  primes.push_back(2);
+  for (int i = 3; i <= MAX_NUM; i += 2) {
+    if (isPrime[i])
+      primes.push_back(i);
+  }
+}
+
+int main() {
+  sieveOfEratosthenes();
+  int n;
+  while (cin >> n && n != 0) {
+    int kotae = 0;
+    for (int i = 0; primes[i] <= n / 2; i++) {
+      if (isPrime[n - primes[i]])
+        kotae++;
+    }
+    cout << kotae << "\n";
+  }
+  return 0;
+}

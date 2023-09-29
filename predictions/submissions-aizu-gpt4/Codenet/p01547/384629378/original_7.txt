@@ -1,0 +1,151 @@
+```
+#include <complex>
+#include <vector>
+#include <algorithm>
+#include <iostream>
+
+using namespace std;
+using D = double;
+using P = complex<D>;
+using VP = vector<P>;
+using Vcon = vector<VP>;
+const D EPS = 1e-7;
+
+D dot(P a, P b) { return (conj(a) * b).real(); }
+D cross(P a, P b) { return (conj(a) * b).imag(); }
+
+int ccw(P a, P b, P c) {
+  b -= a; c -= a;
+  if (cross(b, c) > EPS) return +1;
+  if (cross(b, c) < -EPS) return -1;
+  if (dot(b, c) < -EPS) return +2;
+  if (norm(b) < norm(c)) return -2;
+  return 0;
+}
+
+bool isecSS(P a1, P a2, P b1, P b2) {
+  return ccw(a1, a2, b1) * ccw(a1, a2, b2) <= 0 && ccw(b1, b2, a1) * ccw(b1, b2, a2) <= 0;
+}
+
+bool isecSP(P a1, P a2, P b) {
+  return abs(a1 - b) + abs(a2 - b) - abs(a2 - a1) < EPS;
+}
+
+P crosspointLL(P a1, P a2, P b1, P b2) {
+  D d1 = cross(b2 - b1, b1 - a1);
+  D d2 = cross(b2 - b1, a2 - a1);
+  if (abs(d2) < EPS) return a1;
+  return a1 + d1 / d2 * (a2 - a1);
+}
+
+VP convexCut(const VP &ps, P a1, P a2) {
+  int n = ps.size();
+  VP ret;
+  for (int i = 0; i < n; i++) {
+    int ccwc = ccw(a1, a2, ps[i]);
+    if (ccwc != -1) ret.push_back(ps[i]);
+    int ccwn = ccw(a1, a2, ps[(i + 1) % n]);
+    if (ccwc * ccwn == -1) ret.push_back(crosspointLL(a1, a2, ps[i], ps[(i + 1) % n]));
+  }
+  return ret;
+}
+
+D area(const VP &ps) {
+  D a = 0;
+  for (int i = 0; i < ps.size(); i++) a += cross(ps[i], ps[(i + 1) % ps.size()]);
+  return a / 2;
+}
+
+bool con_in_con(VP a1, VP a2) {
+  for(int j = 0; j < a2.size(); j++) {
+    int sum = 0;
+    for(int i = 0; i < a1.size(); i++) {
+      if (isecSP(a1[i], a1[(i + 1) % a1.size()], a2[j])) return true;
+      if (isecSS(a1[i], a1[(i + 1) % a1.size()], a2[j], P(1000007, 41321))) sum++;
+    }
+    if (sum % 2) return true;
+  }
+  return false;
+}
+
+int main() {
+  int n, m, q;
+  cin >> n;
+  vector<VP> V(n);
+  for (int i = 0; i < n; i++) {
+    cin >> m;
+    V[i].resize(m);
+    for (int j = 0; j < m; j++) {
+      D x, y;
+      cin >> x >> y;
+      V[i][j] = P(x, y);
+    }
+  }
+
+  VP convex;
+  convex.push_back(P(-200000, -200000));
+  convex.push_back(P(200000, -200000));
+  convex.push_back(P(200000, 200000));
+  convex.push_back(P(-200000, 200000));
+  Vcon v = {convex};
+
+  for (int i = 0; i < n; i++) {
+    Vcon nv;
+    for (int j = 0; j < V[i].size(); j++) {
+      for (auto &cv : v) {
+        VP cv1 = convexCut(cv, V[i][j], V[i][(j+1)%V[i].size()]);
+        VP cv2 = convexCut(cv, V[i][(j+1)%V[i].size()], V[i][j]);
+        if (area(cv1) > EPS) nv.push_back(cv1);
+        if (area(cv2) > EPS) nv.push_back(cv2);
+      }
+    }
+    v = nv;
+  }
+
+  vector<vector<int>> a(v.size(), vector<int>(v.size(), 1e9));
+  for (int i = 0; i < v.size(); i++) {
+    for (int j = i+1; j < v.size(); j++) {
+      for (int k = 0; k < v[i].size(); k++) {
+        for (int l = 0; l < v[j].size(); l++) {
+          if (isecSS(v[i][k], v[i][(k+1)%v[i].size()], v[j][l], v[j][(l+1)%v[j].size()])) {
+            a[i][j] = a[j][i] = 1;
+            goto NEXT;
+          }
+        }
+      }
+NEXT:;
+    }
+  }
+
+  vector<int> cnt(v.size());
+  for (int i = 0; i < v.size(); i++)
+    for (int j = 0; j < n; j++)
+      if (con_in_con(V[j], v[i]))
+        cnt[i]++;
+
+  for (int i = 0; i < v.size(); i++)
+    for (int j = 0; j < v.size(); j++)
+      if (a[i][j] == 1)
+        a[i][j] = abs(cnt[i] - cnt[j]);
+
+  for (int k = 0; k < v.size(); k++)
+    for (int i = 0; i < v.size(); i++)
+      for (int j = 0; j < v.size(); j++)
+        a[i][j] = min(a[i][j], a[i][k] + a[k][j]);
+
+  cin >> q;
+  while (q--) {
+    D a1, a2, b1, b2;
+    cin >> a1 >> a2 >> b1 >> b2;
+    P p1(a1, a2), p2(b1, b2);
+    int A, B;
+    for (int i = 0; i < v.size(); i++) {
+      for (int j = 0; j < v[i].size(); j++) {
+        if (isecSP(v[i][j], v[i][(j+1)%v[i].size()], p1)) A = i;
+        if (isecSP(v[i][j], v[i][(j+1)%v[i].size()], p2)) B = i;
+      }
+    }
+    cout << a[A][B] << endl;
+  }
+}
+```

@@ -1,0 +1,21 @@
+#include <stdio.h>
+int main(void) {
+  bool Cards[4][14] = {{false}};
+  int n, Num;
+  char Mark;
+  scanf("%d", &n);
+  while(n--) {
+    scanf(" %c", &Mark);
+    scanf("%d", &Num);
+    Cards[Mark == 'S' ? 0 : Mark == 'H' ? 1 : Mark == 'C' ? 2 : 3][Num - 1] = true;
+  }
+  const char Marks[] = {'S', 'H', 'C', 'D'};
+  for (int i = 0; i < 4; ++i) {
+    for (int j = 0; j < 14; ++j) {
+      if (!Cards[i][j]) {
+        printf("%c %d\n", Marks[i], j + 1);
+      }
+    }
+  }
+  return 0;
+}

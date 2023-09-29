@@ -1,0 +1,44 @@
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long int64;
+const int64 INF = 1LL << 58;
+int N;
+int64 A[200000];
+int64 sum[400000];
+bool Find(const int &pos, const int64 &size) {
+  int64 * hoge = lower_bound(sum + pos + 1, sum + 2*N, sum[pos] + size);
+  if (hoge == sum + 2*N)
+    return false;
+  int64 * fuga = lower_bound(hoge + 1, sum + 2*N, *hoge + size);
+  if (fuga == sum + 2*N)
+    return false;
+  int64 * foo = lower_bound(fuga + 1, sum + 2*N, *fuga + size);
+  return (foo != sum + 2*N);
+}
+bool calc(int64 size) {
+  for (int pos = 0; pos < N; pos++) {
+    if (Find(pos, size))
+      return true;
+  }
+  return false;
+}
+int main() {
+  scanf("%d", &N);
+  for (int i = 0; i < N; i++) {
+    scanf("%lld", A + i);
+    A[N + i] = A[i];
+  }
+  sum[0] = A[0];
+  for (int i = 1; i < 2 * N; i++) {
+    sum[i] = sum[i - 1] + A[i];
+  }
+  int64 low = 0, high = INF;
+  while (high != low) {
+    int64 mid = (low + high + 1) >> 1;
+    if (calc(mid))
+      low = mid;
+    else
+      high = mid - 1;
+  }
+  printf("%lld\n", low);
+}

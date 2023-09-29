@@ -1,0 +1,82 @@
+```cpp
+#include <iostream>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+using namespace std;
+#define REP(i, a, n) for (i = a; i < n; i++)
+#define rep(i, n) REP(i, 0, n)
+typedef long long ll;
+const int dx[] = {0, 1, 0, -1};
+const int dy[] = {-1, 0, 1, 0};
+int w, h;
+int field[12][12], cx[36], cy[36], csize;
+unordered_map<int, int> idx;
+unordered_set<ll> visited[20][4][2];
+inline bool inside(int x, int y) { return !(x < 0 || x >= w || y >= h || y < 0); }
+bool backtrack(int cnt, ll kS, int init_dir, int f) {
+  int i, k;
+  if (visited[cnt][init_dir][f].count(kS))
+    return false;
+  if (csize / 2 == cnt)
+    return true;
+  rep(i, cnt) {
+    rep(k, 4) {
+      int tx = cx[i] + dx[k];
+      int ty = cy[i] + dy[k];
+      if (!inside(tx, ty) || field[ty][tx] == 0)
+        continue;
+      int ttx = cx[(i+init_dir)%csize] + dx[(k + init_dir + (f ? 2 : 0)) % 4];
+      int tty = cy[(i+init_dir)%csize] + dy[(k + init_dir) % 4];
+      if ((tx == ttx && ty == tty) || !inside(ttx, tty) || field[tty][ttx] == 0)
+        continue;
+      field[ty][tx] = 0;
+      cx[cnt] = tx, cy[cnt] = ty;
+      field[tty][ttx] = 0;
+      cx[cnt+csize/2] = ttx, cy[cnt+csize/2] = tty;
+      if (backtrack(cnt + 1, kS | (1LL << idx[ttx + tty*w]), init_dir, f))
+        return true;
+      field[tty][ttx] = 1;
+      field[ty][tx] = 1;
+    }
+  }
+  visited[cnt][init_dir][f].insert(kS);
+  return false;
+}
+bool solve() {
+  int i, j, k;
+  if (csize % 2)
+    return false;
+  field[cy[0]][cx[0]] = 0;
+  REP(j, 1, csize) {
+    field[cy[j]][cx[j]] = 0;
+    rep(k, 4) {
+      if (backtrack(1, 1LL << j, k, 0))
+        return true;
+      if (backtrack(1, 1LL << j, k, 1))
+        return true;
+    }
+    field[cy[j]][cx[j]] = 1;
+  }
+  field[cy[0]][cx[0]] = 1;
+  return false;
+}
+int main() {
+  int i, j, u;
+  while (cin >> w >> h, w | h) {
+    idx.clear();
+    rep(i, 20) rep(j, 4) rep(u, 2) visited[i][j][u].clear();
+    csize = 0;
+    rep(i, h) rep(j, w) {
+      cin >> field[i][j];
+      if (field[i][j] == 1) {
+        cx[csize] = j, cy[csize] = i;
+        idx[j + i*w] = csize;
+        csize++;
+      }
+    }
+    puts(solve() ? "YES" : "NO");
+  }
+  return 0;
+}
+```

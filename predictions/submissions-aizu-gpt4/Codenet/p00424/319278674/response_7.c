@@ -1,0 +1,23 @@
+#include <stdio.h>
+#include <string.h>
+
+char t[1000];
+int main() {
+  int n, i;
+  while (scanf("%d", &n) == 1 && n != 0) {
+    memset(t, 0, sizeof(t));
+    while (n--) {
+      scanf(" %c", &i);
+      i -= 'A';
+      scanf(" %c", &t[i]);
+    }
+    scanf("%d", &n);
+    while (n--) {
+      scanf(" %c", &i);
+      i -= 'A';
+      putchar(t[i] ? t[i] : 'A' + i);
+    }
+    putchar('\n');
+  }
+  return 0;
+}

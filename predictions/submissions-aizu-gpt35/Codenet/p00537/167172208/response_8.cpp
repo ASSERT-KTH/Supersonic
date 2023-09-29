@@ -1,0 +1,66 @@
+#include <iostream>
+#include <vector>
+using namespace std;
+
+struct SegmentTree {
+    vector<int> seg, add;
+    int sz;
+    SegmentTree(int n) {
+        sz = 1;
+        while (sz < n)
+            sz *= 2;
+        seg.assign(sz * 2 + 1, 0);
+        add.assign(sz * 2 + 1, 0);
+    }
+    void add(int a, int b, int x, int k, int l, int r) {
+        if (a >= r || b <= l) {
+            return;
+        } else if (a <= l && r <= b) {
+            add[k] += x;
+        } else {
+            add(a, b, x, 2 * k + 1, l, (l + r) / 2);
+            add(a, b, x, 2 * k + 2, (l + r) / 2, r);
+            seg[k] = seg[2 * k + 1] + add[2 * k + 1] + seg[2 * k + 2] + add[2 * k + 2];
+        }
+    }
+    int query(int a, int b, int k, int l, int r) {
+        if (a >= r || b <= l)
+            return 0;
+        if (a <= l && r <= b)
+            return seg[k] + add[k];
+        return query(a, b, 2 * k + 1, l, (l + r) / 2) +
+               query(a, b, 2 * k + 2, (l + r) / 2, r) + add[k];
+    }
+    void add(int a, int b, int x) { add(a, b, x, 0, 0, sz); }
+    int query(int a, int b) { return query(a, b, 0, 0, sz); }
+};
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    int N, M;
+    scanf("%d %d", &N, &M);
+    SegmentTree segtree(N);
+    int p, prevp;
+    scanf("%d", &prevp);
+    --prevp;
+    for (int i = 1; i < M; i++) {
+        scanf("%d", &p);
+        --p;
+        if (prevp < p) {
+            segtree.add(prevp, p, 1);
+        } else {
+            segtree.add(p, prevp, 1);
+        }
+        prevp = p;
+    }
+    long long ret = 0;
+    int A, B, C, used;
+    scanf("%d %d %d", &A, &B, &C);
+    for (int i = 0; i < N - 1; i++) {
+        used = segtree.query(i, i + 1);
+        ret += min(used * A, C + used * B);
+    }
+    cout << ret << endl;
+    return 0;
+}

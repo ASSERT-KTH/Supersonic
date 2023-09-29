@@ -1,0 +1,41 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int V, E;
+    cin >> V >> E;
+
+    vector<vector<int>> edge(V);
+    vector<int> inDegree(V, 0);
+
+    for (int i = 0; i < E; ++i) {
+        int s, t;
+        cin >> s >> t;
+        edge[s].push_back(t);
+        inDegree[t]++;
+    }
+
+    queue<int> q;
+    for (int i = 0; i < V; ++i) {
+        if (inDegree[i] == 0)
+            q.push(i);
+    }
+
+    while (!q.empty()) {
+        int v = q.front();
+        q.pop();
+        cout << v << '\n';
+
+        for (const int& u : edge[v]) {
+            inDegree[u]--;
+            if (inDegree[u] == 0)
+                q.push(u);
+        }
+    }
+    return 0;
+}

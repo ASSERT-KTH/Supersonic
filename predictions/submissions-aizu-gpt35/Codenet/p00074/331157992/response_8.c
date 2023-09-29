@@ -1,0 +1,15 @@
+#include <stdio.h>
+
+int main() {
+    int h, m, s, t;
+    while (scanf("%d%d%d", &h, &m, &s) == 3) {
+        for (int i = 0; i < 2; i++) {
+            t = (120 - h * 60 - m) * 60 - s;
+            printf("%02d:%02d:%02d\n", t / 3600, t / 60 % 60, t % 60);
+            h = 0;
+            m = 0;
+            s = 0;
+        }
+    }
+    return 0;
+}

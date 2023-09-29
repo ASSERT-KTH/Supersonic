@@ -1,0 +1,93 @@
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+using pii = pair<int, int>;
+
+const int MAX = 1e5+5;
+vector<vector<char>> grid(MAX, vector<char>(12));
+vector<vector<pii>> go(MAX, vector<pii>(12));
+vector<int> blockRef(MAX);
+vector<vector<int>> processed(MAX, vector<int>(12));
+int timestamp = 0, sqr = 600;
+
+void comp(int row, int col, int safeRow) {
+  if (processed[row][col] == timestamp)
+    return;
+  processed[row][col] = timestamp;
+  int nextRow = row, nextCol = col;
+  if (grid[row][col] == '<')
+    --nextCol;
+  else if (grid[row][col] == '>')
+    ++nextCol;
+  else if (grid[row][col] == '^')
+    --nextRow;
+  if (nextRow == safeRow || grid[nextRow][nextCol] == '~') {
+    go[row][col] = {nextRow, nextCol};
+  } else if (grid[row][col] != '^' && grid[row][nextCol] != '^' &&
+             grid[row][col] != grid[row][nextCol]) {
+    go[row][col] = {0, 0};
+  } else {
+    comp(nextRow, nextCol, safeRow);
+    go[row][col] = go[nextRow][nextCol];
+  }
+}
+
+pii getFin(int row, int col) {
+  while (grid[row][col] != '~') {
+    pii e = go[row][col];
+    row = e.first;
+    col = e.second;
+  }
+  return {row, col};
+}
+
+bool compBlock(int block) {
+  int start = block * sqr, end = min((int)grid.size(), (block + 1) * sqr);
+  if (start >= grid.size())
+    return false;
+  for (int row = start + 1; row <= end; ++row) {
+    blockRef[row] = block;
+    for (int col = 0; col < grid[0].size(); ++col) {
+      comp(row, col, start);
+    }
+  }
+  return true;
+}
+
+int main() {
+  int nbRow, nbCol, nbReq;
+  cin >> nbRow >> nbCol >> nbReq;
+  for (int row = 1; row <= nbRow; ++row) {
+    for (int col = 0; col < nbCol; ++col) {
+      cin >> grid[row][col];
+    }
+  }
+  ++timestamp;
+  for (int block = 0;; ++block) {
+    if (!compBlock(block))
+      break;
+  }
+  for (int req = 0; req < nbReq; ++req) {
+    char mode;
+    cin >> mode;
+    int row, col;
+    cin >> row >> col;
+    if (mode == 'A') {
+      pii res = getFin(row, col);
+      cout << res.first << " " << res.second << "\n";
+    } else {
+      ++timestamp;
+      char nv;
+      cin >> nv;
+      grid[row][col] = nv;
+      int block = blockRef[row];
+      compBlock(block);
+      if (block)
+        compBlock(block - 1);
+    }
+  }
+}
+```

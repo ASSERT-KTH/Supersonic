@@ -1,0 +1,72 @@
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+
+struct Node {
+    ll add = 0, sum = 0;
+    int l = 0, r = 0;
+};
+
+vector<Node> seg;
+vector<int> d, l, r, a;
+int n, m, k, t;
+
+void push(int v) {
+    seg[v * 2 + 1].add += seg[v].add;
+    seg[v * 2 + 2].add += seg[v].add;
+    seg[v].sum += (seg[v].r - seg[v].l) * seg[v].add;
+    seg[v].add = 0;
+}
+
+void build(int v, int l, int r) {
+    seg[v].l = l;
+    seg[v].r = r;
+    if (r - l < 2) return;
+    int mid = (l + r) >> 1;
+    build(v * 2 + 1, l, mid);
+    build(v * 2 + 2, mid, r);
+}
+
+void update(int v, int l, int r, int val) {
+    if (seg[v].l >= r || seg[v].r <= l) return;
+    if (seg[v].l >= l && seg[v].r <= r) {
+        seg[v].add += val;
+        return;
+    }
+    push(v);
+    update(v * 2 + 1, l, r, val);
+    update(v * 2 + 2, l, r, val);
+    seg[v].sum = seg[v * 2 + 1].sum + seg[v * 2 + 2].sum + (seg[v].r - seg[v].l) * seg[v].add;
+}
+
+ll query(int v, int l, int r) {
+    if (seg[v].l >= r || seg[v].r <= l) return 0;
+    if (seg[v].l >= l && seg[v].r <= r) return seg[v].sum + seg[v].add * (seg[v].r - seg[v].l);
+    push(v);
+    return query(v * 2 + 1, l, r) + query(v * 2 + 2, l, r);
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cin >> m >> n >> k >> t;
+    a.resize(m);
+    l.resize(k);
+    r.resize(k);
+    d.resize(k);
+    seg.resize(4 * (n + 2));
+    for (int& x : a) cin >> x;
+    for (int i = 0; i < k; ++i) cin >> l[i] >> r[i] >> d[i];
+    sort(a.begin(), a.end(), greater<int>());
+    int l = 0, r = m + 1;
+    while (r - l > 1) {
+        int mid = (l + r) / 2;
+        for (int i = 0; i < 4 * (n + 2); ++i) seg[i] = {0, 0, 0, 0};
+        build(0, 0, n + 1);
+        for (int i = 0; i < k; ++i) if (d[i] > a[mid - 1]) update(0, ::l[i] - 1, ::r[i], 1);
+        if (2 * query(0, 0, n + 1) + n + 1 <= t) r = mid;
+        else l = mid;
+    }
+    cout << r - 1 << '\n';
+    return 0;
+}

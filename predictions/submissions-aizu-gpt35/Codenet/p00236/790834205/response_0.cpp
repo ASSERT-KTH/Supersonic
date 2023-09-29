@@ -1,0 +1,103 @@
+#include <iostream>
+#include <bitset>
+#include <vector>
+using namespace std;
+const int N = 49;
+int w, h;
+vector<vector<int>> field;
+int size;
+vector<vector<int>> edge;
+bitset<N> visited;
+bitset<N> cut_vertex;
+unsigned long long memo[N][N];
+void make_graph() {
+  enum { Y, X };
+  const int NEXT[4][2] = {{0, 1}, {1, 0}, {-1, 0}, {0, -1}};
+  const int NIL = -1;
+  size = 0;
+  vector<vector<int>> vertex(h, vector<int>(w, NIL));
+  for (int y = 0; y < h; ++y)
+    for (int x = 0; x < w; ++x)
+      if (!field[y][x])
+        vertex[y][x] = size++;
+  edge = vector<vector<int>>(size, vector<int>());
+  for (int y = 0; y < h; ++y)
+    for (int x = 0; x < w; ++x) {
+      if (vertex[y][x] == NIL)
+        continue;
+      for (const auto &d : NEXT) {
+        int ny = y + d[Y];
+        int nx = x + d[X];
+        if (ny < 0 || h <= ny || nx < 0 || w <= nx)
+          continue;
+        if (vertex[ny][nx] == NIL)
+          continue;
+        edge[vertex[y][x]].push_back(vertex[ny][nx]);
+      }
+    }
+};
+void reachability(const int &from, bitset<N> &visited) {
+  visited.set(from);
+  for (const auto &to : edge[from])
+    if (!visited[to])
+      reachability(to, visited);
+}
+bool dfs(const int &start, int from) {
+  if (memo[start][from])
+    return memo[start][from] == 2;
+  if (cut_vertex[from])
+    return memo[start][from] = 1;
+  visited.set(from);
+  int degree = 0;
+  for (const auto &to : edge[from])
+    if (to == start || !visited[to]) ++degree;
+  if (degree < 2)
+    return memo[start][from] = 1;
+  for (const auto &to : edge[from]) {
+    if (to == start && visited.count() == size)
+      return memo[start][from] = 2;
+    if (visited[to])
+      continue;
+    if (dfs(start, to))
+      return memo[start][from] = 2;
+  }
+  visited.reset(from);
+  return memo[start][from] = 1;
+}
+bool solve() {
+  make_graph();
+  cut_vertex.reset();
+  for (int from = 0; from < size; ++from) {
+    visited.reset();
+    visited.set(from);
+    int cnt = 0;
+    for (const auto &to : edge[from]) {
+      if (visited[to])
+        continue;
+      bitset<N> dup = visited;
+      reachability(to, dup);
+      if (dup.count() == size)
+        ++cnt;
+    }
+    if (cnt > 1)
+      cut_vertex.set(from);
+  }
+  for (int y = 0; y < h; ++y)
+    for (int x = 0; x < w; ++x)
+      if (!field[y][x])
+        if (dfs(y * w + x, y * w + x))
+          return true;
+  return false;
+}
+int main() {
+  while (cin >> w >> h, w | h) {
+    field = vector<vector<int>>(h, vector<int>(w));
+    for (auto &line : field)
+      for (auto &v : line)
+        cin >> v;
+    for (int i = 0; i < N; ++i)
+      for (int j = 0; j < N; ++j)
+        memo[i][j] = 0;
+    cout << (solve() ? "Yes" : "No") << endl;
+  }
+}

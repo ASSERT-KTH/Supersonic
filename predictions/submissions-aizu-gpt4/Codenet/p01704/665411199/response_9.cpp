@@ -1,0 +1,50 @@
+#include <iostream>
+#include <iomanip>
+#include <vector>
+#include <algorithm>
+
+#define MAX 100001
+#define inf 1e9
+
+using namespace std;
+
+struct Product
+{
+    double vw, pf, vf, th;
+};
+
+int n, pw;
+vector<Product> products(MAX);
+
+double f(double W) {
+    double cost = W * pw;
+    for (int i = 0; i < n; ++i) {
+        if (W * products[i].vw > products[i].th)
+            continue;
+        double sum1 = products[i].th - W * products[i].vw;
+        double sum2 = sum1 / products[i].vf;
+        cost += sum2 * products[i].pf;
+    }
+    return cost;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    while (cin >> n >> pw && n) {
+        for (int i = 0; i < n; ++i)
+            cin >> products[i].vw >> products[i].pf >> products[i].vf >> products[i].th;
+        double l = 0, r = inf;
+        for (int i = 0; i < 200; ++i) {
+            double m1 = (2.0 * l + r) / 3.0;
+            double m2 = (l + 2.0 * r) / 3.0;
+            if (f(m1) < f(m2)) {
+                r = m2;
+            } else {
+                l = m1;
+            }
+        }
+        cout << fixed << setprecision(4) << f(l) << "\n";
+    }
+    return 0;
+}

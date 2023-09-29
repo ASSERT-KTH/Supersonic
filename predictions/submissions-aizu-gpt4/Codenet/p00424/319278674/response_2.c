@@ -1,0 +1,25 @@
+#include <stdio.h>
+#include <string.h>
+
+#define SIZE 999
+
+char t[SIZE];
+int n;
+
+int main() {
+    char i;
+    while (scanf("%d", &n) == 1) {
+        memset(t, 0, sizeof(t));
+        while (n--) {
+            scanf(" %c", &i);
+            t[i] = 1;
+        }
+        scanf("%d", &n);
+        while (n--) {
+            scanf(" %c", &i);
+            putchar(t[i] ? t[i] : i);
+        }
+        putchar('\n');
+    }
+    return 0;
+}

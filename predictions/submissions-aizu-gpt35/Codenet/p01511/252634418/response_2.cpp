@@ -1,0 +1,153 @@
+#include <iostream>
+#include <vector>
+#include <map>
+using namespace std;
+using ll = long long;
+
+const ll mod = 1000000009;
+
+int main() {
+  int T = 1;
+  int w, n;
+  ll h;
+  while (cin >> w >> h >> n, w) {
+    map<ll, vector<int>> obj;
+    for (int i = 0; i < n; ++i) {
+      ll x, y;
+      cin >> x >> y;
+      --x;
+      --y;
+      if (y > 0) {
+        obj[y].push_back(x);
+      }
+    }
+
+    vector<vector<ll>> O(w, vector<ll>(w));
+    for (int i = 0; i < w; ++i) {
+      for (int j = -1; j <= 1; ++j) {
+        if (0 <= i + j && i + j < w) {
+          O[i][i + j] = 1;
+        }
+      }
+    }
+
+    vector<vector<ll>> A(w, vector<ll>(w));
+    for (int i = 0; i < w; ++i) {
+      A[i][i] = 1;
+    }
+
+    ll ny = 0;
+    for (const auto &p : obj) {
+      ll Y = p.first;
+      if (Y - ny > 1) {
+        vector<vector<ll>> P = O;
+        ll x = Y - ny - 1;
+        while (x) {
+          if (x & 1) {
+            vector<vector<ll>> tmp(w, vector<ll>(w));
+            for (int i = 0; i < w; ++i) {
+              for (int j = 0; j < w; ++j) {
+                for (int k = 0; k < w; ++k) {
+                  tmp[i][j] += P[i][k] * O[k][j];
+                  tmp[i][j] %= mod;
+                }
+              }
+            }
+            P = tmp;
+          }
+          vector<vector<ll>> tmp(w, vector<ll>(w));
+          for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < w; ++j) {
+              for (int k = 0; k < w; ++k) {
+                tmp[i][j] += O[i][k] * O[k][j];
+                tmp[i][j] %= mod;
+              }
+            }
+          }
+          O = tmp;
+          x >>= 1;
+        }
+        vector<vector<ll>> tmp(w, vector<ll>(w));
+        for (int i = 0; i < w; ++i) {
+          for (int j = 0; j < w; ++j) {
+            for (int k = 0; k < w; ++k) {
+              tmp[i][j] += P[i][k] * A[k][j];
+              tmp[i][j] %= mod;
+            }
+          }
+        }
+        A = tmp;
+      }
+      vector<vector<ll>> B = O;
+      for (int i : p.second) {
+        for (int j = -1; j <= 1; ++j) {
+          if (0 <= i + j && i + j < w) {
+            B[i][i + j] = 0;
+          }
+        }
+      }
+      vector<vector<ll>> tmp(w, vector<ll>(w));
+      for (int i = 0; i < w; ++i) {
+        for (int j = 0; j < w; ++j) {
+          for (int k = 0; k < w; ++k) {
+            tmp[i][j] += B[i][k] * A[k][j];
+            tmp[i][j] %= mod;
+          }
+        }
+      }
+      A = tmp;
+      ny = Y;
+    }
+    if (ny != h - 1) {
+      vector<vector<ll>> P = O;
+      ll x = h - 1 - ny;
+      while (x) {
+        if (x & 1) {
+          vector<vector<ll>> tmp(w, vector<ll>(w));
+          for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < w; ++j) {
+              for (int k = 0; k < w; ++k) {
+                tmp[i][j] += P[i][k] * O[k][j];
+                tmp[i][j] %= mod;
+              }
+            }
+          }
+          P = tmp;
+        }
+        vector<vector<ll>> tmp(w, vector<ll>(w));
+        for (int i = 0; i < w; ++i) {
+          for (int j = 0; j < w; ++j) {
+            for (int k = 0; k < w; ++k) {
+              tmp[i][j] += O[i][k] * O[k][j];
+              tmp[i][j] %= mod;
+            }
+          }
+        }
+        O = tmp;
+        x >>= 1;
+      }
+      vector<vector<ll>> tmp(w, vector<ll>(w));
+      for (int i = 0; i < w; ++i) {
+        for (int j = 0; j < w; ++j) {
+          for (int k = 0; k < w; ++k) {
+            tmp[i][j] += P[i][k] * A[k][j];
+            tmp[i][j] %= mod;
+          }
+        }
+      }
+      A = tmp;
+    }
+    vector<ll> b(w);
+    b[0] = 1;
+    vector<ll> res(w);
+    for (int i = 0; i < w; ++i) {
+      for (int j = 0; j < w; ++j) {
+        res[i] += A[i][j] * b[j];
+        res[i] %= mod;
+      }
+    }
+    ll ans = res[w - 1];
+    printf("Case %d: %lld\n", T++, ans);
+  }
+  return 0;
+}

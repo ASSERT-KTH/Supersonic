@@ -1,0 +1,46 @@
+#include <vector>
+#include <limits>
+#include <cstdio>
+#include <queue>
+
+using uint = unsigned int;
+using pii = std::pair<int, int>;
+using Graph = std::vector<std::vector<pii>>;
+
+void dijkstra(int s, std::vector<int>& dist, Graph& G) {
+    dist.assign(G.size(), std::numeric_limits<int>::max());
+    std::priority_queue<pii, std::vector<pii>, std::greater<pii>> que;
+    dist[s] = 0;
+    que.push(pii(0, s));
+
+    while (!que.empty()) {
+        pii p = que.top(); que.pop();
+        int v = p.second;
+        if (dist[v] < p.first) continue;
+        for (auto& edge : G[v]) {
+            if (dist[edge.first] > dist[v] + edge.second) {
+                dist[edge.first] = dist[v] + edge.second;
+                que.push(pii(dist[edge.first], edge.first));
+            }
+        }
+    }
+}
+
+int main() {
+    uint n;
+    std::scanf("%u", &n);
+    Graph G(n);
+    uint u, k, c, v;
+    for (auto i = 0u; i < n; ++i) {
+        std::scanf("%u %u", &u, &k);
+        for (auto j = 0u; j < k; ++j) {
+            std::scanf("%u %u", &c, &v);
+            G[u].push_back(pii(c, v));
+        }
+    }
+    std::vector<int> dist;
+    dijkstra(0, dist, G);
+    for (auto i = 0u; i < n; ++i) {
+        std::printf("%u %u\n", i, dist[i]);
+    }
+}

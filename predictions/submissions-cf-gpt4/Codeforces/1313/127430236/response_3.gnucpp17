@@ -1,0 +1,62 @@
+#include <iostream>
+#include <algorithm>
+using namespace std;
+typedef long long ll;
+
+const ll N = 5e5 + 9;
+ll a[N], tree[4 * N], l[N], r[N], res[N];
+
+void update(ll id, ll l, ll r, ll pos, ll val) {
+  if (pos < l || pos > r) return;
+  if (l == r) { tree[id] = val; return; }
+  ll mid = (l + r) >> 1;
+  update(id << 1, l, mid, pos, val);
+  update(id << 1 | 1, mid + 1, r, pos, val);
+  tree[id] = min(tree[id << 1], tree[id << 1 | 1]);
+}
+
+ll query(ll id, ll l, ll r, ll ql, ll qr, ll val) {
+  if (ql > qr || l > qr || r < ql || tree[id] > val) return 0;
+  if (l == r) return r;
+  ll mid = (l + r) >> 1;
+  ll res = (l >= ql && r <= qr && tree[id << 1 | 1] <= val) ? query(id << 1 | 1, mid + 1, r, ql, qr, val) :
+            query(id << 1, l, mid, ql, qr, val);
+  return max(res, max(query(id << 1, l, mid, ql, qr, val),
+                      query(id << 1 | 1, mid + 1, r, ql, qr, val)));
+}
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+  ll n, id;
+  cin >> n;
+  for (ll i = 1; i <= n; ++i) cin >> a[i];
+
+  for (ll i = 1; i <= n; ++i) {
+    id = query(1, 1, n, 1, i - 1, a[i]);
+    update(1, 1, n, i, a[i]);
+    l[i] = l[id] + a[i] * (i - id);
+  }
+
+  fill(tree, tree + 4 * N, 0);
+  reverse(a + 1, a + n + 1);
+  for (ll i = 1; i <= n; ++i) {
+    id = query(1, 1, n, 1, i - 1, a[i]);
+    update(1, 1, n, i, a[i]);
+    r[i] = r[id] + a[i] * (i - id);
+  }
+  reverse(a + 1, a + n + 1);
+
+  ll sum = 0, pos, minn;
+  for (ll i = 1; i <= n; ++i) if (sum < l[i] + r[n - i + 1] - a[i]) {
+    sum = l[i] + r[n - i + 1] - a[i];
+    pos = i;
+  }
+
+  minn = res[pos] = a[pos];
+  for (ll i = pos - 1; i >= 1; --i) res[i] = minn = min(minn, a[i]);
+  minn = a[pos];
+  for (ll i = pos + 1; i <= n; ++i) res[i] = minn = min(minn, a[i]);
+  for (ll i = 1; i <= n; ++i) cout << res[i] << " ";
+  return 0;
+}

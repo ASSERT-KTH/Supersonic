@@ -1,0 +1,164 @@
+#pragma GCC optimize("Ofast")
+#pragma GCC target("avx,avx2,fma")
+#pragma GCC optimize("Ofast")
+#pragma GCC optimize("unroll-loops")
+#pragma GCC target("sse,sse2,sse3,ssse3,sse4,popcnt,abm,mmx,avx,tune=native")
+#pragma comment(linker, "/stack:200000000")
+#include <algorithm>
+#include <bitset>
+#include <cassert>
+#include <chrono>
+#include <cmath>
+#include <complex>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
+#include <deque>
+#include <functional>
+#include <iomanip>
+#include <iostream>
+#include <iterator>
+#include <limits>
+#include <map>
+#include <numeric>
+#include <queue>
+#include <random>
+#include <set>
+#include <sstream>
+#include <stack>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <unordered_set>
+#include <valarray>
+#include <vector>
+#define in insert
+#define pb push_back
+#define mp make_pair
+#define int long long
+#define fi first
+#define double long double
+#define se second
+#define endl '\n'
+#define pii pair<int, int>
+#define pdd pair<double, double>
+#define fast                                                                   \
+  ios_base::sync_with_stdio(false);                                            \
+  cin.tie(NULL);
+#define mod 1000000007
+#define MAXN 301
+#define ll unsigned long long
+using namespace std;
+int spf[MAXN];
+int fac[MAXN];
+void sieve() {
+  spf[1] = 1;
+  for (int i = 2; i < MAXN; i++)
+    spf[i] = i;
+  for (int i = 4; i < MAXN; i += 2)
+    spf[i] = 2;
+  for (int i = 3; i * i < MAXN; i++) {
+    if (spf[i] == i) {
+      for (int j = i * i; j < MAXN; j += i)
+        if (spf[j] == j)
+          spf[j] = i;
+    }
+  }
+}
+map<int, int> getfactor(int a) {
+  map<int, int> m;
+  while (a > 1) {
+    m[spf[a]]++;
+    a /= spf[a];
+  }
+  return m;
+}
+int power(int x, int y, int p) {
+  int res = 1;
+  if (x == 0)
+    return 0;
+  while (y > 0) {
+    if (y & 1)
+      res = (res * x);
+    y = y >> 1;
+    x = (x * x);
+  }
+  return res;
+}
+int gcd(int a, int b) {
+  if (a == 0)
+    return b;
+  return gcd(b % a, a);
+}
+int inverse(int a, int p) { return power(a, p - 2, p); }
+int ncr(int n, int r, int p) {
+  if (r > n)
+    return 0;
+  if (r == 0)
+    return 1;
+  return (fac[n] * inverse(fac[r], p) % p * inverse(fac[n - r], p) % p) % p;
+}
+int dp[4000000], lazy[4000000];
+void push(int id, int l, int r) {
+  dp[id] = min(dp[id], lazy[id]);
+  if (l != r) {
+    lazy[id << 1] = min(lazy[id << 1], lazy[id]);
+    lazy[id << 1 | 1] = min(lazy[id << 1 | 1], lazy[id]);
+  }
+  lazy[id] = 1e18;
+}
+void upd(int id, int l, int r, int lq, int rq, int val) {
+  push(id, l, r);
+  if (l > r || l > rq || r < lq)
+    return;
+  if (lq <= l and r <= rq) {
+    lazy[id] = min(lazy[id], val);
+    push(id, l, r);
+    return;
+  }
+  int mid = (l + r) >> 1;
+  upd(id << 1, l, mid, lq, rq, val);
+  upd(id << 1 | 1, mid + 1, r, lq, rq, val);
+  dp[id] = min(dp[id << 1], dp[id << 1 | 1]);
+}
+int get(int id, int l, int r, int lq, int rq) {
+  push(id, l, r);
+  if (l > r || l > rq || r < lq)
+    return 1e18;
+  if (lq <= l and r <= rq)
+    return dp[id];
+  int mid = (l + r) >> 1;
+  return min(get(id << 1, l, mid, lq, rq),
+             get(id << 1 | 1, mid + 1, r, lq, rq));
+}
+void solve() {
+  for (int i = 0; i <= 2000000; i++) {
+    dp[i] = 1e18;
+    lazy[i] = 1e18;
+  }
+  int n, k;
+  cin >> n >> k;
+  string s;
+  cin >> s;
+  int m = 2 * n;
+  for (int i = 1; i <= n; i++) {
+    if (i == 1)
+      upd(1, 1, m, i, i, i);
+    else
+      upd(1, 1, m, i, i, get(1, 1, m, i - 1, i - 1) + i);
+    if (i <= k + 1 && s[i - 1] == '1')
+      upd(1, 1, m, i + 1, i + k, i);
+    else if (s[i - 1] == '1' && i >= k + 2) {
+      int gg = get(1, 1, m, i - k - 1, i);
+      upd(1, 1, m, i - k, i + k, gg + i);
+    }
+  }
+  cout << get(1, 1, m, n, n) << endl;
+}
+signed main() {
+  fast int test = 1;
+  while (test--) {
+    solve();
+  }
+}

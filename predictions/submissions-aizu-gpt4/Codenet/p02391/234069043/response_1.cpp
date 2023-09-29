@@ -1,0 +1,8 @@
+#include <cstdio>
+using namespace std;
+int main() {
+  int a, b;
+  if(scanf("%d %d", &a, &b)){};
+  puts(a > b ? "a > b" : a < b ? "a < b" : "a == b");
+  return 0;
+}

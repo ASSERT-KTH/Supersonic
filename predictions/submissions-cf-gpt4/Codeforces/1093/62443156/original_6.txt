@@ -1,0 +1,79 @@
+```C++
+#include <algorithm>
+#include <vector>
+using namespace std;
+
+struct seg_tree {
+    int n;
+    vector<pair<int, int>> data;
+    
+    seg_tree(int n) : n(n), data(2 * n) {}
+
+    void update(int pos, pair<int, int> val) {
+        for (pos += n; pos > 0; pos >>= 1)
+            data[pos] = max(val, data[pos]);
+    }
+
+    pair<int, int> query(int l, int r) {
+        pair<int, int> res = {0, -1e9};
+        for (l += n, r += n; l < r; l >>= 1, r >>= 1) {
+            if (l & 1) res = max(res, data[l++]);
+            if (r & 1) res = max(res, data[--r]);
+        }
+        return res;
+    }
+};
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n, k;
+    cin >> n >> k;
+    vector<vector<int>> a(n, vector<int>(k));
+    for (auto& ai : a)
+        for (int& aij : ai)
+            cin >> aij;
+
+    vector<seg_tree> trees(1 << k, seg_tree(n));
+    for (int mask = 0; mask < (1 << k); ++mask) {
+        for (int i = 0; i < n; ++i) {
+            int val = 0;
+            for (int j = 0; j < k; ++j)
+                val += (mask >> j & 1 ? 1 : -1) * a[i][j];
+            trees[mask].update(i, {val, i});
+        }
+    }
+
+    int q;
+    cin >> q;
+    while (q--) {
+        int type;
+        cin >> type;
+        if (type == 1) {
+            int i;
+            cin >> i;
+            --i;
+            vector<int> b(k);
+            for (int& bj : b)
+                cin >> bj;
+            for (int mask = 0; mask < (1 << k); ++mask) {
+                int val = 0;
+                for (int j = 0; j < k; ++j)
+                    val += (mask >> j & 1 ? 1 : -1) * b[j];
+                trees[mask].update(i, {val, i});
+            }
+        } else {
+            int l, r;
+            cin >> l >> r;
+            --l;
+            int ans = -1e9;
+            for (seg_tree& tree : trees)
+                ans = max(ans, tree.query(l, r).first);
+            cout << ans << '\n';
+        }
+    }
+
+    return 0;
+}
+```

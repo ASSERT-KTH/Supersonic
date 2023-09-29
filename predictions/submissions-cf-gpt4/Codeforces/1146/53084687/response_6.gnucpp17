@@ -1,0 +1,81 @@
+#include <algorithm>
+#include <cstdio>
+using namespace std;
+const int X = 1e5;
+struct node {
+  int l, r;
+  int lz;
+  short sgn;
+};
+node sgt0[X * 4 + 1], sgt1[X * 4 + 1];
+void pushup(node sgt[], int x) {
+  sgt[x].sgn = (sgt[x << 1].sgn == sgt[x << 1 | 1].sgn) ? sgt[x << 1].sgn : 0;
+}
+void pushdown(node sgt[], int x) {
+  if (sgt[x].lz == 2) {
+    sgt[x << 1].sgn = -sgt[x << 1].sgn;
+    sgt[x << 1 | 1].sgn = -sgt[x << 1 | 1].sgn;
+    sgt[x << 1].lz = sgt[x << 1].lz % 2 == 0 ? 2 - sgt[x << 1].lz : -sgt[x << 1].lz;
+    sgt[x << 1 | 1].lz = sgt[x << 1 | 1].lz % 2 == 0 ? 2 - sgt[x << 1 | 1].lz : -sgt[x << 1 | 1].lz;
+    sgt[x].lz = 0;
+  } else if (sgt[x].lz) {
+    sgt[x << 1].sgn = sgt[x].lz;
+    sgt[x << 1 | 1].sgn = sgt[x].lz;
+    sgt[x << 1].lz = sgt[x].lz;
+    sgt[x << 1 | 1].lz = sgt[x].lz;
+    sgt[x].lz = 0;
+  }
+}
+void build(node sgt[], int l, int r, int x) {
+  sgt[x].l = l;
+  sgt[x].r = r;
+  sgt[x].lz = 0;
+  if (l == r) {
+    sgt[x].sgn = 1;
+    return;
+  }
+  int mid = (l + r) >> 1;
+  build(sgt, l, mid, x << 1);
+  build(sgt, mid + 1, r, x << 1 | 1);
+  pushup(sgt, x);
+}
+void update(node sgt[], int l, int r, int x, int val) {
+  if (l <= sgt[x].l && r >= sgt[x].r) {
+    sgt[x].sgn = val == 2 ? sgt[x].sgn % 2 == 0 ? 2 - sgt[x].sgn : -sgt[x].sgn : val;
+    sgt[x].lz = val == 2 ? sgt[x].lz % 2 == 0 ? 2 - sgt[x].lz : -sgt[x].lz : val;
+    return;
+  }
+  pushdown(sgt, x);
+  int mid = (sgt[x].l + sgt[x].r) >> 1;
+  if (l <= mid) update(sgt, l, r, x << 1, val);
+  if (r > mid) update(sgt, l, r, x << 1 | 1, val);
+  pushup(sgt, x);
+}
+int query(node sgt[], int a, int x) {
+  if (sgt[x].l == a && sgt[x].r == a) return sgt[x].sgn;
+  pushdown(sgt, x);
+  return a <= (sgt[x].l + sgt[x].r) >> 1 ? query(sgt, a, x << 1) : query(sgt, a, x << 1 | 1);
+}
+int main() {
+  int n, q;
+  scanf("%d %d", &n, &q);
+  int a[n];
+  for (int i = 0; i < n; i++) scanf("%d", &a[i]);
+  getchar();
+  build(sgt0, 1, X, 1);
+  build(sgt1, 1, X, 1);
+  while (q--) {
+    char s;
+    int x;
+    scanf("%c %d\n", &s, &x);
+    x += (s == '>' ? 1 : -1);
+    x += (x == 0 ? (s == '>' ? 1 : -1) : 0);
+    if (x > 0) update(sgt0, x, X, 1, 1), update(sgt1, x, X, 1, -1);
+    else update(sgt0, 1, -x, 1, 2), update(sgt1, 1, -x, 1, 2), update(sgt0, -x + 1, X, 1, 1), update(sgt1, -x + 1, X, 1, -1);
+  }
+  for (int i = 0; i < n; i++) {
+    int r = a[i] < 0 ? query(sgt0, -a[i], 1) : a[i] > 0 ? query(sgt1, a[i], 1) : 0;
+    printf("%d%c", a[i] * r, i == n - 1 ? '\n' : ' ');
+  }
+  return 0;
+}

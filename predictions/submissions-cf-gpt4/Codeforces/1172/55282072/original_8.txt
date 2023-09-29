@@ -1,0 +1,158 @@
+```cpp
+#include <algorithm>
+#include <cassert>
+#include <iostream>
+#include <vector>
+using namespace std;
+const int MOD = 998244353;
+struct mod_int {
+    int val;
+    explicit mod_int(long long v = 0) {
+        if (v < 0) v = v % MOD + MOD;
+        if (v >= MOD) v %= MOD;
+        val = v;
+    }
+    int inv() const {
+        int a = val, b = MOD, u = 0, v = 1;
+        while (a) {
+            int t = b / a;
+            b -= t * a; swap(a, b);
+            u -= t * v; swap(u, v);
+        }
+        assert(b == 1);
+        if (u < 0) u += MOD;
+        return u;
+    }
+    mod_int pow(long long p) const {
+        assert(p >= 0);
+        mod_int a = *this, res = 1;
+        while (p > 0) {
+            if (p & 1) res *= a;
+            a *= a;
+            p >>= 1;
+        }
+        return res;
+    }
+    mod_int inv() const {
+        auto a = *this;
+        assert(a.val);
+        return a.pow(MOD - 2);
+    }
+    mod_int& operator+=(const mod_int &other) {
+        val -= MOD - other.val;
+        if (val < 0) val += MOD;
+        return *this;
+    }
+    mod_int& operator-=(const mod_int &other) {
+        val -= other.val;
+        if (val < 0) val += MOD;
+        return *this;
+    }
+    mod_int& operator*=(const mod_int &other) {
+        val = (uint64_t)val * other.val % MOD;
+        return *this;
+    }
+    mod_int& operator/=(const mod_int &other) {
+        return *this *= other.inv();
+    }
+    friend mod_int operator+(const mod_int &a, const mod_int &b) { return mod_int(a) += b; }
+    friend mod_int operator-(const mod_int &a, const mod_int &b) { return mod_int(a) -= b; }
+    friend mod_int operator*(const mod_int &a, const mod_int &b) { return mod_int(a) *= b; }
+    friend mod_int operator/(const mod_int &a, const mod_int &b) { return mod_int(a) /= b; }
+};
+vector<mod_int> fact, inv_fact;
+vector<mod_int> inv;
+mod_int choose(int n, int r) {
+    if (r < 0 || r > n) return 0;
+    return fact[n] * inv_fact[r] * inv_fact[n - r];
+}
+vector<int> weights;
+vector<mod_int> p;
+vector<mod_int> dp[2];
+void solve() {
+    int N, M; cin >> N >> M;
+    weights.resize(N);
+    int L = 0, DL = 0;
+    dp[0].resize(N + 1);
+    dp[1].resize(N + 1);
+    for (int i = 0; i < N; i++) {
+        int like; cin >> like >> weights[i];
+        if (like) L += weights[i];
+        else DL += weights[i];
+    }
+    fact.resize(N + 1);
+    inv_fact.resize(N + 1);
+    inv.assign(N + 1, 1);
+    fact[0] = inv_fact[0] = 1;
+    for (int i = 1; i <= N; i++) {
+        fact[i] = fact[i - 1] * i;
+        inv[i] = MOD - inv[MOD % i] * (MOD / i);
+        inv_fact[i] = inv_fact[i - 1] * inv[i];
+    }
+    p.resize(2 * M + 1);
+    p[M] = 1;
+    for (int iter = 0; iter < M; iter++) {
+        vector<mod_int> new_p(2 * M + 1, 0);
+        for (int i = -M; i <= M; i++) {
+            if ((i + iter) % 2 != 0 || abs(i) > iter) continue;
+            int up = (iter + i) / 2, down = (iter - i) / 2;
+            if (down > DL) continue;
+            mod_int like = mod_int(L + up) / (L + DL + i);
+            mod_int dislike = 1 - like;
+            new_p[M + i + 1] += p[M + i] * like;
+            new_p[M + i - 1] += p[M + i] * dislike;
+        }
+        swap(p, new_p);
+    }
+    for (int i = 0; i < N; i++) {
+        int weight = weights[i];
+        dp[0][weight] = dp[1][weight] = 0;
+        for (int up = 0; up <= M; up++) {
+            if (p[2 * up] == 0) continue;
+            mod_int starter = p[2 * up];
+            mod_int other = 1;
+            for (int j = 0; j < up; j++) {
+                starter /= L + j;
+                other *= L - weight + j;
+            }
+            for (int u = 0; u <= up; u++) {
+                if (u > 0) other /= L - weight + up - u;
+                mod_int product = starter * choose(up, u) * (weight + u);
+                if (L == weight) {
+                    if (u < up) product = 0;
+                } else {
+                    product *= other;
+                }
+                dp[1][weight] += product;
+                starter *= weight + u;
+            }
+        }
+        for (int down = 0; down <= M; down++) {
+            if (p[2 * (M - down)] == 0) continue;
+            mod_int starter = p[2 * (M - down)];
+            mod_int other = 1;
+            for (int j = 0; j < down; j++) {
+                starter /= DL - j;
+                other *= DL - weight - j;
+            }
+            for (int d = 0; d <= min(down, weight); d++) {
+                if (d > 0) other /= DL - weight + down - d;
+                mod_int product = starter * choose(down, d) * (weight - d);
+                if (DL == weight) {
+                    if (d < down) product = 0;
+                } else {
+                    product *= other;
+                }
+                dp[0][weight] += product;
+                starter *= weight - d;
+            }
+        }
+        cout << (int)(weights[i] * (dp[0][weight] + dp[1][weight])) << '\n';
+    }
+}
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    solve();
+}
+```

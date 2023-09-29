@@ -1,0 +1,34 @@
+#include <iostream>
+#include <array>
+#include <algorithm>
+
+int main() {
+    int n;
+    std::cin >> n;
+    while (n--) {
+        std::array<int, 18> a;
+        for (int i = 0; i < 18; ++i) {
+            std::cin >> a[i];
+        }
+        std::sort(a.begin(), a.begin() + 9);
+        std::sort(a.begin() + 9, a.end());
+
+        int win1 = 0, win2 = 0;
+        do {
+            int score1 = 0, score2 = 0;
+            for (int i = 0; i < 9; ++i) {
+                if (a[i] > a[i + 9])
+                    score1 += a[i] + a[i + 9];
+                else
+                    score2 += a[i] + a[i + 9];
+            }
+            if (score1 > score2) ++win1;
+            else if (score1 < score2) ++win2;
+        } while (std::next_permutation(a.begin(), a.end()));
+
+        double total = win1 + win2;
+        std::cout.precision(5);
+        std::cout << std::fixed << win1 / total << " " << win2 / total << "\n";
+    }
+    return 0;
+}

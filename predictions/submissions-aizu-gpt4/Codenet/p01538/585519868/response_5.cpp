@@ -1,0 +1,44 @@
+#include <iostream>
+#include <vector>
+using namespace std;
+constexpr int MAXN = 1e6 + 5;
+
+vector<bool> table(MAXN, false);
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    cout.tie(NULL);
+    
+    int Q, N, count, tmp, max, S;
+    bool FLG;
+    cin >> Q;
+    for (int loop = 0; loop < Q; loop++) {
+        table.assign(MAXN, false);
+        count = 0;
+        cin >> N;
+        table[N] = true;
+        FLG = false;
+        while (N / 10 != 0) {
+            max = 0;
+            for (S = 10; N / S != 0; S *= 10) {
+                tmp = (N / S) * (N % S);
+                max = (max >= tmp) ? max : tmp;
+            }
+            N = max;
+            if (table[N] == true) {
+                FLG = true;
+                break;
+            } else {
+                table[N] = true;
+                count++;
+            }
+        }
+        if (FLG) {
+            cout << "-1\n";
+        } else {
+            cout << count << "\n";
+        }
+    }
+    return 0;
+}

@@ -1,0 +1,47 @@
+#include <iostream>
+#include <vector>
+
+using namespace std;
+using ll = long long;
+
+vector<ll> S;
+int n, q;
+
+void add(int i, ll x) {
+    for (; i <= n; i += i & -i)
+        S[i] += x;
+}
+
+ll sum(int i) {
+    ll res = 0;
+    for (; i > 0; i -= i & -i)
+        res += S[i];
+    return res;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    cin >> n >> q;
+    S.resize(n+1, 0);
+
+    while (q--) {
+        bool op;
+        cin >> op;
+        if (op) {
+            int k;
+            cin >> k;
+            cout << sum(k) << '\n';
+        } else {
+            int s, t, x;
+            cin >> s >> t >> x;
+            add(s, x);
+            if (t + 1 <= n) {
+                add(t + 1, -x);
+            }
+        }
+    }
+
+    return 0;
+}

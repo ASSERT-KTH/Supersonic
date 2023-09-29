@@ -1,0 +1,29 @@
+#include <iostream>
+#include <vector>
+
+int main() {
+    std::ios::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+    std::cout.tie(nullptr);
+
+    int n, k;
+    while (std::cin >> n >> k) {
+        if (n / 2 < k) {
+            std::cout << "-1\n";
+            continue;
+        }
+        std::vector<int> p(n + 2);
+        for (int i = 1; i < n; i += 2) {
+            p[i] = i / 2 + 1;
+            p[i + 1] = n - p[i];
+        }
+        for (int i = 0; i < k; i++) {
+            for (int j = 0; j < n - 1; j++) {
+                int a = (p[j] + i) % n + 1;
+                int b = (p[j + 1] + i) % n + 1;
+                std::cout << a << ' ' << b << '\n';
+            }
+        }
+    }
+    return 0;
+}

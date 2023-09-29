@@ -1,0 +1,71 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+inline int payment(const std::vector<int>& p) {
+  return 10 * p[0] + 50 * p[1] + 100 * p[2] + 500 * p[3];
+}
+
+inline std::vector<int> charge(int m) {
+  std::vector<int> ans(4);
+  std::for_each(ans.rbegin(), ans.rend(), [&m](int &c) {
+    static int d[] = {10, 50, 100, 500};
+    static int i = 0;
+    c = m / d[i];
+    m %= d[i++];
+  });
+  return ans;
+}
+
+inline std::vector<int> _minus(const std::vector<int>& a, const std::vector<int>& b) {
+  std::vector<int> ans(4);
+  std::transform(a.begin(), a.end(), b.begin(), ans.begin(), std::minus<int>());
+  return ans;
+}
+
+inline std::vector<int> _plus(const std::vector<int>& a, const std::vector<int>& b) {
+  std::vector<int> ans(4);
+  std::transform(a.begin(), a.end(), b.begin(), ans.begin(), std::plus<int>());
+  return ans;
+}
+
+inline bool judge(const std::vector<int>& f, const std::vector<int>& ch) {
+  return std::inner_product(f.begin(), f.end(), ch.begin(), true, std::logical_and<bool>(), std::less_equal<int>());
+}
+
+int main() {
+  int N;
+  while (std::cin >> N && N) {
+    std::vector<int> c(4), f(4, 0), pay(4), ans(4);
+    int sum = 0, mini = 1e+9;
+    std::for_each(c.begin(), c.end(), [&sum](int &n) { std::cin >> n; sum += n; });
+    for (pay[0] = 0; pay[0] <= c[0]; ++pay[0]) {
+      for (pay[1] = 0; pay[1] <= c[1]; ++pay[1]) {
+        for (pay[2] = 0; pay[2] <= c[2]; ++pay[2]) {
+          for (pay[3] = 0; pay[3] <= c[3]; ++pay[3]) {
+            int m_pay = payment(pay);
+            if (m_pay >= N) {
+              std::vector<int> ch = charge(m_pay - N);
+              int n_pay = std::accumulate(pay.begin(), pay.end(), 0);
+              int n_charge = std::accumulate(ch.begin(), ch.end(), 0);
+              if (mini > sum - n_pay + n_charge && judge(f, ch)) {
+                ans = pay;
+                mini = sum - n_pay + n_charge;
+              }
+            }
+            f[3] = pay[3] > 0;
+          }
+          f[2] = pay[2] > 0;
+        }
+        f[1] = pay[1] > 0;
+      }
+      f[0] = pay[0] > 0;
+    }
+    static int d[] = {10, 50, 100, 500};
+    for (int i = 0; i < 4; ++i) {
+      if (ans[i] > 0) {
+        std::cout << d[i] << " " << ans[i] << '\n';
+      }
+    }
+  }
+}

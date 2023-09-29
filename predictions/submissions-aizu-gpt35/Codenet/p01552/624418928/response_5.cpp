@@ -1,0 +1,102 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+typedef long long int ll;
+
+struct item {
+  unordered_map<string, item *> ptr;
+  string val;
+  bool is_str;
+};
+
+item *yaml(string &s, int &i, int n) {
+  item *itm = new item();
+  while (i != s.size() and s[i] == ' ') {
+    ++i;
+  }
+  while (i != s.size()) {
+    if (s[i] != ' ') {
+      break;
+    }
+    int j = i;
+    while (j != s.size() and s[j] == ' ') {
+      ++j;
+    }
+    if (j - i != n) {
+      break;
+    }
+    i = j;
+    string key, val;
+    while (i != s.size() and s[i] != ':') {
+      key += s[i];
+      ++i;
+    }
+    ++i;
+    while (i != s.size() and s[i] == ' ') {
+      ++i;
+    }
+    if (i == s.size()) {
+      val = "";
+    } else if (s[i] == '\"') {
+      ++i;
+      while (i != s.size() and s[i] != '\"') {
+        val += s[i];
+        ++i;
+      }
+      ++i;
+    } else {
+      int j = i;
+      while (j != s.size() and s[j] != '\n') {
+        ++j;
+      }
+      val = s.substr(i, j - i);
+      i = j;
+    }
+    item *itm_ = new item();
+    itm_->val = val;
+    if (!val.empty()) {
+      itm_->is_str = true;
+    }
+    itm->ptr[key] = itm_;
+  }
+  return itm;
+}
+
+void solve() {
+  string qry, yaml_str;
+  cin >> qry;
+  cin.ignore();
+  {
+    string buf;
+    while (getline(cin, buf)) {
+      yaml_str += buf;
+      yaml_str += '\n';
+    }
+  }
+  int idx = 0;
+  item *root = yaml(yaml_str, idx, 0);
+  item *itm = root;
+  stringstream ss(qry);
+  string str;
+  while (getline(ss, str, '.')) {
+    if (itm->ptr.count(str) == 0) {
+      cout << "no such property" << endl;
+      return;
+    }
+    itm = itm->ptr[str];
+  }
+  if (itm->is_str) {
+    cout << "string \"" << itm->val << "\"" << endl;
+  } else {
+    cout << "object" << endl;
+  }
+}
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+  cout.setf(ios::fixed);
+  cout.precision(10);
+  solve();
+  return 0;
+}

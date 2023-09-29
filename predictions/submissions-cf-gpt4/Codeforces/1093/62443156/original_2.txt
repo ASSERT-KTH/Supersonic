@@ -1,0 +1,105 @@
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <numeric>
+#include <cmath>
+using namespace std;
+
+#define MAXK 5
+#define MAXN 100000
+#define INF 1000000010
+#define ll long long
+
+int n, k, q, a[MAXN][MAXK], b[MAXK];
+ll seg[1 << MAXK][2 * MAXN], val[MAXK][MAXN];
+
+void build(int id, int v, int tl, int tr) {
+    if(tl == tr)
+        seg[id][v] = val[id][tl];
+    else {
+        int tm = (tl + tr) >> 1;
+        build(id, v << 1, tl, tm);
+        build(id, (v << 1) | 1, tm + 1, tr);
+        seg[id][v] = max(seg[id][v << 1], seg[id][(v << 1) | 1]);
+    }
+}
+
+void modify(int id, int v, int tl, int tr, int pos, ll newVal) {
+    if(tl == tr)
+        seg[id][v] = val[id][tl] = newVal;
+    else {
+        int tm = (tl + tr) >> 1;
+        if(pos <= tm)
+            modify(id, v << 1, tl, tm, pos, newVal);
+        else
+            modify(id, (v << 1) | 1, tm + 1, tr, pos, newVal);
+        seg[id][v] = max(seg[id][v << 1], seg[id][(v << 1) | 1]);
+    }
+}
+
+ll query(int id, int v, int tl, int tr, int l, int r) {
+    if(l > r)
+        return -INF;
+    if(l == tl && r == tr)
+        return seg[id][v];
+    int tm = (tl + tr) >> 1;
+    return max(query(id, v << 1, tl, tm, l, min(r, tm)), query(id, (v << 1) | 1, tm + 1, tr, max(l, tm + 1), r));
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(nullptr);
+    cout.tie(nullptr);
+    cin >> n >> k;
+    for(int i = 0; i < n; i++)
+        for(int j = 0; j < k; j++)
+            cin >> a[i][j];
+    for(int mask = 0; mask < (1 << k); mask++)
+        for(int i = 0; i < n; i++) {
+            val[mask][i] = 0;
+            for(int j = 0; j < k; j++)
+                if(mask & (1 << j))
+                    val[mask][i] += a[i][j];
+                else
+                    val[mask][i] -= a[i][j];
+            if(i > 0)
+                val[mask][i] += val[mask][i - 1];
+            build(mask, 1, 0, n - 1);
+        }
+    cin >> q;
+    while(q--) {
+        int type;
+        cin >> type;
+        if(type == 1) {
+            int x;
+            cin >> x;
+            x--;
+            for(int j = 0; j < k; j++)
+                cin >> b[j];
+            for(int mask = 0; mask < (1 << k); mask++) {
+                ll newVal = 0;
+                for(int j = 0; j < k; j++)
+                    if(mask & (1 << j))
+                        newVal += b[j];
+                    else
+                        newVal -= b[j];
+                if(x > 0)
+                    newVal += val[mask][x - 1];
+                modify(mask, 1, 0, n - 1, x, newVal);
+            }
+        }
+        else {
+            int l, r;
+            cin >> l >> r;
+            l--;
+            r--;
+            ll res = -INF;
+            for(int mask = 0; mask < (1 << k); mask++)
+                res = max(res, query(mask, 1, 0, n - 1, l, r) - (l ? val[mask][l - 1] : 0));
+            cout << res << '\n';
+        }
+    }
+    return 0;
+}
+```

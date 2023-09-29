@@ -1,0 +1,31 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+void ShellSort(int num, int *arr);
+void insertionSort(int *arr, int num, int h);
+
+int main(void) {
+  int num, *arr, i, j;
+  scanf("%d", &num);
+  arr = (int *)malloc(sizeof(int) * num);
+  for (i = 0; i < num; i++)
+    scanf("%d", &arr[i]);
+  ShellSort(num, arr);
+  printf("%d\n", num);
+  for (i = 0; i < num; i++)
+    printf("%d\n", arr[i]);
+  return 0;
+}
+
+void ShellSort(int num, int *arr) {
+  int i, j, n, m, h;
+  for (h = 1; h < num / 9; h = h * 3 + 1)
+    ;
+  for (; h > 0; h /= 3)
+    for (i = h; i < num; i++)
+      for (j = i - h; j >= 0 && arr[j] > arr[j + h]; j -= h) {
+        int tmp = arr[j];
+        arr[j] = arr[j + h];
+        arr[j + h] = tmp;
+      }
+}

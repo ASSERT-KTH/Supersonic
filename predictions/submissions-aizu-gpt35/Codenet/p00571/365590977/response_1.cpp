@@ -1,0 +1,41 @@
+#include <algorithm>
+#include <stdio.h>
+using namespace std;
+typedef long long llong;
+struct Data {
+  llong size;
+  llong value;
+};
+#define N_MAX 500000
+Data art[N_MAX];
+inline bool cmp(const Data &a, const Data &b) {
+  return a.size == b.size ? a.value < b.value : a.size < b.size;
+}
+inline llong Max(llong a, llong b) { return a > b ? a : b; }
+int main(void) {
+  int N;
+  scanf("%d", &N);
+  int i;
+  llong min_size = 1e18; // initialize min_size to a large value
+  llong sum_value = 0; // initialize sum_value to 0
+  llong ans = 0; // initialize ans to 0
+  for (i = 0; i < N; ++i) {
+    scanf("%lld %lld", &art[i].size, &art[i].value);
+  }
+  sort(art, art + N, cmp);
+  for (i = 0; i < N; ++i) { // iterate through all items
+    llong value = art[i].value;
+    llong size = art[i].size;
+    llong tmp = sum_value + value - (size - min_size);
+    if (tmp < value) { // if it's better to start a new group
+      ans = Max(ans, value);
+      sum_value = value;
+      min_size = size;
+    } else {
+      ans = Max(ans, tmp); // add item to existing group
+      sum_value += value;
+    }
+  }
+  printf("%lld\n", ans);
+  return 0;
+}

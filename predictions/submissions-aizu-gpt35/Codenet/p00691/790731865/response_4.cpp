@@ -1,0 +1,48 @@
+#include <algorithm>
+#include <iostream>
+#include <vector>
+using namespace std;
+
+const int MAX_N = 1112;
+const int INF = 1e9;
+
+int tb[MAX_N], ans[MAX_N];
+vector<int> cubes;
+
+int nr(int a) {
+  int lo = 0, hi = cubes.size() - 1;
+  while (lo < hi) {
+    int mid = (lo + hi + 1) / 2;
+    if (cubes[mid] <= a)
+      lo = mid;
+    else
+      hi = mid - 1;
+  }
+  return cubes[lo];
+}
+
+int calc(int z) {
+  int z3 = z * z * z, ret = z3;
+  for (int i = 1; i < z; i++) {
+    int i3 = i * i * i, j3 = nr(z3 - i3);
+    if (i3 + j3 >= z3)
+      break;
+    ret = min(ret, z3 - i3 - j3);
+  }
+  return ret;
+}
+
+int main() {
+  for (int i = 1; i < MAX_N; i++)
+    tb[i] = i * i * i;
+
+  for (int i = 1; i * i * i < INF; i++)
+    cubes.push_back(i * i * i);
+
+  for (int i = 1; i < MAX_N; i++)
+    ans[i] = calc(i);
+
+  int N;
+  while (cin >> N, N)
+    cout << ans[N] << endl;
+}

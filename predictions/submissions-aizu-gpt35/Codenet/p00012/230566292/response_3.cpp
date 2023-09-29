@@ -1,0 +1,91 @@
+#include <algorithm>
+#include <complex>
+#include <cstdio>
+#include <vector>
+using namespace std;
+static const double EPS = 1e-12;
+static const double INF = 1e24;
+using Point = complex<double>;
+using Plane = vector<Point>;
+namespace std {
+bool operator<(const Point &a, const Point &b) {
+  return real(a) != real(b) ? real(a) < real(b) : imag(a) < imag(b);
+}
+} // namespace std
+double cross_prod(const Point &a, const Point &b) { return imag(conj(a) * b); }
+double dot_prod(const Point &a, const Point &b) { return real(conj(a) * b); }
+struct Line : public pair<Point, Point> {
+  Line() {}
+  Line(const Point &a, const Point &b) {
+    first = a;
+    second = b;
+  }
+};
+struct LineSeg : public pair<Point, Point> {
+  LineSeg() {}
+  LineSeg(const Point &a, const Point &b) {
+    first = a;
+    second = b;
+  }
+};
+struct Circle {
+  Point p;
+  double r;
+  Circle() {}
+  Circle(const Point &p, const double r) : p(p), r(r) {}
+};
+enum CCWiseState {
+  ONLINE_FRONT = -2,
+  CLOCKWISE,
+  ON_SEGMENT,
+  COUNTER_CLOCKWISE,
+  ONLINE_BACK,
+};
+CCWiseState ccwise(const Point &a, const Point &b, const Point &c) {
+  const Point b_minus_a = b - a;
+  const Point c_minus_a = c - a;
+  const double cross = cross_prod(b_minus_a, c_minus_a);
+  const double dot = dot_prod(b_minus_a, c_minus_a);
+  const double norm_b = norm(b_minus_a);
+  const double norm_c = norm(c_minus_a);
+  if (cross > EPS) {
+    return COUNTER_CLOCKWISE;
+  } else if (cross < -EPS) {
+    return CLOCKWISE;
+  } else if (dot < -EPS) {
+    return ONLINE_BACK;
+  } else if (norm_b < norm_c) {
+    return ONLINE_FRONT;
+  } else {
+    return ON_SEGMENT;
+  }
+}
+bool testcase_ends() {
+  double x, y;
+  if (scanf("%lf %lf", &x, &y) == EOF)
+    return true;
+  Point A(x, y);
+  scanf("%lf %lf", &x, &y);
+  Point B(x, y);
+  scanf("%lf %lf", &x, &y);
+  Point C(x, y);
+  scanf("%lf %lf", &x, &y);
+  Point P(x, y);
+  const CCWiseState tmp1 = ccwise(A, P, B);
+  const CCWiseState tmp2 = ccwise(B, P, C);
+  if (tmp1 != tmp2) {
+    return !printf("NO\n");
+  }
+  const CCWiseState tmp3 = ccwise(C, P, A);
+  if (tmp1 != tmp3) {
+    return !printf("NO\n");
+  }
+  printf("YES\n");
+  return false;
+}
+int main() {
+  int solved = 0;
+  while (!testcase_ends())
+    ++solved;
+  return !solved;
+}

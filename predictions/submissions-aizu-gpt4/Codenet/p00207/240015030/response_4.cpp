@@ -1,0 +1,34 @@
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+int xs, ys, xg, yg;
+bool DFS(vector<vector<int>>& Board, int c, int x, int y) {
+    if (x < 0 || y < 0 || x >= Board[0].size() || y >= Board.size() || Board[x][y] != c)
+        return false;
+    if (x == xg && y == yg)
+        return true;
+    Board[x][y] = 0;
+    return DFS(Board, c, x + 1, y) || DFS(Board, c, x, y + 1) || DFS(Board, c, x - 1, y) || DFS(Board, c, x, y - 1);
+}
+
+int main() {
+    int w, h;
+    while (cin >> w >> h && (w || h)) {
+        vector<vector<int>> Board(w, vector<int>(h, -1));
+        cin >> xs >> ys >> xg >> yg;
+        int n, c, d, x, y;
+        cin >> n;
+        while (n--) {
+            cin >> c >> d >> x >> y;
+            int wb = 2 + (!d * 2);
+            int hb = 2 + (d * 2);
+            for (int i = 0; i < hb; i++)
+                for (int j = 0; j < wb; j++)
+                    Board[x + j][y + i] = c;
+        }
+        cout << (DFS(Board, Board[xs][ys], xs, ys) ? "OK" : "NG") << endl;
+    }
+    return 0;
+}

@@ -1,0 +1,56 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+vector<int> _minus(vector<int> &a, vector<int> &b) {
+  for (int i = 0; i < 4; i++)
+    a[i] -= b[i];
+  return a;
+}
+
+bool judge(vector<int> &f, vector<int> &ch) {
+  for (int i = 0; i < 4; i++)
+    if (f[i] == 1 and ch[i] > 0)
+      return false;
+  return true;
+}
+
+int main() {
+  int N;
+  vector<int> c(4);
+  vector<int> f(4, 0);
+  vector<int> pay(4);
+  vector<int> ans(4);
+  while (cin >> N && N) {
+    int sum = 0;
+    for (int i = 0; i < 4; i++) {
+      cin >> c[i];
+      sum += c[i];
+    }
+    int mini = 1e+9;
+    for (pay[0] = 0; pay[0] <= c[0]; pay[0]++) {
+      for (pay[1] = 0; pay[1] <= c[1]; pay[1]++) {
+        for (pay[2] = 0; pay[2] <= c[2]; pay[2]++) {
+          for (pay[3] = 0; pay[3] <= c[3]; pay[3]++) {
+            int m_pay = 10*pay[0] + 50*pay[1] + 100*pay[2] + 500*pay[3];
+            if (m_pay >= N) {
+              int rem = m_pay - N;
+              vector<int> ch = {rem/10 % 5, rem/50 % 2, rem/100 % 5, rem/500};
+              int n_charge = accumulate(ch.begin(), ch.end(), 0);
+              if (mini > sum - m_pay/10 + n_charge) {
+                f = _minus(c, pay);
+                if (judge(f, ch)) {
+                  ans = pay;
+                  mini = sum - m_pay/10 + n_charge;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    for (int i = 0; i < 4; i++) {
+      if (ans[i] > 0)
+        cout << (i + 1) * 10 * pow(5, i) << " " << ans[i] << "\n";
+    }
+  }
+}

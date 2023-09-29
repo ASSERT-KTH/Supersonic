@@ -1,0 +1,84 @@
+```C++
+#include <iostream>
+#include <vector>
+#include <unordered_set>
+using namespace std;
+typedef long long ll;
+const int N = 3e5 + 7, K = 20, X = 42, M = 998244353;
+int cnk[X][X], fact[N], defact[N], dp[1 << K][X], sz[1 << K], b[K][2];
+bool has[N];
+vector<int> op[N], cl[N];
+ll powmod(ll a, ll n) {
+  ll res = 1;
+  while(n > 0) {
+    if(n & 1) res = (res * a) % M;
+    a = (a * a) % M;
+    n >>= 1;
+  }
+  return res;
+}
+void precalc() {
+  cnk[0][0] = 1;
+  for (int n = 1; n < X; n++) for (int k = 0; k <= n; k++)
+    cnk[n][k] = (cnk[n - 1][k] + (k ? cnk[n - 1][k - 1] : 0)) % M;
+  fact[0] = 1;
+  for (int i = 1; i < N; i++) fact[i] = (fact[i - 1] * i) % M;
+  defact[N - 1] = powmod(fact[N - 1], M - 2);
+  for (int i = N - 2; i >= 0; i--) defact[i] = (defact[i + 1] * (i + 1)) % M;
+}
+ll get_cnk(int n, int k) {
+  if (k > n || k < 0) return 0;
+  return n < X ? cnk[n][k] : (((ll)fact[n] * defact[k] % M) * defact[n - k]) % M;
+}
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+  precalc();
+  int n, m, l[N], r[N], res = 0, cnt = 0;
+  cin >> n >> m;
+  for (int i = 0; i < n; i++) {
+    cin >> l[i] >> r[i];
+    op[l[i]].push_back(i);
+    cl[r[i]].push_back(i);
+  }
+  for (int i = 0; i < m; i++) cin >> b[i][0] >> b[i][1], b[i][0]--, b[i][1]--;
+  dp[0][0] = 1;
+  for (int mask = 1; mask < (1 << m); mask++) {
+    int pos = __builtin_ffs(mask) - 1, f[2 * K] = {0}, alone[2] = {0};
+    unordered_set<int> lol;
+    vector<int> kek[2];
+    for (int i = 0; i < m; i++) if (mask & (1 << i)) {
+      if (b[i][0] != b[pos][0] && b[i][1] != b[pos][0]) f[b[i][0] + K] = f[b[i][1] + K] = 1;
+      lol.insert(b[i][0]);
+      lol.insert(b[i][1]);
+      if ((b[i][0] == b[pos][0] || b[i][1] == b[pos][0]) && !f[b[i][0] + K] + !f[b[i][1] + K] == 1)
+        kek[0].push_back(b[i][0] + b[i][1] - b[pos][0]);
+    }
+    for (int elem : kek[0]) alone[0] += !f[elem + K];
+    for (int i = 0; i < m; i++) if (mask & (1 << i)) {
+      if (f[b[i][0] + K] + f[b[i][1] + K] == 1 && !f[b[i][0] + b[i][1] - b[pos][0] + K]) 
+        kek[1].push_back(b[i][0] + b[i][1] - b[pos][0]);
+    }
+    for (int elem : kek[1]) alone[1] += !f[elem + K];
+    dp[mask][0] = 1;
+    sz[mask] = lol.size();
+    for (int t = 1; t < X; t++) {
+      if (t > sz[mask]) break;
+      for (int s = 0; s <= min(t, alone[0]); s++)
+        dp[mask][t] = (dp[mask][t] + dp[mask ^ (1 << pos)][t - s] * get_cnk(alone[0], s)) % M;
+      for (int s = 0; s <= min(t - 1, alone[1]); s++)
+        dp[mask][t] = (dp[mask][t] + dp[mask ^ (1 << pos)][t - s - 1] * get_cnk(alone[1], s)) % M;
+    }
+  }
+  for (int len = 1; len <= n; len++) {
+    for (int i : op[len]) cnt++, has[i] = 1;
+    int mask = 0;
+    for (int i = 0; i < m; i++) if (has[b[i][0]] && has[b[i][1]]) mask |= (1 << i);
+    for (int t = 0; t <= min(X - 1, len); t++)
+      res = (res + dp[mask][t] * get_cnk(cnt - sz[mask], len - t)) % M;
+    for (int i : cl[len]) cnt--, has[i] = 0;
+  }
+  cout << res << '\n';
+  return 0;
+}
+```

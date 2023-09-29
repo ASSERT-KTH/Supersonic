@@ -1,0 +1,62 @@
+#include <iostream>
+#include <vector>
+
+using namespace std;
+using ll = long long;
+
+class FenwickTree {
+public:
+    FenwickTree(int n) : sums_(n + 1, 0) {}
+
+    void update(int i, int val) {
+        while (i < sums_.size()) {
+            sums_[i] += val;
+            i += lowbit(i);
+        }
+    }
+
+    ll query(int i) {
+        ll sum = 0;
+        while (i > 0) {
+            sum += sums_[i];
+            i -= lowbit(i);
+        }
+        return sum;
+    }
+
+private:
+    static inline int lowbit(int x) {
+        return x & (-x);
+    }
+
+    vector<ll> sums_;
+};
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n, q;
+    cin >> n >> q;
+
+    FenwickTree tree(n);
+
+    while (q--) {
+        bool op;
+        cin >> op;
+        if (op) {
+            int k;
+            cin >> k;
+            cout << tree.query(k) << '\n';
+        } else {
+            int s, t, x;
+            cin >> s >> t >> x;
+            tree.update(s, x);
+            if (t + 1 <= n) {
+                tree.update(t + 1, -x);
+            }
+        }
+    }
+
+    return 0;
+}

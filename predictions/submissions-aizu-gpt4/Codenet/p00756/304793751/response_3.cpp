@@ -1,0 +1,56 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cstring>
+using namespace std;
+const int MAX = 24;
+int n;
+int x[MAX], y[MAX], r[MAX], c[MAX];
+int memo[1 << MAX];
+bool ok(int a, int bit) {
+  for (int i = 0; i < a; i++) {
+    if (((bit >> i) & 1) == 0)
+      continue;
+    int dist = (x[i] - x[a]) * (x[i] - x[a]) + (y[i] - y[a]) * (y[i] - y[a]);
+    int sum = (r[i] + r[a]) * (r[i] + r[a]);
+    if (dist < sum)
+      return false;
+  }
+  return true;
+}
+int dfs(int bit) {
+  if (memo[bit] != -1) return memo[bit];
+  int ret = __builtin_popcount(bit);
+  for (int i = 0; i < n; i++) {
+    if (((bit >> i) & 1) == 0 || ok(i, bit) == false)
+      continue;
+    for (int j = i + 1; j < n; j++) {
+      if (((bit >> j) & 1) == 0 || c[i] != c[j])
+        continue;
+      int to_bit = (bit ^ (1 << i)) ^ (1 << j);
+      if (ok(j, bit) && memo[to_bit] == -1) {
+        ret = max(ret, dfs(to_bit));
+      }
+    }
+  }
+  return memo[bit] = ret;
+}
+void solve() {
+  memset(memo, -1, sizeof(memo));
+  cout << dfs((1 << n) - 1) << endl;
+}
+bool input() {
+  cin >> n;
+  if (!n)
+    return false;
+  for (int i = 0; i < n; i++)
+    cin >> x[i] >> y[i] >> r[i] >> c[i];
+  return true;
+}
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+  while (input())
+    solve();
+  return 0;
+}

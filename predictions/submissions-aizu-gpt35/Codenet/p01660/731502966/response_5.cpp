@@ -1,0 +1,87 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+const int MAX_T = 3000, MAX_M = 300;
+int M, start, goal, dice[6], *N;
+vector<int> adj[MAX_M];
+bool isPositionValid(int p) { return 0 <= p && p < M; }
+void MakeGraph() {
+  for (int m = 0; m < M; m++) {
+    for (int r = 0; r < 6; r++) {
+      int moveto = m + dice[r];
+      if (isPositionValid(moveto))
+        adj[m].push_back(moveto + N[moveto]);
+      moveto = m - dice[r];
+      if (isPositionValid(moveto))
+        adj[m].push_back(moveto + N[moveto]);
+    }
+  }
+}
+vector<int> TopologicalSort() {
+  vector<int> in_degree(M + MAX_T + 1);
+  for (int m = 0; m < M; m++) {
+    for (int v : adj[m])
+      in_degree[v]++;
+  }
+  vector<int> order;
+  for (int m = 0; m < M; m++) {
+    if (in_degree[m + N[m]] == 0)
+      order.push_back(m + N[m]);
+  }
+  for (int i = 0; i < order.size(); i++) {
+    int u = order[i];
+    for (int v : adj[u - N[u]]) {
+      if (--in_degree[v] == 0)
+        order.push_back(v);
+    }
+  }
+  return order;
+}
+int main() {
+  cin >> M;
+  for (int r = 0; r < 6; r++)
+    cin >> dice[r];
+  cin >> start >> goal;
+  start--, goal--;
+  N = new int[M];
+  for (int m = 0; m < M; m++)
+    cin >> N[m];
+  MakeGraph();
+  vector<int> path(M + MAX_T + 1, MAX_T + 1);
+  path[goal] = 0;
+  vector<int> order = TopologicalSort();
+  for (int i = 0; i < order.size(); i++) {
+    int u = order[i];
+    if (path[u] == MAX_T + 1)
+      continue;
+    for (int v : adj[u - N[u]])
+      path[v] = min(path[v], path[u] + 1);
+  }
+  int position = start;
+  for (int t = 0; t < MAX_T && position != goal; t++) {
+    int r;
+    cin >> r;
+    int d = dice[r - 1];
+    bool moved = false;
+    for (int v : adj[position + N[position] + d]) {
+      if (path[v] == path[position + N[position] + d] + 1) {
+        position += d;
+        moved = true;
+        break;
+      }
+    }
+    if (!moved) {
+      for (int v : adj[position + N[position] - d]) {
+        if (path[v] == path[position + N[position] - d] + 1) {
+          position -= d;
+          moved = true;
+          break;
+        }
+      }
+    }
+    cout << (moved ? ((position == goal) ? 0 : ((position > goal) ? -1 : 1)) : 0) << endl;
+  }
+  delete[] N;
+  return 0;
+}

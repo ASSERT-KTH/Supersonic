@@ -1,0 +1,91 @@
+```cpp
+#include <iostream>
+#include <vector>
+#include <bitset>
+#include <unordered_set>
+using namespace std;
+const int N = 49;
+int w, h;
+vector<vector<int>> field;
+int size;
+vector<vector<int>> vertex;
+vector<vector<int>> edge;
+bitset<N> visited;
+unordered_set<unsigned long long> memo;
+
+void make_graph() {
+  const static int NEXT[4][2] = {{0, 1}, {1, 0}, {-1, 0}, {0, -1}};
+  const static int NIL = -1;
+  size = 0;
+  vertex.assign(h, vector<int>(w, NIL));
+  for (int y = 0; y < h; ++y)
+    for (int x = 0; x < w; ++x)
+      if (!field[y][x])
+        vertex[y][x] = size++;
+  edge.assign(h * w, vector<int>());
+  for (int y = 0; y < h; ++y)
+    for (int x = 0; x < w; ++x) {
+      if (vertex[y][x] == NIL)
+        continue;
+      for (const auto &d : NEXT) {
+        int ny = y + d[0];
+        int nx = x + d[1];
+        if (ny >= 0 && ny < h && nx >= 0 && nx < w && vertex[ny][nx] != NIL)
+          edge[vertex[y][x]].push_back(vertex[ny][nx]);
+      }
+    }
+}
+
+void reachability(int from, bitset<N> &visited) {
+  visited.set(from);
+  for (const auto &to : edge[from])
+    if (!visited[to])
+      reachability(to, visited);
+}
+
+bool cut_vertex(int from) {
+  auto dup = visited;
+  dup.set(from);
+  for (const auto &to : edge[from]) {
+    if (!dup[to]) {
+      reachability(to, dup);
+      if(dup.count() != size) return true;
+    }
+  }
+  return false;
+}
+
+bool dfs(int start, int from) {
+  unsigned long long m = visited.to_ullong() * N + from;
+  if (!memo.insert(m).second) return false;
+  if (cut_vertex(from)) return false;
+  visited.set(from);
+  for (const auto &to : edge[from]) {
+    if (to == start && visited.count() == size) return true;
+    if (!visited[to] && dfs(start, to)) return true;
+  }
+  visited.reset(from);
+  return false;
+}
+
+bool solve() {
+  visited.reset();
+  make_graph();
+  memo.clear();
+  for (int y = 0; y < h; ++y)
+    for (int x = 0; x < w; ++x)
+      if (!field[y][x])
+        return dfs(vertex[y][x], vertex[y][x]);
+  return false;
+}
+
+int main() {
+  while (cin >> w >> h, w | h) {
+    field.assign(h, vector<int>(w));
+    for (auto &line : field)
+      for (auto &v : line)
+        cin >> v;
+    cout << (solve() ? "Yes" : "No") << endl;
+  }
+}
+```

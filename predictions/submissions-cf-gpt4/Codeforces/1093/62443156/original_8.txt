@@ -1,0 +1,128 @@
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+constexpr int INF = 1e9;
+
+struct SegmentTree {
+    int size;
+    vector<pair<int, int>> tree;
+
+    SegmentTree(int n) : size(n), tree(4*n) {}
+
+    void build(const vector<int>& arr, int x, int lx, int rx) {
+        if (rx - lx == 1) {
+            if (lx < (int)arr.size()) {
+                tree[x] = {arr[lx], arr[lx]};
+            }
+            return;
+        }
+        int m = lx + (rx - lx) / 2;
+        build(arr, 2*x + 1, lx, m);
+        build(arr, 2*x + 2, m, rx);
+        tree[x] = {min(tree[2*x + 1].first, tree[2*x + 2].first), max(tree[2*x + 1].second, tree[2*x + 2].second)};
+    }
+
+    void build(const vector<int>& arr) {
+        build(arr, 0, 0, size);
+    }
+
+    void set(int i, int v, int x, int lx, int rx) {
+        if (rx - lx == 1) {
+            tree[x] = {v, v};
+            return;
+        }
+        int m = lx + (rx - lx) / 2;
+        if (i < m) {
+            set(i, v, 2*x + 1, lx, m);
+        } else {
+            set(i, v, 2*x + 2, m, rx);
+        }
+        tree[x] = {min(tree[2*x + 1].first, tree[2*x + 2].first), max(tree[2*x + 1].second, tree[2*x + 2].second)};
+    }
+
+    void set(int i, int v) {
+        set(i, v, 0, 0, size);
+    }
+
+    pair<int, int> query(int l, int r, int x, int lx, int rx) {
+        if (lx >= r || l >= rx) return {INF, -INF};
+        if (lx >= l && rx <= r) return tree[x];
+        int m = lx + (rx - lx) / 2;
+        pair<int, int> s1 = query(l, r, 2*x + 1, lx, m);
+        pair<int, int> s2 = query(l, r, 2*x + 2, m, rx);
+        return {min(s1.first, s2.first), max(s1.second, s2.second)};
+    }
+
+    pair<int, int> query(int l, int r) {
+        return query(l, r, 0, 0, size);
+    }
+};
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n, k;
+    cin >> n >> k;
+    vector<vector<int>> a(n, vector<int>(k));
+    for (auto& ai : a)
+        for (int& aij : ai)
+            cin >> aij;
+
+    vector<SegmentTree> trees(1 << k, SegmentTree(n));
+    for (int mask = 0; mask < (1 << k); ++mask) {
+        vector<int> arr(n);
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < k; ++j) {
+                if (mask & (1 << j)) {
+                    arr[i] += a[i][j];
+                } else {
+                    arr[i] -= a[i][j];
+                }
+            }
+        }
+        trees[mask].build(arr);
+    }
+
+    int q;
+    cin >> q;
+    while (q--) {
+        int type;
+        cin >> type;
+        if (type == 1) {
+            int i;
+            cin >> i;
+            --i;
+            vector<int> b(k);
+            for (int& bj : b)
+                cin >> bj;
+            for (int mask = 0; mask < (1 << k); ++mask) {
+                int val = 0;
+                for (int j = 0; j < k; ++j) {
+                    if (mask & (1 << j)) {
+                        val += b[j];
+                    } else {
+                        val -= b[j];
+                    }
+                }
+                trees[mask].set(i, val);
+            }
+        } else {
+            int l, r;
+            cin >> l >> r;
+            --l;
+            int ans = -INF;
+            for (const auto& tree : trees) {
+                pair<int, int> res = tree.query(l, r);
+                ans = max(ans, res.second - res.first);
+            }
+            cout << ans << '\n';
+        }
+    }
+
+    return 0;
+}
+```

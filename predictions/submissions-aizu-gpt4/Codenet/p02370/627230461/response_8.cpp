@@ -1,0 +1,45 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false); 
+    cin.tie(NULL); 
+
+    int V, E;
+    cin >> V >> E;
+
+    vector<vector<int>> edge(V + 1);
+    vector<int> state(V + 1, 0);
+    for (int i = 0; i < E; i++) {
+        int s, t;
+        cin >> s >> t;
+        edge[s].push_back(t);
+        state[t]++;
+    }
+
+    queue<int> q;
+    for (int i = 1; i <= V; i++) {
+        if (state[i] == 0)
+            q.push(i);
+    }
+
+    vector<int> ans;
+    while (!q.empty()) {
+        int curr = q.front();
+        q.pop();
+        ans.push_back(curr);
+        for (auto& t : edge[curr]) {
+            state[t]--;
+            if (state[t] == 0)
+                q.push(t);
+        }
+    }
+
+    for (auto& i : ans) { 
+        cout << i << endl;
+    }
+
+    return 0;
+}

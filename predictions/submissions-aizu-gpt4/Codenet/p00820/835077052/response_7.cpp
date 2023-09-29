@@ -1,0 +1,24 @@
+#define _USE_MATH_DEFINES
+#include <cstdio>
+#include <cstring>
+using namespace std;
+typedef long long ll;
+int dp[1000000][5];
+int main() {
+  int n;
+  while (~scanf("%d", &n)) {
+    if (n == 0)
+      break;
+    memset(dp, 0, sizeof(dp));
+    dp[0][0] = 1;
+    for (int i = 1; i * i <= n; i++) {
+      for (int k = 1; k <= 4; k++) {
+        int max_j = min(n, i * i + dp[i * i][k - 1]);
+        for (int j = i * i; j <= max_j; j++) {
+          dp[j][k] += dp[j - i * i][k - 1];
+        }
+      }
+    }
+    printf("%d\n", dp[n][4] + dp[n][3] + dp[n][2] + dp[n][1]);
+  }
+}

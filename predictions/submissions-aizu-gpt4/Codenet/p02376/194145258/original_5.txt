@@ -1,0 +1,82 @@
+```c++
+#include <cstdio>
+#include <vector>
+#include <queue>
+#include <algorithm>
+
+#define INF 1000000000
+#define max_n 10000
+
+struct edge {
+  int to, cap, rev;
+};
+
+std::vector<edge> g[max_n];
+int dist[max_n];
+int ptr[max_n];
+
+void add_edge(int from, int to, int cap) {
+  g[from].push_back((edge){to, cap, (int)g[to].size()});
+  g[to].push_back((edge){from, 0, (int)g[from].size() - 1});
+}
+
+bool bfs(int s, int t) {
+  std::fill(dist, dist + max_n, -1);
+  dist[s] = 0;
+  std::queue<int> que;
+  que.push(s);
+  while (!que.empty()) {
+    int u = que.front();
+    que.pop();
+    if (u == t)
+      return true;
+    for (int j = 0; j < g[u].size(); j++) {
+      edge &e = g[u][j];
+      if (dist[e.to] < 0 && e.cap > 0) {
+        dist[e.to] = dist[u] + 1;
+        que.push(e.to);
+      }
+    }
+  }
+  return false;
+}
+
+int dfs(int v, int t, int f) {
+  if (v == t) return f;
+  for (; ptr[v] < g[v].size(); ptr[v]++) {
+    edge &e = g[v][ptr[v]];
+    if (dist[e.to] == dist[v] + 1 && e.cap > 0) {
+      int df = dfs(e.to, t, std::min(f, e.cap));
+      if (df > 0) {
+        e.cap -= df;
+        g[e.to][e.rev].cap += df;
+        return df;
+      }
+    }
+  }
+  return 0;
+}
+
+int max_flow(int s, int t) {
+  int flow = 0;
+  while (bfs(s, t)) {
+    std::fill(ptr, ptr + max_n, 0);
+    int df;
+    while ((df = dfs(s, t, INF)) > 0) {
+      flow += df;
+    }
+  }
+  return flow;
+}
+
+int main() {
+  int n, e, a, b, c;
+  scanf("%d%d", &n, &e);
+  for (int i = 0; i < e; i++) {
+    scanf("%d%d%d", &a, &b, &c);
+    add_edge(a, b, c);
+  }
+  printf("%d\n", max_flow(0, n - 1));
+  return 0;
+}
+```

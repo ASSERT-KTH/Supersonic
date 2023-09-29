@@ -1,0 +1,54 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+#define N 15
+
+int X, Y, data[N][N], memo[N][N];
+
+void func(int y, int x) {
+  if (y == Y - 1) {
+    memo[y][x] = 1;
+    return;
+  }
+
+  static const int dx[] = {-1, 0, 1};
+  for (int i = 0; i < 3; ++i) {
+    int nx = x + dx[i];
+    if (nx < 0 || nx >= X || data[y + 1][nx] != 0) continue;
+    if (!memo[y + 1][nx]) func(y + 1, nx);
+    memo[y][x] += memo[y + 1][nx];
+  }
+
+  if (data[y + 1][x] == 2) {
+    for (int ny = y + 2; ny < Y; ny += 2) {
+      if (data[ny][x] == 1) break;
+      if (!memo[ny][x]) func(ny, x);
+      memo[y][x] += memo[ny][x];
+    }
+  }
+
+  if (!memo[y][x]) data[y][x] = 1;
+}
+
+int main() {
+  while (std::cin >> X >> Y && (X || Y)) {
+    
+    std::fill(&data[0][0], &data[0][0] + sizeof(data) / sizeof(int), 0);
+    std::fill(&memo[0][0], &memo[0][0] + sizeof(memo) / sizeof(int), 0);
+    
+    for (int i = 0; i < Y; ++i) {
+      for (int j = 0; j < X; ++j) {
+        std::cin >> data[i][j];
+      }
+    }
+
+    for (int i = 0; i < X; ++i) {
+      if (data[0][i] == 0) func(0, i);
+    }
+
+    std::cout << std::accumulate(&memo[0][0], &memo[0][0] + X, 0) << std::endl;
+  }
+
+  return 0;
+}

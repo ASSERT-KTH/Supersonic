@@ -1,0 +1,76 @@
+#include <iostream>
+#include <vector>
+#include <numeric>
+using namespace std;
+
+constexpr int MOD = 1e9 + 7;
+constexpr int MAXN = 1010;
+
+vector<vector<vector<long long>>> multree(MAXN, vector<vector<long long>>(MAXN, vector<long long>(2)));
+vector<vector<vector<long long>>> addtree(MAXN, vector<vector<long long>>(MAXN, vector<long long>(2)));
+
+long long yo(long long x) { return (x % 2); }
+
+long long query2(const vector<vector<vector<long long>>>& tree, long long x, long long y) {
+  long long mul = 0, add = 0;
+  for (long long i = y; i > 0; i -= i & -i) {
+    mul ^= tree[x][i][0];
+    add ^= tree[x][i][1];
+  }
+  return (mul * yo(y)) ^ add;
+}
+
+long long query1(long long x, long long y) {
+  long long mul = 0, add = 0;
+  for (long long i = x; i > 0; i -= i & -i) {
+    mul ^= query2(multree, i, y);
+    add ^= query2(addtree, i, y);
+  }
+  return (mul * yo(x)) ^ add;
+}
+
+long long query(long long x1, long long y1, long long x2, long long y2) {
+  return (query1(x2, y2) ^ query1(x1 - 1, y2) ^ query1(x2, y1 - 1) ^
+          query1(x1 - 1, y1 - 1));
+}
+
+void upd2(vector<vector<vector<long long>>>& tree, long long x, long long y, long long mul, long long add) {
+  for (long long i = x; i < MAXN; i += i & -i) {
+    for (long long j = y; j < MAXN; j += j & -j) {
+      tree[i][j][0] ^= mul;
+      tree[i][j][1] ^= add;
+    }
+  }
+}
+
+void upd1(long long x, long long y1, long long y2, long long mul, long long add) {
+  upd2(multree, x, y1, mul, mul * yo(y1 - 1));
+  upd2(multree, x, y2, mul, mul * yo(y2));
+  upd2(addtree, x, y1, add, add * yo(y1 - 1));
+  upd2(addtree, x, y2, add, add * yo(y2));
+}
+
+void upd(long long x1, long long y1, long long x2, long long y2, long long val) {
+  upd1(x1, y1, y2, val, val * yo(x1 - 1));
+  upd1(x2, y1, y2, val, val * yo(x2));
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  
+  long long n, q;
+  cin >> n >> q;
+  while (q--) {
+    long long tt, x1, y1, x2, y2, val;
+    cin >> tt;
+    if (tt == 2) {
+      cin >> x1 >> y1 >> x2 >> y2 >> val;
+      upd(x1, y1, x2, y2, val);
+    } else {
+      cin >> x1 >> y1 >> x2 >> y2;
+      cout << query(x1, y1, x2, y2) << '\n';
+    }
+  }
+  return 0;
+}

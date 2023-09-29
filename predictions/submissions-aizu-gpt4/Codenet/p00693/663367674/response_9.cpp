@@ -1,0 +1,64 @@
+#include <cstdio>
+#include <cstring>
+#include <queue>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+using namespace std;
+struct Info {
+  string from, to;
+  int rank;
+  bool erased;
+};
+struct Data {
+  string from, to, message;
+};
+int N, M;
+void func() {
+  vector<Info> OK(N), NOT(N);
+  unordered_map<string, unordered_set<string>> ok_map, not_map;
+  for (int i = 0; i < N; i++) {
+    OK[i].erased = false;
+    NOT[i].erased = false;
+  }
+  string buf, from, to;
+  int ok_index = 0, not_index = 0;
+  for (int i = 0; i < N; i++) {
+    cin >> buf >> from >> to;
+    if (buf[0] == 'p') {
+      OK[ok_index].from = from;
+      OK[ok_index].to = to;
+      OK[ok_index].rank = i;
+      ok_map[from].insert(to);
+      ok_index++;
+    } else {
+      NOT[not_index].from = from;
+      NOT[not_index].to = to;
+      NOT[not_index].rank = i;
+      not_map[from].insert(to);
+      not_index++;
+    }
+  }
+  queue<Data> Q;
+  for (int loop = 0; loop < M; loop++) {
+    Data data;
+    cin >> data.from >> data.to >> data.message;
+    if (ok_map[data.from].count(data.to) && !not_map[data.from].count(data.to)) {
+      Q.push(data);
+    }
+  }
+  cout << Q.size() << '\n';
+  while (!Q.empty()) {
+    printf("%s %s %s\n", Q.front().from.c_str(), Q.front().to.c_str(), Q.front().message.c_str());
+    Q.pop();
+  }
+}
+int main() {
+  while (true) {
+    cin >> N >> M;
+    if (N == 0 && M == 0)
+      break;
+    func();
+  }
+  return 0;
+}

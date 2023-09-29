@@ -1,0 +1,65 @@
+#include <algorithm>
+#include <cctype>
+#include <iostream>
+#include <string>
+#include <vector>
+using namespace std;
+int mask;
+template <class T> struct Parser {
+  typedef string::const_iterator State;
+  T equation(State &begin) {
+    T left = formula(begin);
+    T right = formula(begin);
+    return left == right;
+  }
+  T formula(State &begin) {
+    if (*begin == '(') {
+      ++begin;
+      T left = formula(begin);
+      char op = *++begin;
+      T right = formula(++begin);
+      ++begin;
+      return deduce(left, op, right);
+    } else if (*begin == '-') {
+      return !formula(++begin);
+    } else {
+      return boolean(begin);
+    }
+  }
+  T deduce(T x, char op, T y) {
+    switch(op) {
+      case '*': return x && y;
+      case '+': return x || y;
+      default: return !x || y;
+    }
+  }
+  T boolean(State &begin) {
+    T ret = 0;
+    switch (*begin) {
+      case 'T': ret = 1; break;
+      case 'F': break;
+      default: ret = (mask >> (*begin - 'a')) & 1;
+    }
+    ++begin;
+    return ret;
+  }
+};
+void solve(const string &S) {
+  Parser<bool> ps;
+  for (mask = 0; mask < (1 << 11); ++mask) {
+    if (!ps.equation(S.begin())) {
+      cout << "NO\n";
+      return;
+    }
+  }
+  cout << "YES\n";
+}
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(nullptr);
+  string S;
+  while (cin >> S && S != "#") {
+    solve(S);
+  }
+  return 0;
+}

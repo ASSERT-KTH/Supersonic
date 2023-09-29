@@ -1,0 +1,24 @@
+#include <stdio.h>
+#include <bitset>
+
+const int MAX = 1000000;
+std::bitset<MAX> num;
+
+int main() {
+  num.set();
+  num[0] = num[1] = 0;
+  for (int i = 2; i * i < MAX; i++) {
+    if (num[i]) {
+      for (int j = i * i; j < MAX; j += i)
+        num[j] = 0;
+    }
+  }
+  for (int i = 1; i < MAX; ++i) {
+    num[i] += num[i - 1];
+  }
+  int n;
+  while(scanf("%d", &n) != EOF) {
+    printf("%d\n", num[n]);
+  }
+  return 0;
+}

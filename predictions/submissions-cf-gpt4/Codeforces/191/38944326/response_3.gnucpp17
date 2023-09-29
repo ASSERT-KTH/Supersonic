@@ -1,0 +1,71 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+const int N = 100001;
+vector<int> adj[N], nodes, edges;
+int parent[N], depth[N], heavy[N], head[N], pos[N];
+int cur_pos;
+
+int dfs(int v){
+  int size = 1, max_c_size = 0;
+  for(int c : adj[v]){
+    if(c != parent[v]){
+      parent[c] = v, depth[c] = depth[v] + 1;
+      int c_size = dfs(c);
+      size += c_size;
+      if(c_size > max_c_size)
+        max_c_size = c_size, heavy[v] = c;
+    }
+  }
+  return size;
+}
+
+void decompose(int v, int h){
+  head[v] = h, pos[v] = cur_pos++;
+  nodes.push_back(v);
+  if(heavy[v] != -1)
+    decompose(heavy[v], h);
+  for(int c : adj[v]){
+    if(c != parent[v] && c != heavy[v])
+      decompose(c, c);
+  }
+}
+
+void init(){
+  fill(heavy, heavy + N, -1);
+  parent[0] = -1, depth[0] = 0;
+  dfs(0);
+  cur_pos = 0;
+  decompose(0, 0);
+}
+
+int query(int a, int b){
+  int res = 0;
+  for(; head[a] != head[b]; b = parent[head[b]]){
+    if(depth[head[a]] > depth[head[b]])
+      swap(a, b);
+    int cur_heavy_path_max = max_query(pos[head[b]], pos[b]);
+    res = max(res, cur_heavy_path_max);
+  }
+  if(depth[a] > depth[b])
+    swap(a, b);
+  int last_heavy_path_max = max_query(pos[a], pos[b]);
+  return max(res, last_heavy_path_max);
+}
+
+int main(){
+  ios_base::sync_with_stdio(false);
+  cin.tie(nullptr);
+  int n, a, b;
+  cin>>n;
+  for(int i=1; i<n; i++){
+    cin>>a>>b;
+    a--, b--;
+    adj[a].push_back(b);
+    adj[b].push_back(a);
+  }
+  init();
+  return 0;
+}

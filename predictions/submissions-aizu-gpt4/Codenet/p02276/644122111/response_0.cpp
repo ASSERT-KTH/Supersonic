@@ -1,0 +1,39 @@
+#include <algorithm>
+#include <cstdio>
+
+using uint = unsigned int;
+
+constexpr uint BUFFER_SIZE = 100000;
+static int buffer[BUFFER_SIZE];
+
+static void print_partition_ints(const uint q, const uint n) {
+   auto out_sep = "";
+   for (auto i = 0u; i < n; ++i) {
+      auto format = (i != q ? "%s%d" : "%s[%d]");
+      std::printf(format, out_sep, buffer[i]);
+      out_sep = " ";
+   }
+   std::printf("\n");
+}
+
+static uint partition(const uint first, const uint last) {
+   auto less = first;
+   for (auto i = first; i < last; ++i) {
+      if (buffer[i] <= buffer[last]) {
+         std::swap(buffer[less], buffer[i]);
+         ++less;
+      }
+   }
+   std::swap(buffer[less], buffer[last]);
+   return less;
+}
+
+int main() {
+   uint n;
+   std::scanf("%u", &n);
+   for (auto i = 0u; i < n; ++i) {
+      std::scanf("%d", &buffer[i]);
+   }
+   auto q = partition(0, n - 1);
+   print_partition_ints(q, n);
+}

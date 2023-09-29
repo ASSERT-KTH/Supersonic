@@ -1,0 +1,154 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+typedef long long ll;
+typedef pair<int, int> pi;
+typedef vector<int> vi;
+typedef vector<pi> vpi;
+
+const int MAXN = 100100;
+int n, a[MAXN], q;
+struct dat {
+  pi mx;
+  pi mn;
+} t[4 * MAXN];
+dat zero;
+
+dat combine(dat x, dat y) {
+  dat res;
+  if (a[x.mx.first] > a[y.mx.first]) {
+    res.mx.first = x.mx.first;
+    if (a[x.mx.second] > a[y.mx.first]) {
+      res.mx.second = x.mx.second;
+    } else {
+      res.mx.second = y.mx.first;
+    }
+  } else {
+    res.mx.first = y.mx.first;
+    if (a[x.mx.first] > a[y.mx.second]) {
+      res.mx.second = x.mx.first;
+    } else {
+      res.mx.second = y.mx.second;
+    }
+  }
+  if (a[x.mn.first] < a[y.mn.first]) {
+    res.mn.first = x.mn.first;
+    if (a[x.mn.second] < a[y.mn.first]) {
+      res.mn.second = x.mn.second;
+    } else {
+      res.mn.second = y.mn.first;
+    }
+  } else {
+    res.mn.first = y.mn.first;
+    if (a[x.mn.first] < a[y.mn.second]) {
+      res.mn.second = x.mn.first;
+    } else {
+      res.mn.second = y.mn.second;
+    }
+  }
+  return res;
+}
+
+void build(int v, int tl, int tr) {
+  if (tl == tr) {
+    t[v].mn = {tl, n + 1};
+    t[v].mx = {tl, n + 2};
+  } else {
+    int tm = (tl + tr) >> 1;
+    build(v << 1, tl, tm);
+    build((v << 1) + 1, tm + 1, tr);
+    t[v] = combine(t[v << 1], t[(v << 1) + 1]);
+  }
+}
+
+dat get(int v, int tl, int tr, int l, int r) {
+  if (l > r)
+    return zero;
+  if (l == tl && r == tr)
+    return t[v];
+  int tm = (tl + tr) >> 1;
+  return combine(get(v << 1, tl, tm, l, min(r, tm)),
+                 get((v << 1) + 1, tm + 1, tr, max(l, tm + 1), r));
+}
+
+int depth[MAXN];
+int tin[MAXN];
+int tout[MAXN];
+int timer;
+vpi adj[MAXN];
+
+void dfs(int v, int p, int d = 0) {
+  tin[v] = timer++;
+  depth[v] = d;
+  for (auto &it : adj[v]) {
+    if (it.first == p) continue;
+    dfs(it.first, v, d + 1);
+  }
+  tout[v] = timer - 1;
+}
+
+bool is_ancestor(int u, int v) {
+  return tin[u] <= tin[v] && tout[u] >= tout[v];
+}
+
+int lca(int u, int v) {
+  if (is_ancestor(u, v)) return u;
+  if (is_ancestor(v, u)) return v;
+  for (int i = 20; i >= 0; --i) {
+    if (!is_ancestor(adj[u][i].first, v))
+      u = adj[u][i].first;
+  }
+  return adj[u][0].first;
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+
+  cin >> n >> q;
+  zero.mx = {n + 2, n + 2};
+  zero.mn = {n + 1, n + 1};
+
+  for (int i = 1; i < n; i++) {
+    int x;
+    cin >> x;
+    adj[x - 1].push_back({i, 1});
+  }
+
+  a[n + 1] = INT_MAX;
+  a[n + 2] = INT_MIN;
+
+  dfs(0, 0);
+
+  for (int i = 0; i < n; i++) {
+    a[i] = tin[i];
+  }
+
+  build(1, 0, n - 1);
+
+  while (q--) {
+    int l, r;
+    cin >> l >> r;
+    l--;
+    r--;
+    if (r - l < 2) {
+      int ans = r, d = depth[l];
+      if (d < depth[r]) {
+        ans = l;
+        d = depth[r];
+      }
+      cout << ans + 1 << " " << d << endl;
+      continue;
+    }
+    dat cur = get(1, 0, n - 1, l, r);
+    int lc1 = lca(cur.mx.first, cur.mn.second);
+    int lc2 = lca(cur.mx.second, cur.mn.first);
+    if (depth[lc1] > depth[lc2]) {
+      cout << cur.mn.first + 1 << " " << depth[lc1] << endl;
+    } else {
+      cout << cur.mx.first + 1 << " " << depth[lc2] << endl;
+    }
+  }
+
+  return 0;
+}

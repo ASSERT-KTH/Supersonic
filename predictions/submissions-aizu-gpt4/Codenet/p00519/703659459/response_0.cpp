@@ -1,0 +1,81 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+
+using namespace std;
+
+typedef pair<int, int> P;
+
+const int MAX_N = 6000;
+const int INF = 1e9;
+
+struct edge {
+    int to, cost;
+};
+
+int N, K;
+int c[MAX_N], r[MAX_N];
+vector<int> G[MAX_N];
+int d[MAX_N];
+
+void dijkstra(int s) {
+    priority_queue<P, vector<P>, greater<P>> que;
+    fill(d, d + N, INF);
+    d[s] = 0;
+    que.push(P(0, s));
+
+    while (!que.empty()) {
+        P p = que.top();
+        que.pop();
+        int v = p.second;
+        if (d[v] < p.first) continue;
+
+        for (int i = 0; i < G[v].size(); i++) {
+            edge e = { G[v][i], c[v] };
+            if (d[e.to] > d[v] + e.cost) {
+                d[e.to] = d[v] + e.cost;
+                que.push(P(d[e.to], e.to));
+            }
+        }
+    }
+}
+
+void bfs(int s) {
+    queue<P> que;
+    bool used[MAX_N] = { false };
+    que.push(P(0, s));
+
+    while (!que.empty()) {
+        P p = que.front();
+        que.pop();
+        int v = p.second;
+        if (used[v] || p.first > r[s]) continue;
+        used[v] = true;
+
+        d[v] = min(d[v], c[s]);
+        for (int i = 0; i < G[v].size(); i++)
+            que.push(P(p.first + 1, G[v][i]));
+    }
+}
+
+int main() {
+    cin >> N >> K;
+    for (int i = 0; i < N; i++)
+        cin >> c[i] >> r[i];
+
+    for (int i = 0; i < K; i++) {
+        int a, b;
+        cin >> a >> b;
+        a--; b--;
+        G[a].push_back(b);
+        G[b].push_back(a);
+    }
+
+    for (int i = 0; i < N; i++)
+        bfs(i);
+
+    dijkstra(0);
+    cout << d[N - 1] << endl;
+
+    return 0;
+}

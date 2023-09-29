@@ -1,0 +1,72 @@
+#include <vector>
+#include <map>
+#include <algorithm>
+#include <iostream>
+
+using namespace std;
+
+typedef long long ll;
+
+struct QuickFind {
+  vector<ll> r, p;
+  vector<vector<ll>> v;
+  
+  QuickFind(ll size) {
+    r.assign(size, 1);
+    p.resize(size);
+    v.resize(size);
+    for (ll i = 0; i < size; i++) {
+      p[i] = i;
+      v[i].push_back(i);
+    }
+  }
+  
+  bool same(ll x, ll y) { return p[x] == p[y]; }
+  
+  void unite(ll x, ll y) {
+    x = p[x];
+    y = p[y];
+    if (x == y)
+      return;
+    if (r[x] < r[y])
+      swap(x, y);
+    r[x] += r[y];
+    for (auto& i : v[y]) {
+      p[i] = x;
+      v[x].push_back(i);
+    }
+    v[y].clear();
+  }
+};
+
+int main() {
+  ll n;
+  cin >> n;
+  vector<ll> a(n);
+  for (auto& i : a)
+    cin >> i;
+  vector<ll> b(a);
+  sort(b.begin(), b.end());
+  map<ll, ll> p;
+  for (ll i = 0; i < n; i++) {
+    p[a[i]] = i;
+  }
+  QuickFind qf(n);
+  for (ll i = 0; i < n; i++)
+    qf.unite(i, p[b[i]]);
+  ll ans = 0;
+  for (ll i = 0; i < n; i++) {
+    ll k = qf.v[i].size();
+    if (qf.p[i] != i || k == 1)
+      continue;
+    ll m = a[qf.v[i][0]];
+    ll tmp = 0;
+    for (auto& j : qf.v[i]) {
+      tmp += a[j];
+      m = min(m, a[j]);
+    }
+    ans += min(tmp + m * (k - 2), tmp + m + b[0] * (k + 1));
+  }
+  cout << ans << endl;
+  return 0;
+}

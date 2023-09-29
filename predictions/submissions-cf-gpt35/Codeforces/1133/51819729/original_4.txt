@@ -1,0 +1,178 @@
+```cpp
+#pragma comment(linker, "/stack:200000000")
+#pragma GCC optimize("Ofast,no-stack-protector")
+#pragma GCC target("avx")
+#include <algorithm>
+#include <bitset>
+#include <cassert>
+#include <chrono>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iomanip>
+#include <iostream>
+#include <list>
+#include <map>
+#include <queue>
+#include <random>
+#include <set>
+#include <stack>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+using namespace std;
+
+const int MAXN = 2e5 + 100;
+const int MOD = 1e9 + 7;
+
+int deg[MAXN];
+int chose[MAXN];
+int par[MAXN];
+vector<int> g[MAXN], g_MST[MAXN];
+vector<pair<int, int>> edge;
+set<pair<int, int>> MST;
+
+bool cmp(int u, int v) {
+    return (deg[u] < deg[v]) || (deg[u] == deg[v] && u < v);
+}
+
+void dfs(int u) {
+    for (auto v : g[u]) {
+        if (dsu.find(1) == dsu.find(v)) {
+            continue;
+        } else {
+            dsu.merge(dsu.find(1), dsu.find(v));
+            if (u < v) {
+                MST.insert({u, v});
+            } else {
+                MST.insert({v, u});
+            }
+            g_MST[u].push_back(v);
+            g_MST[v].push_back(u);
+            dfs(v);
+        }
+    }
+}
+
+void build_tree(int u) {
+    for (auto v : g_MST[u]) {
+        if (par[v] == -1) {
+            par[v] = u;
+            build_tree(v);
+        }
+    }
+}
+
+int Ares_KN() {
+    int n, m, k;
+    cin >> n >> m >> k;
+    while (m--) {
+        int u, v;
+        cin >> u >> v;
+        g[u].push_back(v);
+        g[v].push_back(u);
+        ++deg[u];
+        ++deg[v];
+        edge.emplace_back(u, v);
+    }
+    if (deg[1] < k) {
+        return !printf("NO");
+    }
+    sort(g[1].begin(), g[1].end(), cmp);
+    int cnt = 0;
+    for (auto v : g[1]) {
+        if (deg[v] == 1) {
+            ++cnt;
+        }
+    }
+    if (cnt > k) {
+        return !printf("NO");
+    }
+    for (auto v : g[1]) {
+        if (deg[v] == 1) {
+            dsu.merge(dsu.find(1), dsu.find(v));
+            MST.insert({1, v});
+            g_MST[1].push_back(v);
+            g_MST[v].push_back(1);
+        } else if (dsu.find(1) == dsu.find(v)) {
+            continue;
+        } else {
+            dsu.merge(dsu.find(1), dsu.find(v));
+            MST.insert({1, v});
+            g_MST[1].push_back(v);
+            g_MST[v].push_back(1);
+            chose[v] = true;
+            dfs(v);
+            ++cnt;
+            if (cnt == k) {
+                break;
+            }
+        }
+    }
+    for (auto E : edge) {
+        int u = E.first;
+        int v = E.second;
+        if (u == 1 || v == 1) {
+            continue;
+        }
+        if (dsu.find(u) == dsu.find(v)) {
+            continue;
+        }
+        dsu.merge(dsu.find(u), dsu.find(v));
+        if (u < v) {
+            MST.insert({u, v});
+        } else {
+            MST.insert({v, u});
+        }
+        g_MST[u].push_back(v);
+        g_MST[v].push_back(u);
+    }
+    if (cnt > k || MST.size() < n - 1) {
+        return !printf("NO");
+    }
+    if (cnt == k) {
+        puts("YES");
+        for (auto x : MST) {
+            printf("%d %d\n", x.first, x.second);
+        }
+        return 0;
+    }
+    int root = 1;
+    memset(par, -1, sizeof(par));
+    par[1] = 1;
+    build_tree(root);
+    vector<pair<int, int>> res;
+    for (auto v : g[1]) {
+        if (!chose[v]) {
+            int p = par[v];
+            if (p == 1) {
+                continue;
+            }
+            if (v < p) {
+                MST.erase({v, p});
+            } else {
+                MST.erase({p, v});
+            }
+            MST.insert({1, v});
+            par[v] = 1;
+            ++cnt;
+            if (cnt == k) {
+                break;
+            }
+        }
+    }
+    puts("YES");
+    for (auto x : MST) {
+        printf("%d %d\n", x.first, x.second);
+    }
+    return 0;
+}
+
+int main() {
+    IOS
+    Ares_KN();
+    cerr << "\nTime elapsed: " << 1000 * clock() / CLOCKS_PER_SEC << "ms\n";
+    return 0;
+}
+```

@@ -1,0 +1,129 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+const double EPS = 1e-7;
+
+struct Point3d {
+    double x, y, z;
+    Point3d(double x = 0, double y = 0, double z = 0) : x(x), y(y), z(z) {}
+
+    Point3d operator+(const Point3d &a) const {
+        return Point3d(x + a.x, y + a.y, z + a.z);
+    }
+
+    Point3d operator-(const Point3d &a) const {
+        return Point3d(x - a.x, y - a.y, z - a.z);
+    }
+
+    Point3d operator*(const double &d) const {
+        return Point3d(x * d, y * d, z * d);
+    }
+
+    Point3d operator/(const double &d) const {
+        return Point3d(x / d, y / d, z / d);
+    }
+
+    bool operator<(const Point3d &p) const {
+        if (fabs(x - p.x) > EPS) return x < p.x;
+        if (fabs(y - p.y) > EPS) return y < p.y;
+        return z < p.z;
+    }
+
+    bool operator==(const Point3d &p) const {
+        return fabs(x - p.x) < EPS && fabs(y - p.y) < EPS && fabs(z - p.z) < EPS;
+    }
+};
+
+struct Segment3d {
+    Point3d p[2];
+    Segment3d(Point3d p1 = Point3d(), Point3d p2 = Point3d()) {
+        p[0] = p1, p[1] = p2;
+    }
+
+    bool operator==(const Segment3d &seg) const {
+        return p[0] == seg.p[0] && p[1] == seg.p[1];
+    }
+};
+
+typedef Point3d Vector3d;
+typedef Segment3d Line3d;
+
+double dot(const Point3d &a, const Point3d &b) {
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+Vector3d cross(const Point3d &a, const Point3d &b) {
+    return Vector3d(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+}
+
+double norm(const Point3d &p) {
+    return p.x * p.x + p.y * p.y + p.z * p.z;
+}
+
+double abs(const Point3d &p) {
+    return sqrt(norm(p));
+}
+
+bool on_line3d(Line3d line, Point3d p) {
+    return abs(cross(p - line.p[0], line.p[1] - line.p[0])) < EPS;
+}
+
+bool on_segment3d(Segment3d seg, Point3d p) {
+    if (!on_line3d(seg, p)) return false;
+    double dist[3] = {abs(seg.p[1] - seg.p[0]), abs(p - seg.p[0]), abs(p - seg.p[1])};
+    return abs(dist[0] - (dist[1] + dist[2])) < EPS;
+}
+
+bool point_on_the_triangle3d(Point3d tri1, Point3d tri2, Point3d tri3, Point3d p) {
+    if (on_segment3d(Segment3d(tri1, tri2), p)) return true;
+    if (on_segment3d(Segment3d(tri2, tri3), p)) return true;
+    if (on_segment3d(Segment3d(tri3, tri1), p)) return true;
+    Vector3d v1 = tri2 - tri1;
+    Vector3d v2 = tri3 - tri2;
+    Vector3d v3 = tri1 - tri3;
+    Vector3d cp[3] = {cross(v1, p - tri1), cross(v2, p - tri2), cross(v3, p - tri3)};
+    double d1 = dot(cp[0], cp[1]);
+    double d2 = dot(cp[0], cp[2]);
+    return (d1 > EPS && d2 > EPS);
+}
+
+inline Point3d rotateX(Point3d p, double rad) {
+    double c = cos(rad), s = sin(rad);
+    return Point3d(p.x, p.y * c - p.z * s, p.y * s + p.z * c);
+}
+
+inline Point3d rorateY(Point3d p, double rad) {
+    double c = cos(rad), s = sin(rad);
+    return Point3d(p.x * c + p.z * s, p.y, -p.x * s + p.z * c);
+}
+
+inline Point3d rorateZ(Point3d p, double rad) {
+    double c = cos(rad), s = sin(rad);
+    return Point3d(p.x * c - p.y * s, p.x * s + p.y * c, p.z);
+}
+
+inline Point3d rotateEuler(Point3d p, double alpha, double beta, double gamma) {
+    double ca = cos(alpha), sa = sin(alpha), cb = cos(beta), sb = sin(beta), cg = cos(gamma), sg = sin(gamma);
+    return Point3d(
+        (ca * cb * cg - sa * sg) * p.x + (-ca * cb * sg - sa * cg) * p.y + (ca * sb) * p.z,
+        (sa * cb * cg + ca * sg) * p.x + (-sa * cb * sg + ca * cg) * p.y + (sa * sb) * p.z,
+        (-sb * cg) * p.x + (sb * sg) * p.y + (cb) * p.z);
+}
+
+inline Point3d rotateRollPitchYaw(Point3d p, double roll, double pitch, double yaw) {
+    double cr = cos(roll), sr = sin(roll), cp = cos(pitch), sp = sin(pitch), cy = cos(yaw), sy = sin(yaw);
+    return Point3d(
+        (cr * cp) * p.x + (cr * sp * sy - sr * cy) * p.y + (cr * sp * cy + sr * sy) * p.z,
+        (sr * cp) * p.x + (sr * sp * sy + cr * cy) * p.y + (sr * sp * cy - cr * sy) * p.z,
+        (-sp) * p.x + (cp * sy) * p.y + (cp * cy) * p.z);
+}
+
+class Plane3d {
+public:
+    Point3d normal_vector;
+    double d;
+
+    Plane3d(Point3d normal_vector = Point3d(), double d = 0) : normal_vector(normal_vector), d(d) {}
+
+    Plane3d(Vector3d a, Vector3d b, Vector3d c) {
+        Vector3d v1 = b - a, v2 = c - a, tmp = cross(v

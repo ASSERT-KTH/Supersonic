@@ -1,0 +1,104 @@
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+const int MAXN = 8000000;
+
+int sgtree[MAXN];
+int lazy[MAXN];
+int n, m;
+vector<array<int, 3>> ve;
+
+void propagate(int node, int st, int en) {
+  sgtree[node] += lazy[node];
+  if (st != en) {
+    lazy[2 * node] += lazy[node];
+    lazy[2 * node + 1] += lazy[node];
+  }
+  lazy[node] = 0;
+}
+
+void update(int node, int st, int en, int rngst, int rngen, int value) {
+  propagate(node, st, en);
+  if (en < rngst || st > rngen) {
+    return;
+  }
+  if (st >= rngst && en <= rngen) {
+    lazy[node] += value;
+    propagate(node, st, en);
+    return;
+  }
+  int mid = (st + en) / 2;
+  update(2 * node, st, mid, rngst, rngen, value);
+  update(2 * node + 1, mid + 1, en, rngst, rngen, value);
+  sgtree[node] = min(sgtree[2 * node], sgtree[2 * node + 1]);
+}
+
+int query(int node, int st, int en, int rngst, int rngen) {
+  propagate(node, st, en);
+  if (en < rngst || st > rngen) {
+    return INT_MAX;
+  }
+  if (st >= rngst && en <= rngen) {
+    return sgtree[node];
+  }
+  int mid = (st + en) / 2;
+  int left = query(2 * node, st, mid, rngst, rngen);
+  int right = query(2 * node + 1, mid + 1, en, rngst, rngen);
+  return min(left, right);
+}
+
+void del(int i) {
+  update(1, 0, m - 1, ve[i][1], ve[i][2], -1);
+}
+
+void add(int i) {
+  update(1, 0, m - 1, ve[i][1], ve[i][2], 1);
+}
+
+int solve() {
+  cin >> n >> m;
+  if (m == 2) {
+    return 0;
+  }
+  ve.resize(n);
+  for (int i = 0; i < n; i++) {
+    int l, r, w;
+    cin >> l >> r >> w;
+    if (l == 1 && r == m) {
+      return 0;
+    }
+    ve[i] = {w, l, r - 1};
+  }
+  sort(ve.begin(), ve.end());
+  int i = 0, j = -1, ans = 1000000;
+  while (j < (int)ve.size() - 1) {
+    if (query(1, 0, m - 1, 0, m - 1) > 0) {
+      del(i);
+      ans = min(ans, ve[j][0] - ve[i][0]);
+      i++;
+    } else {
+      j++;
+      add(j);
+    }
+  }
+  while (query(1, 0, m - 1, 0, m - 1) > 0) {
+    del(i);
+    ans = min(ans, ve[j][0] - ve[i][0]);
+    i++;
+  }
+  return ans;
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  int t = 1;
+  for (int tc = 1; tc <= t; tc++) {
+    cout << solve() << '\n';
+  }
+  return 0;
+}
+```

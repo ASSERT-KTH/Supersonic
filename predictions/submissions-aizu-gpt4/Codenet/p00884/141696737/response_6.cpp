@@ -1,0 +1,70 @@
+#include <iostream>
+#include <vector>
+#include <map>
+#include <set>
+#include <algorithm>
+#include <string>
+using namespace std;
+
+vector<vector<int>> involve;
+
+vector<int> dfs2(int now, vector<bool> &used) {
+  if (used[now])
+    return vector<int>();
+  used[now] = true;
+  vector<int> ans;
+  for (auto i : involve[now]) {
+    vector<int> a(dfs2(i, used));
+    ans.insert(ans.end(), a.begin(), a.end());
+  }
+  ans.push_back(now);
+  return ans;
+}
+
+int main() {
+  while (true) {
+    int num = 0;
+    map<string, int> mp;
+    set<int> ed;
+    int N;
+    cin >> N;
+    if (N == 0)
+      break;
+    involve.clear();
+    involve.resize(100000);
+    for (int i = 0; i < N; ++i) {
+      string st;
+      cin >> st;
+      string groupname;
+      vector<string> membername;
+      int pre;
+      for (int j = 0; j < st.size(); ++j) {
+        if (st[j] == ':') {
+          groupname = st.substr(0, j);
+          pre = j;
+        } else if (st[j] == ',' || st[j] == '.') {
+          membername.push_back(st.substr(pre + 1, j - pre - 1));
+          pre = j;
+        }
+      }
+      if (!mp.count(groupname)) {
+        mp[groupname] = num++;
+      }
+      for (const auto& member : membername) {
+        if (!mp.count(member)) {
+          mp[member] = num++;
+        }
+      }
+      for (const auto& member : membername) {
+        involve[mp[groupname]].push_back(mp[member]);
+        ed.insert(mp[member]);
+      }
+    }
+    vector<bool> used(100001, false);
+    vector<int> allnames(dfs2(0, used));
+    sort(allnames.begin(), allnames.end());
+    allnames.erase(unique(allnames.begin(), allnames.end()), allnames.end());
+    cout << allnames.size() << endl;
+  }
+  return 0;
+}

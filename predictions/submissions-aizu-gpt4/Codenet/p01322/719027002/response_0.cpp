@@ -1,0 +1,43 @@
+#include <iostream>
+#include <unordered_map>
+#include <vector>
+using namespace std;
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+
+  int n, m;
+  string l;
+  int ans;
+
+  while (cin >> n >> m && (n || m)) {
+    ans = 0;
+    unordered_map<string, int> dict;
+
+    for (int i = 0; i < n; i++) {
+      string b;
+      int o;
+      cin >> b >> o;
+      dict[b] = o;
+    }
+
+    for (int i = 0; i < m; i++) {
+      cin >> l;
+      for(auto& x: dict) {
+        bool f = true;
+        for (int k = 0; k < 8; k++) {
+          if (x.first[k] != '*' && x.first[k] != l[k]) {
+            f = false;
+            break;
+          }
+        }
+        if (f) {
+          ans += x.second;
+          break;
+        }
+      }
+    }
+    cout << ans << '\n';
+  }
+}

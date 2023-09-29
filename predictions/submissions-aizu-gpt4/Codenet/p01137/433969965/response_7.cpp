@@ -1,0 +1,18 @@
+#include <iostream>
+#include <algorithm>
+using namespace std;
+
+int main() {
+  int e;
+  while (cin >> e, e) {
+    int ans = e;
+    for (int z = cbrt(e); z >= 0; --z) {
+      int yz = e - z * z * z;
+      int y = sqrt(yz);
+      int x = yz - y * y;
+      ans = min(ans, x + y + z);
+    }
+    cout << ans << endl;
+  }
+  return 0;
+}

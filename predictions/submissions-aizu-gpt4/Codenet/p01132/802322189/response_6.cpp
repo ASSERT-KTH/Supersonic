@@ -1,0 +1,63 @@
+#include <bits/stdc++.h>
+using namespace std;
+int payment(vector<int> &p) {
+    return 10 * p[0] + 50 * p[1] + 100 * p[2] + 500 * p[3];
+}
+
+vector<int> charge(int m) {
+    vector<int> ans(4, 0);
+    static const int coin[] = {500, 100, 50, 10};
+    for (int i = 0; i < 4; i++) {
+        ans[i] = m / coin[i];
+        m %= coin[i];
+    }
+    return ans;
+}
+
+bool judge(vector<int> &f, vector<int> &ch) {
+    for (int i = 0; i < 4; i++)
+        if (f[i] == 1 && ch[i] > 0)
+            return false;
+    return true;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(0);
+    int N;
+    while (cin >> N && N) {
+        vector<int> c(4);
+        int sum = 0;
+        for (int &i : c) {
+            cin >> i;
+            sum += i;
+        }
+
+        int mini = INT_MAX;
+        vector<int> pay(4);
+        vector<int> ans(4);
+        for (pay[0] = 0; pay[0] <= c[0]; pay[0]++) {
+            for (pay[1] = 0; pay[1] <= c[1]; pay[1]++) {
+                for (pay[2] = 0; pay[2] <= c[2]; pay[2]++) {
+                    for (pay[3] = 0; pay[3] <= c[3]; pay[3]++) {
+                        int m_pay = payment(pay);
+                        if (m_pay < N) continue;
+                        vector<int> ch = charge(m_pay - N);
+                        int n_pay = accumulate(pay.begin(), pay.end(), 0);
+                        int n_charge = accumulate(ch.begin(), ch.end(), 0);
+                        if (mini > sum - n_pay + n_charge && judge(pay, ch)) {
+                            ans = pay;
+                            mini = sum - n_pay + n_charge;
+                        }
+                    }
+                }
+            }
+        }
+        static const int coin[] = {10, 50, 100, 500};
+        for (int i = 0; i < 4; i++)
+            if (ans[i] > 0)
+                cout << coin[i] << " " << ans[i] << "\n";
+        cout << "\n";
+    }
+    return 0;
+}

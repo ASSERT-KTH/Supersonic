@@ -1,0 +1,76 @@
+#include <bits/stdc++.h>
+using namespace std;
+#define int long long
+#define IOS ios_base::sync_with_stdio(false); cin.tie(NULL); cout.tie(NULL);
+const int MAXN = 100100;
+vector<int> adj[MAXN];
+int n, a[MAXN], q, tin[MAXN], tout[MAXN], par[MAXN], head[MAXN], dep[MAXN], sub[MAXN], cnt;
+pair<int, int> t[4 * MAXN];
+
+pair<int, int> combine(pair<int, int> x, pair<int, int> y) {
+    if(a[x.first] > a[y.first]) return x;
+    else return y;
+}
+
+void build(int v, int tl, int tr) {
+    if (tl == tr) t[v] = {a[tl], tl};
+    else {
+        int tm = (tl + tr) / 2;
+        build(2 * v, tl, tm);
+        build(2 * v + 1, tm + 1, tr);
+        t[v] = combine(t[2 * v], t[2 * v + 1]);
+    }
+}
+
+pair<int, int> get(int v, int tl, int tr, int l, int r) {
+    if (l > r) return {-1, -1};
+    if (l <= tl && tr <= r) return t[v];
+    int tm = (tl + tr) / 2;
+    return combine(get(v * 2, tl, tm, l, min(r, tm)), get(v * 2 + 1, tm + 1, tr, max(l, tm + 1), r));
+}
+
+int dfs1(int s, int p, int d) {
+    par[s] = p;
+    dep[s] = d;
+    for (auto &t : adj[s]) {
+        sub[s] += dfs1(t, s, d + 1);
+        if (sub[adj[s][0]] < sub[t]) swap(t, adj[s][0]);
+    }
+    return ++sub[s];
+}
+
+void dfs2(int s, int h) {
+    head[s] = h;
+    tin[s] = cnt++;
+    for (auto t : adj[s]) dfs2(t, t == adj[s][0] ? h : t);
+    tout[s] = cnt;
+}
+
+int lca(int a, int b) {
+    while (head[a] != head[b]) {
+        if (dep[head[a]] > dep[head[b]]) swap(a, b);
+        b = par[head[b]];
+    }
+    if (dep[a] > dep[b]) swap(a, b);
+    return a;
+}
+
+signed main() {
+    IOS;
+    cin >> n >> q;
+    for (int i = 1; i < n; i++) {
+        int x; cin >> x;
+        adj[x - 1].push_back(i);
+    }
+    dfs1(0, -1, 0);
+    dfs2(0, 0);
+    for (int i = 0; i < n; i++) a[tin[i]] = i;
+    build(1, 0, n - 1);
+    while (q--) {
+        int l, r; cin >> l >> r;
+        l--; r--;
+        pair<int, int> cur = get(1, 0, n - 1, l, r);
+        cout << cur.second + 1 << " " << dep[lca(l, cur.second)] << '\n';
+    }
+    return 0;
+}

@@ -1,0 +1,39 @@
+#include <iostream>
+#include <vector>
+using namespace std;
+typedef vector<int> vi;
+typedef vector<vi> vvi;
+int dx[] = {1, 0, -1, 0};
+int dy[] = {0, 1, 0, -1};
+void solve(int y, int x, vvi& M) {
+  M[y][x] = 0;
+  for (int i = 0; i < 4; ++i) {
+    int ny = y + dy[i], nx = x + dx[i];
+    if (ny >= 0 && ny < 8 && nx >= 0 && nx < 8 && M[ny][nx] == 1)
+      solve(ny, nx);
+  }
+}
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+  int n, y, x;
+  cin >> n;
+  for (int i = 0; i < n; ++i) {
+    vvi M(8, vi(8));
+    for (int j = 0; j < 8; ++j)
+      for (int k = 0; k < 8; ++k) {
+        char c;
+        cin >> c;
+        M[j][k] = c - '0';
+      }
+    cin >> x >> y;
+    solve(y - 1, x - 1, M);
+    cout << "Data " << i + 1 << ":\n";
+    for (const auto& row : M) {
+      for (const auto& val : row)
+        cout << val;
+      cout << '\n';
+    }
+  }
+  return 0;
+}

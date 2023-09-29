@@ -1,0 +1,53 @@
+#include <cstdio>
+#include <iostream>
+#include <string>
+using namespace std;
+
+const int MAXN = 1e6 + 7;
+int N;
+int pos[MAXN];
+char ans;
+
+void dfs(string s, int l, int r, int rep) {
+  for (int i = l; i <= r;) {
+    if ('0' <= s[i] && s[i] <= '9') {
+      int j = i;
+      while (s[j] >= '0' && s[j] <= '9') j++;
+      int n = stoi(s.substr(i, j-i));
+      i = j;
+      if (s[i] == '(') {
+        int cnt = 1, j = pos[i];
+        dfs(s, i+1, j-1, n*rep);
+        i = j+1;
+      } else {
+        ans = (rep * n < N) ? 0 : s[i+n-1];
+        return;
+      }
+    } else {
+      i++;
+    }
+  }
+}
+
+int main() {
+  for (;;) {
+    string s;
+    cin >> s >> N;
+    if (s == "0") break;
+    int len = s.size();
+    for (int i = 0; i < len; i++) {
+      if (s[i] == '(') {
+        int cnt = 1, j = i+1;
+        while (cnt > 0) {
+          if (s[j] == '(') cnt++;
+          else if (s[j] == ')') cnt--;
+          j++;
+        }
+        pos[i] = j-1;
+      }
+    }
+    ans = 0;
+    dfs(s, 0, len-1, 1);
+    printf("%c\n", ans);
+  }
+}

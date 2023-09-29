@@ -1,0 +1,31 @@
+#include <math.h>
+#include <stdio.h>
+#include <vector>
+#include <iostream>
+
+constexpr int MAX_NUM = 1000000;
+
+int main() {
+  std::vector<bool> num(MAX_NUM, true);
+  num[0] = num[1] = false;
+  
+  int limit = static_cast<int>(sqrt(MAX_NUM));
+  for (int i = 2; i <= limit; ++i) {
+    if (num[i]) {
+      for (int j = i * i; j < MAX_NUM; j += i)
+        num[j] = false;
+    }
+  }
+
+  std::vector<int> prefix_sum(MAX_NUM);
+  for (int i = 1; i < MAX_NUM; ++i) {
+    prefix_sum[i] = prefix_sum[i-1] + num[i];
+  }
+
+  int n;
+  while (std::cin >> n) {
+    std::cout << prefix_sum[n] << '\n';
+  }
+  
+  return 0;
+}

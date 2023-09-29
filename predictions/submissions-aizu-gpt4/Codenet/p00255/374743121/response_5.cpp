@@ -1,0 +1,26 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+int main() {
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(NULL);
+
+    long long n;
+    while (std::cin >> n && n) {
+        std::vector<long long> j(n);
+        long long s = 0, a = 0;
+        for (long long i = 0; i < n; ++i) {
+            std::cin >> j[i];
+            s += j[i];
+        }
+        std::sort(j.begin(), j.end(), std::greater<long long>());
+        for (long long i = 0; i < n; ++i) {
+            a = std::max(a, (n - i) * s);
+            s -= j[i];
+        }
+        std::cout << a << '\n';
+    }
+
+    return 0;
+}

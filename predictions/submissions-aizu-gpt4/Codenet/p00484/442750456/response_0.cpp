@@ -1,0 +1,56 @@
+#include <iostream>
+#include <algorithm>
+#include <vector>
+#include <unordered_set>
+
+using namespace std;
+
+typedef long long ll;
+typedef pair<int, int> P;
+ll d[15][2005], dp[2005][2005];
+
+int main() {
+  ios::sync_with_stdio(false); 
+  cin.tie(0); 
+
+  int n, K;
+  cin >> n >> K;
+  vector<int> id, v[2005];
+
+  for (int i = 0; i < n; ++i) {
+    int a, b;
+    cin >> a >> b;
+    id.push_back(b - 1);
+    v[b - 1].push_back(a);
+  }
+
+  unordered_set<int> id_set(id.begin(), id.end());
+  id.assign(id_set.begin(), id_set.end());
+  sort(id.begin(), id.end());
+
+  for (auto& i : id) sort(v[i].begin(), v[i].end(), greater<int>());
+
+  vector<P> p;
+  for (auto& i : id) {
+    for (int k = 1; k <= v[i].size(); ++k) {
+      d[i][k] = d[i][k - 1] + v[i][k - 1] + (k - 1) * 2;
+      p.emplace_back(k, d[i][k]);
+    }
+  }
+
+  for (int i = 0; i < id.size(); ++i) {
+    for (int j = 0; j <= K; ++j) {
+      ll res = dp[i][j];
+      for (int k = 0; k <= v[id[i]].size(); ++k) {
+        if (j >= k) {
+          res = max(res, dp[i][j - k] + d[id[i]][k]);
+        }
+      }
+      dp[i + 1][j] = res;
+    }
+  }
+
+  cout << dp[id.size()][K] << endl;
+
+  return 0;
+}

@@ -1,0 +1,42 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cmath>
+#define MAX 24
+#define INF 100000000
+
+using namespace std;
+
+int n;
+int x[MAX], y[MAX], r[MAX], c[MAX];
+int dp[1<<MAX];
+
+int dist(int i, int j) {
+    return (x[i]-x[j])*(x[i]-x[j]) + (y[i]-y[j])*(y[i]-y[j]);
+}
+
+int solve(int S) {
+    if (dp[S] >= 0) return dp[S];
+    dp[S] = INF;
+    for (int i = 0; i < n; ++i) {
+        if ((S>>i)&1) {
+            for (int j = 0; j < n; ++j) {
+                if (i == j) continue;
+                if ((S>>j)&1 && c[i] == c[j] && r[i]+r[j] <= sqrt(dist(i, j))) {
+                    dp[S] = min(dp[S], solve(S^(1<<i)^(1<<j))+1);
+                }
+            }
+        }
+    }
+    return dp[S];
+}
+
+int main() {
+    while (cin >> n, n) {
+        for (int i = 0; i < n; ++i) cin >> x[i] >> y[i] >> r[i] >> c[i];
+        fill(dp, dp+(1<<n), -1);
+        dp[0] = 0;
+        cout << solve((1<<n)-1) << endl;
+    }
+    return 0;
+}

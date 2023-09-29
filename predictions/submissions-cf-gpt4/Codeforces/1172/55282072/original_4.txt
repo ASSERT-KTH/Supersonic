@@ -1,0 +1,130 @@
+```C++
+#include <algorithm>
+#include <iostream>
+#include <map>
+#include <vector>
+#define MOD 998244353
+#define ll long long
+#define MOD_INT int64_t
+using namespace std;
+
+MOD_INT power(MOD_INT x, MOD_INT p) {
+    MOD_INT res = 1;
+    while (p > 0) {
+        if (p & 1) res = res * x % MOD;
+        x = x * x % MOD;
+        p >>= 1;
+    }
+    return res;
+}
+
+MOD_INT modInv(MOD_INT x) { return power(x, MOD - 2); }
+
+MOD_INT factorial[410000], inverse[410000];
+
+void prepare_factorials() {
+    factorial[0] = inverse[0] = 1;
+    for (int i = 1; i < 410000; i++) {
+        factorial[i] = factorial[i - 1] * i % MOD;
+        inverse[i] = modInv(factorial[i]);
+    }
+}
+
+MOD_INT choose(int n, int r) {
+    return factorial[n] * inverse[r] % MOD * inverse[n - r] % MOD;
+}
+
+int N, M, L, DL;
+vector<int> likes, weights;
+vector<MOD_INT> prob;
+map<int, MOD_INT> DP[2];
+
+MOD_INT solve(int like, int weight) {
+    if (DP[like].count(weight))
+        return DP[like][weight];
+    MOD_INT answer = 0;
+    if (like) {
+        for (int up = 0; up <= M; up++) {
+            if (prob[2 * up] == 0) continue;
+            MOD_INT starter = prob[2 * up];
+            MOD_INT other = 1;
+            for (int i = 0; i < up; i++) {
+                starter = starter * inverse[L + i] % MOD;
+                other = other * (L - weight + i) % MOD;
+            }
+            for (int u = 0; u <= up; u++) {
+                MOD_INT product = starter * choose(up, u) % MOD * (weight + u) % MOD;
+                if (u > 0) other = other * inverse[L - weight + up - u] % MOD;
+                if (L == weight) {
+                    if (u < up) product = 0;
+                } else {
+                    product = product * other % MOD;
+                }
+                answer = (answer + product) % MOD;
+                starter = starter * (weight + u) % MOD;
+            }
+        }
+    } else {
+        for (int down = 0; down <= M; down++) {
+            if (prob[2 * (M - down)] == 0) continue;
+            MOD_INT starter = prob[2 * (M - down)];
+            MOD_INT other = 1;
+            for (int i = 0; i < down; i++) {
+                starter = starter * inverse[DL - i] % MOD;
+                other = other * (DL - weight - i) % MOD;
+            }
+            for (int d = 0; d <= min(down, weight); d++) {
+                MOD_INT product = starter * choose(down, d) % MOD * (weight - d) % MOD;
+                if (d > 0) other = other * inverse[DL - weight + down - d] % MOD;
+                if (DL == weight) {
+                    if (d < down) product = 0;
+                } else {
+                    product = product * other % MOD;
+                }
+                answer = (answer + product) % MOD;
+                starter = starter * (weight - d) % MOD;
+            }
+        }
+    }
+    return DP[like][weight] = answer;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    prepare_factorials();
+    cin >> N >> M;
+    likes.resize(N);
+    weights.resize(N);
+    for (int &like : likes)
+        cin >> like;
+    for (int &weight : weights)
+        cin >> weight;
+    L = DL = 0;
+    for (int i = 0; i < N; i++)
+        if (likes[i])
+            L += weights[i];
+        else
+            DL += weights[i];
+    prob.assign(2 * M + 1, 0);
+    prob[M] = 1;
+    for (int iter = 0; iter < M; iter++) {
+        vector<MOD_INT> new_prob(2 * M + 1, 0);
+        for (int i = -M; i <= M; i++) {
+            if ((i + iter) % 2 != 0 || abs(i) > iter) continue;
+            int up = (iter + i) / 2, down = (iter - i) / 2;
+            if (down > DL) continue;
+            MOD_INT like_prob = MOD_INT(L + up) * modInv(L + DL + i) % MOD;
+            MOD_INT dislike_prob = (1 - like_prob + MOD) % MOD;
+            new_prob[M + i + 1] = (new_prob[M + i + 1] + prob[M + i] * like_prob) % MOD;
+            new_prob[M + i - 1] = (new_prob[M + i - 1] + prob[M + i] * dislike_prob) % MOD;
+        }
+        prob = move(new_prob);
+    }
+    for (int i = 0; i < N; i++) {
+        MOD_INT answer = MOD_INT(weights[i]) * solve(likes[i], 1) % MOD;
+        cout << answer << '\n';
+    }
+    return 0;
+}
+```

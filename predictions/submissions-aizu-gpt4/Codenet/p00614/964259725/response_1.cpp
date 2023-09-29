@@ -1,0 +1,45 @@
+#include <iostream>
+#include <vector>
+#include <deque>
+#include <algorithm>
+
+constexpr int INF = 1001001001;
+constexpr int MAX_P = 50000;
+constexpr int COINS[] = {1, 5, 10, 50, 100, 500};
+constexpr int NUM_COINS = sizeof(COINS) / sizeof(COINS[0]);
+
+int P;
+int N[NUM_COINS];
+
+int dp[2][MAX_P + 1];
+
+void solve() {
+  std::fill(dp[0], dp[0] + MAX_P + 1, INF);
+  dp[0][0] = 0;
+  for (int i = 0; i < NUM_COINS; i++) {
+    for (int j = 0; j < COINS[i]; j++) {
+      std::deque<int> deq;
+      for (int k = 0; j + k <= P; k += COINS[i]) {
+        if (!deq.empty() && deq.front() == k - COINS[i] * N[i])
+          deq.pop_front();
+        while (!deq.empty() && dp[i & 1][deq.back()] >= dp[i & 1][k])
+          deq.pop_back();
+        deq.push_back(k);
+        dp[(i + 1) & 1][j + k] = dp[i & 1][deq.front()] + (j + k - deq.front()) / COINS[i];
+      }
+    }
+  }
+  int res = INF;
+  for (int i = P; i <= P + 500; i++)
+    res = std::min(res, dp[NUM_COINS & 1][i]);
+  std::cout << res << std::endl;
+}
+
+int main() {
+  while (std::cin >> P, P) {
+    for (int i = 0; i < NUM_COINS; i++)
+      std::cin >> N[i];
+    solve();
+  }
+  return 0;
+}

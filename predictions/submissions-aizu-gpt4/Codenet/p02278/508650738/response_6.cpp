@@ -1,0 +1,79 @@
+#include <vector>
+#include <algorithm>
+#include <map>
+#include <iostream>
+
+using namespace std;
+typedef long long LL;
+
+struct QuickFind {
+  vector<LL> r, p;
+  vector<vector<LL>> v;
+
+  QuickFind(LL size) {
+    r.resize(size, 0);
+    p.resize(size, 0);
+    v.resize(size);
+    for (LL i = 0; i < size; ++i) {
+      r[i] = 1, p[i] = i;
+      v[i].resize(1, i);
+    }
+  }
+
+  bool same(LL x, LL y) { 
+    return p[x] == p[y]; 
+  }
+
+  void unite(LL x, LL y) {
+    x = p[x];
+    y = p[y];
+    if (x == y) return;
+    if (r[x] < r[y]) swap(x, y);
+    
+    r[x] += r[y];
+    for (auto& i : v[y]) {
+      p[i] = x;
+      v[x].push_back(i);
+    }
+    v[y].clear();
+  }
+};
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+  
+  LL n;
+  cin >> n;
+  vector<LL> a(n);
+  for (auto& i : a) cin >> i;
+  
+  vector<LL> b(a);
+  sort(b.begin(), b.end());
+
+  map<LL, LL> p, q;
+  for (LL i = 0; i < n; ++i) {
+    p[a[i]] = i;
+    q[b[i]] = i;
+  }
+
+  QuickFind qf(n);
+  for (LL i = 0; i < n; ++i) qf.unite(i, p[b[i]]);
+  
+  LL ans = 0;
+  for (LL i = 0; i < n; ++i) {
+    LL k = qf.v[i].size();
+    if (qf.p[i] != i || k == 1) continue;
+    
+    LL m = a[qf.v[i][0]];
+    LL tmp = 0;
+    for (auto& j : qf.v[i]) {
+      tmp += a[j];
+      m = min(m, a[j]);
+    }
+    ans += min(tmp + m * (k - 2), tmp + m + b[0] * (k + 1));
+  }
+  
+  cout << ans << '\n';
+  return 0;
+}

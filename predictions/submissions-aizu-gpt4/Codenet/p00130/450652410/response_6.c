@@ -1,0 +1,34 @@
+#include <cstdio>
+
+const int N = 52;
+char train[N];
+
+inline void ope_line() {
+    int t = 25, s = 25;
+    for (int i = 0; i < N; ++i)
+        train[i] = '\0';
+    int c = getchar();
+    train[t] = c;
+    int a = getchar();
+    while (a != '\n' && a != EOF) {
+        int b = getchar();
+        c = getchar();
+        if (a == '<' && b == '-') {
+            train[--t] = c;
+            s = s < t ? s : t;
+        } else if (a == '-' && b == '>')
+            train[++t] = c;
+        a = getchar();
+    }
+    printf("%s\n", &train[s]);
+}
+
+int main() {
+    int n;
+    scanf("%d", &n);
+    getchar();
+    for (int i = 0; i < n; ++i) {
+        ope_line();
+    }
+    return 0;
+}

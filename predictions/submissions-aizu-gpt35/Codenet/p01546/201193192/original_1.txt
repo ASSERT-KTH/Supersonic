@@ -1,0 +1,115 @@
+```c++
+#include <bits/stdc++.h>
+using namespace std;
+const int INF = 1e9;
+const int MAXN = 155;
+int V, K, E, dp[MAXN][MAXN], prv[MAXN][MAXN], cnt[MAXN];
+vector<vector<int>> adj, adj_r;
+vector<array<int, 2>> edges;
+void restore(int step, int v) {
+  int c = step;
+  vector<int> path;
+  while (v != -1) {
+    path.push_back(v);
+    v = prv[c--][v];
+  }
+  reverse(path.begin(), path.end());
+  for (int i = 0; i < step + 1; ++i)
+    cout << path[i] << (i < step ? " " : "\n");
+}
+bool dfs(int u, int dep, int cur_score) {
+  if (dep == K) {
+    restore(K, u);
+    return true;
+  }
+  if (cur_score + cnt[u] < K)
+    return false;
+  for (int v : adj[u]) {
+    int new_score = cur_score + cnt[v];
+    bool flag = new_score >= K;
+    for (auto [to, c] : edges) {
+      if (to == v) {
+        new_score = max(new_score, cur_score + c);
+        if (new_score >= K)
+          flag = true;
+      }
+    }
+    if (dp[dep + 1][v] < new_score) {
+      dp[dep + 1][v] = new_score;
+      prv[dep + 1][v] = u;
+      if (flag) {
+        restore(dep + 1, v);
+        return true;
+      }
+      if (dfs(v, dep + 1, new_score))
+        return true;
+    }
+  }
+  return false;
+}
+int calc_min_step() {
+  vector<vector<int>> dist(V, vector<int>(V, -INF));
+  for (int i = 0; i < V; ++i)
+    dist[i][i] = 0;
+  for (auto [u, v] : edges)
+    dist[u][v] = 0;
+  for (int k = 0; k < V; ++k)
+    for (int i = 0; i < V; ++i)
+      for (int j = 0; j < V; ++j)
+        dist[i][j] = max(dist[i][j], dist[i][k] + dist[k][j]);
+  int l = 0, r = 1e6 + 5;
+  while (r - l > 1) {
+    int m = (l + r) >> 1;
+    memset(cnt, 0, sizeof(cnt));
+    for (int i = 0; i < V; ++i)
+      for (int j = 0; j < V; ++j)
+        cnt[i] += dist[i][j] >= m;
+    bool flag = false;
+    memset(dp, -0x3f, sizeof(dp));
+    for (int i = 0; i < V; ++i)
+      dp[1][i] = cnt[i];
+    for (int i = 0; i < V; ++i)
+      if (dfs(i, 1, cnt[i]))
+        flag = true;
+    if (flag)
+      r = m;
+    else
+      l = m;
+  }
+  if (r > 1e6)
+    r = -1;
+  return r;
+}
+void solve() {
+  bool flag = false;
+  for (int i = 0; i < V; ++i) {
+    memset(dp, -0x3f, sizeof(dp));
+    dp[0][i] = 0;
+    prv[0][i] = -1;
+    if (dfs(i, 0, 0)) {
+      flag = true;
+      break;
+    }
+  }
+  if (!flag) {
+    int ans = calc_min_step();
+    cout << ans << '\n';
+  }
+}
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+  cin >> V >> E >> K;
+  adj.resize(V);
+  adj_r.resize(V);
+  for (int i = 0; i < E; ++i) {
+    int u, v, c;
+    cin >> u >> v >> c;
+    adj[u].push_back(v);
+    adj_r[v].push_back(u);
+    edges.push_back({u, v});
+  }
+  solve();
+  return 0;
+}
+```

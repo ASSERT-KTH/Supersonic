@@ -1,0 +1,90 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+using int64 = long long;
+
+struct UnionFind {
+  vector<int> data;
+  UnionFind(int sz) : data(sz, -1) {}
+  bool unite(int x, int y) {
+    x = find(x), y = find(y);
+    if (x == y) return false;
+    if (data[x] > data[y]) swap(x, y);
+    data[x] += data[y];
+    data[y] = x;
+    return true;
+  }
+  int find(int k) {
+    return data[k] < 0 ? k : (data[k] = find(data[k]));
+  }
+  int size(int k) { return -data[find(k)]; }
+};
+
+struct edge {
+  int u, v, cost, idx;
+  bool operator<(const edge &e) const { return cost < e.cost; }
+};
+
+const int MAX = 200000;
+int N, M, A[MAX], B[MAX], C[MAX];
+vector<edge> edges(MAX);
+bool killed[MAX];
+vector<vector<int>> tree(MAX), g(MAX);
+int64 all, ans[MAX];
+set<pair<int, int>> component[MAX];
+
+void rec(int idx, int par = -1) {
+  for (auto &e : g[idx]) {
+    component[idx].emplace(e, idx);
+  }
+  for (auto &e : tree[idx]) {
+    if (e == par) continue;
+    rec(e, idx);
+    auto &u = component[idx], &v = component[e];
+    if (v.empty()) continue;
+    ans[idx] = all - ans[idx] + v.begin()->first;
+    if (u.size() < v.size()) swap(u, v);
+    while (!v.empty()) {
+      auto p = v.begin();
+      u.count(*p) ? u.erase(*p) : u.emplace(*p);
+      v.erase(p);
+    }
+  }
+}
+
+int main() {
+  scanf("%d %d", &N, &M);
+  for (int i = 0; i < M; i++) {
+    scanf("%d %d %d", &A[i], &B[i], &C[i]);
+    --A[i], --B[i];
+    edges[i] = {A[i], B[i], C[i], i};
+  }
+  UnionFind uf(N);
+  sort(begin(edges), begin(edges) + M);
+  for (auto &e : edges) {
+    if (uf.unite(e.v, e.u)) {
+      killed[e.idx] = true;
+      all += e.cost;
+    }
+  }
+  if (uf.size(0) != N) {
+    for (int i = 0; i < M; i++)
+      puts("-1");
+    return 0;
+  }
+  for (int i = 0; i < M; i++) {
+    if (killed[i]) {
+      tree[A[i]].push_back(i);
+      tree[B[i]].push_back(i);
+      ans[i] = -1;
+    } else {
+      g[A[i]].push_back(i);
+      g[B[i]].push_back(i);
+      ans[i] = all;
+    }
+  }
+  rec(0);
+  for (int i = 0; i < M; i++) {
+    printf("%lld\n", ans[i]);
+  }
+}

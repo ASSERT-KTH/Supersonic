@@ -1,0 +1,52 @@
+#include <iostream>
+#include <vector>
+using namespace std;
+
+constexpr int MAX_SIZE = 102;
+vector<vector<int>> Board(MAX_SIZE, vector<int>(MAX_SIZE));
+bool isOK;
+int xs, ys, xg, yg;
+
+void DFS(int c, int x, int y) {
+  if (x < 0 || y < 0 || x >= MAX_SIZE || y >= MAX_SIZE || Board[x][y] != c) {
+    return;
+  }
+  if (x == xg && y == yg) {
+    isOK = true;
+    return;
+  }
+
+  Board[x][y] = 0;
+  static const int dx[] = {1, 0, -1, 0};
+  static const int dy[] = {0, 1, 0, -1};
+  for(int i = 0; i < 4; ++i) {
+    DFS(c, x + dx[i], y + dy[i]);
+  }
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+
+  int w, h;
+  while (cin >> w >> h, w || h) {
+    fill(Board.begin(), Board.end(), vector<int>(MAX_SIZE, -1));
+    isOK = false;
+
+    cin >> xs >> ys >> xg >> yg;
+    int n, c, d, x, y;
+    cin >> n;
+    while(n-- > 0) {
+      cin >> c >> d >> x >> y;
+      int wb = 2 + (!d * 2);
+      int hb = 2 + (d * 2);
+
+      for (int i = 0; i < hb; ++i) {
+        fill(Board[x].begin() + y, Board[x].begin() + y + wb, c);
+      }
+    }
+    DFS(Board[xs][ys], xs, ys);
+    cout << (isOK ? "OK\n" : "NG\n");
+  }
+  return 0;
+}

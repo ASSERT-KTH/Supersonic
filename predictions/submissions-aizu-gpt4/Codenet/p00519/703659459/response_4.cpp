@@ -1,0 +1,66 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <algorithm>
+#define INF 999999999
+#define SIZE 6000
+
+using namespace std;
+using P = pair<int, int>;
+
+vector<int> pass[SIZE];
+int n, k;
+int c[SIZE];
+int r[SIZE];
+int d[SIZE];
+
+void bfs(int v, vector<int> &dist) {
+    queue<int> que;
+    fill(dist.begin(), dist.end(), -1);
+    dist[v] = 0;
+    que.push(v);
+    while (!que.empty()) {
+        int p = que.front(); que.pop();
+        for (int u : pass[p]) {
+            if (dist[u] != -1) continue;
+            dist[u] = dist[p] + 1;
+            que.push(u);
+        }
+    }
+}
+
+int dijk(int s, int g) {
+    fill(d, d + SIZE, INF);
+    d[s] = 0;
+    priority_queue<P, vector<P>, greater<P>> que;
+    que.push({0, s});
+    while (!que.empty()) {
+        P p = que.top(); que.pop();
+        int v = p.second;
+        if (d[v] != p.first) continue;
+        vector<int> dist(SIZE);
+        bfs(v, dist);
+        for (int u = 0; u < n; u++) {
+            if (dist[u] > r[v] || dist[u] == -1) continue;
+            if (d[u] > d[v] + c[v]) {
+                d[u] = d[v] + c[v];
+                que.push({d[u], u});
+            }
+        }
+    }
+    return d[g];
+}
+
+int main() {
+    cin >> n >> k;
+    for (int i = 0; i < n; i++) cin >> c[i] >> r[i];
+    for (int i = 0; i < k; i++) {
+        int a, b;
+        cin >> a >> b;
+        a--, b--;
+        pass[a].push_back(b);
+        pass[b].push_back(a);
+    }
+    cout << dijk(0, n - 1) << endl;
+    return 0;
+}

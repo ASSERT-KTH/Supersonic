@@ -1,0 +1,59 @@
+#include <iostream>
+#include <vector>
+using namespace std;
+
+static void inputArray(vector<uint32_t>& A, int num) { // Using vector instead of array
+  A.resize(num);
+  for (int i = 0; i < num; i++) {
+    cin >> A[i];
+  }
+}
+
+static void printArray(const vector<uint32_t>& A) { // Only passing vector as const reference
+  for (int i = 0; i < A.size(); i++) {
+    cout << (i != 0 ? " " : "") << A[i];
+  }
+  cout << endl;
+}
+
+static int compared = 0;
+
+static inline void merge(vector<uint32_t>& A, uint32_t left, uint32_t mid,
+                         uint32_t right) {
+  vector<uint32_t> L(A.begin() + left, A.begin() + mid); // Using vector instead of array
+  vector<uint32_t> R(A.begin() + mid, A.begin() + right); // Using vector instead of array
+  L.push_back(UINT32_MAX);
+  R.push_back(UINT32_MAX);
+  for (uint32_t i = 0, j = 0, k = left; k < right; k++) {
+    compared++;
+    if (L[i] <= R[j]) {
+      A[k] = L[i];
+      i++;
+    } else {
+      A[k] = R[j];
+      j++;
+    }
+  }
+}
+
+static inline void mergeSort(vector<uint32_t>& A, uint32_t left, uint32_t right) {
+  if (left + 1 < right) {
+    uint32_t mid = (left + right) / 2;
+    mergeSort(A, left, mid);
+    mergeSort(A, mid, right);
+    merge(A, left, mid, right);
+  }
+}
+
+int main() {
+  ios_base::sync_with_stdio(false); // Speeds up I/O
+  cin.tie(NULL); // Speeds up I/O
+  int n;
+  cin >> n;
+  vector<uint32_t> A(n);
+  inputArray(A, n);
+  mergeSort(A, 0, n);
+  printArray(A);
+  cout << compared << endl;
+  return 0;
+}

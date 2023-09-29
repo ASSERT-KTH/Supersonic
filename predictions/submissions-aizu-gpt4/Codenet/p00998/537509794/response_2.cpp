@@ -1,0 +1,138 @@
+#include <iostream>
+#include <cstdio>
+#include <algorithm>
+#include <vector>
+
+const int INF = 1e9;
+
+struct Node {
+    int val, all;
+    Node *l, *r;
+    int h, size;
+
+    Node(int val)
+        : val(val), all(val), l(nullptr), r(nullptr), h(1), size(1) {}
+
+    ~Node() {
+        delete l;
+        delete r;
+    }
+};
+
+int height(Node *node) {
+    return node ? node->h : 0;
+}
+
+int size(Node *node) {
+    return node ? node->size : 0;
+}
+
+int query(Node *node) {
+    return node ? node->all : INF;
+}
+
+Node *update(Node *node) {
+    if (!node) return node;
+    node->h = 1 + std::max(height(node->l), height(node->r));
+    node->size = 1 + size(node->l) + size(node->r);
+    node->all = std::min({query(node->l), node->val, query(node->r)});
+    return node;
+}
+
+Node *rotate(Node *node, bool dir) {
+    Node *x = dir ? node->l : node->r;
+    if (dir) {
+        node->l = x->r;
+        x->r = node;
+    } else {
+        node->r = x->l;
+        x->l = node;
+    }
+    update(node);
+    return update(x);
+}
+
+Node *balance(Node *node) {
+    if (!node) return node;
+    if (height(node->l) > height(node->r) + 1) {
+        if (height(node->l->r) > height(node->l->l)) node->l = rotate(node->l, false);
+        node = rotate(node, true);
+    } else if (height(node->r) > height(node->l) + 1) {
+        if (height(node->r->l) > height(node->r->r)) node->r = rotate(node->r, true);
+        node = rotate(node, false);
+    }
+    return node;
+}
+
+Node *insert(Node *node, int key, int val) {
+    if (!node) return new Node(val);
+    int leftSize = size(node->l);
+    if (key <= leftSize) node->l = insert(node->l, key, val);
+    else node->r = insert(node->r, key - leftSize - 1, val);
+    return balance(update(node));
+}
+
+Node *moveDown(Node *node, Node *newNode) {
+    if (!node) return newNode;
+    node->r = moveDown(node->r, newNode);
+    return balance(update(node));
+}
+
+Node *erase(Node *node, int key) {
+    if (!node) return node;
+    int leftSize = size(node->l);
+    if (key < leftSize) node->l = erase(node->l, key);
+    else if (key > leftSize) node->r = erase(node->r, key - leftSize - 1);
+    else return moveDown(node->l, node->r);
+    return balance(update(node));
+}
+
+Node *find(Node *node, int key) {
+    if (!node) return node;
+    int leftSize = size(node->l);
+    if (key < leftSize) return find(node->l, key);
+    if (key > leftSize) return find(node->r, key - leftSize - 1);
+    return node;
+}
+
+int find(Node *node, int left, int right) {
+    if (!node || right <= 0 || left >= size(node)) return INF;
+    if (left <= 0 && right >= size(node)) return node->all;
+    int res = INF, mid = size(node->l);
+    if (left <= mid && mid < right) res = node->val;
+    if (left < mid) res = std::min(res, find(node->l, left, right));
+    if (right > mid + 1) res = std::min(res, find(node->r, left - mid - 1, right - mid - 1));
+    return res;
+}
+
+int main() {
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(0);
+
+    int n, q;
+    std::cin >> n >> q;
+    Node *root = nullptr;
+    for (int i = 0; i < n; i++) {
+        int a;
+        std::cin >> a;
+        root = insert(root, i, a);
+    }
+
+    while (q--) {
+        int x, y, z;
+        std::cin >> x >> y >> z;
+        if (x == 0) {
+            Node *node = find(root, z);
+            root = erase(root, z);
+            root = insert(root, y, node->val);
+        } else if (x == 1) {
+            printf("%d\n", find(root, y, z + 1));
+        } else {
+            root = erase(root, y);
+            root = insert(root, y, z);
+        }
+    }
+
+    delete root;
+    return 0;
+}

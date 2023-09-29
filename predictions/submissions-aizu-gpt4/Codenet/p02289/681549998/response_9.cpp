@@ -1,0 +1,28 @@
+#include <queue>
+#include <iostream>
+#include <string>
+using namespace std;
+
+priority_queue<int> q;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(0);
+
+    string com;
+    while (1) {
+        cin >> com;
+        if (com == "end")
+            break;
+        if (com == "insert") {
+            int key;
+            cin >> key;
+            q.push(key);
+        } else {
+            cout << q.top() << endl;
+            q.pop();
+        }
+    }
+
+    return 0;
+}

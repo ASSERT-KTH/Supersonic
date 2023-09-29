@@ -1,0 +1,12 @@
+#include <cstdio>
+#include <iostream>
+using namespace std;
+main() {
+  int n;
+  cin >> n;
+  long long a = 1;
+  while (n > 1) {
+    a *= n--;
+  }
+  cout << a << endl;
+}

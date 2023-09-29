@@ -1,0 +1,180 @@
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <queue>
+#include <algorithm>
+
+#define PI 3.14159265
+#define N 200005
+#define ll long long int
+
+std::vector<ll> v[N], diam[N], tour, path;
+ll n, h[N], first[N], stmin[2 * N][20], root;
+ll vis1[N], vis3[N], vis4[N];
+ll parent[N], dist[N], root1;
+
+void height_initialise(ll x, ll y) {
+  h[x] = y;
+  for (auto &node : v[x]) {
+    if (!vis1[node]) {
+      vis1[node] = 1;
+      height_initialise(node, y + 1);
+    }
+  }
+}
+
+void distanc(ll x, ll y) {
+  dist[x] = y;
+  for (auto &node : v[x]) {
+    if (!vis3[node]) {
+      vis3[node] = 1;
+      distanc(node, y + 1);
+    }
+  }
+}
+
+void euler(ll x) {
+  tour.push_back(x);
+  for (auto &node : v[x]) {
+    if (!vis1[node]) {
+      vis1[node] = 1;
+      euler(node);
+      tour.push_back(x);
+    }
+  }
+}
+
+void euler_tour() {
+  euler(root);
+  for (int i = 0; i < tour.size(); i++) {
+    if (first[tour[i]] == 0) {
+      first[tour[i]] = i + 1;
+    }
+  }
+}
+
+void sparsemin() {
+  for (int i = 0; i < tour.size(); i++) {
+    stmin[i][0] = tour[i];
+  }
+  for (int j = 1; (1 << j) <= tour.size(); j++) {
+    for (int i = 0; i + (1 << j) <= tour.size(); i++) {
+      if (h[stmin[i][j - 1]] < h[stmin[i + (1 << (j - 1))][j - 1]]) {
+        stmin[i][j] = stmin[i][j - 1];
+      } else {
+        stmin[i][j] = stmin[i + (1 << (j - 1))][j - 1];
+      }
+    }
+  }
+}
+
+ll spminquery(ll l, ll r) {
+  ll k = log2(r - l + 1);
+  if (h[stmin[l][k]] < h[stmin[r - (1 << k) + 1][k]]) {
+    return stmin[l][k];
+  }
+  return stmin[r - (1 << k) + 1][k];
+}
+
+int bfs(int x, int flag) {
+  int vis[N] = {0}, y;
+  std::queue<int> q;
+  q.push(x);
+  while (!q.empty()) {
+    x = q.front();
+    q.pop();
+    vis[x] = 1;
+    for (auto &node : v[x]) {
+      if (!vis[node]) {
+        q.push(node);
+        if (flag) {
+          parent[node] = x;
+        }
+      }
+    }
+    y = x;
+  }
+  return y;
+}
+
+void diameter() {
+  int x = bfs(1, 0);
+  int y = bfs(x, 1);
+  root1 = y;
+  while (parent[y] != 0) {
+    path.push_back(y);
+    y = parent[y];
+  }
+  path.push_back(y);
+  std::reverse(path.begin(), path.end());
+  root = x;
+  for (int i = 0; i < path.size(); i++) {
+    std::queue<int> q;
+    q.push(path[i]);
+    while (!q.empty()) {
+      x = q.front();
+      q.pop();
+      vis4[x] = 1;
+      for (auto &node : v[x]) {
+        if (!vis4[node]) {
+          q.push(node);
+          diam[i].push_back(node);
+        }
+      }
+    }
+  }
+}
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(NULL);
+  std::cin >> n;
+  std::vector<std::pair<ll, ll>> an;
+  for (int i = 0; i < n - 1; i++) {
+    ll x, y;
+    std::cin >> x >> y;
+    v[x].push_back(y);
+    v[y].push_back(x);
+  }
+  diameter();
+  height_initialise(root, 0);
+  euler_tour();
+  sparsemin();
+  distanc(root, 0);
+  ll ans = 0;
+  for (int i = 0; i < path.size() / 2; i++) {
+    for (int j = diam[i].size() - 1; j > 0; j--) {
+      ll x = root1;
+      ll y = diam[i][j];
+      an.emplace_back(x, y);
+      ll l = first[x];
+      ll r = first[y];
+      ll z = spminquery(std::min(l, r) - 1, std::max(l, r) - 1);
+      ans += dist[x] + dist[y] - 2 * dist[z];
+    }
+  }
+  int x = path.size() / 2;
+  for (int i = x; i < path.size(); i++) {
+    for (int j = diam[i].size() - 1; j > 0; j--) {
+      ll y = diam[i][j];
+      an.emplace_back(root, y);
+      ll l = first[root];
+      ll r = first[y];
+      ll z = spminquery(std::min(l, r) - 1, std::max(l, r) - 1);
+      ans += dist[root] + dist[y] - 2 * dist[z];
+    }
+  }
+  for (int i = path.size() - 1; i > 0; i--) {
+    ll y = diam[i][0];
+    an.emplace_back(root, y);
+    ll l = first[root];
+    ll r = first[y];
+    ll z = spminquery(std::min(l, r) - 1, std::max(l, r) - 1);
+    ans += dist[root] + dist[y] - 2 * dist[z];
+  }
+  std::cout << ans << "\n";
+  for (auto &i : an) {
+    std::cout << i.first << " " << i.second << " " << i.second << "\n";
+  }
+  return 0;
+}

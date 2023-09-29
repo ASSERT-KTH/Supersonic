@@ -1,0 +1,78 @@
+```cpp
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+#include <algorithm>
+#include <cstdio>
+using namespace std;
+
+const int M = 100000 + 10;
+
+int n, m, d, clo, top, nscc;
+vector<int> e[M*50], escc[M*50], stk(M*50);
+unordered_map<int, int> dfn, lowlink, idscc, dp;
+unordered_map<int, bool> instk, vis;
+char open[M][55];
+
+int id(int u, int t) { return (u - 1) * d + t; }
+
+void dfscc(int k) {
+  dfn[k] = lowlink[k] = ++clo;
+  stk[top++] = k;
+  instk[k] = true;
+  for (int &p : e[k]) {
+    if (!dfn[p]) {
+      dfscc(p);
+      lowlink[k] = min(lowlink[k], lowlink[p]);
+    } else if (instk[p]) {
+      lowlink[k] = min(lowlink[k], dfn[p]);
+    }
+  }
+  if (lowlink[k] == dfn[k]) {
+    ++nscc;
+    while (stk[--top] != k) {
+      instk[stk[top]] = false;
+      idscc[stk[top]] = nscc;
+    }
+    instk[k] = false;
+    idscc[k] = nscc;
+  }
+}
+
+void getSCC() {
+  for (int k = 1; k <= n * d; ++k) {
+    if (!dfn[k]) {
+      dfscc(k);
+    }
+  }
+  for (int k = 1; k <= n * d; ++k)
+    for (int &p : e[k]) {
+      if (idscc[k] != idscc[p])
+        escc[idscc[k]].push_back(idscc[p]);
+    }
+}
+
+int dfsdp(int k) {
+  if (vis[k]) return dp[k];
+  for (auto p : escc[k]) dp[k] = max(dp[k], dfsdp(p));
+  ++dp[k];
+  vis[k] = true;
+  return dp[k];
+}
+
+int main() {
+  scanf("%d%d%d", &n, &m, &d);
+  for (int i = 1; i <= m; ++i) {
+    int u, v;
+    scanf("%d%d", &u, &v);
+    for (int j = 1; j <= d; ++j)
+      e[id(u, j)].push_back(id(v, j % d + 1));
+  }
+  for (int i = 1; i <= n; ++i)
+    for (int j = 1; j <= d; ++j)
+      open[i][j] = getchar();
+  getSCC();
+  printf("%d", dfsdp(idscc[id(1, 1)]));
+  return 0;
+}
+```

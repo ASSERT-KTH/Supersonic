@@ -1,0 +1,22 @@
+#include <iostream>
+#include <unordered_map>
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(nullptr);
+
+  int n;
+  while(std::cin >> n && n) {
+    std::unordered_map<char, int> d;
+    for (char a, b; n--; ) {
+      std::cin >> a >> b;
+      d[a] = b - a;
+    }
+    for (std::cin >> n; n--; ) {
+      char a;
+      std::cin >> a;
+      std::cout << char(a + d[a]);
+    }
+    std::cout << '\n';
+  }
+}

@@ -1,0 +1,50 @@
+#include <cstdio>
+#include <complex>
+using namespace std;
+typedef complex<double> Point;
+
+inline double cross_prod(const Point &a, const Point &b) { return imag(conj(a) * b); }
+inline double dot_prod(const Point &a, const Point &b) { return real(conj(a) * b); }
+
+enum CCWiseState {
+  ONLINE_FRONT = -2,
+  CLOCKWISE,
+  ON_SEGMENT,
+  COUNTER_CLOCKWISE,
+  ONLINE_BACK,
+};
+
+inline CCWiseState ccwise(Point a, Point b, Point c) {
+  b -= a;
+  c -= a;
+  double cross = cross_prod(b, c);
+  if (cross > 0) return COUNTER_CLOCKWISE;
+  if (cross < 0) return CLOCKWISE; 
+  if (dot_prod(b, c) < 0) return ONLINE_BACK; 
+  if (norm(b) < norm(c)) return ONLINE_FRONT;
+  return ON_SEGMENT;
+}
+
+bool testcase_ends() {
+  double x, y;
+  if (scanf("%lf %lf", &x, &y) == EOF) return 1;
+  Point A(x, y);
+  scanf("%lf %lf", &x, &y);
+  Point B(x, y);
+  scanf("%lf %lf", &x, &y);
+  Point C(x, y);
+  scanf("%lf %lf", &x, &y);
+  Point P(x, y);
+  CCWiseState state = ccwise(A, P, B);
+  if (state != ccwise(B, P, C) || state != ccwise(C, P, A)) {
+    puts("NO");
+  } else {
+    puts("YES");
+  }
+  return 0;
+}
+
+int main() {
+  while (!testcase_ends());
+  return 0;
+}

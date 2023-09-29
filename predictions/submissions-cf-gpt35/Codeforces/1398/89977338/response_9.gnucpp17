@@ -1,0 +1,186 @@
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <cstring>
+using namespace std;
+
+typedef long long ll;
+typedef vector<ll> poly;
+
+const int MAXN = 1 << 20;
+int n, x, y;
+vector<int> pr;
+int lp[MAXN + 1];
+bool can[MAXN];
+int res[MAXN];
+vector<int> g[MAXN];
+
+void SieveOfEratosthenes() {
+  for (int i = 2; i <= MAXN; i++) {
+    if (lp[i] == 0)
+      lp[i] = i, pr.push_back(i);
+    for (int j = 0; j < pr.size() && pr[j] <= lp[i] && i * pr[j] <= MAXN; ++j)
+      lp[i * pr[j]] = pr[j];
+  }
+}
+
+void div_rec(vector<ll> &r, vector<pair<ll, int>> &f, int k, ll c) {
+  if (k == f.size()) {
+    r.push_back(c);
+    return;
+  }
+  for (int i = 0; i <= f[k].second; i++) {
+    div_rec(r, f, k + 1, c);
+    c *= f[k].first;
+  }
+}
+
+poly multiply(const poly &p1, const poly &p2) {
+  int n = p1.size() + p2.size() + 1;
+  int m = 1, cnt = 0;
+  while (m <= n) {
+    m += m;
+    cnt++;
+  }
+  vector<int> R(m);
+  for (int i = 0; i < m; i++) {
+    R[i] = 0;
+    for (int j = 0; j < cnt; j++) {
+      R[i] = (R[i] << 1) | ((i >> j) & 1);
+    }
+  }
+  vector<ll> cp1(m), cp2(m);
+  for (int i = 0; i < p1.size(); i++) {
+    cp1[i] = p1[i];
+  }
+  for (int i = 0; i < p2.size(); i++) {
+    cp2[i] = p2[i];
+  }
+  for (int i = 0; i < m; i++) {
+    cp1[i] = 0;
+    cp2[i] = 0;
+  }
+  
+  for (int i = 0; i < m; i++) {
+    double z = 2 * M_PI / m * 1;
+    double zi = 2 * M_PI / m * -1;
+    ll wr = cos(z);
+    ll wi = sin(z);
+    ll wri = cos(zi);
+    ll wii = sin(zi);
+    for (int j = 0; j < n; j += m) {
+      ll wrmul = 1;
+      ll wimul = 0;
+      for (int k = j, k2 = j + m / 2; k2 < j + m; k++, k2++) {
+        ll u = cp1[k];
+        ll v = cp1[k2] * wrmul;
+        ll uu = cp2[k];
+        ll vv = cp2[k2] * wimul;
+        cp1[k] = u + v;
+        cp1[k2] = u - v;
+        cp2[k] = uu + vv;
+        cp2[k2] = uu - vv;
+        ll newwr = wr * wrmul - wi * wimul;
+        ll newwi = wr * wimul + wi * wrmul;
+        ll newwri = wri * wrmul - wii * wimul;
+        ll newwii = wri * wimul + wii * wrmul;
+        wrmul = newwr;
+        wimul = newwi;
+        wri = newwri;
+        wii = newwii;
+      }
+    }
+  }
+  
+  for (int i = 0; i < m; i++) {
+    cp1[i] = cp1[i] * cp2[i];
+  }
+  
+  for (int i = 0; i < m; i++) {
+    double z = 2 * M_PI / m * 1;
+    double zi = 2 * M_PI / m * -1;
+    ll wr = cos(z);
+    ll wi = sin(z);
+    ll wri = cos(zi);
+    ll wii = sin(zi);
+    for (int j = 0; j < n; j += m) {
+      ll wrmul = 1;
+      ll wimul = 0;
+      for (int k = j, k2 = j + m / 2; k2 < j + m; k++, k2++) {
+        ll u = cp1[k];
+        ll v = cp1[k2] * wrmul;
+        cp1[k] = u + v;
+        cp1[k2] = u - v;
+        ll newwr = wr * wrmul - wi * wimul;
+        ll newwi = wr * wimul + wi * wrmul;
+        ll newwri = wri * wrmul - wii * wimul;
+        ll newwii = wri * wimul + wii * wrmul;
+        wrmul = newwr;
+        wimul = newwi;
+        wri = newwri;
+        wii = newwii;
+      }
+    }
+  }
+  
+  poly res;
+  n -= 2;
+  for (int i = 0; i < n; i++) {
+    res.push_back((ll)floor(cp1[i].real() + 0.5));
+  }
+  
+  return res;
+}
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+  cout.tie(0);
+  
+  SieveOfEratosthenes();
+  cin >> n >> x >> y;
+  int OFFSET = x;
+  poly l(2 * OFFSET + 1), r(2 * OFFSET + 1);
+  for (int i = 0; i < n + 1; i++) {
+    int X;
+    cin >> X;
+    l[X + OFFSET]++;
+    r[-X + OFFSET]++;
+  }
+  poly p = multiply(l, r);
+  for (int i = 0; i < 2 * OFFSET; i++) {
+    if (i + 2 * OFFSET < p.size() && p[i + 2 * OFFSET]) {
+      can[i] = true;
+    }
+  }
+  int q;
+  cin >> q;
+  memset(res, -1, sizeof(res));
+  for (int _ = 0; _ < q + 1; _++) {
+    int X;
+    cin >> X;
+    if (g[X].empty()) {
+      int it = X;
+      vector<pair<int, int>> aux;
+      while (it != 1) {
+        if (aux.empty() || aux.back().first != lp[it]) {
+          aux.push_back(make_pair(lp[it], 1));
+        } else {
+          aux.back().second++;
+        }
+        it /= lp[it];
+      }
+      div_rec(g[X], aux, 0, 1);
+    }
+    for (int i : g[X]) {
+      ll need = i - 2 * y;
+      if (need > 0 && need % 2 == 0 && can[need / 2]) {
+        res[_] = max(res[_], i);
+      }
+    }
+  }
+  for (int i = 0; i < q; i++) {
+    cout << res[i] << " \n"[i == q - 1];
+  }
+  return 0;
+}

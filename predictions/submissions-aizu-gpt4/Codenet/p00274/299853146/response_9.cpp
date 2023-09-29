@@ -1,0 +1,19 @@
+#include <iostream>
+
+int main() {
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(NULL);
+    
+    int n, k;
+    while (std::cin >> n && n) {
+        int s = n, flag = 0;
+        for (int i = 0; i < n; ++i) {
+            std::cin >> k;
+            s -= (k == 0);
+            flag |= (k >= 2);
+        }
+        std::cout << (flag ? std::to_string(s + 1) : "NA") << "\n";
+    }
+    
+    return 0;
+}

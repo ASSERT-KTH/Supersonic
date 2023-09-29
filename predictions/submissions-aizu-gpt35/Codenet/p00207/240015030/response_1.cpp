@@ -1,0 +1,57 @@
+#include <iostream>
+#include <queue>
+using namespace std;
+int Board[102][102];
+bool isOK;
+int xs, ys, xg, yg;
+void BFS(int c, int x, int y) {
+  queue<pair<int, int>> q;
+  q.push({x, y});
+  while (!q.empty()) {
+    int x = q.front().first;
+    int y = q.front().second;
+    q.pop();
+    if (Board[x][y] != c) {
+      continue;
+    } else if (x == xg && y == yg) {
+      isOK = true;
+      return;
+    }
+    Board[x][y] = 0;
+    q.push({x + 1, y});
+    q.push({x, y + 1});
+    q.push({x - 1, y});
+    q.push({x, y - 1});
+  }
+}
+int main() {
+  int w, h;
+  while (true) {
+    cin >> w >> h;
+    if (w == 0 && h == 0)
+      break;
+    isOK = false;
+    for (int i = 0; i < 102; i++) {
+      for (int j = 0; j < 102; j++)
+        Board[j][i] = -1;
+    }
+    cin >> xs >> ys >> xg >> yg;
+    int n, c, d, x, y;
+    cin >> n;
+    for (int t = 0; t < n; t++) {
+      cin >> c >> d >> x >> y;
+      int wb = 2 + (!d * 2);
+      int hb = 2 + (d * 2);
+      for (int i = 0; i < hb; i++) {
+        for (int j = 0; j < wb; j++)
+          Board[x + j][y + i] = c;
+      }
+    }
+    BFS(Board[xs][ys], xs, ys);
+    if (isOK)
+      cout << "OK" << endl;
+    else
+      cout << "NG" << endl;
+  }
+  return 0;
+}

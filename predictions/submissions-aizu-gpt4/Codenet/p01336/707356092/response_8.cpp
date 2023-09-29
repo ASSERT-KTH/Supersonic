@@ -1,0 +1,55 @@
+#include <iostream>
+#include <vector>
+#include <cstring>
+#include <algorithm>
+
+using namespace std;
+
+class Data {
+public:
+  int mC, mV, mD, mL;
+  Data(int _c, int _v, int _d, int _l) : mC(_c), mV(_v), mD(_d), mL(_l) {}
+};
+
+int dp[301][301][3];
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+
+  int N, M;
+  while(cin >> N >> M) {
+    vector<Data> idols(N);
+    for (int i = 0; i < N; ++i) {
+      string name;
+      cin >> name;
+      int C, V, D, L;
+      cin >> C >> V >> D >> L;
+      idols[i] = Data(C, V, D, L);
+    }
+
+    memset(dp, 0, sizeof(dp));
+    for (int i = 0; i < N; i++) {
+      for (int j = 0; j <= M; j++) {
+        for (int k = 0; k <= M; k++) {
+          int newC = j + idols[i].mC;
+          if (newC > M) continue;
+          dp[i+1][newC][0] = max(dp[i+1][newC][0], dp[i][j][0] + idols[i].mV);
+          dp[i+1][newC][1] = max(dp[i+1][newC][1], dp[i][j][1] + idols[i].mD);
+          dp[i+1][newC][2] = max(dp[i+1][newC][2], dp[i][j][2] + idols[i].mL);
+        }
+        for (int k = 0; k < 3; k++){
+          dp[i+1][j][k] = max(dp[i+1][j][k], dp[i][j][k]);
+        }
+      }
+    }
+
+    int maxv = 0;
+    for (int i = 0; i <= M; i++) {
+      for (int j = 0; j < 3; j++) {
+        maxv = max(dp[N][i][j], maxv);
+      }
+    }
+    cout << maxv << '\n';
+  }
+}

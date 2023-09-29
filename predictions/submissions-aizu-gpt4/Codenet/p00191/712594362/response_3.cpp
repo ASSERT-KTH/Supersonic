@@ -1,0 +1,34 @@
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <iostream>
+using namespace std;
+int n, m;
+double dp[101][101];
+double t[101][101];
+
+double solve(int times, int prev) {
+  if (times == m) return 1;
+  if (dp[times][prev] != -1) return dp[times][prev];
+  
+  double tmp = -1;
+  for (int i = 0; i < n; i++) {
+    tmp = max(tmp, solve(times + 1, i) * (times == 0 ? 1 : t[prev][i]));
+  }
+
+  return dp[times][prev] = tmp;
+}
+
+int main(void) {
+  while (cin >> n >> m && (n | m)) {
+    fill(&dp[0][0], &dp[0][0] + sizeof(dp) / sizeof(double), -1);
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        cin >> t[i][j];
+      }
+    }
+
+    double retd = solve(0, 0) * 100;
+    printf("%.2lf\n", round(retd) / 100);
+  }
+}

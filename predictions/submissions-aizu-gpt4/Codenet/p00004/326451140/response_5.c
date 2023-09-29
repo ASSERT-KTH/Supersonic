@@ -1,0 +1,45 @@
+#include <cstdio>
+
+constexpr int N = 2;
+
+void matrix(double x[N][N + 1]) {
+    for (int k = 0; k < N - 1; ++k) {
+        double div = x[k][k];
+        for (int j = k + 1; j < N; ++j) {
+            double mul = x[j][k];
+            for (int i = 0; i <= N; ++i) {
+                x[j][i] -= x[k][i] * mul / div;
+            }
+        }
+    }
+
+    for (int k = N - 1; k > 0; --k) {
+        double div = x[k][k];
+        for (int j = k - 1; j >= 0; --j) {
+            double mul = x[j][k];
+            for (int i = 0; i <= N; ++i) {
+                x[j][i] -= x[k][i] * mul / div;
+            }
+        }
+    }
+
+    for (int j = 0; j < N; ++j) {
+        double div = x[j][j];
+        for (int i = 0; i <= N; ++i) {
+            x[j][i] /= div;
+        }
+    }
+}
+
+int main() {
+    double x[N][N + 1];
+    while (scanf("%lf %lf %lf %lf %lf %lf", &x[0][0], &x[0][1], &x[0][2],
+           &x[1][0], &x[1][1], &x[1][2]) == 6) {
+        matrix(x);
+        for (int i = 0; i < N; ++i) {
+            printf(i == 0 ? "%3.3f" : " %3.3f", x[i][N]);
+        }
+        putchar('\n');
+    }
+    return 0;
+}

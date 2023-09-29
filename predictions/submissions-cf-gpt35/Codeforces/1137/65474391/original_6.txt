@@ -1,0 +1,241 @@
+```cpp
+#include <iostream>
+#include <map>
+#include <queue>
+#include <set>
+#include <vector>
+using namespace std;
+
+const int MAXN = 200005;
+const int MAXBIT = 2 * MAXN;
+
+struct node {
+  int cnt, par, lev, inp;
+  int chn, idx, col, adj;
+};
+
+int n, q;
+vector<int> g[MAXN];
+node a[MAXN];
+int bit[MAXBIT];
+int chains = 0, timer = 0, colour = 0;
+vector<int> chain[MAXN];
+map<int, int> col[MAXN];
+map<int, set<int>> pos[MAXN];
+int root[MAXN];
+
+void Init() {
+  ios ::sync_with_stdio(false);
+  cin.tie(NULL);
+  cout.tie(NULL);
+  cin >> n >> q;
+  for (int i = 1; i < n; ++i) {
+    int u, v;
+    cin >> u >> v;
+    g[u].push_back(v);
+    g[v].push_back(u);
+  }
+  a[n].par = -1;
+  a[n].lev = 1;
+  a[n].chn = 0;
+  a[n].idx = 0;
+  root[0] = n;
+  colour = n;
+}
+
+int query(int x) {
+  int res = 0;
+  for (int i = x; i >= 1; i -= i & (-i)) {
+    res += bit[i];
+  }
+  return res;
+}
+
+void update(int x, int d) {
+  for (int i = x; i < MAXBIT; i += i & (-i)) {
+    bit[i] += d;
+  }
+}
+
+void DFS(int u) {
+  a[u].inp = ++timer;
+  a[u].cnt = 1;
+  for (int v : g[u]) {
+    if (a[v].par == 0) {
+      a[v].par = u;
+      a[v].lev = a[u].lev + 1;
+      DFS(v);
+      a[u].cnt += a[v].cnt;
+    }
+  }
+}
+
+void HLD(int u) {
+  chain[a[u].chn].push_back(u);
+  col[a[u].chn][a[u].idx] = a[u].col;
+  pos[a[u].chn][a[u].col].insert(a[u].idx);
+  int heavy = 0, which = 0;
+  for (int v : g[u]) {
+    if (v != a[u].par and a[v].cnt > heavy) {
+      heavy = a[v].cnt;
+      which = v;
+    }
+  }
+  if (heavy == 0 or which == 0)
+    return;
+  a[which].chn = a[u].chn;
+  a[which].idx = a[u].idx + 1;
+  for (int v : g[u]) {
+    if (v == a[u].par)
+      continue;
+    if (v != which) {
+      a[v].chn = ++chains;
+      a[v].idx = 0;
+    }
+    HLD(v);
+  }
+}
+
+void Simulate() {
+  priority_queue<int> pq;
+  for (int i = 1; i <= n; ++i) {
+    a[i].adj = g[i].size();
+    if (a[i].adj == 1)
+      pq.push(-i);
+  }
+  int row = 0;
+  while (!pq.empty()) {
+    int u = -pq.top();
+    pq.pop();
+    a[u].col = ++row;
+    for (int v : g[u]) {
+      a[v].adj--;
+      if (a[v].adj == 1)
+        pq.push(-v);
+    }
+  }
+  for (int i = 1; i <= row; ++i) {
+    update(i, 1);
+  }
+}
+
+inline bool is_predecessor(int u, int v) {
+  return (a[u].inp <= a[v].inp and a[v].inp < a[u].inp + a[u].cnt);
+}
+
+int LCA(int u, int v) {
+  if (is_predecessor(u, v))
+    return u;
+  if (is_predecessor(v, u))
+    return v;
+  int t = a[u].chn;
+  while (!is_predecessor(chain[t][0], v)) {
+    t = a[a[chain[t][0]].par].chn;
+  }
+  int l = 0, r = chain[t].size() - 1, res = 0;
+  while (l <= r) {
+    int mid = (l + r) / 2;
+    if (is_predecessor(chain[t][mid], u) and is_predecessor(chain[t][mid], v)) {
+      res = mid;
+      l = mid + 1;
+    } else
+      r = mid - 1;
+  }
+  return chain[t][res];
+}
+
+inline int get_colour(int u) {
+  int c = a[u].chn, i = a[u].idx;
+  return (*col[c].lower_bound(i)).second;
+}
+
+void up(int u, int t) {
+  while (true) {
+    int c = a[u].chn;
+    int i = a[u].idx;
+    map<int, int>::iterator iter = col[c].lower_bound(i), jter = col[c].begin();
+    if (c == a[t].chn and a[t].idx != 0) {
+      jter = col[c].lower_bound(a[t].idx);
+      if (col[c].count(a[t].idx - 1) == 0) {
+        col[c][a[t].idx - 1] = (*jter).second;
+        pos[c][(*jter).second].insert(a[t].idx - 1);
+      }
+    }
+    auto jcpy = jter;
+    while (iter != jter) {
+      int del = (*jter).first + 1;
+      if (jter != col[c].begin()) {
+        jter--;
+        del -= (*jter).first + 1;
+        jter++;
+      }
+      update((*jter).second, -del);
+      pos[c][(*jter).second].erase(pos[c][(*jter).second].find((*jter).first));
+      if (pos[c][(*jter).second].size() == 0)
+        pos[c].erase(pos[c].find((*jter).second));
+      jter++;
+    }
+    if (iter == col[c].begin()) {
+      update((*iter).second, -i - 1);
+    } else {
+      iter--;
+      int p = (*iter).first;
+      iter++;
+      update((*iter).second, p - i);
+      if (i == (*iter).first)
+        update((*iter).second, 1);
+    }
+    if ((*iter).first == i) {
+      pos[c][(*iter).second].erase(pos[c][(*iter).second].find((*iter).first));
+      if (pos[c][(*iter).second].size() == 0)
+        pos[c].erase(pos[c].find((*iter).second));
+    }
+    col[c].erase(jcpy, iter);
+    col[c][i] = colour;
+    pos[c][colour].insert(i);
+    iter = col[c].find(i);
+    if (iter == col[c].begin()) {
+      update(colour, i + 1);
+    } else {
+      iter--;
+      update(colour, i - (*iter).first);
+      if (i == (*iter).first)
+        update(colour, 1);
+    }
+    if (c == a[t].chn)
+      break;
+    else
+      u = a[chain[c][0]].par;
+  }
+}
+
+int count(int u, int t, int clr) {
+  int cnt = 0;
+  while (true) {
+    int c = a[u].chn;
+    int i = a[u].idx;
+    for (int p : pos[c][clr]) {
+      auto it = col[c].lower_bound(p);
+      int l, r = min(p, a[u].idx);
+      if (it == col[c].begin())
+        l = 0;
+      else {
+        it--;
+        l = (*it).first + 1;
+      }
+      if (a[u].chn == a[t].chn)
+        l = max(l, a[t].idx);
+      if (l <= r)
+        cnt += r - l + 1;
+    }
+    if (c == a[t].chn)
+      break;
+    else
+      u = a[chain[c][0]].par;
+  }
+  return cnt;
+}
+
+int when(int u) {
+  int clr = get_colour(u);
+  int res =

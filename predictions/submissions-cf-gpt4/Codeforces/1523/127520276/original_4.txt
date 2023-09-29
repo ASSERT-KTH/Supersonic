@@ -1,0 +1,123 @@
+```cpp
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <algorithm>
+#include <tuple>
+#include <random>
+#include <utility>
+#include <cstdlib>
+
+using namespace std;
+
+constexpr int N = 5e4, M = 1e5;
+using interval = pair<int, int>;
+interval rent[M + 1];
+vector<int> by_length[N + 1];
+int ans[N + 1];
+
+struct CT {
+  struct CTVertex {
+    int x, y, t;
+    unique_ptr<CTVertex> l, r;
+  };
+  unique_ptr<CTVertex> root = nullptr;
+  static unsigned yseed;
+
+  static int &mini(int &lhs, int rhs) { return lhs = min(lhs, rhs); }
+
+  void create(int r, int t) {
+    yseed = (yseed ? yseed : rand()) * (RAND_MAX + 1u) + rand();
+    add(root, make_unique<CTVertex>(CTVertex{r, yseed, t, nullptr, nullptr}));
+  }
+
+  int mintlq(int r) const {
+    int res = M;
+    for (auto pos = root.get(); pos; pos = (pos->x > r ? pos->l.get() : pos->r.get())) {
+      if (pos->x <= r) res = min(res, pos->t);
+    }
+    return res;
+  }
+
+private:
+  bool add(unique_ptr<CTVertex> &t, unique_ptr<CTVertex> el) {
+    if (!t) {
+      t = move(el);
+      return true;
+    } else if (t->y > el->y) {
+      tie(el->l, el->r) = split(move(t), el->x, el->t);
+      t = move(el);
+      return true;
+    } else if (t->x > el->x) {
+      return add(t->l, move(el)) && mini(t->t, el->t);
+    } else if (t->x == el->x) {
+      return mini(t->t, el->t);
+    } else {
+      return add(t->r, move(el));
+    }
+  }
+
+  pair<unique_ptr<CTVertex>, unique_ptr<CTVertex>> split(unique_ptr<CTVertex> t, int x, int tval) {
+    if (!t) {
+      return {nullptr, nullptr};
+    } else if (t->x > x) {
+      auto splitted = split(move(t->l), x, tval);
+      t->l = move(splitted.second);
+      return {move(splitted.first), move(t)};
+    } else {
+      auto splitted = split(move(t->r), x, tval);
+      t->r = move(splitted.first);
+      return {move(t), move(splitted.second)};
+    }
+  }
+};
+
+unsigned CT::yseed{};
+
+CT ft[N];
+
+void add(int t) {
+  for (int i = N - rent[t].first - 1; i < N; i |= i + 1) {
+    ft[i].create(rent[t].second, t);
+  }
+}
+
+int query(int l, int r) {
+  int res = M;
+  for (int i = N - l; i > N - r; i &= i - 1) {
+    res = min(res, ft[i - 1].mintlq(r));
+  }
+  return res;
+}
+
+int main() {
+  cin.tie(0), ios_base::sync_with_stdio(0);
+  int n, m;
+  cin >> n >> m;
+  for (int i = 0; i < m; ++i) {
+    cin >> rent[i].first >> rent[i].second, --rent[i].first;
+    by_length[rent[i].second - rent[i].first].push_back(i);
+  }
+  queue<interval> for_rent;
+  for (int epoch = n; epoch; --epoch) {
+    for (int i : by_length[epoch]) {
+      add(i);
+    }
+    for_rent.emplace(0, n);
+    while (!for_rent.empty()) {
+      auto [l, r] = for_rent.front();
+      for_rent.pop();
+      int t = query(l, r);
+      if (t != M) {
+        ans[epoch] += rent[t].second - rent[t].first;
+        for_rent.emplace(l, rent[t].first);
+        for_rent.emplace(rent[t].second, r);
+      }
+    }
+  }
+  for (int rented = 1; rented <= n; ++rented) {
+    cout << ans[rented] << '\n';
+  }
+  return 0;
+}
+```

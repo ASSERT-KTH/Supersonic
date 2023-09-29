@@ -1,0 +1,44 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <algorithm>
+using namespace std;
+using ll = long long;
+using P = pair<int, int>;
+const int INF = 1e9;
+const int MAX_P = 10010;
+const int coins[] = {1, 5, 10, 50, 100, 500};
+int dp[2][MAX_P];
+int main() {
+  int P;
+  while (cin >> P, P) {
+    vector<int> num_coins(6);
+    for (int& n : num_coins) cin >> n;
+    fill(*dp, *dp + 2 * MAX_P, INF);
+    dp[0][0] = 0;
+    for (int i = 0; i < 6; ++i) {
+      fill(dp[(i+1)&1], dp[(i+1)&1] + MAX_P, INF);
+      deque<P> deq;
+      for (int j = 0; j < MAX_P; ++j) {
+        if (j >= coins[i]) {
+          if (deq.front().second < j - num_coins[i] * coins[i]) deq.pop_front();
+          dp[(i+1)&1][j] = min(dp[(i+1)&1][j], deq.front().first + j / coins[i]);
+        }
+        P p = {dp[i&1][j] - j / coins[i], j};
+        while (!deq.empty() && deq.back().first >= p.first) deq.pop_back();
+        deq.push_back(p);
+      }
+    }
+    int ans = INF;
+    for (int i = P; i < MAX_P; ++i) {
+      int t = i, add = 0;
+      for (int j = 5; j >= 0; --j) {
+        add += t / coins[j];
+        t %= coins[j];
+      }
+      ans = min(ans, dp[6&1][i] + add);
+    }
+    cout << ans << endl;
+  }
+  return 0;
+}

@@ -1,0 +1,77 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct node {
+  int id;
+  struct node *parent;
+  struct node *leftMostChild;
+  struct node *rightSibling;
+} * nodePointer;
+
+nodePointer init(int id) {
+  nodePointer p = (nodePointer)malloc(sizeof(struct node));
+  p->id = id;
+  p->parent = NULL;
+  p->leftMostChild = NULL;
+  p->rightSibling = NULL;
+  return p;
+}
+
+int getDepth(nodePointer p) {
+  int depth = 0;
+  while (p->parent != NULL) {
+    p = p->parent;
+    depth++;
+  }
+  return depth;
+}
+
+void printChild(nodePointer p) {
+  printf("[");
+  if (p->leftMostChild != NULL) {
+    for (p = p->leftMostChild; p != NULL; p = p->rightSibling) {
+      printf("%d", p->id);
+      if (p->rightSibling != NULL) {
+        printf(", ");
+      }
+    }
+  }
+  printf("]");
+}
+
+void printNode(nodePointer p) {
+  printf("node %d: parent = %d, depth = %d, ", p->id, p->parent ? p->parent->id : -1, getDepth(p));
+  if (p->parent == NULL)
+    printf("root");
+  else if (p->leftMostChild == NULL)
+    printf("leaf");
+  else
+    printf("internal node");
+  printf(", ");
+  printChild(p);
+  printf("\n");
+}
+
+int main(void) {
+  int n, id, k, c1;
+  scanf("%d", &n);
+  nodePointer *arr = (nodePointer *)malloc(sizeof(nodePointer) * n);
+  for (int i = 0; i < n; i++)
+    arr[i] = init(i);
+  for (int i = 0; i < n; i++) {
+    scanf("%d%d", &id, &k);
+    for (int j = 0; j < k; j++) {
+      scanf("%d", &c1);
+      if (j == 0) {
+        arr[id]->leftMostChild = arr[c1];
+      } else {
+        arr[id]->rightSibling = arr[c1];
+      }
+      arr[c1]->parent = arr[id];
+    }
+  }
+  for (int i = 0; i < n; i++)
+    printNode(arr[i]);
+  free(arr);
+  return 0;
+}

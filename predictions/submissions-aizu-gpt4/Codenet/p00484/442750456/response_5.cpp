@@ -1,0 +1,45 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+typedef long long ll;
+const int max_n = 2005;
+
+ll d[max_n][max_n], dp[max_n][max_n];
+
+int main() {
+  int n, K;
+  std::cin >> n >> K;
+  std::vector<int> id, v[max_n];
+  
+  for (int i = 0; i < n; i++) {
+    int a, b;
+    std::cin >> a >> b;
+    b--;
+    id.push_back(b);
+    v[b].push_back(a);
+  }
+  
+  std::sort(id.begin(), id.end());
+  id.erase(std::unique(id.begin(), id.end()), id.end());
+  
+  for (auto& b : id) {
+    std::sort(v[b].begin(), v[b].end(), std::greater<int>());
+    for (int k = 1; k <= v[b].size(); k++) {
+      d[b][k] = d[b][k - 1] + v[b][k - 1] + (k - 1) * 2;
+    }
+  }
+  
+  for (int i = 0; i < id.size(); i++) {
+    for (int j = 0; j <= K; j++) {
+      dp[i + 1][j] = dp[i][j];
+      for (int k = 1; k <= v[id[i]].size(); k++) {
+        if (j >= k) {
+          dp[i + 1][j] = std::max(dp[i + 1][j], dp[i][j - k] + d[id[i]][k]);
+        }
+      }
+    }
+  }
+  std::cout << dp[id.size()][K] << std::endl;
+  return 0;
+}

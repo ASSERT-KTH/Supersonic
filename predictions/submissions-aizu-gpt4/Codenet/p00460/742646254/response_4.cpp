@@ -1,0 +1,28 @@
+#include <iostream>
+#include <cstring>
+
+#define SIZE 55
+#define MAX_SUM 3030
+#define MOD 100000
+
+int main() {
+  int dp[SIZE][MAX_SUM];
+
+  int N, M, S;
+  while (std::cin >> N >> M >> S && (N | M | S)) {
+    memset(dp, 0, sizeof dp);
+    dp[0][0] = 1;
+
+    for (int add = 1; add <= M; ++add) {
+      for (int currIndex = N * N; currIndex >= 1; --currIndex) {
+        for (int currSum = add; currSum <= S; ++currSum) {
+          dp[currIndex][currSum] = (dp[currIndex][currSum] + dp[currIndex - 1][currSum - add]) % MOD;
+        }
+      }
+    }
+
+    std::cout << dp[N * N][S] << std::endl;
+  }
+
+  return 0;
+}

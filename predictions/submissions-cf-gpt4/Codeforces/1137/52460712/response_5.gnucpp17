@@ -1,0 +1,95 @@
+#include <cstdio>
+#include <vector>
+#include <algorithm>
+#define M 100010
+#define N 50 * M
+using namespace std;
+
+vector<int> e[N], escc[N];
+int nscc, idscc[N], dfn[N], lowlink[N], clo;
+int stk[N], top;
+bool instk[N];
+
+inline void dn(int &x, int y) {
+  if (y < x)
+    x = y;
+}
+
+char gc() {
+  char c;
+  while((c = getchar()) != '0' && c != '1');
+  return c;
+}
+
+int id(int u, int t, int d) { return (u - 1) * d + t; }
+
+void dfscc(int k, const vector<int> e[], int dfn[], int lowlink[], int instk[], int stk[], int &top, int &nscc, int idscc[]) {
+  dfn[k] = lowlink[k] = ++clo;
+  instk[stk[top++] = k] = true;
+  for (int &p : e[k]) {
+    if (!dfn[p])
+      dfscc(p, e, dfn, lowlink, instk, stk, top, nscc, idscc), dn(lowlink[k], lowlink[p]);
+    else if (instk[p])
+      dn(lowlink[k], dfn[p]);
+  }
+  
+  if (lowlink[k] == dfn[k]) {
+    ++nscc;
+    do {
+      instk[stk[--top]] = false;
+      idscc[stk[top]] = nscc;
+    } while (stk[top] != k);
+  }
+}
+
+void getSCC(int n, const vector<int> e[], int dfn[], int lowlink[], int instk[], int stk[], int &top, int &nscc, int idscc[], vector<int> escc[]) {
+  for (int k = 1; k <= n; ++k)
+    if (!dfn[k])
+      dfscc(k, e, dfn, lowlink, instk, stk, top, nscc, idscc);
+  for (int k = 1; k <= n; ++k) {
+    for (int &p : e[k]) {
+      if (idscc[k] != idscc[p])
+        escc[idscc[k]].push_back(idscc[p]);
+    }
+  }
+}
+
+int dfsdp(int k, vector<int> escc[], int dp[], bool vis[]) {
+  if (vis[k])
+    return dp[k];
+  for (auto p : escc[k])
+    dp[k] = max(dp[k], dfsdp(p, escc, dp, vis));
+  dp[k]++;
+  vis[k] = 1;
+  return dp[k];
+}
+
+int main() {
+  int n, m, d;
+  scanf("%d%d%d", &n, &m, &d);
+  for (int i = 1; i <= m; ++i) {
+    int u, v;
+    scanf("%d%d", &u, &v);
+    for (int j = 1; j <= d; ++j)
+      e[id(u, j, d)].push_back(id(v, j % d + 1, d));
+  }
+  bool open[M][55];
+  for (int i = 1; i <= n; ++i)
+    for (int j = 1; j <= d; ++j)
+      open[i][j] = gc() - '0';
+  getSCC(n * d, e, dfn, lowlink, instk, stk, top, nscc, idscc, escc);
+  int ops[N] = {0}, dp[N] = {0};
+  bool vis[N] = {0};
+  for (int i = 1; i <= n; ++i) {
+    int tmp[55], ntmp = 0;
+    for (int j = 1; j <= d; ++j)
+      if (open[i][j])
+        tmp[ntmp++] = idscc[id(i, j, d)];
+    sort(tmp, tmp + ntmp);
+    ntmp = unique(tmp, tmp + ntmp) - tmp;
+    for (int j = 0; j < ntmp; ++j)
+      ++ops[tmp[j]];
+  }
+  printf("%d", dfsdp(idscc[id(1, 1, d)], escc, dp, vis));
+  return 0;
+}

@@ -1,0 +1,65 @@
+#include <iostream>
+#include <map>
+#include <set>
+#include <string>
+#include <vector>
+using namespace std;
+
+vector<vector<int>> involve;
+
+vector<int> dfs2(int now, vector<bool>& used) {
+    used[now] = true;
+    vector<int> ans;
+    for (auto i : involve[now]) {
+        if (!used[i]) {
+            vector<int> a = dfs2(i, used);
+            ans.insert(ans.end(), a.begin(), a.end());
+        } else {
+            ans.push_back(i);
+        }
+    }
+    return ans;
+}
+
+int main() {
+    while (1) {
+        int num = 0;
+        map<string, int> mp;
+        set<int> ed;
+        int N;
+        cin >> N;
+        if (!N)
+            break;
+        involve = vector<vector<int>>(100000);
+        for (int i = 0; i < N; ++i) {
+            string st;
+            cin >> st;
+            string groupname;
+            vector<string> membername;
+            int pre = 0;
+            for (int j = 0; j < st.size(); ++j) {
+                if (st[j] == ':' || st[j] == ',' || st[j] == '.') {
+                    membername.push_back(st.substr(pre, j - pre));
+                    pre = j + 1;
+                }
+            }
+            groupname = membername[0];
+            membername.erase(membername.begin());
+            if (!mp.count(groupname)) {
+                mp[groupname] = num++;
+            }
+            for (auto& member : membername) {
+                if (!mp.count(member)) {
+                    mp[member] = num++;
+                }
+                involve[mp[groupname]].push_back(mp[member]);
+            }
+        }
+        vector<bool> used(num, false);
+        vector<int> allnames = dfs2(mp["Isenbaev"], used);
+        sort(allnames.begin(), allnames.end());
+        allnames.erase(unique(allnames.begin(), allnames.end()), allnames.end());
+        cout << allnames.size() << endl;
+    }
+    return 0;
+}

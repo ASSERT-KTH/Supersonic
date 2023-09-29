@@ -1,0 +1,100 @@
+#include <algorithm>
+#include <complex>
+#include <iostream>
+#include <random>
+#include <vector>
+
+using namespace std;
+using ld = long double;
+using P = complex<ld>;
+using C = pair<ld, P>;
+
+const ld eps = 1e-10;
+ld cross(const P &a, const P &b) {
+  return a.real() * b.imag() - a.imag() * b.real();
+}
+
+ld dot(const P &a, const P &b) {
+  return a.real() * b.real() + a.imag() * b.imag();
+}
+
+C smallest_enclosing_disc(vector<P> ps) {
+  auto c3 = [](const P &a, const P &b, const P &c) {
+    ld A = norm(b - c);
+    ld B = norm(c - a);
+    ld C = norm(a - b);
+    ld S = abs(cross(b - a, c - a));
+    P p = (A * (B + C - A) * a + B * (C + A - B) * b + C * (A + B - C) * c) /
+          (4 * S * S);
+    ld r = abs(p - a);
+    return make_pair(r, p);
+  };
+  auto c2 = [](const P &a, const P &b) {
+    P c = (a + b) / (ld)2;
+    ld r = abs(a - c);
+    return make_pair(r, c);
+  };
+  auto in_circle = [](const P &a, const C &c) {
+    return norm(a - c.second) <= c.first * c.first + eps;
+  };
+  int n = ps.size();
+  shuffle(ps.begin(), ps.end(), mt19937{random_device{}()});
+  C c = c2(ps[0], ps[1]);
+  for (int i = 2; i < n; ++i) {
+    if (!in_circle(ps[i], c)) {
+      c = c2(ps[0], ps[i]);
+      for (int j = 1; j < i; ++j) {
+        if (!in_circle(ps[j], c)) {
+          c = c2(ps[j], ps[i]);
+          for (int k = 0; k < j; ++k) {
+            if (!in_circle(ps[k], c)) {
+              c = c3(ps[i], ps[j], ps[k]);
+            }
+          }
+        }
+      }
+    }
+  }
+  return c;
+}
+
+int main() {
+  int n, m;
+  cin >> n >> m;
+  vector<ld> r(n), mb(m);
+  vector<bool> used(n);
+  vector<int> ans;
+
+  for (auto &ri : r) cin >> ri;
+
+  for (auto &mbi : mb) {
+    int k;
+    cin >> k;
+    vector<P> g(k);
+    for (auto &gj : g) {
+      ld x, y;
+      cin >> x >> y;
+      gj = P(x, y);
+    }
+    mbi = smallest_enclosing_disc(g).first;
+  }
+
+  for (int i = 0; i < m; ++i) {
+    int j = 0;
+    for (; j < n; ++j) {
+      if (used[j] || mb[i] >= r[j] + eps) continue;
+      used[j] = true;
+      if (is_sorted(begin(used) + i + 1, end(used))) {
+        ans.push_back(j);
+        break;
+      }
+      used[j] = false;
+    }
+    if (j == n) break;
+  }
+
+  if (ans.size() == m)
+    for (const auto &i : ans) cout << i + 1 << "\n";
+  else
+    cout << "NG\n";
+}

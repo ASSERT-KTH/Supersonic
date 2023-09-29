@@ -1,0 +1,134 @@
+#include <bits/stdc++.h>
+
+using namespace std;
+
+typedef long long ll;
+typedef pair<int, int> pi;
+typedef vector<vector<pair<int, ll>>> graph;
+
+const int V = 100000;
+const int VV = 1000000;
+const ll INF = LLONG_MAX / 3;
+
+int H[V];
+ll d[VV];
+
+void dijkstra(graph &gg, int start) {
+    fill(d, d + VV, INF);
+    d[start] = 0;
+    priority_queue<pair<ll, int>, vector<pair<ll, int>>, greater<pair<ll, int>>> pq;
+    pq.push({0, start});
+    while (!pq.empty()) {
+        auto [dv, v] = pq.top();
+        pq.pop();
+        if (dv > d[v])
+            continue;
+        for (auto &e : gg[v]) {
+            auto [u, duv] = e;
+            if (d[u] > d[v] + duv) {
+                d[u] = d[v] + duv;
+                pq.push({d[u], u});
+            }
+        }
+    }
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int n, m, h;
+    ll X;
+    cin >> n >> m >> X;
+
+    for (int i = 0; i < n; ++i) cin >> H[i];
+
+    graph G(n);
+    for (int i = 0; i < m; ++i) {
+        int a, b, t;
+        cin >> a >> b >> t;
+        --a;
+        --b;
+        G[a].push_back({b, t});
+        G[b].push_back({a, t});
+    }
+
+    graph gg(VV);
+    vector<set<int>> height(V);
+    map<pi, int> v2id;
+    vector<int> max_h(V);
+
+    v2id[{0, X}] = 0;
+    max_h[0] = X;
+    height[0].insert(X);
+
+    priority_queue<pi, vector<pi>, less<pi>> que;
+    que.push({X, 0});
+
+    int ct = 1;
+    while (!que.empty()) {
+        auto [h, v] = que.top();
+        que.pop();
+        if (h < max_h[v])
+            continue;
+        for (auto &e : G[v]) {
+            auto [to, cost] = e;
+            int nh = h - cost;
+            if (nh < 0)
+                continue;
+            int bh = min(nh + cost, H[to]);
+            nh = min(nh, H[to]);
+            if (nh > max_h[to]) {
+                if (!v2id.count({v, bh})) {
+                    v2id[{v, bh}] = ct++;
+                    height[v].insert(bh);
+                }
+                if (!v2id.count({to, nh})) {
+                    v2id[{to, nh}] = ct++;
+                    height[to].insert(nh);
+                }
+                gg[v2id[{v, bh}]].push_back({v2id[{to, nh}], cost});
+                max_h[to] = nh;
+                que.push({nh, to});
+            }
+        }
+    }
+    for (int v = 0; v < n; ++v) {
+        for (auto &e : G[v]) {
+            auto [to, cost] = e;
+            if (H[v] < cost)
+                continue;
+            if (!v2id.count({v, cost})) {
+                v2id[{v, cost}] = ct++;
+                height[v].insert(cost);
+            }
+            if (!v2id.count({to, 0})) {
+                v2id[{to, 0}] = ct++;
+                height[to].insert(0);
+            }
+            gg[v2id[{v, cost}]].push_back({v2id[{to, 0}], cost});
+        }
+    }
+    if (!v2id.count({n - 1, H[n - 1]})) {
+        v2id[{n - 1, H[n - 1]}] = ct++;
+        height[n - 1].insert(H[n - 1]);
+    }
+    for (int v = 0; v < n; ++v) {
+        auto itr = height[v].begin();
+        auto nx = itr;
+        ++nx;
+        for (; nx != height[v].end(); ++itr, ++nx) {
+            int uu = v2id[{v, *itr}];
+            int vv = v2id[{v, *nx}];
+            int dist = *nx - *itr;
+            gg[uu].push_back({vv, dist});
+            gg[vv].push_back({uu, dist});
+        }
+    }
+    dijkstra(gg, v2id[{0, X}]);
+
+    ll ans = d[v2id[{n - 1, H[n - 1]}]];
+    cout << (ans == INF ? -1 : ans) << "\n";
+
+    return 0;
+}

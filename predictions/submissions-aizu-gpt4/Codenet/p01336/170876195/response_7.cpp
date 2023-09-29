@@ -1,0 +1,43 @@
+#include <algorithm>
+#include <cstring>
+#include <iostream>
+using namespace std;
+
+#define rep(i, n) for (int i = 0; i < n; ++i)
+#define CLEAR(arr, val) memset(arr, val, sizeof(arr))
+typedef long long ll;
+
+int n, m;
+
+int dpru(int *c, int *v) {
+  int dp[333][333];
+  CLEAR(dp, 0);
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j <= m; ++j) {
+      dp[i + 1][j] = max(dp[i + 1][j], dp[i][j]);
+      if (j >= c[i])
+        dp[i + 1][j] = max(dp[i + 1][j], dp[i + 1][j - c[i]] + v[i]);
+    }
+  }
+  return dp[n][m];
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  while (cin >> n >> m) {
+    int c[333], v[3][333];
+    rep(i, n) {
+      string s;
+      int t;
+      cin.ignore();
+      cin >> t;
+      c[i] = t;
+      rep(j, 3) cin >> v[j][i];
+    }
+    int res = 0;
+    rep(i, 3) res = max(res, dpru(c, v[i]));
+    cout << res << '\n';
+  }
+  return 0;
+}

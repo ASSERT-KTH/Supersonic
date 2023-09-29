@@ -1,0 +1,10 @@
+#include <iostream>
+#include <algorithm>
+using namespace std;
+
+int main() {
+  int arr[6];
+  for(int i=0; i<6; i++) cin >> arr[i];
+  cout << accumulate(arr, arr+4, 0) - *min_element(arr, arr+4) + *max_element(arr+4, arr+6) << endl;
+  return 0;
+}

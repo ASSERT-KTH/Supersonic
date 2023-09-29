@@ -1,0 +1,97 @@
+```
+#include <cctype>
+#include <cstdio>
+#include <cstring>
+#include <queue>
+using namespace std;
+
+constexpr int MaxVisits = 1 << 24;
+constexpr int MaxRows = 16;
+constexpr int MaxColumns = 20;
+constexpr int DifsCount = 5;
+
+unsigned short vis[MaxVisits];
+char c[MaxRows][MaxColumns];
+bool wall[256];
+int tm0;
+
+inline bool check(int u, int v) {
+    const int p[] = { v & 255, v >> 8 & 255, v >> 16 };
+    const int u_p[] = { u & 255, u >> 8 & 255, u >> 16 };
+    
+    for (int i = 0; i < 3; ++i) {
+        if (p[i] && (wall[p[i]] || p[i] == p[(i + 1) % 3] || (p[i] == u_p[(i + 1) % 3] && p[(i + 1) % 3] == u_p[i])))
+            return false;
+    }
+    return true;
+}
+
+int solve(int start, int goal) {
+    const int dif[DifsCount] = { 0, -1, 1, -16, 16 };
+    queue<int> q;
+    q.push(start);
+    q.push(-1);
+    int tm = tm0 + 1;
+    vis[start] = tm;
+    
+    while (1) {
+        int u = q.front();
+        q.pop();
+        
+        if (u < 0) {
+            q.push(-1);
+            ++tm;
+            continue;
+        }
+        
+        const int u_p[] = { u & 255, u >> 8 & 255, u >> 16 };
+        for (int i1 = u_p[0] ? 4 : 0; i1 >= 0; --i1)
+            for (int i2 = u_p[1] ? 4 : 0; i2 >= 0; --i2)
+                for (int i3 = u_p[2] ? 4 : 0; i3 >= 0; --i3) {
+                    int v = u + dif[i1] + (dif[i2] << 8) + (dif[i3] << 16);
+                    if (vis[v] > tm0) {
+                        continue;
+                    }
+                    if (check(u, v)) {
+                        if (v == goal) {
+                            return tm;
+                        }
+                        vis[v] = tm;
+                        q.push(v);
+                    }
+                }
+    }
+}
+
+int main() {
+    int w, h;
+    while (scanf("%d%d%*d ", &w, &h), w) {
+        for (int i = 0; i < h; ++i) {
+            fgets(c[i], MaxColumns, stdin);
+        }
+        int goal = 0;
+        int start = 0;
+        for (int i = 0; i < h; ++i) {
+            for (int j = 0; j < w; ++j) {
+                const int ij = i << 4 | j;
+                wall[ij] = false;
+                const char ch = c[i][j];
+                if (ch == '#') {
+                    wall[ij] = true;
+                } else if (islower(ch)) {
+                    start |= ij << (ch - 'a') * 8;
+                } else if (isupper(ch)) {
+                    goal |= ij << (ch - 'A') * 8;
+                }
+            }
+        }
+        int tm = solve(start, goal);
+        printf("%d\n", tm - tm0);
+        tm0 = tm + 1;
+        if (tm0 > 55000) {
+            memset(vis, 0, sizeof vis);
+            tm0 = 0;
+        }
+    }
+}
+```

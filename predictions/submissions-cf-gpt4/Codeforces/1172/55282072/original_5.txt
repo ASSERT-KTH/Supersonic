@@ -1,0 +1,109 @@
+```cpp
+#include <iostream>
+#include <vector>
+#include <cassert>
+#include <map>
+
+using namespace std;
+const int MOD = 998244353;
+
+struct mod_int {
+  int val;
+  mod_int(long long v = 0) : val(v % MOD) {
+    if (val < 0)
+      val += MOD;
+  }
+
+  static int mod_inv(int a, int m = MOD) {
+    int g = m, r = a, x = 0, y = 1;
+    while (r != 0) {
+      int q = g / r;
+      g %= r; swap(g, r);
+      x -= q * y; swap(x, y);
+    }
+    return x < 0 ? x + m : x;
+  }
+
+  explicit operator int() const { return val; }
+  mod_int &operator+=(const mod_int &other) {
+    if ((val += other.val) >= MOD) val -= MOD;
+    return *this;
+  }
+  friend mod_int operator+(const mod_int &a, const mod_int &b) { return mod_int(a) += b; }
+  mod_int &operator*=(const mod_int &other) {
+    val = (uint64_t)val * other.val % MOD;
+    return *this;
+  }
+  friend mod_int operator*(const mod_int &a, const mod_int &b) { return mod_int(a) *= b; }
+  mod_int inv() const { return mod_inv(val); }
+  mod_int pow(long long p) const {
+    mod_int a = *this, result = 1;
+    while (p > 0) {
+      if (p & 1)
+        result *= a;
+      a *= a;
+      p >>= 1;
+    }
+    return result;
+  }
+};
+
+vector<mod_int> factorial, inv_factorial, inv;
+
+void prepare_factorials(int max) {
+  inv.assign(max + 1, 1);
+  factorial.resize(max + 1);
+  inv_factorial.resize(max + 1);
+  factorial[0] = inv_factorial[0] = 1;
+
+  for (int i = 2; i <= max; ++i) {
+    factorial[i] = i * factorial[i - 1];
+    inv[i] = -inv[MOD % i] * (MOD / i);
+    inv_factorial[i] = inv[i] * inv_factorial[i - 1];
+  }
+}
+
+mod_int choose(int n, int k) {
+  if (k < 0 || k > n) return 0;
+  return factorial[n] * inv_factorial[k] * inv_factorial[n - k];
+}
+
+mod_int inverse(int n) {
+  return (n == 1 ? 1 : (long long)(MOD - MOD / n) * inverse(MOD % n) % MOD);
+}
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  prepare_factorials(4.1e5);
+
+  int N, M;
+  cin >> N >> M;
+
+  vector<int> likes(N);
+  vector<int> weights(N);
+
+  for (int &like : likes) cin >> like;
+  for (int &weight : weights) cin >> weight;
+
+  vector<mod_int> dp(M + 1), dp_new(M + 1);
+  dp[0] = 1;
+
+  for (const auto &weight : weights) {
+    dp_new = dp;
+    for (int i = 0; i <= M - weight; ++i) {
+      dp_new[i + weight] += dp[i];
+    }
+    dp.swap(dp_new);
+  }
+
+  for (const auto &like : likes) {
+    mod_int total = 0;
+    for (int i = M; i >= like; --i) {
+      total += dp[i];
+    }
+    cout << total.val << '\n';
+  }
+}
+```

@@ -1,0 +1,48 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+#define rep(i, a, b) for (uint32_t i = (a); i < (b); ++i)
+
+using namespace std;
+
+class SegmentTree {
+public:
+    SegmentTree(vector<uint32_t>& arr) {
+        size = arr.size();
+        tree.resize(2*size);
+        copy(arr.begin(), arr.end(), back_inserter(tree.begin() + size));
+        for (int i = size - 1; i > 0; --i)
+            tree[i] = min(tree[i<<1], tree[i<<1|1]);
+    }
+
+    uint32_t query(int l, int r) {
+        uint32_t min_val = UINT32_MAX;
+        for (l += size, r += size; l < r; l >>= 1, r >>= 1) {
+            if (l&1) min_val = min(min_val, tree[l++]);
+            if (r&1) min_val = min(min_val, tree[--r]);
+        }
+        return min_val;
+    }
+
+private:
+    vector<uint32_t> tree;
+    int size;
+};
+
+int main(void) {
+    ios::sync_with_stdio(false);
+    cin.tie(0);
+
+    uint32_t n, l;
+    cin >> n >> l;
+    vector<uint32_t> a(n);
+    rep(i, 0, n) { cin >> a[i]; }
+    SegmentTree st(a);
+
+    cout << st.query(0, l);
+    rep(i, 1, n - l + 1) { cout << " " << st.query(i, i + l); }
+    cout << "\n";
+
+    return 0;
+}

@@ -1,0 +1,49 @@
+#include <cstdio>
+#include <vector>
+#include <queue>
+#include <limits>
+#include <algorithm>
+
+const int INF = std::numeric_limits<int>::max();
+typedef std::pair<int, int> pair_int;
+std::vector<std::vector<pair_int>> graph;
+
+std::vector<int> shortest_path(int v, int start) {
+    std::priority_queue<pair_int, std::vector<pair_int>, std::greater<pair_int>> q;
+    std::vector<int> distance(v, INF);
+    distance[start] = 0;
+    q.push({0, start});
+
+    while (!q.empty()) {
+        int cur_dist = q.top().first;
+        int cur_node = q.top().second;
+        q.pop();
+        if (cur_dist > distance[cur_node]) continue;
+        for (auto& edge : graph[cur_node]) {
+            int next_node = edge.first;
+            int next_dist = cur_dist + edge.second;
+            if (next_dist < distance[next_node]) {
+                distance[next_node] = next_dist;
+                q.push({next_dist, next_node});
+            }
+        }
+    }
+    return distance;
+}
+
+int main() {
+    int v, e, r;
+    scanf("%d %d %d", &v, &e, &r);
+    graph.resize(v);
+    for (int i = 0; i < e; i++) {
+        int s, t, d;
+        scanf("%d %d %d", &s, &t, &d);
+        graph[s].push_back({t, d});
+    }
+    auto distances = shortest_path(v, r);
+    for (auto d : distances) {
+        if (d == INF) printf("INF\n");
+        else printf("%d\n", d);
+    }
+    return 0;
+}

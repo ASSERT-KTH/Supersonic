@@ -1,0 +1,170 @@
+#include <vector>
+#include <iostream>
+#include <algorithm>
+
+using namespace std;
+
+typedef long long ll;
+
+const int MAXN = 200001;
+const int MAXLOG = 20;
+
+struct edge {
+    int to;
+    ll w;
+    edge(int to, ll w) : to(to), w(w) {}
+};
+
+int n;
+ll k;
+vector<edge> g[MAXN];
+int tin[MAXN], tout[MAXN], timer = 0;
+int up[MAXN][MAXLOG];
+ll dist[MAXN], sum[MAXN];
+int sz[MAXN], heavy[MAXN];
+
+void dfs(int v, int p, ll w) {
+    tin[v] = ++timer;
+    up[v][0] = p, dist[v] = w;
+    for (int i = 1; i < MAXLOG; i++)
+        up[v][i] = up[up[v][i - 1]][i - 1];
+    sz[v] = 1, heavy[v] = -1;
+    for (edge &e : g[v]) {
+        if (e.to != p) {
+            dfs(e.to, v, w + e.w);
+            sz[v] += sz[e.to];
+            if (heavy[v] == -1 || sz[e.to] > sz[heavy[v]])
+                heavy[v] = e.to;
+        }
+    }
+    tout[v] = ++timer;
+}
+
+bool is_upper(int a, int b) {
+    return tin[a] <= tin[b] && tout[a] >= tout[b];
+}
+
+int lca(int a, int b) {
+    if (is_upper(a, b))
+        return a;
+    if (is_upper(b, a))
+        return b;
+    for (int i = MAXLOG - 1; i >= 0; i--) {
+        if (!is_upper(up[a][i], b))
+            a = up[a][i];
+    }
+    return up[a][0];
+}
+
+void calc_sum(int v, int p) {
+    sum[v] = sum[p] + (dist[v] % k == 0 ? dist[v] : 0);
+    for (edge &e : g[v]) {
+        if (e.to != p) {
+            calc_sum(e.to, v);
+        }
+    }
+}
+
+vector<int> roots;
+vector<ll> st[MAXN];
+vector<ll> f[MAXN];
+
+void decompose(int v, int p, int root) {
+    roots[v] = root;
+    if (heavy[v] != -1)
+        decompose(heavy[v], v, root);
+    for (edge &e : g[v]) {
+        if (e.to != p && e.to != heavy[v])
+            decompose(e.to, v, e.to);
+    }
+}
+
+void build(int v, int p, int root) {
+    st[root].push_back(sum[v]);
+    for (edge &e : g[v]) {
+        if (e.to != p && e.to != heavy[v])
+            build(e.to, v, root);
+    }
+}
+
+ll get(int v, int u) {
+    ll res = 0;
+    while (roots[v] != roots[u]) {
+        if (lca(roots[v], roots[u]) == roots[v]) {
+            swap(v, u);
+        }
+        int ind = lower_bound(st[roots[v]].begin(), st[roots[v]].end(), sum[v] - dist[roots[v]]) - st[roots[v]].begin();
+        res += f[roots[v]][ind];
+        v = up[roots[v]][0];
+    }
+    if (lca(v, u) == u) {
+        swap(v, u);
+    }
+    int ind = lower_bound(st[roots[v]].begin(), st[roots[v]].end(), sum[v] - dist[u]) - st[roots[v]].begin();
+    res += f[roots[v]][ind];
+    return res;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    cin >> n >> k;
+    for (int i = 0, u, v; i < n - 1; i++) {
+        ll w;
+        cin >> u >> v >> w;
+        g[u].push_back(edge(v, w));
+        g[v].push_back(edge(u, w));
+    }
+    dfs(1, 1, 0);
+    decompose(1, 1, 1);
+    calc_sum(1, 1);
+    for (int i = 1; i <= n; i++) {
+        if (roots[i] == i) {
+            build(i, i, i);
+            sort(st[i].begin(), st[i].end());
+            f[i].resize(st[i].size());
+            f[i][0] = st[i][0];
+            for (int j = 1; j < st[i].size(); j++) {
+                f[i][j] = f[i][j - 1] + st[i][j];
+            }
+        }
+    }
+    int q;
+    cin >> q;
+    while (q--) {
+        string type;
+        cin >> type;
+        if (type[0] == '+') {
+            int v;
+            ll x;
+            cin >> v >> x;
+            dist[v] += x;
+            for (int i = 0; i < g[v].size(); i++) {
+                if (g[v][i].to == up[v][0]) {
+                    g[v][i].w += x;
+                }
+                if (g[g[v][i].to][i].to == v) {
+                    g[g[v][i].to][i].w += x;
+                }
+            }
+            calc_sum(1, 1);
+            for (int i = 1; i <= n; i++) {
+                if (roots[i] == i) {
+                    st[i].clear();
+                    build(i, i, i);
+                    sort(st[i].begin(), st[i].end());
+                    f[i].resize(st[i].size());
+                    f[i][0] = st[i][0];
+                    for (int j = 1; j < st[i].size(); j++) {
+                        f[i][j] = f[i][j - 1] + st[i][j];
+                    }
+                }
+            }
+        } else {
+            int v, u;
+            cin >> v >> u;
+            cout << get(v, u) << '\n';
+        }
+    }
+    return 0;
+}

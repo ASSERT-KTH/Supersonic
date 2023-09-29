@@ -1,0 +1,33 @@
+#include <iostream>
+#include <vector>
+#include <climits>
+#include <algorithm>
+#define INF INT_MAX
+#define MAX 256
+#define MAX_N 20001
+
+int dp[MAX_N][MAX];
+
+int main() {
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(NULL);
+  
+    int n, m;
+    while (std::cin >> n >> m, n) {
+        std::vector<int> b(m), a(n + 1);
+        for (auto &i : b) std::cin >> i;
+        for (int i = 1; i <= n; i++) std::cin >> a[i];
+        std::fill(&dp[0][0], &dp[0][0] + sizeof(dp) / sizeof(int), INF);
+        dp[0][128] = 0;
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < MAX; j++)
+                if (dp[i][j] != INF)
+                    for (auto &k : b) {
+                        int p = std::clamp(j + k, 0, MAX - 1);
+                        dp[i + 1][p] = std::min(dp[i + 1][p], dp[i][j] + (a[i + 1] - p) * (a[i + 1] - p));
+                    }
+        int p = *std::min_element(&dp[n][0], &dp[n][0] + MAX);
+        std::cout << p << '\n';
+    }
+    return 0;
+}

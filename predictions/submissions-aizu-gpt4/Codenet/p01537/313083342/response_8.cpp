@@ -1,0 +1,89 @@
+#include <bits/stdc++.h>
+
+using ld = long double;
+using P = std::complex<ld>;
+using C = std::pair<ld, P>;
+
+ld cross(const P &a, const P &b) {
+  return a.real() * b.imag() - a.imag() * b.real();
+}
+
+C smallest_enclosing_disc(std::vector<P> &ps) {
+  auto c3 = [](const P &a, const P &b, const P &c) {
+    ld A = norm(b - c);
+    ld B = norm(c - a);
+    ld C = norm(a - b);
+    ld S = abs(cross(b - a, c - a));
+    P p = (A * (B + C - A) * a + B * (C + A - B) * b + C * (A + B - C) * c) /
+          (4 * S * S);
+    ld r = abs(p - a);
+    return std::make_pair(r, p);
+  };
+  auto c2 = [](const P &a, const P &b) {
+    P c = (a + b) / (ld)2;
+    ld r = abs(a - c);
+    return std::make_pair(r, c);
+  };
+  auto in_circle = [](const P &a, const C &c) {
+    return norm(a - c.second) <= c.first * c.first;
+  };
+  int n = ps.size();
+  std::random_shuffle(ps.begin(), ps.end());
+  C c = c2(ps[0], ps[1]);
+  for (int i = 2; i < n; ++i) {
+    if (!in_circle(ps[i], c)) {
+      c = c2(ps[0], ps[i]);
+      for (int j = 1; j < i; ++j) {
+        if (!in_circle(ps[j], c)) {
+          c = c2(ps[j], ps[i]);
+          for (int k = 0; k < j; ++k) {
+            if (!in_circle(ps[k], c)) {
+              c = c3(ps[i], ps[j], ps[k]);
+            }
+          }
+        }
+      }
+    }
+  }
+  return c;
+}
+
+int main() {
+  int n, m;
+  std::cin >> n >> m;
+  std::vector<ld> r(n);
+  for (auto &ri : r) std::cin >> ri;
+  std::vector<ld> mb(m);
+  for (auto &mbi : mb) {
+    int k;
+    std::cin >> k;
+    std::vector<P> g(k);
+    for (auto &gi : g) {
+      ld x, y;
+      std::cin >> x >> y;
+      gi = P(x, y);
+    }
+    mbi = smallest_enclosing_disc(g).first;
+  }
+  std::vector<int> ans;
+  std::vector<bool> used(n, false);
+  for (int i = 0; i < m; ++i) {
+    bool found = false;
+    for (int j = 0; j < n; ++j) {
+      if (!used[j] && mbi <= r[j]) {
+        used[j] = true;
+        if (std::is_sorted(used.begin() + i + 1, used.end())) {
+          ans.push_back(j + 1);
+          found = true;
+          break;
+        }
+        used[j] = false;
+      }
+    }
+    if (!found) {
+      std::cout << "NG\n";
+      return 0;
+    }
+  }
+  for (const auto &ai : ans) std::cout << ai << "\n";
+}

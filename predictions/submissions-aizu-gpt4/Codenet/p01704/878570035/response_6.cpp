@@ -1,0 +1,60 @@
+#include <iostream>
+#include <cmath>
+#include <vector>
+#include <limits>
+
+using namespace std;
+typedef long long LL;
+typedef pair<int, int> PII;
+typedef double flt;
+
+struct Car {
+    int vw, pf, vf, th;
+};
+
+flt calc(const Car& car, flt W) {
+    flt cost = W * car.vw;
+    flt need = car.th - W * car.vw;
+    if (need > 0) {
+        flt f = need / car.vf;
+        cost += f * car.pf;
+    }
+    return cost;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int N;
+    while (cin >> N && N) {
+        int pw;
+        cin >> pw;
+
+        vector<Car> cars(N);
+        for (int i = 0; i < N; ++i) {
+            cin >> cars[i].vw >> cars[i].pf >> cars[i].vf >> cars[i].th;
+        }
+
+        flt left = 0, right = numeric_limits<int>::max();
+        for (int _ = 0; _ < 200; ++_) {
+            flt m1 = (left * 2 + right) / 3.0;
+            flt m2 = (left + right * 2) / 3.0;
+            flt c1 = 0, c2 = 0;
+            for (const auto& car : cars) {
+                c1 += calc(car, m1);
+                c2 += calc(car, m2);
+            }
+            if (c1 < c2)
+                right = m2;
+            else
+                left = m1;
+        }
+        flt cost = 0;
+        for (const auto& car : cars) {
+            cost += calc(car, left);
+        }
+        cout << fixed << setprecision(10) << cost << "\n";
+    }
+    return 0;
+}

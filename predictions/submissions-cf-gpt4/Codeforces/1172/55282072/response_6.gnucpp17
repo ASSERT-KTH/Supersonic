@@ -1,0 +1,124 @@
+#include <algorithm>
+#include <cassert>
+#include <iostream>
+#include <map>
+#include <vector>
+using namespace std;
+const int MOD = 998244353;
+using ll = long long;
+struct mod_int {
+  int val;
+  mod_int(ll v = 0) {
+    if (v < 0)
+      v = v % MOD + MOD;
+    if (v >= MOD)
+      v %= MOD;
+    val = v;
+  }
+  static int mod_inv(int a, int m = MOD) {
+    int g = m, r = a, x = 0, y = 1;
+    while (r != 0) {
+      int q = g / r;
+      g %= r;
+      swap(g, r);
+      x -= q * y;
+      swap(x, y);
+    }
+    return x < 0 ? x + m : x;
+  }
+  explicit operator int() const { return val; }
+  mod_int &operator+=(const mod_int &other) {
+    val += other.val;
+    if (val >= MOD)
+      val -= MOD;
+    return *this;
+  }
+  mod_int &operator-=(const mod_int &other) {
+    val -= other.val;
+    if (val < 0)
+      val += MOD;
+    return *this;
+  }
+  mod_int &operator*=(const mod_int &other) {
+    val = (uint64_t)val * other.val % MOD;
+    return *this;
+  }
+  mod_int &operator/=(const mod_int &other) { return *this *= other.inv(); }
+  mod_int operator-() const { return val == 0 ? 0 : MOD - val; }
+  mod_int inv() const { return mod_inv(val); }
+};
+vector<mod_int> factorial, inv_factorial;
+void prepare_factorials(int max) {
+  factorial.resize(max + 1);
+  inv_factorial.resize(max + 1);
+  factorial[0] = inv_factorial[0] = 1;
+  for (int i = 1; i <= max; i++) {
+    factorial[i] = i * factorial[i - 1];
+    inv_factorial[i] = inv_factorial[i - 1] / i;
+  }
+}
+mod_int choose(int n, int r) {
+  if(r < 0 || r > n) return 0;
+  return factorial[n] * inv_factorial[r] * inv_factorial[n - r];
+}
+int N, M;
+int L, DL;
+vector<int> likes;
+vector<int> weights;
+vector<mod_int> probability;
+mod_int dp[2][2][2005];
+mod_int solve(int like, int weight) {
+  if(weight < 0) return 0;
+  if(like == 0 && weight == 0) return 1;
+  if(dp[like][weight][weight].val != -1) return dp[like][weight][weight];
+  mod_int answer = 0;
+  if(like) {
+    for (int up = 0; up <= M; up++) {
+      mod_int prob = choose(M, up) * (probability[2 * up] * choose(L, weight - up));
+      answer += prob * solve(like - 1, weight - up);
+    }
+  } else {
+    for (int down = 0; down <= M; down++) {
+      mod_int prob = choose(M, down) * (probability[2 * (M - down)] * choose(DL, weight - down));
+      answer += prob * solve(like, weight - down);
+    }
+  }
+  return dp[like][weight][weight] = answer;
+}
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+  prepare_factorials(4.1e5);
+  cin >> N >> M;
+  likes.resize(N);
+  weights.resize(N);
+  for (int &like : likes)
+    cin >> like;
+  for (int &weight : weights)
+    cin >> weight;
+  L = DL = 0;
+  for (int i = 0; i < N; i++)
+    if (likes[i])
+      L += weights[i];
+    else
+      DL += weights[i];
+  probability.assign(2 * M + 1, 0);
+  probability[M] = 1;
+  for (int iter = 0; iter < M; iter++) {
+    vector<mod_int> new_probability(2 * M + 1, 0);
+    for (int i = -M; i <= M; i++) {
+      if ((i + iter) % 2 != 0 || abs(i) > iter)
+        continue;
+      int up = (iter + i) / 2, down = (iter - i) / 2;
+      if (down > DL)
+        continue;
+      new_probability[M + i + 1] += probability[M + i] / (L + up);
+      new_probability[M + i - 1] += probability[M + i] / (DL - down);
+    }
+    swap(probability, new_probability);
+  }
+  for (int i = 0; i < N; i++) {
+    mod_int answer = mod_int(weights[i]) * solve(likes[i], weights[i]);
+    cout << (int)answer << '\n';
+  }
+}

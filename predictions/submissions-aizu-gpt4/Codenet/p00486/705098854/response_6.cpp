@@ -1,0 +1,54 @@
+#include <algorithm>
+#include <cstdio>
+#include <iostream>
+#include <vector>
+using namespace std;
+int main() {
+  ios_base::sync_with_stdio(false); // for fast I/O operations
+  cin.tie(NULL); // flush the output buffer before taking the inputs
+  long long sum = 0LL, osum = 0LL;
+  long long w, h, L, HL, temp, ox, oy, max = 0, dx, dy;
+  vector<long long> LXY[2], XY[2];
+
+  cin >> w >> h >> L;
+
+  LXY[0].reserve(L);
+  LXY[1].reserve(L);
+
+  for (long long i = 0; i < L; ++i) {
+    long long x, y;
+    cin >> x >> y;
+    LXY[0].emplace_back(x);
+    LXY[1].emplace_back(y);
+    XY[0].push_back(x);
+    XY[1].push_back(y);
+  }
+  sort(XY[0].begin(), XY[0].end());
+  sort(XY[1].begin(), XY[1].end());
+  HL = (L + 1) / 2;
+  if (L == 1) {
+    cout << "0\n" << LXY[0][0] << " " << LXY[1][0] << "\n";
+  } else {
+    long long oxy[2][2] = {{XY[0][HL - 1], XY[1][HL - 1]}, {XY[0][HL], XY[1][HL]}};
+    dx = (oxy[0][0] == oxy[1][0]) ? 1 : 2;
+    dy = (oxy[0][1] == oxy[1][1]) ? 1 : 2;
+    for (long long f2 = 0; f2 < dx; ++f2) {
+      for (long long f3 = 0; f3 < dy; ++f3) {
+        sum = max = 0LL;
+        for (long long i = 0; i < L; ++i) {
+          temp = abs(LXY[0][i] - oxy[f2][0]) + abs(LXY[1][i] - oxy[f3][1]);
+          sum += temp;
+          if (max < temp) max = temp;
+        }
+        sum = (sum << 1) - max;
+        if (osum == 0 || osum > sum) {
+          osum = sum;
+          ox = oxy[f2][0];
+          oy = oxy[f3][1];
+        }
+      }
+    }
+    cout << osum << "\n" << ox << " " << oy << "\n";
+  }
+  return 0;
+}

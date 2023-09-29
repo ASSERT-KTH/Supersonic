@@ -1,0 +1,114 @@
+```C++
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+const int MX = 1e5+5;
+const int LG = 20;
+
+vector<int> adj[MX];
+int par[MX][LG+1], dep[MX], sz[MX];
+int cenpar[MX], dist[MX], ans[MX];
+bool vis[MX];
+int N, M, tot;
+
+void dfs(int x, int p) {
+    sz[x] = 1;
+    for(int y : adj[x]) {
+        if(y == p || vis[y]) continue;
+        dfs(y, x);
+        sz[x] += sz[y];
+    }
+}
+
+int findcen(int x, int p) {
+    for(int y : adj[x]) {
+        if(y == p || vis[y]) continue;
+        if(sz[y]*2 > tot) return findcen(y, x);
+    }
+    return x;
+}
+
+void build(int x, int p) {
+    tot = sz[x];
+    int c = findcen(x, x);
+    vis[c] = true;
+    cenpar[c] = p;
+    for(int y : adj[c]) {
+        if(vis[y]) continue;
+        dep[y] = dep[c] + 1;
+        par[y][0] = c;
+        build(y, c);
+    }
+}
+
+void init() {
+    dfs(1, 1);
+    build(1, 0);
+    for(int i = 1; i <= LG; i++) {
+        for(int j = 1; j <= N; j++) {
+            par[j][i] = par[par[j][i-1]][i-1];
+        }
+    }
+}
+
+int lca(int x, int y) {
+    if(dep[x] < dep[y]) swap(x, y);
+    for(int i = LG; i >= 0; i--) {
+        if(dep[par[x][i]] >= dep[y]) x = par[x][i];
+    }
+    if(x == y) return x;
+    for(int i = LG; i >= 0; i--) {
+        if(par[x][i] != par[y][i]) {
+            x = par[x][i];
+            y = par[y][i];
+        }
+    }
+    return par[x][0];
+}
+
+int dist(int x, int y) {
+    return dep[x] + dep[y] - 2 * dep[lca(x, y)];
+}
+
+void update(int x) {
+    int y = x;
+    while(y) {
+        ans[y] = min(ans[y], dist(x, y));
+        y = cenpar[y];
+    }
+}
+
+int query(int x) {
+    int y = x, ret = 1e9;
+    while(y) {
+        ret = min(ret, ans[y] + dist(x, y));
+        y = cenpar[y];
+    }
+    return ret;
+}
+
+int main() {
+    ios_base::sync_with_stdio(0), cin.tie(0);
+    cin >> N >> M;
+    for(int i = 1, a, b; i < N; i++) {
+        cin >> a >> b;
+        adj[a].push_back(b);
+        adj[b].push_back(a);
+    }
+    init();
+    for(int i = 1; i <= N; i++) ans[i] = 1e9;
+    ans[1] = 0;
+    update(1);
+    while(M--) {
+        int t, v;
+        cin >> t >> v;
+        if(t == 1) {
+            ans[v] = 0;
+            update(v);
+        } else {
+            cout << query(v) << "\n";
+        }
+    }
+    return 0;
+}
+```

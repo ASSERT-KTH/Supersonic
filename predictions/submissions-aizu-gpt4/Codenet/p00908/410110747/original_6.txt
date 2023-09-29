@@ -1,0 +1,197 @@
+```
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <string>
+#include <algorithm>
+
+using namespace std;
+
+const int dx[4] = {-1, 0, 1, 0};
+const int dy[4] = {0, 1, 0, -1};
+const int dx2[4] = {-1, 0, 2, 1};
+const int dy2[4] = {0, 2, 1, -1};
+
+struct Point {
+  int x;
+  int y;
+  int turn;
+};
+
+struct Node {
+  int kx;
+  int ky;
+  int opway;
+  int turn;
+};
+
+class Compare {
+public:
+  bool operator()(const Node &l, const Node &r) {
+    return l.turn > r.turn;
+  }
+};
+
+int memo2[60][60][4];
+vector<vector<int>> field;
+priority_queue<Node, vector<Node>, Compare> que;
+
+int getdis(const int fx, const int fy, const int gx, const int gy) {
+  queue<Point> que;
+  vector<vector<int>> memo(field.size(), vector<int>(field[0].size(), 999999));
+  que.push(Point{fx, fy, 0});
+  while (!que.empty()) {
+    Point atop(que.front());
+    que.pop();
+    if (atop.x == gx && atop.y == gy) {
+      return atop.turn;
+    }
+    for (int i = 0; i < 4; ++i) {
+      const int nextx = atop.x + dx[i];
+      const int nexty = atop.y + dy[i];
+      if (nextx < 0 || nexty < 0 || nextx >= field[0].size() || nexty >= field.size() || field[nexty][nextx]) {
+        continue;
+      }
+      if (atop.turn + 1 < memo[nexty][nextx]) {
+        memo[nexty][nextx] = atop.turn + 1;
+        que.push(Point{nextx, nexty, atop.turn + 1});
+      }
+    }
+  }
+  return 999999;
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  int H, W;
+  while (cin >> H >> W && (H || W)) {
+    fill(&memo2[0][0][0], &memo2[0][0][0] + sizeof(memo2) / sizeof(int), 999999);
+    field = vector<vector<int>>(H + 2, vector<int>(W + 2, true));
+    que = priority_queue<Node, vector<Node>, Compare>();
+    int kx = 99, ky = 99;
+    int ox[2];
+    int oy[2];
+    int num = 0;
+    for (int i = 0; i < H; ++i) {
+      string st;
+      cin >> st;
+      for (int j = 0; j < W; ++j) {
+        if (st[j] == 'X') {
+          kx = min(kx, j + 1);
+          ky = min(ky, i + 1);
+          field[i + 1][j + 1] = false;
+        } else if (st[j] == 'o') {
+          field[i + 1][j + 1] = false;
+        } else if (st[j] == '.') {
+          field[i + 1][j + 1] = false;
+          ox[num] = j + 1;
+          oy[num] = i + 1;
+          num++;
+        }
+      }
+    }
+    if (kx == 1 && ky == 1) {
+      cout << 0 << '\n';
+      continue;
+    }
+    for (int way = 0; way < 4; ++way) {
+      int amin = 999999;
+      bool ok = true;
+      for (int op = 0; op < 2; ++op) {
+        int atime = 0;
+        for (int lu = 0; lu < 2; ++lu) {
+          const int fx = ox[op ^ lu];
+          const int fy = oy[op ^ lu];
+          int gx = kx + dx2[way];
+          int gy = ky + dy2[way];
+          if (lu == 1) {
+            gx += dx[(way + 1) % 4];
+            gy += dy[(way + 1) % 4];
+          }
+          if (gx < 0 || gy < 0 || gx >= field[0].size() || gy >= field.size() || field[gy][gx]) {
+            ok = false;
+            break;
+          }
+          fill(&field[0][0], &field[0][0] + field.size() * field[0].size(), true);
+          atime += getdis(fx, fy, gx, gy);
+          fill(&field[0][0], &field[0][0] + field.size() * field[0].size(), false);
+        }
+        if (!ok) {
+          break;
+        }
+        amin = min(amin, atime);
+      }
+      if (!ok) {
+        continue;
+      }
+      memo2[kx][ky][way] = amin;
+      que.push(Node{kx, ky, way, amin});
+    }
+    int ans = -1;
+    while (!que.empty()) {
+      Node atop(que.top());
+      que.pop();
+      const int fkx = atop.kx;
+      const int fky = atop.ky;
+      const int fway = atop.opway;
+      const int fturn = atop.turn;
+      if (fkx == 1 && fky == 1) {
+        ans = fturn;
+        break;
+      }
+      for (int tway = 0; tway < 4; ++tway) {
+        if (fway == tway) {
+          continue;
+        }
+        int amin = 999999;
+        bool ok = true;
+        for (int op = 0; op < 2; ++op) {
+          int atime = 0;
+          for (int lu = 0; lu < 2; ++lu) {
+            int fx = fkx + dx2[fway];
+            int fy = fky + dy2[fway];
+            int gx = fkx + dx2[tway];
+            int gy = fky + dy2[tway];
+            if (lu == 1) {
+              gx += dx[(tway + 1) % 4];
+              gy += dy[(tway + 1) % 4];
+            }
+            if (op ^ lu) {
+              fx += dx[(fway + 1) % 4];
+              fy += dy[(fway + 1) % 4];
+            }
+            if (gx < 0 || gy < 0 || gx >= field[0].size() || gy >= field.size() || field[gy][gx]) {
+              ok = false;
+              break;
+            }
+            fill(&field[0][0], &field[0][0] + field.size() * field[0].size(), true);
+            atime += getdis(fx, fy, gx, gy);
+            fill(&field[0][0], &field[0][0] + field.size() * field[0].size(), false);
+          }
+          if (!ok) {
+            break;
+          }
+          amin = min(amin, atime);
+        }
+        if (!ok) {
+          continue;
+        }
+        if (memo2[fkx][fky][tway] > fturn + amin) {
+          memo2[fkx][fky][tway] = fturn + amin;
+          que.push(Node{fkx, fky, tway, fturn + amin});
+        }
+      }
+      const int nkx = fkx + dx[fway];
+      const int nky = fky + dy[fway];
+      const int nway = (fway + 2) % 4;
+      if (memo2[nkx][nky][nway] > fturn + 1) {
+        memo2[nkx][nky][nway] = fturn + 1;
+        que.push(Node{nkx, nky, nway, fturn + 1});
+      }
+    }
+    cout << ans << '\n';
+  }
+  return 0;
+}
+```

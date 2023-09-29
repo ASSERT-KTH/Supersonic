@@ -1,0 +1,166 @@
+#include <cstdio>
+#include <map>
+#include <vector>
+
+using namespace std;
+
+long long gcd(long long a, long long b) {
+  while (b) {
+    a %= b;
+    swap(a, b);
+  }
+  return a;
+}
+
+long long mul(long long a, long long b, long long mod) {
+  long long ret = 0;
+  a %= mod;
+  b %= mod;
+  while (b) {
+    if (b & 1) ret = (ret + a) % mod;
+    a = (a << 1) % mod;
+    b >>= 1;
+  }
+  return ret;
+}
+
+long long power(long long a, long long b, long long mod) {
+  long long ret = 1;
+  a %= mod;
+  while (b) {
+    if (b & 1) ret = mul(ret, a, mod);
+    a = mul(a, a, mod);
+    b >>= 1;
+  }
+  return ret;
+}
+
+bool check(long long a, long long n) {
+  long long x = n - 1;
+  int t = 0;
+  while ((x & 1) == 0) {
+    x >>= 1;
+    ++t;
+  }
+  long long y = power(a, x, n);
+  for (int i = 1; i <= t; ++i) {
+    long long prev_y = y;
+    y = mul(y, y, n);
+    if (y == 1 && prev_y != 1 && prev_y != n - 1) return true;
+  }
+  return y != 1;
+}
+
+bool Miller_Rabin(long long n) {
+  if (n == 2) return true;
+  if (n < 2 || !(n & 1)) return false;
+  const int arr[] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37};
+  for (int i = 0; i < 12; ++i) {
+    if (arr[i] >= n) break;
+    if (check(arr[i], n)) return false;
+  }
+  return true;
+}
+
+long long Pollard_rho(long long n, int c) {
+  long long x = rand() % n;
+  long long y = x;
+  long long d;
+  for (int i = 2, k = 2;; ++i) {
+    x = (mul(x, x, n) + c) % n;
+    d = gcd(y - x < 0 ? x - y : y - x, n);
+    if (d != 1 && d != n) return d;
+    if (y == x) return n;
+    if (i == k) {
+      y = x;
+      k <<= 1;
+    }
+  }
+}
+
+void factorize(long long n, map<long long, int> &cnt, int c = 107) {
+  if (n == 1) return;
+  if (Miller_Rabin(n)) {
+    ++cnt[n];
+    return;
+  }
+  long long p = n;
+  while (p >= n) p = Pollard_rho(p, c--);
+  factorize(p, cnt, c);
+  factorize(n / p, cnt, c);
+}
+
+long long c[100005];
+long long ans;
+map<long long, int> cnt;
+
+void dfs(map<long long, int>::iterator it, long long val) {
+  if (it == cnt.end()) {
+    long long b = ans / val;
+    if (val <= 100000 && b <= 100000 && c[val] && c[b]) {
+      ans += val == b ? c[val] * (c[val] - 1) : c[val] * c[b];
+    }
+  } else {
+    auto nit = next(it);
+    for (int i = 0; i <= it->second; ++i, val *= it->first) dfs(nit, val);
+  }
+}
+
+bool sieve[100005];
+vector<int> primes;
+
+void primeSieve(int x) {
+  sieve[0] = sieve[1] = true;
+  for (int i = 2; i * i <= x; ++i) {
+    if (!sieve[i]) {
+      primes.push_back(i);
+      for (int j = i * i; j <= x; j += i) sieve[j] = true;
+    }
+  }
+}
+
+int main() {
+  int n, k;
+  scanf("%d%d", &n, &k);
+  if (k == 2) {
+    map<long long, long long> all;
+    primeSieve(100000);
+    for (int i = 1; i <= n; ++i) {
+      int t;
+      scanf("%d", &t);
+      cnt.clear();
+      for (auto x : primes) {
+        if (x > t) break;
+        while (t % x == 0) {
+          ++cnt[x];
+          t /= x;
+        }
+      }
+      long long h = 1;
+      for (auto x : cnt) if (x.second & 1) h *= x.first;
+      ++all[h];
+    }
+    for (auto x : all) {
+      ans += x.second * (x.second - 1) / 2;
+    }
+  } else {
+    for (int i = 1; i <= n; ++i) {
+      int t;
+      scanf("%d", &t);
+      ++c[t];
+    }
+    long long cur = 1;
+    for (long long x = 1; cur <= 1e10; ++x) {
+      cnt.clear();
+      factorize(cur, cnt);
+      dfs(cnt.begin(), 1);
+      cur = 1;
+      for (int j = 1; j <= k; ++j) {
+        cur *= x;
+        if (cur > 1e10) break;
+      }
+    }
+    ans >>= 1;
+  }
+  printf("%lld\n", ans);
+}

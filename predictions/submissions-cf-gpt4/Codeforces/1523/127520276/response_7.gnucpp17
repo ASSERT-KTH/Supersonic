@@ -1,0 +1,76 @@
+#include <algorithm>
+#include <cstdlib>
+#include <iostream>
+#include <queue>
+#include <random>
+#include <tuple>
+#include <utility>
+#include <vector>
+
+using namespace std;
+
+constexpr int N = 5e4, M = 1e5;
+
+struct Interval {
+    int start, end, index;
+    bool operator < (const Interval& rhs) const {
+        return end < rhs.end || (end == rhs.end && start < rhs.start);
+    }
+};
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n, m;
+    cin >> n >> m;
+
+    vector<Interval> intervals(m);
+    vector<vector<int>> lengthSortedIntervals(N + 1);
+    vector<int> ans(N + 1, 0);
+
+    for (int i = 0; i < m; ++i) {
+        cin >> intervals[i].start >> intervals[i].end;
+        --intervals[i].start;
+        intervals[i].index = i;
+        lengthSortedIntervals[intervals[i].end - intervals[i].start].push_back(i);
+    }
+
+    vector<priority_queue<Interval>> intervalQueues(N);
+    queue<pair<int, int>> rentQueue;
+
+    for (int length = n; length > 0; --length) {
+        for (int i : lengthSortedIntervals[length]) {
+            for (int j = N - intervals[i].start - 1; j < N; j |= j + 1) {
+                intervalQueues[j].push(intervals[i]);
+            }
+        }
+
+        rentQueue.emplace(0, n);
+
+        while (!rentQueue.empty()) {
+            auto [l, r] = rentQueue.front();
+            rentQueue.pop();
+
+            Interval res = {0, M, M};
+
+            for (int i = N - l; i > N - r; i &= i - 1) {
+                if (!intervalQueues[i - 1].empty() && intervalQueues[i - 1].top() < res) {
+                    res = intervalQueues[i - 1].top();
+                }
+            }
+
+            if (res.index != M) {
+                ans[length] += res.end - res.start;
+                rentQueue.emplace(l, res.start);
+                rentQueue.emplace(res.end, r);
+            }
+        }
+    }
+
+    for (int rented = 1; rented <= n; ++rented) {
+        cout << ans[rented] << '\n';
+    }
+
+    return 0;
+}

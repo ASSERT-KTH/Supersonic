@@ -1,0 +1,59 @@
+#include <algorithm>
+#include <iostream>
+#include <vector>
+using namespace std;
+
+void merge(vector<int>& arr, vector<int>& left, vector<int>& right) {
+    arr.clear();
+    while (!left.empty() && !right.empty()) {
+        if (left.front() <= right.front()) {
+            arr.push_back(left.front());
+            left.erase(left.begin());
+        } else {
+            arr.push_back(right.front());
+            right.erase(right.begin());
+        }
+    }
+    while (!left.empty()) {
+        arr.push_back(left.front());
+        left.erase(left.begin());
+    }
+    while (!right.empty()) {
+        arr.push_back(right.front());
+        right.erase(right.begin());
+    }
+}
+
+void mergesort(vector<int>& arr) {
+    if (arr.size() <= 1) return;
+    vector<int> left, right;
+    int mid = arr.size() / 2;
+    for (size_t j = 0; j < mid; j++) {
+        left.push_back(arr[j]);
+    }
+    for (size_t j = 0; j < arr.size() - mid; j++) {
+        right.push_back(arr[mid + j]);
+    }
+    mergesort(left);
+    mergesort(right);
+    merge(arr, left, right);
+}
+
+int main() {
+    ios::sync_with_stdio(false); cin.tie(0); cout.tie(0);
+    int N;
+    cin >> N;
+    vector<int> S(N);
+    for (int i = 0; i < N; i++) {
+        cin >> S[i];
+    }
+    mergesort(S);
+    for (int i = 0; i < N; i++) {
+        if (i == N - 1) {
+            cout << S[i] << '\n';
+        } else {
+            cout << S[i] << " ";
+        }
+    }
+    return 0;
+}

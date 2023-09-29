@@ -1,0 +1,27 @@
+#include <iostream>
+#include <queue>
+#include <string>
+using namespace std;
+
+priority_queue<int> heap;
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+
+  string command;
+  while (true) {
+    cin >> command;
+    if (command == "end")
+      break;
+    else if (command == "insert") {
+      int num;
+      cin >> num;
+      heap.push(num);
+    } else if (command == "extract") {
+      cout << heap.top() << '\n';
+      heap.pop();
+    }
+  }
+  return 0;
+}

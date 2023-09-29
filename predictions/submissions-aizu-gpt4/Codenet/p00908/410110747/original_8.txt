@@ -1,0 +1,124 @@
+```C++
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <climits>
+#include <algorithm>
+#include <string>
+using namespace std;
+using vi = vector<int>;
+using vvi = vector<vi>;
+using pii = pair<int, int>;
+using vpii = vector<pii>;
+#define x first
+#define y second
+#define mp make_pair
+constexpr int MAX = 60;
+constexpr int INF = INT_MAX / 3;
+constexpr int dx[4] = {-1, 0, 1, 0};
+constexpr int dy[4] = { 0, 1, 0,-1};
+int H, W, dist[MAX][MAX][4], memo[MAX][MAX][4];
+vvi field;
+vpii O;
+pii K;
+struct State {
+    int x, y, d, cost;
+    State(int x, int y, int d, int cost) : x(x), y(y), d(d), cost(cost) {}
+    bool operator>(const State& s) const {
+        return cost > s.cost;
+    }
+};
+bool isInside(int x, int y) {
+    return 0 <= x && x < W && 0 <= y && y < H;
+}
+void bfs(int sx, int sy, vvi& dist) {
+    dist = vvi(H, vi(W, INF));
+    dist[sy][sx] = 0;
+    queue<pii> que;
+    que.push(mp(sx, sy));
+    while (!que.empty()) {
+        pii p = que.front(); que.pop();
+        for (int i = 0; i < 4; i++) {
+            int nx = p.x + dx[i], ny = p.y + dy[i];
+            if (isInside(nx, ny) && field[ny][nx] != 1 && dist[ny][nx] == INF) {
+                dist[ny][nx] = dist[p.y][p.x] + 1;
+                que.push(mp(nx, ny));
+            }
+        }
+    }
+}
+int main() {
+    while (cin >> H >> W, H || W) {
+        fill_n(**dist, MAX*MAX*4, INF);
+        field = vvi(H, vi(W));
+        O.clear(); K = mp(-1, -1);
+        for (int i = 0; i < H; i++) {
+            string s; cin >> s;
+            for (int j = 0; j < W; j++) {
+                if (s[j] == 'X') {
+                    K = mp(j, i);
+                    field[i][j] = 1;
+                }
+                else if (s[j] == 'o')
+                    field[i][j] = 1;
+                else if (s[j] == '.') {
+                    O.push_back(mp(j, i));
+                    field[i][j] = 0;
+                }
+                else
+                    field[i][j] = -1;
+            }
+        }
+        if (K == mp(0, 0)) {
+            cout << 0 << endl;
+            continue;
+        }
+        for (int d = 0; d < 4; d++) {
+            vvi d1, d2;
+            bfs(O[0].x, O[0].y, d1);
+            bfs(O[1].x, O[1].y, d2);
+            int nx = K.x + dx[d], ny = K.y + dy[d];
+            if (!isInside(nx, ny) || field[ny][nx] == 1) continue;
+            int cost = min(d1[ny][nx] + d2[ny][nx], d2[ny][nx] + d1[ny][nx]);
+            dist[K.y][K.x][d] = cost;
+        }
+        priority_queue<State, vector<State>, greater<State>> que;
+        for (int d = 0; d < 4; d++) {
+            if (dist[K.y][K.x][d] != INF) {
+                que.push(State(K.x, K.y, d, dist[K.y][K.x][d]));
+            }
+        }
+        while (!que.empty()) {
+            State s = que.top(); que.pop();
+            if (s.cost > dist[s.y][s.x][s.d]) continue;
+            if (s.x == 0 && s.y == 0) {
+                cout << s.cost << endl;
+                goto end;
+            }
+            for (int d = 0; d < 4; d++) {
+                if (s.d == d) continue;
+                int nx = s.x + dx[d], ny = s.y + dy[d];
+                if (!isInside(nx, ny) || field[ny][nx] == 1) continue;
+                vvi d1, d2;
+                bfs(O[0].x, O[0].y, d1);
+                bfs(O[1].x, O[1].y, d2);
+                int cost = min(d1[ny][nx] + d2[ny][nx], d2[ny][nx] + d1[ny][nx]);
+                if (s.cost + cost < dist[ny][nx][d]) {
+                    dist[ny][nx][d] = s.cost + cost;
+                    que.push(State(nx, ny, d, s.cost + cost));
+                }
+            }
+            if (s.d < 2) {
+                int nx = s.x + dx[s.d], ny = s.y + dy[s.d];
+                if (isInside(nx, ny) && s.cost + 1 < dist[ny][nx][(s.d+2)%4]) {
+                    dist[ny][nx][(s.d+2)%4] = s.cost + 1;
+                    que.push(State(nx, ny, (s.d+2)%4, s.cost + 1));
+                }
+            }
+        }
+        cout << -1 << endl;
+    end:;
+    }
+    return 0;
+}
+```

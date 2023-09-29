@@ -1,0 +1,87 @@
+```c++
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <algorithm>
+#include <limits>
+
+template <typename Weight>
+class Dinic {
+public:
+  struct Edge {
+    int src, dst, rev;
+    Weight weight;
+    Edge(int f, int t, Weight cap, int rev = 0)
+        : src(f), dst(t), rev(rev), weight(cap) {}
+  };
+  explicit Dinic(int n) : n(n), g(n), INF(std::numeric_limits<Weight>::max()) {}
+  void add_edge(int src, int dst, Weight cap) {
+    g[src].push_back(Edge(src, dst, cap, g[dst].size()));
+    g[dst].push_back(Edge(dst, src, 0, g[src].size() - 1));
+  }
+  Weight MaximumFlow(int s, int t) {
+    Weight flow = 0;
+    while (true) {
+      std::fill(level.begin(), level.end(), -1);
+      std::fill(iter.begin(), iter.end(), 0);
+      Bfs(s);
+      if (level[t] == -1)
+        return flow;
+      Weight f;
+      while ((f = Dfs(s, t, INF)) > 0)
+        flow += f;
+    }
+  }
+
+private:
+  int n;
+  std::vector<std::vector<Edge>> g;
+  const Weight INF;
+  std::vector<int> level, iter;
+  void Bfs(int s) {
+    std::queue<int> que;
+    level[s] = 0;
+    que.push(s);
+    while (!que.empty()) {
+      int v = que.front();
+      que.pop();
+      for (auto &e : g[v]) {
+        if (e.weight > 0 && level[e.dst] == -1) {
+          level[e.dst] = level[v] + 1;
+          que.push(e.dst);
+        }
+      }
+    }
+  }
+  Weight Dfs(int v, int t, Weight flow) {
+    if (v == t)
+      return flow;
+    for (int &i = iter[v]; i < g[v].size(); ++i) {
+      Edge &e = g[v][i];
+      if (e.weight > 0 && level[v] < level[e.dst]) {
+        Weight d = Dfs(e.dst, t, std::min(flow, e.weight));
+        if (d > 0) {
+          e.weight -= d;
+          g[e.dst][e.rev].weight += d;
+          return d;
+        }
+      }
+    }
+    return 0;
+  }
+};
+
+int main() {
+  std::ios::sync_with_stdio(false);
+  std::cin.tie(0);
+  int n, m, u, v, c;
+  std::cin >> n >> m;
+  Dinic<int> flow(n);
+  for (int i = 0; i < m; ++i) {
+    std::cin >> u >> v >> c;
+    flow.add_edge(u, v, c);
+  }
+  std::cout << flow.MaximumFlow(0, n - 1) << "\n";
+  return 0;
+}
+```

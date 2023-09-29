@@ -1,0 +1,76 @@
+#include <cstdio>
+#include <iostream>
+using namespace std;
+struct Node {
+  int key;
+  Node* parent = nullptr;
+  Node* left = nullptr;
+  Node* right = nullptr;
+  Node(int k) : key(k) {}
+};
+Node* root = nullptr;
+void insert(int k) {
+  Node** x = &root;
+  while (*x) {
+    if (k < (*x)->key) {
+      x = &((*x)->left);
+    } else {
+      x = &((*x)->right);
+    }
+  }
+  *x = new Node(k);
+}
+bool find(int k) {
+  Node* v = root;
+  while (v) {
+    if (k == v->key) {
+      return true;
+    } else if (k < v->key) {
+      v = v->left;
+    } else {
+      v = v->right;
+    }
+  }
+  return false;
+}
+void inorder(Node* u) {
+  if (!u) {
+    return;
+  }
+  inorder(u->left);
+  printf(" %d", u->key);
+  inorder(u->right);
+}
+void preorder(Node* u) {
+  if (!u) {
+    return;
+  }
+  printf(" %d", u->key);
+  preorder(u->left);
+  preorder(u->right);
+}
+int main() {
+  int n, x;
+  string com;
+  cin >> n;
+  for (int i = 0; i < n; i++) {
+    cin >> com;
+    if (com == "insert") {
+      cin >> x;
+      insert(x);
+    } else if (com == "print") {
+      inorder(root);
+      cout << endl;
+      preorder(root);
+      cout << endl;
+    } else if (com == "find") {
+      cin >> x;
+      if (find(x)) {
+        cout << "yes" << endl;
+      } else {
+        cout << "no" << endl;
+      }
+    }
+  }
+  return 0;
+}

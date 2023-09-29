@@ -1,0 +1,135 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <array>
+
+using namespace std;
+
+using ll = long long;
+using pint = array<ll, 3>;
+
+const ll N = 2e5;
+const ll MOD = 1e9 + 7;
+ll n;
+struct node {
+  ll mx, mi, lz;
+} st[1 << 20];
+
+void apply(ll i, ll x) {
+  st[i].mx -= x;
+  st[i].mi -= x;
+  if (st[i].lz == -MOD)
+    st[i].lz = 0;
+  st[i].lz += x;
+}
+
+void push(ll i, ll l2, ll mid, ll r2) {
+  if (st[i].lz == -MOD)
+    return;
+  apply(2 * i, st[i].lz);
+  apply(2 * i + 1, st[i].lz);
+  st[i].lz = -MOD;
+}
+
+void build(ll l1, ll x, ll i = 1, ll l2 = 0, ll r2 = n - 1) {
+  if (l2 == r2) {
+    st[i].mx = x;
+    st[i].mi = x;
+    st[i].lz = -MOD;
+    return;
+  }
+  ll mid = (l2 + r2) / 2;
+  if (l1 <= mid)
+    build(l1, x, 2 * i, l2, mid);
+  else
+    build(l1, x, 2 * i + 1, mid + 1, r2);
+  st[i].mx = max(st[2 * i].mx, st[2 * i + 1].mx);
+  st[i].mi = min(st[2 * i].mi, st[2 * i + 1].mi);
+  st[i].lz = -MOD;
+}
+
+void upd(ll l1, ll r1, ll x, ll i = 1, ll l2 = 0, ll r2 = n - 1) {
+  if (l1 <= l2 && r2 <= r1) {
+    apply(i, x);
+    return;
+  }
+  ll mid = (l2 + r2) / 2;
+  push(i, l2, mid, r2);
+  if (l1 <= mid)
+    upd(l1, r1, x, 2 * i, l2, mid);
+  if (mid < r1)
+    upd(l1, r1, x, 2 * i + 1, mid + 1, r2);
+  st[i].mx = max(st[2 * i].mx, st[2 * i + 1].mx);
+  st[i].mi = min(st[2 * i].mi, st[2 * i + 1].mi);
+}
+
+ll qry(ll l1, ll r1, ll i = 1, ll l2 = 0, ll r2 = n - 1, bool isMax = true) {
+  if (l1 <= l2 && r2 <= r1) {
+    return isMax ? st[i].mx : st[i].mi;
+  }
+  ll mid = (l2 + r2) / 2;
+  push(i, l2, mid, r2);
+  return isMax ?
+        max((l1 <= mid ? qry(l1, r1, 2 * i, l2, mid) : -MOD),
+            (mid < r1 ? qry(l1, r1, 2 * i + 1, mid + 1, r2) : -MOD)) :
+        min((l1 <= mid ? qry(l1, r1, 2 * i, l2, mid, false) : MOD),
+            (mid < r1 ? qry(l1, r1, 2 * i + 1, mid + 1, r2, false) : MOD));
+}
+
+void solve() {
+  ll n1;
+  cin >> n1;
+  vector<ll> arr(n1);
+  vector<pint> b;
+  for (ll i = 0; i < n1; i++) {
+    cin >> arr[i];
+    b.push_back({arr[i], i});
+  }
+  n = n1 + 1;
+  for (ll i = 0; i < n; i++)
+    build(i, i);
+  sort(b.begin(), b.end());
+  vector<ll> ans(n1, 0);
+  for (ll i = n1 - 1; i >= 0; i--) {
+    vector<ll> del;
+    ll cur = b[i][0];
+    while (i >= 0 && b[i][0] == cur) {
+      ll j = b[i][1];
+      ll p = qry(j + 1, j + 1), q = qry(0, j, 1, 0, n-1, false), r = qry(j + 1, n - 1);
+      del.push_back(b[i][1]);
+      ans[j] = (p - q + r - p - 1) / 2;
+      i--;
+    }
+    for (ll u : del) {
+      upd(u + 1, n - 1, 2);
+    }
+    i++;
+  }
+  for (ll i = 0; i < n; i++)
+    build(i, i);
+  for (ll i = 0; i < n1; i++) {
+    vector<ll> del;
+    ll cur = b[i][0];
+    while (i < n1 && b[i][0] == cur) {
+      ll j = b[i][1];
+      ll p = qry(j + 1, j + 1), q = qry(0, j, 1, 0, n-1, false), r = qry(j + 1, n - 1);
+      del.push_back(b[i][1]);
+      ans[j] = max(ans[j], (p - q + r - p) / 2);
+      i++;
+    }
+    for (ll u : del) {
+      upd(u + 1, n - 1, 2);
+    }
+    i--;
+  }
+  for (ll i = 0; i < n1; i++)
+    cout << ans[i] << " ";
+}
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+  cout.tie(0);
+  solve();
+  return 0;
+}

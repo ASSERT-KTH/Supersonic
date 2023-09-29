@@ -1,0 +1,50 @@
+#include <vector>
+#include <algorithm>
+#include <iostream>
+
+using namespace std;
+
+template <typename T>
+class SparseTable {
+    vector<vector<T>> table;
+
+public:
+    SparseTable(vector<T> const& a) {
+        int n = a.size();
+        int max_log = 32 - __builtin_clz(n);
+        table.resize(max_log);
+        table[0] = a;
+        for (int j = 1; j < max_log; j++) {
+            table[j].resize(n - (1 << j) + 1);
+            for (int i = 0; i <= n - (1 << j); i++) {
+                table[j][i] = min(table[j - 1][i], table[j - 1][i + (1 << (j - 1))]);
+            }
+        }
+    }
+
+    T query(int from, int to) const {
+        int j = 32 - __builtin_clz(to - from) - 1;
+        return min(table[j][from], table[j][to - (1 << j)]);
+    }
+};
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(0);
+
+    int n, l;
+    cin >> n >> l;
+    vector<int> a(n);
+    for (int i = 0; i < n; i++) {
+        cin >> a[i];
+    }
+    SparseTable<int> st(a);
+    for (int i = 0; i <= n - l; i++) {
+        if (i > 0) {
+            cout << " ";
+        }
+        cout << st.query(i, i + l);
+    }
+    cout << "\n";
+    return 0;
+}

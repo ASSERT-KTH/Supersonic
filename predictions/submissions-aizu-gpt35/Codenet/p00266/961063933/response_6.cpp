@@ -1,0 +1,55 @@
+#include <iostream>
+#include <map>
+using namespace std;
+const int divisor = 1000000007;
+const int max_size = 100001; // store size in a variable
+int main() {
+  long long factmodary[max_size];
+  long long fact = 1;
+  for (int i = 1; i < max_size; i++) { // less than instead of less than or equal to
+    fact *= i;
+    fact %= divisor;
+    factmodary[i] = fact;
+  }
+  int word[max_size] = {0};
+  for (;;) {
+    int N, R;
+    cin >> N;
+    if (N == 0)
+      break;
+    cin >> R;
+    for (int i = 0; i < N; i++)
+      word[i] = i + 1;
+    for (int i = 0; i < R; i++) {
+      int s, t;
+      cin >> s >> t;
+      int tmp = word[s - 1];
+      word[s - 1] = word[t - 1];
+      word[t - 1] = tmp;
+    }
+    map<int, int> bubblehist;
+    bubblehist[word[0]] = 0;
+    long long ans = factmodary[N - 1] * (word[0] - 1);
+    for (int i = 1; i < N; i++) {
+      int facttime = word[i] - 1;
+      int bubblenum;
+      auto it = bubblehist.lower_bound(word[i]); // use auto instead of map<int, int>::iterator
+      if (it != bubblehist.end()) {
+        bubblenum = it->second;
+        it--;
+      } else {
+        it--;
+        bubblenum = it->second + 1;
+      }
+      pair<int, int> p{word[i], bubblenum}; // use uniform initialization
+      auto it2 = bubblehist.insert(it, p);
+      for (++it2; it2 != bubblehist.end(); it2++)
+        (it2->second)++;
+      facttime -= bubblenum;
+      ans += factmodary[N - (i + 1)] * facttime;
+      ans %= divisor;
+    }
+    cout << static_cast<int>(ans) << "\n"; // use static_cast instead of (int)
+  }
+  return 0;
+}

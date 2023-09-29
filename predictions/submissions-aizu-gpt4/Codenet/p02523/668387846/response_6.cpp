@@ -1,0 +1,12 @@
+#include <cmath>
+#include <complex>
+#include <cstdio>
+#include <iostream>
+using namespace std;
+int main() {
+  double p1_real, p1_imag, p2_real, p2_imag;
+  cin >> p1_real >> p1_imag >> p2_real >> p2_imag;
+  complex<double> P1(p1_real, p1_imag), P2(p2_real, p2_imag);
+  printf("%.5f\n", abs(P1 - P2));
+  return 0;
+}

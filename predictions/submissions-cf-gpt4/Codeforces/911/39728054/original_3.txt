@@ -1,0 +1,193 @@
+```C++
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cmath>
+#include <queue>
+
+const int N = 200005;
+
+std::vector<int> v[N], diam[N], tour, path;
+int n, h[N], first[N], stmin[2 * N][20], root;
+bool vis1[N], vis2[N], vis3[N], vis4[N];
+int parent[N], dist[N], root1;
+std::vector<std::pair<int, int>> an;
+
+inline void height_initialise(int x, int y) {
+  h[x] = y;
+  vis1[x] = true;
+  for (auto node : v[x]) {
+    if (!vis1[node]) {
+      height_initialise(node, y + 1);
+    }
+  }
+}
+
+inline void distanc(int x, int y) {
+  dist[x] = y;
+  vis3[x] = true;
+  for (auto node : v[x]) {
+    if (!vis3[node]) {
+      distanc(node, y + 1);
+    }
+  }
+}
+
+inline void euler(int x, int y) {
+  vis2[x] = true;
+  tour.push_back(x);
+  for (auto node : v[x]) {
+    if (!vis2[node]) {
+      euler(node, x);
+    }
+  }
+  if (y != 0)
+    tour.push_back(y);
+}
+
+inline void euler_tour() {
+  euler(root, 0);
+  for (int i = 0; i < tour.size(); i++) {
+    if (first[tour[i]] == 0) {
+      first[tour[i]] = i + 1;
+    }
+  }
+}
+
+inline void sparsemin() {
+  int i, j, x, y;
+  for (i = 0; i < tour.size(); i++) {
+    stmin[i][0] = tour[i];
+  }
+  for (j = 1; (1 << j) <= tour.size(); j++) {
+    for (i = 0; i + (1 << j) - 1 < tour.size(); i++) {
+      x = stmin[i][j - 1];
+      y = stmin[i + (1 << (j - 1))][j - 1];
+      stmin[i][j] = h[x] < h[y] ? x : y;
+    }
+  }
+}
+
+inline int spminquery(int l, int r) {
+  int length = r - l + 1;
+  int k = log2(length);
+  int x = stmin[l][k];
+  int y = stmin[r - (1 << k) + 1][k];
+  return h[x] < h[y] ? x : y;
+}
+
+int bfs(int x, bool flag) {
+  int y;
+  std::queue<int> q;
+  std::fill(vis1, vis1 + n + 1, false);
+  q.push(x);
+  vis1[x] = true;
+  while (!q.empty()) {
+    x = q.front();
+    q.pop();
+    for (const auto &node : v[x]) {
+      if (!vis1[node]) {
+        q.push(node);
+        if (flag) {
+          parent[node] = x;
+        }
+        vis1[node] = true;
+      }
+    }
+    y = x;
+  }
+  return y;
+}
+
+inline void diameter() {
+  int x, y, z, i;
+  x = bfs(1, false);
+  y = bfs(x, true);
+  root1 = y;
+  z = y;
+  while (parent[z] != 0) {
+    path.push_back(z);
+    z = parent[z];
+  }
+  path.push_back(z);
+  std::reverse(path.begin(), path.end());
+  for (i = 0; i < path.size(); i++) {
+    vis4[path[i]] = true;
+    diam[i].push_back(path[i]);
+  }
+  root = x;
+  for (i = 0; i < path.size(); i++) {
+    std::queue<int> q;
+    q.push(path[i]);
+    while (!q.empty()) {
+      x = q.front();
+      q.pop();
+      vis4[x] = true;
+      for (const auto &node : v[x]) {
+        if (!vis4[node]) {
+          q.push(node);
+          diam[i].push_back(node);
+        }
+      }
+    }
+  }
+}
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(NULL);
+  std::cin >> n;
+  int i, j, x, y, z, l, r;
+  long long ans = 0;
+  for (i = 0; i < n - 1; i++) {
+    std::cin >> x >> y;
+    v[x].push_back(y);
+    v[y].push_back(x);
+  }
+  diameter();
+  height_initialise(root, 0);
+  euler_tour();
+  sparsemin();
+  distanc(root, 0);
+  for (i = 0; i < path.size() / 2; i++) {
+    for (j = diam[i].size() - 1; j > 0; j--) {
+      x = root1;
+      y = diam[i][j];
+      an.emplace_back(x, y);
+      l = first[x] - 1;
+      r = first[y] - 1;
+      z = spminquery(std::min(l, r), std::max(l, r));
+      z = dist[x] + dist[y] - 2 * dist[z];
+      ans += z;
+    }
+  }
+  x = i;
+  for (i = x; i < path.size(); i++) {
+    for (j = diam[i].size() - 1; j > 0; j--) {
+      x = root;
+      y = diam[i][j];
+      an.emplace_back(x, y);
+      l = first[x] - 1;
+      r = first[y] - 1;
+      z = spminquery(std::min(l, r), std::max(l, r));
+      z = dist[x] + dist[y] - 2 * dist[z];
+      ans += z;
+    }
+  }
+  for (i = path.size() - 1; i > 0; i--) {
+    x = root;
+    y = diam[i][0];
+    an.emplace_back(x, y);
+    l = first[x] - 1;
+    r = first[y] - 1;
+    z = spminquery(std::min(l, r), std::max(l, r));
+    z = dist[x] + dist[y] - 2 * dist[z];
+    ans += z;
+  }
+  std::cout << ans << std::endl;
+  for (const auto &pair : an) {
+    std::cout << pair.first << " " << pair.second << "\n";
+  }
+  return 0;
+}
+```

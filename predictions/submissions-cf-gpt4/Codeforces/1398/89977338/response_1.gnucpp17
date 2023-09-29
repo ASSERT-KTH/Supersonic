@@ -1,0 +1,125 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+using ll = long long;
+using ii = pair<int, int>;
+using poly = vector<ll>;
+using CD = complex<double>;
+
+#define fore(i, a, b) for (int i = a, ggdem = b; i < ggdem; i++)
+#define pb push_back
+
+const int MAXN = 1 << 20;
+int n, x, y, lp[MAXN + 1], res[MAXN];
+bool can[MAXN];
+vector<int> pr, g[MAXN];
+
+void SieveOfEratosthenes() {
+  for (int i = 2; i <= MAXN; i++) {
+    if (lp[i] == 0)
+      lp[i] = i, pr.pb(i);
+    for (int j = 0; j < pr.size() && pr[j] <= lp[i] && i * pr[j] <= MAXN; ++j)
+      lp[i * pr[j]] = pr[j];
+  }
+}
+
+void div_rec(vector<ll> &r, vector<pair<ll, int>> &f, int k, ll c) {
+  if (k == f.size()) {
+    r.pb(c);
+    return;
+  }
+  fore(i, 0, f[k].snd + 1) div_rec(r, f, k + 1, c), c *= f[k].fst;
+}
+
+void dft(vector<CD> &a, bool inv) {
+  int n = a.size();
+  for (int i = 1, j = 0; i < n; i++) {
+    int bit = n >> 1;
+    for (; j & bit; bit >>= 1)
+      j ^= bit;
+    j ^= bit;
+    if (i < j)
+      swap(a[i], a[j]);
+  }
+  for (int len = 2; len <= n; len <<= 1) {
+    double ang = 2 * acos(-1) / len * (inv ? -1 : 1);
+    CD wlen(cos(ang), sin(ang));
+    for (int i = 0; i < n; i += len) {
+      CD w(1);
+      for (int j = 0; j < len / 2; j++) {
+        CD u = a[i + j];
+        CD v = a[i + j + len / 2] * w;
+        a[i + j] = u + v;
+        a[i + j + len / 2] = u - v;
+        w *= wlen;
+      }
+    }
+  }
+  if (inv)
+    for (int i = 0; i < n; i++)
+      a[i] /= n;
+}
+
+poly multiply(poly &p1, poly &p2) {
+  vector<CD> f(p1.begin(), p1.end()), g(p2.begin(), p2.end());
+  int n = 1;
+  while (n < p1.size() + p2.size())
+    n <<= 1;
+  f.resize(n);
+  g.resize(n);
+  dft(f, false);
+  dft(g, false);
+  for (int i = 0; i < n; i++)
+    f[i] *= g[i];
+  dft(f, true);
+  poly res(n);
+  for (int i = 0; i < n; i++)
+    res[i] = llround(f[i].real());
+  return res;
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(0);
+  SieveOfEratosthenes();
+  cin >> n >> x >> y;
+  int OFFSET = x;
+  poly l(2 * OFFSET + 1), r(2 * OFFSET + 1);
+  fore(i, 0, n + 1) {
+    int X;
+    cin >> X;
+    l[X + OFFSET]++;
+    r[-X + OFFSET]++;
+  }
+  poly p = multiply(l, r);
+  fore(i, 0, 2 * OFFSET) if (i + 2 * OFFSET < p.size() && p[i + 2 * OFFSET])
+      can[i] = 1;
+  int q;
+  cin >> q;
+  fill(res, res + q, -1);
+  fore(_, 0, q + 1) {
+    int X;
+    cin >> X;
+    if (g[X].empty()) {
+      int it = X;
+      vector<ii> aux;
+      while (it != 1) {
+        if (aux.empty() || aux.back().first != lp[it])
+          aux.pb({lp[it], 1});
+        else
+          aux.back().second++;
+        it /= lp[it];
+      }
+      div_rec(g[X], aux, 0, 1);
+    }
+    for (int i : g[X]) {
+      ll need = i - 2 * y;
+      if (need <= 0 || need % 2)
+        continue;
+      if (can[need / 2])
+        res[_] = max(res[_], i);
+    }
+  }
+  fore(i, 0, q) cout << res[i] << " \n"[i == q - 1];
+  return 0;
+}

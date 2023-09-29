@@ -1,0 +1,102 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+struct Node {
+    int value, lazy;
+    Node() : value(0), lazy(0) {}
+};
+
+class SegmentTree {
+    vector<Node> tree;
+    int n;
+
+    void push(int node, int start, int end) {
+        if (tree[node].lazy != 0) {
+            tree[node].value = (end - start + 1) * tree[node].lazy;
+            if (start != end) {
+                tree[2*node].lazy = tree[node].lazy;
+                tree[2*node+1].lazy = tree[node].lazy;
+            }
+            tree[node].lazy = 0;
+        }
+    }
+
+    void update(int node, int start, int end, int l, int r, int val) {
+        push(node, start, end);
+        if (r < start || end < l) return;
+
+        if (l <= start && end <= r) {
+            tree[node].lazy = val;
+            push(node, start, end);
+            return;
+        }
+
+        int mid = (start + end) / 2;
+        update(2*node, start, mid, l, r, val);
+        update(2*node+1, mid+1, end, l, r, val);
+        tree[node].value = tree[2*node].value + tree[2*node+1].value;
+    }
+
+    int query(int node, int start, int end, int l, int r) {
+        push(node, start, end);
+        if (r < start || end < l) return 0;
+
+        if (l <= start && end <= r) return tree[node].value;
+
+        int mid = (start + end) / 2;
+        return query(2*node, start, mid, l, r) + query(2*node+1, mid+1, end, l, r);
+    }
+
+public:
+    SegmentTree(int n) : tree(4*n), n(n) {}
+
+    void update(int l, int r, int val) {
+        update(1, 0, n-1, l, r, val);
+    }
+
+    int query(int l, int r) {
+        return query(1, 0, n-1, l, r);
+    }
+};
+
+int m, n, k, t;
+int a[200000];
+int l[200000];
+int r[200000];
+int d[200000];
+
+bool is_possible(int mid) {
+    SegmentTree stree(n+1);
+    int min_agility = a[mid];
+    for (int i = 0; i < k; i++) {
+        if (d[i] > min_agility) {
+            stree.update(l[i]-1, r[i]-1, 1);
+        }
+    }
+    int req_time = n+1 + stree.query(0, n);
+    return req_time <= t;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cin >> m >> n >> k >> t;
+    for (int i = 0; i < m; i++) {
+        cin >> a[i];
+    }
+    for (int i = 0; i < k; i++) {
+        cin >> l[i] >> r[i] >> d[i];
+    }
+    sort(a, a+m, greater<int>());
+    int left = 0;
+    int right = m;
+    while (left < right) {
+        int mid = left + (right - left) / 2;
+        if (is_possible(mid)) {
+            right = mid;
+        } else {
+            left = mid + 1;
+        }
+    }
+    cout << left << endl;
+}

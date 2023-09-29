@@ -1,0 +1,157 @@
+```c++
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+
+ll gcd(ll a, ll b) {
+  while(b != 0)
+    tie(a, b) = make_tuple(b, a % b);
+  return a;
+}
+
+ll mul(ll a, ll b, ll mod) {
+    ll res = 0;
+    a %= mod;
+    while(b > 0) {
+        if(b & 1)
+            res = (res + a) % mod;
+        a = (a * 2) % mod;
+        b >>= 1;
+    }
+    return res;
+}
+
+ll pow(ll a, ll b, ll mod) {
+    ll res = 1;
+    a %= mod;
+    while(b > 0) {
+        if(b & 1)
+            res = mul(res, a, mod);
+        a = mul(a, a, mod);
+        b >>= 1;
+    }
+    return res;
+}
+
+bool check(ll a, ll n) {
+    ll x = n - 1, y;
+    int t = __builtin_ctzll(x);
+    x >>= t;
+    x = pow(a, x, n);
+    for(int i = 1 ; i <= t ; i++) {
+        y = mul(x, x, n);
+        if(y == 1 && x != 1 && x != n - 1) return true;
+        x = y;
+    }
+    return y != 1;
+}
+
+bool Miller_Rabin(ll n) {
+    if (n < 2 || !(n & 1)) return false;
+    if (n == 2) return true;
+    const int arr[12] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37};
+    for(int i = 0; i < 12; i++) {
+        if(arr[i] == n) return true;
+        if(check(arr[i], n)) return false;
+    }
+    return true;
+}
+
+ll Pollard_rho(ll n, int c) {
+  ll i = 0, k = 1, x = rand() % n, y = x, d;
+  while (true) {
+    i++;
+    x = (mul(x, x, n) + c) % n;
+    d = gcd(abs(y - x), n);
+    if (d != 1 && d != n) return d;
+    if (y == (i == k ? y = x, k <<= 1 : x)) return n;
+  }
+}
+
+void factorize(ll n, map<ll, int> &cnt, int c = 107) {
+    if(n == 1 || Miller_Rabin(n)) {
+        cnt[n]++;
+        return;
+    }
+    ll p = n;
+    while(p == n) p = Pollard_rho(p, c--);
+    factorize(p, cnt, c);
+    factorize(n / p, cnt, c);
+}
+
+ll c[100005];
+ll ans, cur;
+map<ll, int> cnt;
+
+void dfs(map<ll, int>::iterator it, ll val) {
+    if(it == cnt.end()) {
+        ll a = val, b = cur / val;
+        if(a <= 100000 && b <= 100000 && c[a] && c[b]) {
+            if(a == b) ans += c[a] * (c[a] - 1);
+            else ans += c[a] * c[b];
+        }
+        return;
+    }
+    map<ll, int>::iterator nit = next(it);
+    for(int i = 0; i <= it->second; i++, val *= it->first)
+        dfs(nit, val);
+}
+
+bool prime[100005];
+vector<ll> primes;
+
+void getprime(int x) {
+    fill(begin(prime), begin(prime) + x, true);
+    prime[0] = prime[1] = false;
+    for(int i = 2; i <= x; i++) {
+        if(prime[i]) primes.push_back(i);
+        for(auto p : primes) {
+            if(i * p > x) break;
+            prime[i * p] = false;
+            if(i % p == 0) break;
+        }
+    }
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    int n, k;
+    cin >> n >> k;
+    if(k == 2) {
+        map<ll, ll> all;
+        getprime(100000);
+        for(int i = 0, t; i < n; i++) {
+            cin >> t;
+            cnt.clear();
+            for(auto x : primes) {
+                while(t % x == 0) {
+                    cnt[x] ^= 1;
+                    t /= x;
+                }
+                if(t == 1) break;
+            }
+            if(t > 1) cnt[t] = 1;
+            ll h = accumulate(begin(cnt), end(cnt), 1LL, [](ll prod, pair<const ll, int>& p) { return p.second ? prod * p.first : prod; });
+            all[h]++;
+        }
+        ans = accumulate(begin(all), end(all), 0LL, [](ll sum, pair<const ll, ll>& p) { return sum + p.second * (p.second - 1) / 2; });
+    } else {
+        for(int i = 0, t; i < n; i++) {
+            cin >> t;
+            c[t]++;
+        }
+        cur = 1;
+        for(ll x = 1 ; cur <= 1e10; x++) {
+            cur = pow(x, k, LLONG_MAX);
+            if(cur > 1e10) break;
+            cnt.clear();
+            factorize(cur, cnt);
+            dfs(cnt.begin(), 1);
+        }
+        ans /= 2;
+    }
+    cout << ans << "\n";
+    return 0;
+}
+```

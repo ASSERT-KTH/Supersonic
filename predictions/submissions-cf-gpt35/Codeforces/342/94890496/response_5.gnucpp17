@@ -1,0 +1,124 @@
+#include <iostream>
+#include <vector>
+#include <set>
+#include <cmath>
+#include <limits>
+
+using namespace std;
+
+const int MAXN = 100001;
+const int MAXLOG = 21;
+
+vector<int> v[MAXN];
+set<int> ct[MAXN];
+int sub[MAXN], nc, cr, lca[MAXN][MAXLOG], cpar[MAXN], lv[MAXN], n, m, ans[MAXN];
+
+void dfs(int node, int par, int lvl) {
+  lv[node] = lvl;
+  lca[node][0] = par;
+  for (auto a : v[node])
+    if (a != par)
+      dfs(a, node, lvl + 1);
+}
+
+void genlca() {
+  for (int i = 1; i <= MAXLOG; i++)
+    for (int j = 1; j <= n; j++)
+      if (lca[j][i - 1] != -1)
+        lca[j][i] = lca[lca[j][i - 1]][i - 1];
+}
+
+int getlca(int a, int b) {
+  if (lv[a] > lv[b])
+    swap(a, b);
+  int d = lv[b] - lv[a];
+  while (d > 0) {
+    int x = log2(d);
+    b = lca[b][x];
+    d -= (1 << x);
+  }
+  if (a == b)
+    return a;
+  for (int i = MAXLOG - 1; i >= 0; i--)
+    if (lca[a][i] != lca[b][i])
+      a = lca[a][i], b = lca[b][i];
+  return lca[a][0];
+}
+
+int dist(int a, int b) {
+  return lv[a] + lv[b] - 2 * lv[getlca(a, b)];
+}
+
+void dfs(int node, int par) {
+  nc++;
+  sub[node] = 1;
+  for (auto a : v[node])
+    if (a != par)
+      dfs(a, node), sub[node] += sub[a];
+}
+
+int getcent(int node, int par) {
+  for (auto a : v[node])
+    if (a != par && sub[a] > nc / 2)
+      return getcent(a, node);
+  return node;
+}
+
+int decom(int root) {
+  nc = 0;
+  dfs(root, -1);
+  int c = getcent(root, -1);
+  for (auto a : v[c]) {
+    v[a].erase(c);
+    int x = decom(a);
+    ct[c].insert(x);
+    ct[x].insert(c);
+    cpar[x] = c;
+  }
+  return c;
+}
+
+void update(int par, int node) {
+  if (par == -1)
+    return;
+  ans[par] = min(ans[par], dist(node, par));
+  update(cpar[par], node);
+}
+
+int getans(int par, int node) {
+  if (par == -1)
+    return numeric_limits<int>::max();
+  return min(getans(cpar[par], node), ans[par] + dist(node, par));
+}
+
+int main() {
+  ios_base::sync_with_stdio(0);
+  cin.tie(0);
+
+  cin >> n >> m;
+  for (int i = 1; i < n; i++) {
+    int a, b;
+    cin >> a >> b;
+    v[a].push_back(b);
+    v[b].push_back(a);
+  }
+  for (int i = 0; i <= n; i++)
+    ans[i] = numeric_limits<int>::max();
+  genlca();
+  cr = decom(1);
+  cpar[cr] = -1;
+  ans[1] = 0;
+  update(cpar[1], 1);
+  while (m--) {
+    int a, b;
+    cin >> a >> b;
+    if (a == 1) {
+      ans[b] = 0;
+      update(cpar[b], b);
+    } else {
+      cout << getans(b, b) << "\n";
+    }
+  }
+
+  return 0;
+}

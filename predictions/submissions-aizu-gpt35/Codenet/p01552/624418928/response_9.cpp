@@ -1,0 +1,138 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+struct item {
+  unordered_map<string, item*> ptr;
+  string val;
+  bool is_str;
+};
+
+bool isalphabet(char ch) { 
+  return 'a' <= ch and ch <= 'z'; 
+}
+
+void yaml(string &s, int &i, item &itm);
+void mapping(string &s, int &i, item &itm, int n);
+void mapping_item(string &s, int &i, item &itm, int n);
+string key(string &s, int &i);
+string string_(string &s, int &i);
+void indent(string &s, int &i, int n);
+void solve();
+
+void yaml(string &s, int &i, item &itm) { 
+  mapping(s, i, itm, 0); 
+}
+
+void mapping(string &s, int &i, item &itm, int n) {
+  mapping_item(s, i, itm, n);
+  if (i != s.size() and s[i] == '\n' and is_indent_n(s, i+1, n)) {
+    mapping(s, i, itm, n);
+  }
+}
+
+void mapping_item(string &s, int &i, item &itm, int n) {
+  indent(s, i, n);
+  item *itm_ = new item();
+  itm_->val = key(s, i);
+  itm->ptr[itm_->val] = itm_;
+  if (s[i] == ':') {
+    ++i;
+    if (s[i] == ' ') {
+      ++i;
+      item *str = new item();
+      str->is_str = true;
+      str->val = string_(s, i);
+      itm_->ptr[""] = str;
+      ++i;
+    } else {
+      ++i;
+      int j = i;
+      while (j != s.size() and s[j] == ' ')
+        ++j;
+      mapping(s, i, *itm_, j - i);
+    }
+  } else {
+    assert(false);
+  }
+}
+
+string key(string &s, int &i) {
+  string res;
+  while (isalphabet(s[i]) or isdigit(s[i])) {
+    res += s[i];
+    ++i;
+  }
+  return res;
+}
+
+string string_(string &s, int &i) {
+  string res;
+  while (isalphabet(s[i]) or isdigit(s[i]) or s[i] == ' ') {
+    res += s[i];
+    ++i;
+  }
+  return res;
+}
+
+void indent(string &s, int &i, int n) {
+  while (n > 0 and s[i] == ' ') {
+    ++i;
+    --n;
+  }
+}
+
+bool is_indent_n(string &s, int i, int n) {
+  if (n == 0) return true;
+  if (i == s.size() or s[i] != ' ') return false;
+  return is_indent_n(s, i + 1, n - 1);
+}
+
+void solve() {
+  string qry, yaml_str;
+  cin >> qry;
+  cin.ignore();
+  {
+    string buf;
+    while (getline(cin, buf)) {
+      yaml_str += buf;
+      yaml_str += '\n';
+    }
+  }
+  item root;
+  root.val = "root";
+  {
+    int idx = 0;
+    yaml(yaml_str, idx, root);
+  }
+  {
+    item *itm = &root;
+    int idx = 1;
+    while (true) {
+      string str = string_(qry, idx);
+      auto it = itm->ptr.find(str);
+      if (it == itm->ptr.end()) {
+        cout << "no such property" << endl;
+        return;
+      }
+      itm = it->second;
+      if (idx == qry.size()) {
+        auto obj = itm->ptr.begin()->second;
+        if (obj->is_str)
+          cout << "string \"" << obj->val << "\"" << endl;
+        else
+          cout << "object" << endl;
+        return;
+      }
+      ++idx;
+    }
+  }
+}
+
+int main() {
+  std::cin.tie(0);
+  std::ios::sync_with_stdio(false);
+  cout.setf(ios::fixed);
+  cout.precision(10);
+  solve();
+  return 0;
+}

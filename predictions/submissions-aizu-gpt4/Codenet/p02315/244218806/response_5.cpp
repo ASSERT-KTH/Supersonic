@@ -1,0 +1,18 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+int main() {
+  int N, W;
+  cin >> N >> W;
+  vector<int> dp(W + 1, 0);
+  for (int i = 0; i < N; ++i) {
+    int v, w;
+    cin >> v >> w;
+    for (int j = W; j >= w; --j) {
+      dp[j] = max(dp[j], dp[j - w] + v);
+    }
+  }
+  cout << dp[W] << endl;
+  return 0;
+}

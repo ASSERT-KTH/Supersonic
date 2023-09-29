@@ -1,0 +1,102 @@
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <deque>
+#include <map>
+using namespace std;
+struct dat {
+  static int n;
+  deque<int> A;
+  map<int, int> M;
+  dat *next = nullptr;
+  int count(int p, int x) {
+    if (p > size()) {
+      return next->count(p - size(), x) + M[x];
+    }
+    return count(A.begin(), A.begin() + p, x);
+  }
+  void insert(int p, int x) {
+    if (p > size()) {
+      next->insert(p - size(), x);
+      return;
+    }
+    A.insert(A.begin() + p, x);
+    M[x]++;
+    if (size() > (n << 1)) {
+      split();
+    }
+  }
+  int erase(int p) {
+    if (size() < p)
+      return next->erase(p - size());
+    auto it = A.begin() + p - 1;
+    int x = *it;
+    A.erase(it);
+    if (--M[x] == 0)
+      M.erase(x);
+    if (next != nullptr && size() + next->size() <= n) {
+      merge();
+    }
+    return x;
+  }
+  int size() const { return A.size(); }
+  void split() {
+    dat *tmp = new dat;
+    while (size() > n) {
+      tmp->A.push_front(A.back());
+      tmp->M[A.back()]++;
+      A.pop_back();
+      M[A.back()]--;
+      if (M[A.back()] == 0)
+        M.erase(A.back());
+    }
+    tmp->next = next;
+    next = tmp;
+  }
+  void merge() {
+    dat *tmp = next;
+    while (tmp->size() > 0) {
+      A.push_back(tmp->A.front());
+      M[tmp->A.front()]++;
+      tmp->A.pop_front();
+      tmp->M[A.back()]--;
+      if (tmp->M[A.back()] == 0)
+        tmp->M.erase(A.back());
+    }
+    next = tmp->next;
+    delete tmp;
+  }
+};
+int dat::n;
+int main() {
+  int n, m, last = 0;
+  scanf("%d", &n);
+  dat::n = ceil(sqrt(n << 2));
+  auto D = new dat;
+  auto cur = D;
+  for (int i = 0; i < n; i++) {
+    int x;
+    scanf("%d", &x);
+    if (cur->size() >= dat::n) {
+      cur->next = new dat;
+      cur = cur->next;
+    }
+    cur->A.push_back(x);
+    cur->M[x]++;
+  }
+  scanf("%d", &m);
+  while (m--) {
+    int op, l, r, k;
+    scanf("%d", &op);
+    if (op == 1) {
+      scanf("%d%d", &l, &r);
+      D->insert((l + last - 1) % n, D->erase((r + last - 1) % n));
+    } else {
+      scanf("%d%d%d", &l, &r, &k);
+      l = (l + last - 1) % n;
+      r = (r + last - 1) % n;
+      k = (k + last - 1) % n;
+      printf("%d\n", last = D->count(r, k) - D->count(l, k));
+    }
+  }
+}

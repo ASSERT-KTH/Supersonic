@@ -1,0 +1,103 @@
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+
+const int N = 2e5 + 5;
+vector<pair<ll, ll>> g[N];
+int sz[N], heavy[N], par[N], depth[N], head[N], pos[N];
+ll a[N], bit[N], val[N];
+int cur_pos = 1;
+
+int dfs(int v) {
+    sz[v] = 1;
+    for(auto &u : g[v]) {
+        if(u.first != par[v]) {
+            par[u.first] = v;
+            depth[u.first] = depth[v] + 1;
+            val[u.first] = u.second;
+            sz[v] += dfs(u.first);
+            if(sz[heavy[v]] < sz[u.first]) 
+                heavy[v] = u.first;
+        }
+    }
+    return sz[v];
+}
+
+void decompose(int v, int h) {
+    head[v] = h;
+    pos[v] = cur_pos++;
+    if(heavy[v]) 
+        decompose(heavy[v], h);
+    for(auto &u : g[v]) 
+        if(u.first != par[v] && u.first != heavy[v]) 
+            decompose(u.first, u.first);
+}
+
+void modify(int p, const ll &value) {  
+    for(; p <= cur_pos; p += p & -p) 
+        bit[p] += value;
+}
+
+ll query(int p) {
+    ll res = 0;
+    for(; p; p -= p & -p) 
+        res += bit[p];
+    return res;
+}
+
+ll query(int l, int r) {
+    return query(r) - query(l - 1);
+}
+
+void modify(int l, int r, const ll &value) {
+    modify(l, value);
+    modify(r + 1, -value);
+}
+
+ll path_query(int a, int b) {
+    ll res = 0;
+    for(; head[a] != head[b]; b = par[head[b]]) {
+        if(depth[head[a]] > depth[head[b]]) 
+            swap(a, b);
+        res += query(pos[head[b]], pos[b]);
+    }
+    if(depth[a] > depth[b]) 
+        swap(a, b);
+    res += query(pos[a] + 1, pos[b]);
+    return res;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    ll n, k;
+    cin >> n >> k;
+    for(int i = 1; i < n; i++) {
+        ll u, v, w;
+        cin >> u >> v >> w;
+        g[u].push_back({v, w % k == 0 ? 0 : w});
+        g[v].push_back({u, w % k == 0 ? 0 : w});
+    }
+    dfs(1);
+    decompose(1, 1);
+    for(int i = 1; i <= n; i++) 
+        modify(pos[i], pos[i], val[i]);
+    int q;
+    cin >> q;
+    while(q--) {
+        int type;
+        cin >> type;
+        if(type == 1) {
+            int v; ll x;
+            cin >> v >> x;
+            modify(pos[v], pos[v], -val[v]);
+            val[v] = x % k == 0 ? 0 : x;
+            modify(pos[v], pos[v], val[v]);
+        } else {
+            int v, u;
+            cin >> v >> u;
+            cout << path_query(v, u) << "\n";
+        }
+    }
+    return 0;
+}

@@ -1,0 +1,92 @@
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+#define rep(i, n) for (int i = 0; i < n; ++i)
+#define pb push_back
+const ll mod = 1000000009;
+typedef vector<ll> vl;
+typedef vector<vl> mat;
+
+mat mul(const mat &A, const mat &B) {
+  int n = A.size();
+  mat C(n, vl(n));
+  for(int i=0;i<n;++i)
+    for(int k=0;k<n;++k)
+      for(int j=0;k && j<n;++j)
+        C[i][j] = (C[i][j] + (A[i][k] * B[k][j] % mod)) % mod;
+  return C;
+}
+
+mat mat_pow(const mat &A, ll x) {
+  int n = A.size();
+  mat B(n, vl(n, 0));
+  rep(i, n) B[i][i] = 1;
+  mat P(A);
+  while (x > 0) {
+    if (x & 1)
+      B = mul(B, P);
+    P = mul(P, P);
+    x >>= 1;
+  }
+  return B;
+}
+
+vl mul(const mat &A, const vl &b) {
+  int n = A.size();
+  vl ret(n);
+  for(int i=0;i<n;++i)
+    for(int j=0;j<n;++j)
+      ret[i] = (ret[i] + (A[i][j] * b[j] % mod)) % mod;
+  return ret;
+}
+
+int main() {
+  int T = 1;
+  int w, n;
+  ll h;
+  while (cin >> w >> h >> n, w) {
+    map<ll, vector<int>> obj;
+    rep(i, n) {
+      ll x, y;
+      cin >> x >> y;
+      --x;
+      --y;
+      if (y > 0) {
+        obj[y].pb(x);
+      }
+    }
+    mat O(w, vl(w));
+    rep(i, w) {
+      for (int j = -1; j <= 1; ++j) {
+        if (i + j >= 0 && i + j < w)
+          O[i][i + j] = 1;
+      }
+    }
+    mat A(w, vl(w, 0));
+    rep(i, w) A[i][i] = 1;
+    ll ny = 0;
+    for (const auto &p : obj) {
+      ll Y = p.first;
+      if (Y - ny > 1) {
+        A = mul(mat_pow(O, Y - ny - 1), A);
+      }
+      mat B(O);
+      for (int i : p.second) {
+        for (int j = -1; j <= 1; ++j) {
+          if (i + j >= 0 && i + j < w)
+            B[i][i + j] = 0;
+        }
+      }
+      A = mul(B, A);
+      ny = Y;
+    }
+    if (ny != h - 1)
+      A = mul(mat_pow(O, h - 1 - ny), A);
+    vl b(w, 0);
+    b[0] = 1;
+    vl res = mul(A, b);
+    ll ans = res[w - 1];
+    printf("Case %d: %lld\n", T++, ans);
+  }
+  return 0;
+}

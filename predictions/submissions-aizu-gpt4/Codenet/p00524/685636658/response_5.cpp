@@ -1,0 +1,112 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <set>
+#include <map>
+#include <climits>
+
+using namespace std;
+
+typedef long long ll;
+typedef pair<int, int> pi;
+typedef pair<ll, int> P;
+const int V = 100000;
+const int VV = 1000000;
+const ll INF = LLONG_MAX / 3;
+
+struct edge {
+  int to;
+  ll cost;
+};
+
+vector<edge> G[V], gg[VV];
+set<int> height[V];
+ll X;
+int H[V];
+map<pi, int> v2id;
+ll d[VV];
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+  int n, m;
+  cin >> n >> m >> X;
+  for (int i = 0; i < n; ++i) cin >> H[i];
+  for (int i = 0, a, b, t; i < m; ++i) {
+    cin >> a >> b >> t;
+    --a; --b;
+    G[a].push_back({b, t});
+    G[b].push_back({a, t});
+  }
+  
+  priority_queue<pi, vector<pi>, greater<pi>> que;
+  que.push(make_pair(0, X));
+  v2id[make_pair(0, X)] = 0;
+
+  while (!que.empty()) {
+    pi p = que.top();
+    que.pop();
+    int v = p.second, h = p.first;
+
+    for (const auto &e : G[v]) {
+      int bh = h;
+      int nh = h - e.cost;
+      if (nh < 0) continue;
+      if (nh > H[e.to]) {
+        bh = H[e.to] + e.cost;
+        nh = H[e.to];
+      }
+      if (!v2id.count(make_pair(e.to, nh))) {
+        v2id[make_pair(e.to, nh)] = v2id.size();
+        height[e.to].insert(nh);
+        que.push(make_pair(nh, e.to));
+      }
+    }
+  }
+
+  for(int i = 0; i < n; ++i) {
+    for (const auto &e : G[i]) {
+      if (H[i] >= e.cost && !v2id.count(make_pair(i, e.cost))) {
+        v2id[make_pair(i, e.cost)] = v2id.size();
+        height[i].insert(e.cost);
+      }
+    }
+  }
+
+  for(int i = 0; i < n; ++i) {
+    auto itr = height[i].begin();
+    for(int j = 0; j < (int)height[i].size() - 1; ++j) {
+      auto nx = next(itr);
+      int dist = *nx - *itr;
+      gg[v2id[make_pair(i, *itr)]].push_back({v2id[make_pair(i, *nx)], dist});
+      itr = nx;
+    }
+  }
+
+  int start = v2id[make_pair(0, X)];
+  int goal = v2id[make_pair(n - 1, H[n - 1])];
+  
+  fill(d, d + VV, INF);
+  d[start] = 0;
+  priority_queue<P, vector<P>, greater<P>> pq;
+  pq.push(make_pair(0, start));
+
+  while (!pq.empty()) {
+    P now = pq.top();
+    pq.pop();
+    int v = now.second;
+    if (now.first > d[v]) continue;
+    for (const auto &e : gg[v]) {
+      if (d[e.to] > d[v] + e.cost) {
+        d[e.to] = d[v] + e.cost;
+        pq.push(make_pair(d[e.to], e.to));
+      }
+    }
+  }
+
+  ll ans = d[goal] == INF ? -1 : d[goal];
+  cout << ans << "\n";
+
+  return 0;
+}

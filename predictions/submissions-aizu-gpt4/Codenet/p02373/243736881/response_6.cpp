@@ -1,0 +1,100 @@
+#include <algorithm>
+#include <vector>
+#include <queue>
+#include <cassert>
+#include <iostream>
+#define rep(i, n) for (int i = 0; i < (n); ++i)
+#define MAXN 100010
+#define B 200
+
+int color[MAXN], par[MAXN], depth[MAXN], top[MAXN], goUp[MAXN];
+bool vis[MAXN];
+int n;
+std::vector<int> g[MAXN];
+std::queue<int> q;
+
+inline void decomp(int root) {
+  std::vector<int> tord;
+  par[root] = -1;
+  q.push(root);
+  while (!q.empty()) {
+    int v = q.front();
+    q.pop();
+    vis[v] = true;
+    tord.push_back(v);
+    for (int c : g[v]) {
+      if (!vis[c]) {
+        q.push(c);
+        par[c] = v;
+        depth[c] = depth[v] + 1;
+      }
+    }
+  }
+  std::fill(vis, vis + n, false);
+  int c = 0;
+  for (int u : tord) {
+    if (vis[u])
+      continue;
+    q.push(u);
+    int k = 0;
+    while (!q.empty() && k < B) {
+      int v = q.front();
+      q.pop();
+      vis[v] = true;
+      color[v] = c;
+      goUp[v] = par[u];
+      top[v] = u;
+      ++k;
+      for (int c : g[v]) {
+        if (!vis[c])
+          q.push(c);
+      }
+    }
+    std::queue<int>().swap(q);
+    ++c;
+  }
+}
+
+inline int solve(int u, int v) {
+  while (color[u] != color[v]) {
+    assert(u != -1 && v != -1);
+    if (depth[top[u]] > depth[top[v]])
+      u = goUp[u];
+    else
+      v = goUp[v];
+  }
+  while (u != v) {
+    assert(u != -1 && v != -1);
+    if (depth[u] > depth[v])
+      u = par[u];
+    else
+      v = par[v];
+  }
+  return u;
+}
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(nullptr);
+  
+  std::cin >> n;
+  rep(i, n) {
+    int k;
+    std::cin >> k;
+    while(k--) {
+      int c;
+      std::cin >> c;
+      g[i].push_back(c);
+      par[c] = i;
+    }
+  }
+  decomp(0);
+  int q;
+  std::cin >> q;
+  while(q--) {
+    int u, v;
+    std::cin >> u >> v;
+    std::cout << solve(u, v) << '\n';
+  }
+  return 0;
+}

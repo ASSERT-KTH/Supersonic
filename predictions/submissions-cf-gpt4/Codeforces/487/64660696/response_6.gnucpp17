@@ -1,0 +1,82 @@
+#include <bits/stdc++.h>
+using namespace std;
+using pii = pair<int, int>;
+const int maxLig = (1e5) + 5;
+const int maxCol = 12;
+int nbLig, nbCol, nbReq;
+char grille[maxLig][maxCol];
+int proc[maxLig][maxCol];
+int tps = 0;
+pair<int, int> go[maxLig][maxCol];
+
+void comp(int lig, int col, int safeLig) {
+  if (proc[lig][col] == tps)
+    return;
+  proc[lig][col] = tps;
+  int nextLig = lig, nextCol = col;
+  if (grille[lig][col] == '<')
+    --nextCol;
+  else if (grille[lig][col] == '>')
+    ++nextCol;
+  else if (grille[lig][col] == '^')
+    --nextLig;
+  if (nextLig == safeLig || grille[nextLig][nextCol] == '~') {
+    go[lig][col] = {nextLig, nextCol};
+  } else {
+    comp(nextLig, nextCol, safeLig);
+    go[lig][col] = go[nextLig][nextCol];
+  }
+}
+
+pair<int, int> getFin(int lig, int col) {
+  while (grille[lig][col] != '~') {
+    pii e = go[lig][col];
+    lig = e.first;
+    col = e.second;
+  }
+  return {lig, col};
+}
+
+void compBloc(int bloc, int deb, int fin) {
+  for (int lig = deb + 1; lig <= fin; ++lig) {
+    for (int col = 1; col <= nbCol; ++col) {
+      comp(lig, col, deb);
+    }
+  }
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+
+  cin >> nbLig >> nbCol >> nbReq;
+  memset(grille, '~', sizeof(grille));
+  for (int lig = 1; lig <= nbLig; ++lig) {
+    for (int col = 1; col <= nbCol; ++col) {
+      cin >> grille[lig][col];
+    }
+  }
+  ++tps;
+  for (int bloc = 0, deb = 0, fin = min(nbLig, (bloc + 1) * 600); deb <= nbLig; ++bloc, deb = fin, fin = min(nbLig, (bloc + 1) * 600)) {
+    compBloc(bloc, deb, fin);
+  }
+  for (int req = 0; req < nbReq; ++req) {
+    char mode;
+    cin >> mode;
+    int lig, col;
+    cin >> lig >> col;
+    if (mode == 'A') {
+      pii res = getFin(lig, col);
+      cout << res.first << " " << res.second << "\n";
+    } else {
+      ++tps;
+      char nv;
+      cin >> nv;
+      grille[lig][col] = nv;
+      int bloc = lig / 600;
+      compBloc(bloc, bloc * 600, min(nbLig, (bloc + 1) * 600));
+      if (bloc)
+        compBloc(bloc - 1, (bloc - 1) * 600, min(nbLig, bloc * 600));
+    }
+  }
+}

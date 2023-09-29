@@ -1,0 +1,59 @@
+#include <iostream>
+#include <vector>
+using namespace std;
+
+vector<int> Input(const int n) {
+  vector<int> W(n);
+  for (int i = 0; i < n; i++) {
+    cin >> W[i];
+  }
+  return W;
+}
+
+bool IsAllLoaded(int P, const vector<int>& W, const int k) {
+  int TrackIndex = 0;
+  int CurrentSum = 0;
+  for (int i = 0; i < W.size(); i++) {
+    if (W[i] > P) {
+      return false;
+    }
+    if (CurrentSum + W[i] > P) {
+      TrackIndex++;
+      if (TrackIndex == k) {
+        return false;
+      }
+      CurrentSum = 0;
+    }
+    CurrentSum += W[i];
+  }
+  return true;
+}
+
+int Calc(const vector<int>& W, const int k) {
+  int Sum = 0;
+  for (const int& w : W) {
+    Sum += w;
+  }
+  int low = (Sum + k - 1) / k;
+  int high = Sum;
+  while (low <= high) {
+    int mid = low + (high - low) / 2;
+    if (IsAllLoaded(mid, W, k)) {
+      high = mid - 1;
+    } else {
+      low = mid + 1;
+    }
+  }
+  return low;
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(nullptr);
+  int n, k;
+  cin >> n >> k;
+  vector<int> W = Input(n);
+  int P = Calc(W, k);
+  cout << P << '\n';
+  return 0;
+}

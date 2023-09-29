@@ -1,0 +1,228 @@
+#include <iostream>
+#include <vector>
+#include <map>
+#include <set>
+#include <queue>
+
+using namespace std;
+
+#define fi first
+#define se second
+
+const int MAXN = 200005;
+
+struct node {
+    int cnt, par, lev, inp, chn, idx, col, adj;
+};
+
+typedef pair<int, int> pii;
+
+int n, q;
+vector<int> g[MAXN];
+node a[MAXN];
+int bit[2 * MAXN], chains = 0, timer = 0, colour = 0;
+vector<int> chain[MAXN];
+map<int, int> col[MAXN];
+map<int, set<int>> pos[MAXN];
+int root[MAXN];
+
+void Init() {
+    cin.tie(NULL);
+    ios::sync_with_stdio(false);
+    cout.tie(NULL);
+    cin >> n >> q;
+    for (int i = 1; i < n; ++i) {
+        int u, v;
+        cin >> u >> v;
+        g[u].push_back(v);
+        g[v].push_back(u);
+    }
+    a[n].par = -1;
+    a[n].lev = 1;
+    a[n].chn = 0;
+    a[n].idx = 0;
+    root[0] = n;
+    colour = n;
+}
+
+int query(int x) {
+    int res = 0;
+    for (int i = x; i >= 1; i -= i & (-i)) {
+        res += bit[i];
+    }
+    return res;
+}
+
+void update(int x, int d) {
+    for (int i = x; i < 2 * MAXN; i += i & (-i)) {
+        bit[i] += d;
+    }
+}
+
+void DFS(int u) {
+    a[u].inp = ++timer;
+    a[u].cnt = 1;
+    for (int v : g[u]) {
+        if (a[v].par == 0) {
+            a[v].par = u;
+            a[v].lev = a[u].lev + 1;
+            DFS(v);
+            a[u].cnt += a[v].cnt;
+        }
+    }
+}
+
+void HLD(int u) {
+    chain[a[u].chn].push_back(u);
+    col[a[u].chn][a[u].idx] = a[u].col;
+    pos[a[u].chn][a[u].col].insert(a[u].idx);
+    pii heavy = {0, 0};
+    for (int v : g[u]) {
+        if (v != a[u].par and a[v].cnt > heavy.fi) {
+            heavy = {a[v].cnt, v};
+        }
+    }
+    if (heavy == pii(0, 0)) return;
+    a[heavy.se].chn = a[u].chn;
+    a[heavy.se].idx = a[u].idx + 1;
+    for (int v : g[u]) {
+        if (v == a[u].par) continue;
+        if (v != heavy.se) {
+            a[v].chn = ++chains;
+            a[v].idx = 0;
+        }
+        HLD(v);
+    }
+}
+
+void Simulate() {
+    priority_queue<int> pq;
+    for (int i = 1; i <= n; ++i) {
+        a[i].adj = static_cast<int>(g[i].size());
+        if (a[i].adj == 1) pq.push(-i);
+    }
+    int row = 0;
+    while (!pq.empty()) {
+        int u = -pq.top(); pq.pop();
+        a[u].col = ++row;
+        for (int v : g[u]) {
+            a[v].adj--;
+            if (a[v].adj == 1) pq.push(-v);
+        }
+    }
+    for (int i = 1; i <= row; ++i) {
+        update(i, 1);
+    }
+}
+
+inline bool is_predecessor(int u, int v) {
+    return (a[u].inp <= a[v].inp and a[v].inp < a[u].inp + a[u].cnt);
+}
+
+int LCA(int u, int v) {
+    if (is_predecessor(u, v)) return u;
+    if (is_predecessor(v, u)) return v;
+    int t = a[u].chn;
+    while (!is_predecessor(chain[t][0], v)) {
+        t = a[a[chain[t][0]].par].chn;
+    }
+    int l = 0, r = static_cast<int>(chain[t].size()) - 1, res = 0;
+    while (l <= r) {
+        int mid = (l + r) >> 1;
+        if (is_predecessor(chain[t][mid], u) and is_predecessor(chain[t][mid], v)) {
+            res = mid;
+            l = mid + 1;
+        }
+        else r = mid - 1;
+    }
+    return chain[t][res];
+}
+
+void up(int u, int t) {
+    while (true) {
+        int c = a[u].chn, i = a[u].idx;
+        auto iter = col[c].upper_bound(i);
+        if (c == a[t].chn && a[t].idx != 0) {
+            iter = col[c].lower_bound(a[t].idx);
+            if (col[c].count(a[t].idx - 1) == 0) {
+                col[c][a[t].idx - 1] = iter->second;
+                pos[c][iter->second].insert(a[t].idx - 1);
+            }
+        }
+        while (iter != col[c].begin()) {
+            --iter;
+            update(iter->second, -1);
+            pos[c][iter->second].erase(iter->first);
+            if (pos[c][iter->second].empty()) pos[c].erase(iter->second);
+        }
+        col[c].erase(col[c].begin(), col[c].upper_bound(i));
+        col[c][i] = colour;
+        pos[c][colour].insert(i);
+        iter = col[c].upper_bound(i);
+        if (iter != col[c].end()) update(iter->second, -1);
+        update(colour, 1);
+        if (c == a[t].chn) break;
+        else u = a[chain[c][0]].par;
+    }
+}
+
+int count(int u, int t, int clr) {
+    int cnt = 0;
+    while (true) {
+        int c = a[u].chn, i = a[u].idx;
+        if (pos[c].count(clr)) {
+            auto it = pos[c][clr].lower_bound(i), it1 = pos[c][clr].begin();
+            if (a[u].chn == a[t].chn) it1 = pos[c][clr].lower_bound(a[t].idx);
+            while (it != it1) {
+                --it;
+                cnt += 1 + it->first - max(i, it1 == pos[c][clr].begin() ? 0 : *prev(it1));
+            }
+        }
+        if (c == a[t].chn) break;
+        else u = a[chain[c][0]].par;
+    }
+    return cnt;
+}
+
+int when(int u) {
+    int clr = (--col[a[u].chn].upper_bound(a[u].idx))->second;
+    int res = query(clr - 1);
+    if (clr - n - 1 < 0) return res + 1;
+    int r = root[clr - n - 1];
+    int t = LCA(u, r);
+    res += count(u, t, clr);
+    res += count(r, t, clr);
+    if ((--col[a[t].chn].upper_bound(a[t].idx))->second == clr) res--;
+    return res;
+}
+
+int main() {
+    Init();
+    Simulate();
+    DFS(n);
+    HLD(n);
+    for (int i = 1; i <= q; ++i) {
+        string s;
+        cin >> s;
+        if (s == "up") {
+            int u;
+            cin >> u;
+            int t = LCA(u, root[colour - n]);
+            colour++;
+            if (u != t) up(u, t);
+            if (root[colour - n - 1] != t) up(root[colour - n - 1], t);
+            root[colour - n] = u;
+        }
+        else if (s == "compare") {
+            int u, v;
+            cin >> u >> v;
+            cout << (when(u) < when(v) ? u : v) << "\n";
+        }
+        else {
+            int u;
+            cin >> u;
+            cout << when(u) << "\n";
+        }
+    }
+    return 0;
+}

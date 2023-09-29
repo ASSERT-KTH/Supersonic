@@ -1,0 +1,57 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <unordered_map>
+using namespace std;
+
+int damerau_levenshtein_distance(const string &a, const string &b) {
+  vector<vector<int>> d(a.size() + 1, vector<int>(b.size() + 1));
+  int inf = a.size() + b.size();
+  d[0][0] = inf;
+  for (int i = 0; i <= a.size(); i++) d[i][0] = i;
+  for (int i = 0; i <= b.size(); i++) d[0][i] = i;
+
+  unordered_map<char, int> dict;
+  for (auto c : a + b) dict[c] = 0;
+
+  for (int i = 1; i <= a.size(); i++) {
+    int db = 0;
+    for (int j = 1; j <= b.size(); j++) {
+      int k = dict[b[j - 1]], l = db, cost = 1;
+      if (a[i - 1] == b[j - 1]) {
+        cost = 0;
+        db = j;
+      }
+      d[i][j] = min({d[i - 1][j - 1] + cost, d[i][j - 1] + 1, d[i - 1][j] + 1,
+                     d[k][l] + (i - k - 1) + 1 + (j - l - 1)});
+    }
+    dict[a[i - 1]] = i;
+  }
+  return d[a.size()][b.size()];
+}
+
+void solve(int n) {
+  int d;
+  cin >> d;
+  vector<string> name(n);
+  for (auto &i : name) cin >> i;
+  sort(name.begin(), name.end());
+  int count = 0;
+  for (int i = 0; i < n; i++) {
+    for (int j = i + 1; j < n; j++) {
+      if (damerau_levenshtein_distance(name[i], name[j]) <= d) {
+        cout << name[i] << "," << name[j] << "\n";
+        ++count;
+      }
+    }
+  }
+  cout << count << "\n";
+}
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+  cout.tie(0);
+  int n;
+  while (cin >> n, n) solve(n);
+}

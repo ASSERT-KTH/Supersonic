@@ -1,0 +1,38 @@
+#include <iostream>
+#include <cstring>
+#include <algorithm>
+using namespace std;
+
+const int MAXN = 333;
+int n, m, c[MAXN], v[3][MAXN], dp[MAXN][MAXN];
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    
+    while (cin >> n >> m) {
+
+        for(int i = 0; i < n; ++i) {
+            cin.ignore();
+            cin.ignore();
+            cin >> c[i];
+
+            for(int j = 0; j < 3; ++j)
+                cin >> v[j][i];
+        }
+
+        int res = 0;
+        for(int i = 0; i < 3; ++i) {
+            memset(dp, 0, sizeof(dp));
+            for(int j = 0; j < n; ++j) {
+                for(int k = m; k >= c[j]; --k) {
+                    dp[j + 1][k] = max(dp[j + 1][k], dp[j][k - c[j]] + v[i][j]);
+                    dp[j + 1][k] = max(dp[j + 1][k], dp[j][k]);
+                }
+            }
+            res = max(res, dp[n][m]);
+        }
+        cout << res << '\n';
+    }
+    return 0;
+}

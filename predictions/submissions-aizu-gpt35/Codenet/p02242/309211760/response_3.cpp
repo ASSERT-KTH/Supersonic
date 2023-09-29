@@ -1,0 +1,61 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <utility>
+using namespace std;
+
+static const int INFTY = (1 << 21);
+static const int WHITE = 0;
+static const int GRAY = 1;
+static const int BLACK = 2;
+
+int n;
+vector<pair<int, int>> adj[100];
+
+void dijkstra() {
+  int minv;
+  int d[100], color[100];
+  for (int i = 0; i < n; i++) {
+    d[i] = INFTY;
+    color[i] = WHITE;
+  }
+  d[0] = 0;
+  color[0] = GRAY;
+  priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> q;
+  q.push(make_pair(0, 0));
+  while (!q.empty()) {
+    pair<int, int> f = q.top();
+    q.pop();
+    int u = f.second;
+    if (d[u] < f.first)
+      continue;
+    color[u] = BLACK;
+    for (int j = 0; j < adj[u].size(); j++) {
+      int v = adj[u][j].first;
+      if (color[v] == BLACK)
+        continue;
+      if (d[v] > d[u] + adj[u][j].second) {
+        d[v] = d[u] + adj[u][j].second;
+        color[v] = GRAY;
+        q.push(make_pair(d[v], v));
+      }
+    }
+  }
+  for (int i = 0; i < n; i++) {
+    cout << i << " " << (d[i] == INFTY ? -1 : d[i]) << endl;
+  }
+}
+
+int main() {
+  cin >> n;
+  int k, c, u, v;
+  for (int i = 0; i < n; i++) {
+    cin >> u >> k;
+    for (int j = 0; j < k; j++) {
+      cin >> v >> c;
+      adj[u].push_back(make_pair(v, c));
+    }
+  }
+  dijkstra();
+  return 0;
+}

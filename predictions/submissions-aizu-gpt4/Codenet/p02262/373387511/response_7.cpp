@@ -1,0 +1,54 @@
+#include <iostream>
+#include <vector>
+using namespace std;
+
+int cnt;
+vector<int> G;
+
+inline void swap(int &a, int &b) {
+    int temp = a;
+    a = b;
+    b = temp;
+}
+
+void insertionSort(int *a, int g, int n) {
+    for (int i = g; i < n; i++) {
+        int tmp = a[i];
+        int j;
+        for (j = i - g; j >= 0 && a[j] > tmp; j -= g) {
+            a[j + g] = a[j];
+            cnt++;
+        }
+        a[j+g] = tmp;
+    }
+}
+
+void selectionSort(int *a, int n) {
+    cnt = 0;
+    for (int h = 1; h <= n; h = 3 * h + 1) {
+        G.push_back(h);
+    }
+    for (int i = G.size() - 1; i >= 0; i--) {
+        insertionSort(a, G[i], n);
+    }
+}
+
+int main() {
+    int n;
+    cin >> n;
+    vector<int> a(n);
+    for (int &i : a) {
+        cin >> i;
+    }
+    selectionSort(a.data(), n);
+    cout << G.size() << "\n";
+    for (auto it = G.rbegin(); it != G.rend(); ++it) {
+        if (it != G.rbegin()) cout << " ";
+        cout << *it;
+    }
+    cout << "\n" << cnt << "\n";
+    for (const int &i : a) {
+        cout << i << "\n";
+    }
+    return 0;
+}

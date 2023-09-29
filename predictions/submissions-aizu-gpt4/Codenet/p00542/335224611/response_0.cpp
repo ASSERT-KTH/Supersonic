@@ -1,0 +1,10 @@
+#include <algorithm>
+#include <iostream>
+
+int main() {
+  int a, b, c, d, e, f;
+  std::cin >> a >> b >> c >> d >> e >> f;
+  int ans = std::max({a, b, c, d}) * 3 + std::max(e, f) - (a + b + c + d);
+  std::cout << ans << '\n';
+  return 0;
+}

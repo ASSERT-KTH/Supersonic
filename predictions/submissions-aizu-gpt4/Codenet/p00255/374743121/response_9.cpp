@@ -1,0 +1,23 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    long long n, a, s;
+    while(cin >> n && n) {
+        vector<long long> j(n);
+        for (s = 0; n-- > 0; s += a)
+            cin >> a;
+        for (long long i = j.size(); i > 0; cin >> j[--i]);
+        sort(j.begin(), j.end());
+        a = 0;
+        for(long long i = 0; i < j.size(); ++i)
+            a = max((i + 1) * s, a);
+        cout << a << endl;
+    }
+    return 0;
+}

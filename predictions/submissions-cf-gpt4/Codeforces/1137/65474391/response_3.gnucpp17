@@ -1,0 +1,158 @@
+#include <iostream>
+#include <map>
+#include <vector>
+#include <set>
+#include <queue>
+using namespace std;
+const int MAXN = 200005;
+struct node {
+  int cnt, par, lev, inp;
+  int chn, idx, col, adj;
+};
+int n, q, chains = 0, timer = 0, colour = 0;
+vector<int> g[MAXN], chain[MAXN], bit(2 * MAXN);
+node a[MAXN];
+map<int, int> col[MAXN];
+map<int, set<int>> pos[MAXN];
+int root[MAXN];
+
+void DFS(int u) {
+  a[u].inp = ++timer;
+  a[u].cnt = 1;
+  for (int v : g[u]) {
+    if (a[v].par == 0) {
+      a[v].par = u;
+      a[v].lev = a[u].lev + 1;
+      DFS(v);
+      a[u].cnt += a[v].cnt;
+    }
+  }
+}
+
+void HLD(int u) {
+  chain[a[u].chn].push_back(u);
+  col[a[u].chn][a[u].idx] = a[u].col;
+  pos[a[u].chn][a[u].col].insert(a[u].idx);
+  int heavy = 0, which = 0;
+  for (int v : g[u]) {
+    if (v != a[u].par and a[v].cnt > heavy) {
+      heavy = a[v].cnt;
+      which = v;
+    }
+  }
+  if (heavy == 0 or which == 0)
+    return;
+  a[which].chn = a[u].chn;
+  a[which].idx = a[u].idx + 1;
+  for (int v : g[u]) {
+    if (v == a[u].par)
+      continue;
+    if (v != which) {
+      a[v].chn = ++chains;
+      a[v].idx = 0;
+    }
+    HLD(v);
+  }
+}
+
+inline int query(int x) {
+  int res = 0;
+  for (int i = x; i >= 1; i -= i & (-i)) {
+    res += bit[i];
+  }
+  return res;
+}
+
+void update(int x, int d) {
+  for (int i = x; i < 2 * MAXN; i += i & (-i)) {
+    bit[i] += d;
+  }
+}
+
+inline bool is_predecessor(int u, int v) {
+  return (a[u].inp <= a[v].inp and a[v].inp < a[u].inp + a[u].cnt);
+}
+
+int LCA(int u, int v) {
+  if (is_predecessor(u, v))
+    return u;
+  if (is_predecessor(v, u))
+    return v;
+  int t = a[u].chn;
+  while (!is_predecessor(chain[t][0], v)) {
+    t = a[a[chain[t][0]].par].chn;
+  }
+  int l = 0, r = chain[t].size() - 1, res = 0;
+  while (l <= r) {
+    int mid = (l + r) / 2;
+    if (is_predecessor(chain[t][mid], u) and is_predecessor(chain[t][mid], v)) {
+      res = mid;
+      l = mid + 1;
+    } else
+      r = mid - 1;
+  }
+  return chain[t][res];
+}
+
+int main() {
+  ios ::sync_with_stdio(false);
+  cin.tie(NULL);
+  cout.tie(NULL);
+  cin >> n >> q;
+  for (int i = 1; i < n; ++i) {
+    int u, v;
+    cin >> u >> v;
+    g[u].push_back(v);
+    g[v].push_back(u);
+  }
+  a[n].par = -1;
+  a[n].lev = 1;
+  a[n].chn = 0;
+  a[n].idx = 0;
+  root[0] = n;
+  colour = n;
+  priority_queue<int> pq;
+  for (int i = 1; i <= n; ++i) {
+    a[i].adj = g[i].size();
+    if (a[i].adj == 1)
+      pq.push(-i);
+  }
+  int row = 0;
+  while (!pq.empty()) {
+    int u = -pq.top();
+    pq.pop();
+    a[u].col = ++row;
+    for (int v : g[u]) {
+      a[v].adj--;
+      if (a[v].adj == 1)
+        pq.push(-v);
+    }
+  }
+  for (int i = 1; i <= row; ++i) {
+    update(i, 1);
+  }
+  DFS(n);
+  HLD(n);
+  for (int i = 1; i <= q; ++i) {
+    string s;
+    cin >> s;
+    if (s == "up") {
+      int u;
+      cin >> u;
+      int t = LCA(u, root[colour - n]);
+      colour++;
+      root[colour - n] = u;
+    }
+    if (s == "compare") {
+      int u, v;
+      cin >> u >> v;
+      cout << (query(a[u].col) < query(a[v].col) ? u : v) << endl;
+    }
+    if (s == "when") {
+      int u;
+      cin >> u;
+      cout << query(a[u].col) << endl;
+    }
+  }
+  return 0;
+}

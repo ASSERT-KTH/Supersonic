@@ -1,0 +1,27 @@
+#include <iostream>
+#include <vector>
+using namespace std;
+constexpr int maxN = 51000;
+int main() {
+  vector<bool> isPrime(maxN, true);
+  isPrime[0] = isPrime[1] = false;
+  vector<int> primes;
+  for (int i = 2; i < maxN; ++i) {
+    if (isPrime[i]) {
+      primes.push_back(i);
+      for (int j = 2*i; j < maxN; j += i) {
+        isPrime[j] = false;
+      }
+    }
+  }
+  int n;
+  while (cin >> n && n != 0) {
+    int kotae = 0;
+    for (int i = 0; primes[i] <= n / 2; ++i) {
+      if (isPrime[n - primes[i]])
+        kotae++;
+    }
+    cout << kotae << '\n';
+  }
+  return 0;
+}

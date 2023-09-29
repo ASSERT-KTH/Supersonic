@@ -1,0 +1,37 @@
+#define _CRT_SECURE_NO_WARNINGS
+#include <algorithm>
+#include <cassert>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
+#include <iostream>
+#include <vector>
+using namespace std;
+int a[1000010];
+template <typename T> void quicksort(T *l, T *r) {
+  if (r - l <= 1) return;
+  T *p = l + rand() % (r - l);
+  T pivot = *p;
+  swap(*p, *(r - 1));
+  T *j = l;
+  for(T *i = l; i < r - 1; i++) {
+    if(*i <= pivot) {
+      swap(*i, *j);
+      j++;
+    }
+  }
+  swap(*j, *(r - 1));
+  quicksort(l, j);
+  quicksort(j + 1, r);
+}
+int main() {
+  srand(time(0));
+  int n;
+  cin >> n;
+  for (int i = 0; i < n; i++)
+    scanf("%d", a + i);
+  quicksort(a, a + n);
+  for (int i = 0; i < n; i++)
+    printf("%d%c", a[i], i == n - 1 ? '\n' : ' ');
+}

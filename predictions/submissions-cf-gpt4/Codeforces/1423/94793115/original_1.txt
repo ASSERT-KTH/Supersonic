@@ -1,0 +1,101 @@
+```cpp
+#include <vector>
+#include <tuple>
+#include <cstdio>
+using namespace std;
+
+struct SegTree {
+    vector<int> sand, sor, lazy;
+    int n;
+    SegTree(int n_) : n(n_), sand(n_ << 1), sor(n_ << 1), lazy(n_ << 1) {}
+    void push(int id, int il, int ir) {
+        if (int& v = lazy[id]; v) {
+            sor[id] |= v, sand[id] |= v;
+            sor[il] |= v, sand[il] |= v, lazy[il] |= v;
+            sor[ir] |= v, sand[ir] |= v, lazy[ir] |= v;
+            v = 0;
+        }
+    }
+    void update(int x, int y, int v, int id = 0, int l = 0, int r = -1) {
+        if (r < 0)
+            r = n;
+        if (x <= l && r <= y) {
+            lazy[id] |= v, sor[id] |= v, sand[id] |= v;
+            return;
+        }
+        if (x >= r || l >= y)
+            return;
+        int mid = (l + r) >> 1;
+        push(id, id * 2 + 1, id * 2 + 2);
+        update(x, y, v, id * 2 + 1, l, mid);
+        update(x, y, v, id * 2 + 2, mid, r);
+        sand[id] = sand[id * 2 + 1] & sand[id * 2 + 2];
+        sor[id] = sor[id * 2 + 1] | sor[id * 2 + 2];
+    }
+    pair<int, int> get(int x, int y, int id = 0, int l = 0, int r = -1) {
+        if (r < 0)
+            r = n;
+        if (x <= l && r <= y)
+            return {sand[id], sor[id]};
+        if (x >= r || l >= y)
+            return {(1 << 16) - 1, 0};
+        int mid = (l + r) >> 1;
+        push(id, id * 2 + 1, id * 2 + 2);
+        auto [sl, ol] = get(x, y, id * 2 + 1, l, mid);
+        auto [sr, orr] = get(x, y, id * 2 + 2, mid, r);
+        return {sl & sr, ol | orr};
+    }
+    void print(int id = 0, int l = 0, int r = -1) {
+        if (r < 0)
+            r = n;
+        if (r - l == 1) {
+            printf("%d\n", sand[id]);
+            return;
+        }
+        int mid = (l + r) >> 1;
+        push(id, id * 2 + 1, id * 2 + 2);
+        print(id * 2 + 1, l, mid);
+        print(id * 2 + 2, mid, r);
+    }
+};
+
+int main() {
+    int k, q;
+    scanf("%d%d", &k, &q);
+    int n = 1 << k, mask = n - 1;
+    SegTree low(n), hig(n);
+    vector<tuple<int, int, int, int, int>> cons;
+    for (int i = 0, v; i < q; ++i) {
+        long long l, r;
+        scanf("%lld%lld%d", &l, &r, &v);
+        int la = l & mask, lb = l >> k;
+        int ra = r & mask, rb = r >> k;
+        if (lb < rb) {
+            if (lb + 1 < rb)
+                low.update(0, n, v);
+            else
+                low.update(la, n, v), low.update(0, ra + 1, v);
+        } else
+            low.update(la, ra + 1, v);
+        hig.update(lb, rb + 1, v);
+        cons.emplace_back(la, ra, lb, rb, v);
+    }
+    bool ok = true;
+    for (auto [la, ra, lb, rb, v] : cons) {
+        if (!ok)
+            break;
+        if (lb == rb)
+            ok &= (low.get(la, ra + 1).second & hig.get(lb, rb + 1).second) == v;
+        else {
+            ok &= (low.get(la, n).second & hig.get(lb, lb + 1).second) == v;
+            ok &= (low.get(0, ra + 1).second & hig.get(rb, rb + 1).second) == v;
+            if (lb + 1 < rb)
+                ok &= (low.get(0, n).second & hig.get(lb + 1, rb).second) == v;
+        }
+    }
+    puts(ok ? "possible" : "impossible");
+    if (ok)
+        low.print(), hig.print();
+    return 0;
+}
+```

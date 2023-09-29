@@ -1,0 +1,34 @@
+#include <cstdio>
+#include <vector>
+using namespace std;
+#define REP(i, n) for (int i = 0; i < (n); i++)
+constexpr int MAXN = 5000;
+vector<int> edge[MAXN];
+int cnt[MAXN];
+int main() {
+  int n, m;
+  scanf("%d %d", &n, &m);
+  REP(i, m) {
+    int a, b;
+    scanf("%d %d", &a, &b);
+    a--;
+    b--;
+    edge[a].push_back(b);
+    cnt[b]++;
+  }
+  vector<int> ans, next;
+  REP(i, n) if (cnt[i] == 0) next.push_back(i);
+  REP(i, n) {
+    int tar = next.back();
+    ans.push_back(tar + 1);
+    next.pop_back();
+    for (int to : edge[tar]) {
+      if (--cnt[to] == 0)
+        next.push_back(to);
+    }
+  }
+  for (int i : ans) printf("%d\n", i);
+  if (!next.empty()) printf("1\n");
+  else printf("0\n");
+  return 0;
+}

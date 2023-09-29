@@ -1,0 +1,24 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false); 
+    cin.tie(NULL);
+    priority_queue<int> heap;
+    char operation;
+    while (cin >> operation) {
+        if (operation == 'd')
+            break;
+        int data;
+        if (operation == 'i') {
+            cin >> data;
+            heap.push(data);
+        } else {
+            cout << heap.top() << "\n";
+            heap.pop();
+        }
+    }
+    return 0;
+}

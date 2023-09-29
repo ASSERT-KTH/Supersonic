@@ -1,0 +1,60 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <map>
+
+using namespace std;
+
+struct QuickFind {
+  vector<int> root, rank;
+  QuickFind(int size) {
+    root.resize(size);
+    rank.resize(size, 1);
+    iota(root.begin(), root.end(), 0);
+  }
+
+  int find(int x) {
+    if (x == root[x]) return x;
+    return root[x] = find(root[x]); 
+  }
+
+  void unite(int x, int y) {
+    x = find(x);
+    y = find(y);
+    if (x == y) return;
+    if (rank[x] < rank[y]) swap(x, y);
+    root[y] = x;
+    if (rank[x] == rank[y]) ++rank[x];
+  }
+};
+
+int main() {
+  ios_base::sync_with_stdio(false); 
+  cin.tie(NULL);
+
+  int n;
+  cin >> n;
+
+  vector<int> a(n);
+  for (int i = 0; i < n; i++) cin >> a[i];
+
+  vector<int> b(a);
+  sort(b.begin(), b.end());
+
+  map<int, int> p;
+  for (int i = 0; i < n; i++) p[b[i]] = i;
+
+  QuickFind qf(n);
+  for (int i = 0; i < n; i++) qf.unite(i, p[a[i]]);
+
+  vector<int> group(n);
+  for (int i = 0; i < n; i++) group[qf.find(i)] += a[i];
+
+  int ans = 0;
+  for (int i = 0; i < n; i++) {
+    if (qf.find(i) == i) ans += min(group[i], group[i] - a[i] + b[0]);
+  }
+
+  cout << ans << '\n';
+  return 0;
+}

@@ -1,0 +1,63 @@
+#include <iostream>
+#include <vector>
+#include <array>
+#include <algorithm>
+
+constexpr int mod = 1e9 + 7;
+constexpr int max_size = 8000000;
+int sgtree[max_size];
+int slow[max_size];
+int n, m;
+std::vector<std::array<int, 3>> ve;
+
+void update(int node, int st, int en, int rngst, int rngen, int value){
+    if (en < rngst || st > rngen) return;
+    if (st >= rngst && en <= rngen){
+        slow[node] += value;
+    } else {
+        int mid = (st + en) / 2;
+        update(node*2, st, mid, rngst, rngen, value);
+        update(node*2+1, mid+1, en, rngst, rngen, value);
+        sgtree[node] = std::min(sgtree[2*node] + slow[2*node], sgtree[2*node+1] + slow[2*node+1]);
+    }
+    sgtree[node] += slow[node];
+    slow[node*2] += slow[node];
+    slow[node*2+1] += slow[node];
+    slow[node] = 0;
+}
+
+void solve(){
+    std::cin >> n >> m;
+    if (m == 2){
+        std::cout << "0\n";
+        return;
+    }
+    for (int i = 0; i < n; i++){
+        int l, r, w;
+        std::cin >> l >> r >> w;
+        if (l == 1 && r == m){
+            std::cout << "0\n";
+            return;
+        }
+        ve.push_back({w, l, r-1});
+    }
+    std::sort(ve.begin(), ve.end());
+    int i = 0, j = 0, ans = INT32_MAX;
+    while (i < n){
+        while (j < n && sgtree[1] + slow[1] <= 0){
+            update(1, 1, m-1, ve[j][1], ve[j][2], 1);
+            j++;
+        }
+        ans = std::min(ans, ve[j-1][0] - ve[i][0]);
+        update(1, 1, m-1, ve[i][1], ve[i][2], -1);
+        i++;
+    }
+    std::cout << ans << '\n';
+}
+
+int main(){
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(NULL);
+    solve();
+    return 0;
+}

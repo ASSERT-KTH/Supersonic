@@ -1,0 +1,114 @@
+#include <algorithm>
+#include <cassert>
+#include <iostream>
+#include <vector>
+using namespace std;
+const int MOD = 998244353;
+struct mod_int {
+  int val;
+  mod_int(long long v = 0) {
+    if (v < 0)
+      v = v % MOD + MOD;
+    if (v >= MOD)
+      v %= MOD;
+    val = v;
+  }
+  static int mod_inv(int a, int m = MOD) {
+    // Extended Euclidean Algorithm
+    int x = 0, y = 1, u = 1, v = 0, b = m;
+    while (a != 0) {
+      int q = b / a;
+      int r = b % a;
+      int m = x - u * q;
+      int n = y - v * q;
+      b = a;
+      a = r;
+      x = u;
+      y = v;
+      u = m;
+      v = n;
+    }
+    return (x % m + m) % m;
+  }
+  mod_int &operator+=(const mod_int &other) {
+    val += other.val;
+    if (val >= MOD)
+      val -= MOD;
+    return *this;
+  }
+  mod_int inv() const { return mod_inv(val); }
+};
+vector<mod_int> factorial, inv_factorial;
+void prepare_factorials(int max) {
+  factorial.resize(max + 1);
+  inv_factorial.resize(max + 1);
+  factorial[0] = inv_factorial[0] = 1;
+  for (int i = 1; i <= max; i++) {
+    factorial[i] = i * factorial[i - 1];
+    inv_factorial[i] = inv_factorial[i - 1] / i;
+  }
+}
+mod_int choose(int n, int r) {
+  if (r < 0 || r > n) return 0;
+  return factorial[n] * inv_factorial[r] * inv_factorial[n - r];
+}
+int N, M;
+vector<int> likes;
+vector<mod_int> dp[2], ways[2], pref[2], suff[2], fact, invfact;
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+  cin >> N >> M;
+  likes.resize(N);
+  for (int &like : likes)
+    cin >> like;
+  dp[0].resize(M + 1);
+  dp[1].resize(M + 1);
+  ways[0].resize(M + 1);
+  ways[1].resize(M + 1);
+  pref[0].resize(M + 2);
+  pref[1].resize(M + 2);
+  suff[0].resize(M + 2);
+  suff[1].resize(M + 2);
+  fact.resize(M + 1);
+  invfact.resize(M + 1);
+  fact[0] = invfact[0] = 1;
+  for (int i = 1; i <= M; i++) {
+    fact[i] = fact[i - 1] * i;
+    invfact[i] = invfact[i - 1] / i;
+  }
+  dp[0][0] = 1;
+  for (int i = 0; i < N; i++) {
+    for (int j = 0; j <= M; j++) {
+      ways[0][j] = dp[0][j] * choose(M, j);
+      ways[1][j] = dp[1][j] * choose(M, j);
+    }
+    for (int j = 0; j <= M; j++) {
+      pref[0][j + 1] = pref[0][j] + ways[0][j] * fact[j];
+      pref[1][j + 1] = pref[1][j] + ways[1][j] * fact[j];
+    }
+    suff[0][M + 1] = suff[1][M + 1] = 0;
+    for (int j = M; j >= 0; j--) {
+      suff[0][j] = suff[0][j + 1] + ways[0][j] * fact[j];
+      suff[1][j] = suff[1][j + 1] + ways[1][j] * fact[j];
+    }
+    fill(dp[0].begin(), dp[0].end(), 0);
+    fill(dp[1].begin(), dp[1].end(), 0);
+    for (int j = 0; j <= M; j++) {
+      if (likes[i])
+        dp[1][j] += pref[1][j + 1] * invfact[j];
+      else
+        dp[0][j] += pref[0][j + 1] * invfact[j];
+      if (j < M) {
+        if (likes[i])
+          dp[1][j + 1] += suff[1][j + 2] * invfact[M - j - 1];
+        else
+          dp[0][j + 1] += suff[0][j + 2] * invfact[M - j - 1];
+      }
+    }
+  }
+  mod_int ans = 0;
+  for (int j = 0; j <= M; j++)
+    ans += dp[1][j] * choose(M, j);
+  cout << ans.val << '\n';
+}

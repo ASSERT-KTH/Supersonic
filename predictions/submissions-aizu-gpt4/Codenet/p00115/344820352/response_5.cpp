@@ -1,0 +1,75 @@
+#include <iostream>
+#include <cmath>
+
+class Point3d {
+public:
+  double x, y, z;
+  Point3d(double x = 0, double y = 0, double z = 0) : x(x), y(y), z(z) {}
+  Point3d operator+(const Point3d &a) const {
+    return Point3d(x + a.x, y + a.y, z + a.z);
+  }
+  Point3d operator-(const Point3d &a) const {
+    return Point3d(x - a.x, y - a.y, z - a.z);
+  }
+  bool operator==(const Point3d &p) const {
+    return x == p.x && y == p.y && z == p.z;
+  }
+};
+
+typedef Point3d Vector3d;
+typedef Point3d* Segment3d;
+
+inline double dot(const Point3d &a, const Point3d &b) {
+  return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+Vector3d cross(const Point3d &a, const Point3d &b) {
+  return Vector3d(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+}
+
+double norm(const Point3d &p) {
+  return p.x * p.x + p.y * p.y + p.z * p.z;
+}
+
+inline double abs(const Point3d &p) {
+  return std::sqrt(norm(p));
+}
+
+bool intersect(const Vector3d& a, const Vector3d& b, const Vector3d& c, const Vector3d& p, const Vector3d& q) {
+  Vector3d ab = b - a;
+  Vector3d ac = c - a;
+  Vector3d ap = p - a;
+  Vector3d aq = q - a;
+  double d1 = dot(ap, cross(ab, ac));
+  double d2 = dot(aq, cross(ab, ac));
+  return (d1 * d2 <= 0);
+}
+
+bool inside(const Vector3d& a, const Vector3d& b, const Vector3d& c, const Vector3d& p) {
+  Vector3d ab = b - a;
+  Vector3d ac = c - a;
+  Vector3d ap = p - a;
+  Vector3d bp = p - b;
+  Vector3d bc = c - b;
+  double area = abs(cross(ab, ac));
+  double s1 = abs(cross(ab, ap)) / 2;
+  double s2 = abs(cross(bc, bp)) / 2;
+  return (area == s1 + s2);
+}
+
+int main() {
+  Point3d S, G, tri[3];
+  std::cin >> S.x >> S.y >> S.z;
+  std::cin >> G.x >> G.y >> G.z;
+  for(int i = 0; i < 3; i++) std::cin >> tri[i].x >> tri[i].y >> tri[i].z;
+  if(intersect(tri[0], tri[1], tri[2], S, G)) {
+    if(inside(tri[0], tri[1], tri[2], S) || inside(tri[0], tri[1], tri[2], G)) {
+      std::cout << "HIT" << std::endl;
+    } else {
+      std::cout << "MISS" << std::endl;
+    }
+  } else {
+    std::cout << "MISS" << std::endl;
+  }
+  return 0;
+}

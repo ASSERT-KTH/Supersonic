@@ -1,0 +1,67 @@
+#include <iostream>
+#include <algorithm>
+#include <vector>
+
+using namespace std;
+
+struct Data {
+    long long a, b;
+    int idx;
+};
+
+bool compA(const Data &x, const Data &y) { return x.a < y.a; }
+
+bool compB(const Data &x, const Data &y) { return x.b < y.b; }
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int n;
+    cin >> n;
+
+    vector<Data> p(n), b(n);
+    vector<bool> used(n, false);
+    for (int i = 0; i < n; ++i) {
+        cin >> p[i].a >> p[i].b;
+        b[i] = p[i];
+        p[i].idx = i;
+        b[i].idx = i;
+    }
+
+    sort(p.begin(), p.end(), compA);
+    sort(b.begin(), b.end(), compB);
+
+    int ans = 0, num = 0, id = 0;
+    long long sum = 0;
+    for (int i = 0; i < n; ++i) {
+        if (!used[b[i].idx]) {
+            sum += b[i].a;
+            used[b[i].idx] = true;
+            num++;
+        }
+        while (id < n && p[id].a <= b[i].b) {
+            if (!used[p[id].idx]) {
+                sum += p[id].a;
+                used[p[id].idx] = true;
+                num++;
+            }
+            id++;
+        }
+        while (id < n && sum + p[id].a <= (num + 1) * b[i].b) {
+            if (!used[p[id].idx]) {
+                sum += p[id].a;
+                used[p[id].idx] = true;
+                num++;
+            }
+            id++;
+        }
+        ans = max(ans, num);
+        sum -= b[i].a;
+        num--;
+    }
+
+    cout << ans << '\n';
+
+    return 0;
+}

@@ -1,0 +1,62 @@
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <vector>
+using namespace std;
+
+#define M 9999
+int parent[M], a[M], b[M];
+pair<double, int> node[M];
+double dist[M];
+
+int root(int a) { 
+  return parent[a] == a ? a : parent[a] = root(parent[a]); 
+}
+
+int unite(int a, int b) {
+  int x = root(a), y = root(b);
+  if (x == y)
+    return 0;
+  parent[x] = y;
+  return 1;
+}
+
+double get_dist(const vector<double>& v1, const vector<double>& v2) {
+  double x = 0;
+  for (int k = 0; k < 3; k++)
+    x += (v1[k] - v2[k]) * (v1[k] - v2[k]);
+  return sqrt(x) - v1[3] - v2[3];
+}
+
+int main() {
+  int n;
+  while (scanf("%d", &n), n) {
+    vector<vector<double>> v(n);
+    for (int i = 0; i < n; i++)
+      scanf("%lf%lf%lf%lf", &v[i][0], &v[i][1], &v[i][2], &v[i][3]);
+    for (int i = 0; i < n; i++)
+      parent[i] = i;
+    int m = 0;
+    for (int i = 0; i < n; i++)
+      for (int j = i + 1; j < n; j++) {
+        double d = get_dist(v[i], v[j]);
+        if (d <= 0)
+          unite(i, j);
+        else
+          node[m].first = d, node[m].second = m, a[m] = i, b[m++] = j;
+      }
+    sort(node, node + m);
+    double ans = 0;
+    for (int i = 0; i < m; i++) {
+      int u = a[node[i].second], v = b[node[i].second];
+      double d = node[i].first;
+      if (unite(u, v)) {
+        ans += d;
+        if (--n == 1)
+          break;
+      }
+    }
+    printf("%.3f\n", ans);
+  }
+  return 0;
+}

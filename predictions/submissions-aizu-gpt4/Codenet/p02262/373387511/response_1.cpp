@@ -1,0 +1,53 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+int cnt;
+vector<int> G;
+
+void insertionSort(vector<int>& a, int g, int n) {
+    for (int i = g; i < n; i++) {
+        int j = i;
+        int v = a[i];
+        while (j >= g && a[j - g] > v) {
+            a[j] = a[j - g];
+            j -= g;
+            cnt++;
+        }
+        a[j] = v;
+    }
+}
+
+void shellSort(vector<int>& a, int n) {
+    cnt = 0;
+    int h = 1;
+    while (h < n) {
+        G.push_back(h);
+        h = 3 * h + 1;
+    }
+    reverse(G.begin(), G.end());
+    for (int g : G) {
+        insertionSort(a, g, n);
+    }
+}
+
+int main() {
+    int n;
+    cin >> n;
+    vector<int> a(n);
+    for (int i = 0; i < n; i++) {
+        cin >> a[i];
+    }
+    shellSort(a, n);
+    cout << G.size() << endl;
+    for (int i = G.size() - 1; i >= 0; i--) {
+        if (i != G.size() - 1) cout << " ";
+        cout << G[i];
+    }
+    cout << endl << cnt << endl;
+    for (int i = 0; i < n; i++) {
+        cout << a[i] << endl;
+    }
+    return 0;
+}

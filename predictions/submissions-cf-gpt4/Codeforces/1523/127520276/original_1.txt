@@ -1,0 +1,123 @@
+```cpp
+#include <algorithm>
+#include <cstdlib>
+#include <iostream>
+#include <queue>
+#include <random>
+#include <tuple>
+#include <utility>
+#include <vector>
+
+constexpr int N = 5e4, M = 1e5;
+using namespace std;
+
+struct CTVertex {
+    int x, y, t;
+    CTVertex *l, *r;
+};
+
+CTVertex *root;
+vector<CTVertex> storage;
+static unsigned yseed;
+
+CTVertex &get(CTVertex *ptr) { return *ptr; }
+
+bool add(CTVertex *&t, CTVertex *el) {
+    if (!t) {
+        t = el;
+        return true;
+    } else if (t->y > el->y) {
+        if (t->x > el->x) {
+            add(t->l, el);
+            if (t->t > el->t) {
+                t = t->l;
+            }
+        } else if (t->x == el->x) {
+            t->t = min(t->t, el->t);
+            t = t->r;
+        } else if (t->t > el->t) {
+            add(t->r, el);
+        }
+    }
+    return false;
+}
+
+void filterjoin(CTVertex *&t, CTVertex *l, CTVertex *r, int tval) {
+    while (r && r->t > tval) {
+        r = r->r;
+    }
+    if (!r) {
+        t = l;
+    } else if (!l || l->y > r->y) {
+        filterjoin(r->l, l, r->l, tval);
+        t = r;
+    } else {
+        filterjoin(l->r, l->r, r, tval);
+        t = l;
+    }
+}
+
+using interval = pair<int, int>;
+interval rent[M + 1];
+vector<int> by_length[N + 1];
+int ans[N + 1];
+CTVertex *ft[N];
+
+void add(int t) {
+    for (int i = N - rent[t].first - 1; i < N; i |= i + 1) {
+        yseed = (yseed ? yseed : rand()) * (RAND_MAX + 1u) + rand();
+        storage.push_back({rent[t].second, int(yseed), t, nullptr, nullptr});
+        if (!add(ft[i], &storage.back())) {
+            storage.pop_back();
+        }
+    }
+}
+
+int query(int l, int r) {
+    int res = M;
+    for (int i = N - l; i > N - r; i &= i - 1) {
+        int pos = ft[i - 1] ? ft[i - 1]->x : -1;
+        while (pos != -1) {
+            if (ft[i - 1]->x > r) {
+                pos = ft[i - 1]->l ? ft[i - 1]->l->x : -1;
+            } else {
+                res = min(res, ft[i - 1]->t);
+                pos = ft[i - 1]->r ? ft[i - 1]->r->x : -1;
+            }
+        }
+    }
+    return res;
+}
+
+int main() {
+    cin.tie(0), ios_base::sync_with_stdio(0);
+    int n, m;
+    cin >> n >> m;
+    for (int i = 0; i < m; ++i) {
+        cin >> rent[i].first >> rent[i].second, --rent[i].first;
+        by_length[rent[i].second - rent[i].first].push_back(i);
+    }
+    queue<interval> for_rent;
+    for (int epoch = n; epoch; --epoch) {
+        for (auto i : by_length[epoch]) {
+            add(i);
+        }
+        for_rent.emplace(0, n);
+        while (!for_rent.empty()) {
+            auto [l, r] = for_rent.front();
+            for_rent.pop();
+            int t = query(l, r);
+            if (t != M) {
+                ans[epoch] += rent[t].second - rent[t].first;
+                for_rent.emplace(l, rent[t].first);
+                for_rent.emplace(rent[t].second, r);
+            }
+        }
+    }
+    for (int rented = 1; rented <= n; ++rented) {
+        cout << ans[rented] << '\n';
+    }
+    return 0;
+}
+
+```

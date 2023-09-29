@@ -1,0 +1,11 @@
+#include <iostream>
+#include <algorithm>
+using namespace std;
+
+int main() {
+  int a, b, c, d, e, f;
+  cin >> a >> b >> c >> d >> e >> f;
+  int ans = a + b + c + d + max(e, f) - min({a, b, c, d});
+  cout << ans << endl;
+  return 0;
+}

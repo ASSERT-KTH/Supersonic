@@ -1,0 +1,49 @@
+#include <cstdio>
+#include <algorithm>
+
+typedef long long llong;
+
+struct Data {
+    llong size;
+    llong value;
+};
+
+constexpr int N_MAX = 500000;
+Data art[N_MAX];
+
+inline bool cmp(const Data &a, const Data &b) {
+    return a.size < b.size || (a.size == b.size && a.value < b.value);
+}
+
+int main() {
+    int N;
+    scanf("%d", &N);
+
+    for (int i = 0; i < N; ++i) {
+        scanf("%lld %lld", &art[i].size, &art[i].value);
+    }
+
+    std::sort(art, art + N, cmp);
+
+    llong min_size = art[0].size;
+    llong sum_value = art[0].value;
+    llong ans = sum_value;
+
+    for (int i = 1; i < N; ++i) {
+        llong value = art[i].value;
+        llong size = art[i].size;
+
+        if (value > sum_value + value - (size - min_size)) {
+            sum_value = value;
+            min_size = size;
+        } else {
+            sum_value += value;
+        }
+
+        ans = std::max(ans, sum_value);
+    }
+
+    printf("%lld\n", ans);
+
+    return 0;
+}

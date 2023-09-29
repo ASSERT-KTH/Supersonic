@@ -1,0 +1,70 @@
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <vector>
+
+typedef long long ll;
+typedef std::pair<int, int> pii;
+#define rep(i, n) for (ll i = 0; i < (ll)(n); i++)
+#define all(a) (a).begin(), (a).end()
+#define vi std::vector<int>
+#define pb push_back
+#define INF 999999999
+#define EPS (1e-10)
+
+struct P {
+  double x, y;
+  P(double _x = 0, double _y = 0) : x(_x), y(_y){};
+  P operator+(P &p) { return P(x + p.x, y + p.y); }
+  P operator-(P &p) { return P(x - p.x, y - p.y); }
+  P operator*(double k) { return P(x * k, y * k); }
+  P operator/(double k) { return P(x / k, y / k); }
+  bool operator==(const P &p) const {
+    return (fabs(x - p.x) < EPS && fabs(y - p.y) < EPS);
+  }
+  double norm() const { return x * x + y * y; }
+  double abs() const { return std::sqrt(norm()); }
+};
+
+typedef P Vector;
+
+double dot(Vector a, Vector b) { return a.x * b.x + a.y * b.y; }
+double cross(Vector a, Vector b) { return a.x * b.y - a.y * b.x; }
+
+bool cmp_x(const P &p, const P &q) {
+  if (p.x != q.x)
+    return p.x < q.x;
+  return p.y < q.y;
+}
+
+std::vector<P> convex_hull(P *ps, int n) {
+  std::sort(ps, ps + n, cmp_x);
+  int k = 0;
+  std::vector<P> qs(n * 2);
+  for(int i = 0; i < n; i++) {
+    while (k > 1 && cross((qs[k - 1] - qs[k - 2]), (ps[i] - qs[k - 1])) <= 0)
+      k--;
+    qs[k++] = ps[i];
+  }
+  for (int i = n - 2, t = k; i >= 0; i--) {
+    while (k > t && cross((qs[k - 1] - qs[k - 2]), (ps[i] - qs[k - 1])) <= 0)
+      k--;
+    qs[k++] = ps[i];
+  }
+  qs.resize(k - 1);
+  return qs;
+}
+
+int main() {
+  int N;
+  while (std::cin >> N && N) {
+    P* ps = new P[N];
+    rep(i, N) {
+      char ch;
+      std::cin >> ps[i].x >> ch >> ps[i].y;
+    }
+    std::vector<P> res = convex_hull(ps, N);
+    std::cout << N - res.size() << std::endl;
+    delete[] ps;
+  }
+}

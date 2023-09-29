@@ -1,0 +1,48 @@
+#include <cstdio>
+typedef long long int ll;
+#define BIG_NUM 2000000000
+#define MOD 1000000007
+#define EPS 0.000001
+int N;
+int *boss, *height;
+
+inline int get_boss(int id) {
+  return boss[id] == id ? id : (boss[id] = get_boss(boss[id]));
+}
+
+inline bool is_same(int x, int y) { return get_boss(x) == get_boss(y); }
+
+inline void unite(int x, int y) {
+  int boss_x = get_boss(x);
+  int boss_y = get_boss(y);
+  if (boss_x == boss_y)
+    return;
+  if (height[x] > height[y]) {
+    boss[boss_y] = boss_x;
+  } else {
+    boss[boss_x] = height[x] < height[y] ? boss_y : boss_x;
+    if (height[x] == height[y]) height[x]++;
+  }
+}
+
+int main() {
+  int Q, command, x, y;
+  scanf("%d %d", &N, &Q);
+  boss = new int[N];
+  height = new int[N];
+  for (int i = 0; i < N; i++) {
+    boss[i] = i;
+    height[i] = 1;
+  }
+  while (Q--) {
+    scanf("%d %d %d", &command, &x, &y);
+    if (command == 0) {
+      unite(x, y);
+    } else {
+      printf("%d\n", is_same(x, y));
+    }
+  }
+  delete[] boss;
+  delete[] height;
+  return 0;
+}

@@ -1,0 +1,83 @@
+#include <iostream>
+#include <cstring>
+using namespace std;
+
+const int MAX_T = 3000, MAX_M = 300;
+int M, start, goal, dice[6], N[MAX_M], path[MAX_M];
+bool visit[MAX_M];
+
+bool isPositionValid(int p) { return 0 <= p && p < M; }
+
+void MakePath(int from) {
+  memset(visit, 0, sizeof(visit));
+  memset(path, -1, sizeof(path));
+  path[goal] = 0;
+  visit[goal] = true;
+  int pos_to_check = goal, bestpath;
+  while (pos_to_check != from) {
+    bestpath = MAX_T;
+    for (int r = 0; r < 6; r++) {
+      int moveto = pos_to_check + dice[r];
+      if (isPositionValid(moveto)) {
+        int position = moveto + N[moveto];
+        if (!visit[position]) {
+          visit[position] = true;
+          if (path[position] != -1)
+            bestpath = min(bestpath, path[position] + 1);
+        }
+      }
+      moveto = pos_to_check - dice[r];
+      if (isPositionValid(moveto)) {
+        int position = moveto + N[moveto];
+        if (!visit[position]) {
+          visit[position] = true;
+          if (path[position] != -1)
+            bestpath = min(bestpath, path[position] + 1);
+        }
+      }
+    }
+    path[pos_to_check + N[pos_to_check]] = bestpath;
+    for (int i = pos_to_check + 1; i < pos_to_check + N[pos_to_check] && i < M; i++) {
+      path[i] = path[i - 1] + 1;
+      if (visit[i])
+        break;
+    }
+    pos_to_check = pos_to_check + N[pos_to_check];
+  }
+}
+
+int main() {
+  cin >> M;
+  for (int r = 0; r < 6; r++)
+    cin >> dice[r];
+  cin >> start >> goal;
+  start--, goal--;
+  for (int m = 0; m < M; m++)
+    cin >> N[m];
+  MakePath(start);
+  int position = start;
+  for (int t = 0; t < MAX_T; t++) {
+    if (position == goal)
+      break;
+    int r;
+    cin >> r;
+    int d = dice[r - 1];
+    bool moved = false;
+    if (isPositionValid(position + d)) {
+      int moveto = position + d + N[position + d];
+      if (path[moveto] != -1 && path[position + N[position + d]] == path[moveto] - 1) {
+        position = moveto;
+        moved = true;
+      }
+    }
+    if (!moved && isPositionValid(position - d)) {
+      int moveto = position - d + N[position - d];
+      if (path[moveto] != -1 && path[position + N[position - d]] == path[moveto] - 1) {
+        position = moveto;
+        moved = true;
+      }
+    }
+    cout << (moved ? ((position == goal) ? 0 : ((position > goal) ? -1 : 1)) : 0) << endl;
+  }
+  return 0;
+}

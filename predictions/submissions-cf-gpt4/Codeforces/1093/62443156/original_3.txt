@@ -1,0 +1,199 @@
+```cpp
+#include <algorithm>
+#include <array>
+#include <bitset>
+#include <cassert>
+#include <cctype>
+#include <chrono>
+#include <cmath>
+#include <cstdlib>
+#include <deque>
+#include <functional>
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <numeric>
+#include <optional>
+#include <queue>
+#include <random>
+#include <set>
+#include <stack>
+#include <string>
+#include <string_view>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+#include <vector>
+using namespace std;
+
+template <typename T, typename JoinFn>
+class seg_tree {
+private:
+    JoinFn join_fn_;
+    int n_;
+    vector<T> data_;
+
+    constexpr int next_power_of_two(int x);
+    void init(int node, int t_first, int t_last, const vector<T> &data);
+    template <typename UpdateFn>
+    void update(int node, int t_first, int t_last, int pos, const T &val, UpdateFn update_fn);
+    T query(int node, int t_first, int t_last, int first, int last) const;
+public:
+    seg_tree(int n, const T &zero = T(), JoinFn join_fn = JoinFn());
+    seg_tree(const vector<T> &data, JoinFn join_fn = JoinFn());
+    int size() const;
+    template <typename UpdateFn>
+    void update(int pos, const T &val, UpdateFn update_fn);
+    T query(int pos) const;
+    T query(int first, int last) const;
+};
+
+template <typename T, typename JoinFn>
+constexpr int seg_tree<T, JoinFn>::next_power_of_two(int x) {
+    --x;
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+    return ++x;
+}
+
+template <typename T, typename JoinFn>
+void seg_tree<T, JoinFn>::init(int node, int t_first, int t_last, const vector<T> &data) {
+    if (t_first == t_last) {
+        data_[node] = data[t_first];
+        return;
+    }
+    int t_mid = (t_first + t_last) >> 1;
+    init(2 * node + 1, t_first, t_mid, data);
+    init(2 * node + 2, t_mid + 1, t_last, data);
+    data_[node] = join_fn_(data_[2 * node + 1], data_[2 * node + 2]);
+}
+
+template <typename T, typename JoinFn>
+template <typename UpdateFn>
+void seg_tree<T, JoinFn>::update(int node, int t_first, int t_last, int pos, const T &val, UpdateFn update_fn) {
+    if (t_first == t_last) {
+        update_fn(data_[node], val);
+        return;
+    }
+    int t_mid = (t_first + t_last) >> 1;
+    if (pos <= t_mid) {
+        update(2 * node + 1, t_first, t_mid, pos, val, update_fn);
+    } else {
+        update(2 * node + 2, t_mid + 1, t_last, pos, val, update_fn);
+    }
+    data_[node] = join_fn_(data_[2 * node + 1], data_[2 * node + 2]);
+}
+
+template <typename T, typename JoinFn>
+T seg_tree<T, JoinFn>::query(int node, int t_first, int t_last, int first, int last) const {
+    if (first <= t_first && t_last <= last) {
+        return data_[node];
+    }
+    int t_mid = (t_first + t_last) >> 1;
+    if (last <= t_mid) {
+        return query(2 * node + 1, t_first, t_mid, first, last);
+    }
+    if (t_mid < first) {
+        return query(2 * node + 2, t_mid + 1, t_last, first, last);
+    }
+    return join_fn_(query(2 * node + 1, t_first, t_mid, first, last),
+                    query(2 * node + 2, t_mid + 1, t_last, first, last));
+}
+
+template <typename T, typename JoinFn>
+seg_tree<T, JoinFn>::seg_tree(int n, const T &zero, JoinFn join_fn)
+    : join_fn_(join_fn), n_(n), data_(2 * next_power_of_two(n) - 1, zero) {}
+
+template <typename T, typename JoinFn>
+seg_tree<T, JoinFn>::seg_tree(const vector<T> &data, JoinFn join_fn)
+    : join_fn_(join_fn), n_(data.size()), data_(2 * next_power_of_two(n_)){
+        init(0, 0, n_ - 1, data);
+    }
+
+template <typename T, typename JoinFn>
+int seg_tree<T, JoinFn>::size() const {
+    return n_;
+}
+
+template <typename T, typename JoinFn>
+template <typename UpdateFn>
+void seg_tree<T, JoinFn>::update(int pos, const T &val, UpdateFn update_fn) {
+    update(0, 0, n_ - 1, pos, val, update_fn);
+}
+
+template <typename T, typename JoinFn>
+T seg_tree<T, JoinFn>::query(int pos) const {
+    return query(pos, pos);
+}
+
+template <typename T, typename JoinFn>
+T seg_tree<T, JoinFn>::query(int first, int last) const {
+    return query(0, 0, n_ - 1, first, last);
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    cout << boolalpha;
+
+    int n, k;
+    cin >> n >> k;
+    vector<vector<int>> a(n, vector<int>(k));
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < k; ++j) {
+            cin >> a[i][j];
+        }
+    }
+
+    auto join = [](const pair<int, int> &a, const pair<int, int> &b) {
+        return make_pair(min(a.first, b.first), max(a.second, b.second));
+    };
+    auto update = [](pair<int, int> &a, const pair<int, int> &b) { a = b; };
+    vector<seg_tree<pair<int, int>, decltype(join)>> trees(1 << k, seg_tree<pair<int, int>, decltype(join)>(n, {1e9, -1e9}, join));
+    for (int mask = 0; mask < (1 << k); ++mask) {
+        for (int i = 0; i < n; ++i) {
+            int val = 0;
+            for (int j = 0; j < k; ++j) {
+                val += (mask & (1 << j)) ? a[i][j] : -a[i][j];
+            }
+            trees[mask].update(i, {val, val}, update);
+        }
+    }
+    int q;
+    cin >> q;
+    while (q--) {
+        int type;
+        cin >> type;
+        if (type == 1) {
+            int i;
+            cin >> i;
+            --i;
+            vector<int> b(k);
+            for (int j = 0; j < k; ++j) {
+                cin >> b[j];
+            }
+            for (int mask = 0; mask < (1 << k); ++mask) {
+                int val = 0;
+                for (int j = 0; j < k; ++j) {
+                    val += (mask & (1 << j)) ? b[j] : -b[j];
+                }
+                trees[mask].update(i, {val, val}, update);
+            }
+        } else {
+            int l, r;
+            cin >> l >> r;
+            --l, --r;
+            int ans = -1e9;
+            for (int mask = 0; mask < (1 << k); ++mask) {
+                auto a = trees[mask].query(l, r);
+                ans = max(ans, a.second - a.first);
+            }
+            cout << ans << '\n';
+        }
+    }
+    return 0;
+}
+```

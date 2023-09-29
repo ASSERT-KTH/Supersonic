@@ -1,0 +1,23 @@
+#include <iostream>
+#include <unordered_set>
+#include <string>
+using namespace std;
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  int n;
+  cin >> n;
+  unordered_set<string> Dic;
+  string com, word;
+  while (n--) {
+    cin >> com >> word;
+    if (com[0] == 'i')
+      Dic.insert(word);
+    else {
+      if (Dic.find(word) != Dic.end())
+        cout << "yes\n";
+      else
+        cout << "no\n";
+    }
+  }
+}

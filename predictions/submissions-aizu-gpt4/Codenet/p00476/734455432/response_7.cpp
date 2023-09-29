@@ -1,0 +1,70 @@
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long i64;
+typedef pair<i64, int> Pr;
+constexpr int INF = 1 << 28;
+constexpr int SIZE = 1 << 20;
+int N, H;
+int d[100000], h[100000];
+i64 seg_v[SIZE * 2 - 1];
+i64 seg_a[SIZE * 2 - 1];
+Pr seg[SIZE * 2 - 1];
+
+void seg_update(int k, const Pr &x) {
+  seg[k += SIZE - 1] = x;
+  while (k > 0) {
+    k = (k - 1) / 2;
+    seg[k] = max(seg[k * 2 + 1], seg[k * 2 + 2]);
+  }
+}
+
+Pr seg_query(int a, int b, int k = 0, int l = 0, int r = SIZE) {
+  if (b <= l || r <= a) return Pr(-INF, -1);
+  if (a <= l && r <= b) return seg[k];
+  return max(seg_query(a, b, k * 2 + 1, l, (l + r) / 2), seg_query(a, b, k * 2 + 2, (l + r) / 2, r));
+}
+
+void add(int a, int b, i64 x, int k = 0, int l = 0, int r = SIZE) {
+  if (b <= l || r <= a) return;
+  if (a <= l && r <= b) seg_a[k] += x;
+  else {
+    add(a, b, x, k * 2 + 1, l, (l + r) / 2);
+    add(a, b, x, k * 2 + 2, (l + r) / 2, r);
+    seg_v[k] = max(seg_v[k * 2 + 1] + seg_a[k * 2 + 1], seg_v[k * 2 + 2] + seg_a[k * 2 + 2]);
+  }
+}
+
+i64 query(int a, int b, int k = 0, int l = 0, int r = SIZE) {
+  if (b <= l || r <= a) return -INF;
+  if (a <= l && r <= b) return seg_v[k] + seg_a[k];
+  return max(query(a, b, k * 2 + 1, l, (l + r) / 2), query(a, b, k * 2 + 2, (l + r) / 2, r)) + seg_a[k];
+}
+
+void solve() {
+  i64 res = 0;
+  for (int i = 0; i < N; i++) seg_update(i, Pr(h[i], i));
+  add(0, N, H);
+  for (int i = 0; i < N; i++) {
+    while (true) {
+      int idx = seg_query(0, i + 1).second;
+      i64 val = h[idx], x = query(idx, i + 1);
+      if (val * val <= H - x) {
+        i64 num = max((H - x + val - 1) / val, (1 - query(i, i + 1) + val - 1) / val);
+        add(idx, N, num * val);
+        res += num;
+      }
+      else {
+        h[idx] = (H - x + val - 1) / val;
+        seg_update(idx, Pr(h[idx], idx));
+      }
+    }
+    add(i, N, -d[i]);
+  }
+  printf("%lld\n", res);
+}
+
+int main() {
+  scanf("%d %d", &N, &H);
+  for (int i = 1; i < N; i++) scanf("%d %d", &d[i], &h[i - 1]);
+  solve();
+}

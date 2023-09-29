@@ -1,0 +1,52 @@
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+const int maxn = 100005;
+vector<int> S(maxn, 0);
+int n, q;
+
+inline int lowbit(int x) {
+    return x & (-x);
+}
+
+void update(int i, int val) {
+    while (i <= n) {
+        S[i] += val;
+        i += lowbit(i);
+    }
+}
+
+int query(int i) {
+    int ans = 0;
+    while (i > 0) {
+        ans += S[i];
+        i -= lowbit(i);
+    }
+    return ans;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    cin >> n >> q;
+    for (int i = 0; i < q; i++) {
+        bool op;
+        cin >> op;
+        if (op) {
+            int k;
+            cin >> k;
+            cout << query(k) << '\n';
+        } else {
+            int s, t, x;
+            cin >> s >> t >> x;
+            update(s, x);
+            if (t + 1 <= n) {
+                update(t + 1, -x);
+            }
+        }
+    }
+    return 0;
+}

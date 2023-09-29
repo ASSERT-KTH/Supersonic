@@ -1,0 +1,74 @@
+#include <stdio.h>
+#include <stdlib.h>
+#define N 2
+
+void matrix(double x[][N+1], int n);
+void swap_rows(double* a, double* b, int n);
+
+int main(void) {
+    double x[N][N+1];
+    double su1 = 0, su2 = 0;
+    int i, j, k;
+    char str[100];
+
+    for (;fgets(str, sizeof(str), stdin) != NULL;) {
+        sscanf(str, "%lf %lf %lf %lf %lf %lf", &x[0][0], &x[0][1], &x[0][2],
+               &x[1][0], &x[1][1], &x[1][2]);
+        matrix(x, N);
+        for (i = 0; i < N; i++) {
+            if (i) {
+                printf(" ");
+            }
+            printf("%3.3f", x[i][N]);
+        }
+        printf("\n");
+    }
+    return 0;
+}
+
+void matrix(double x[][N+1], int n) {
+    int i, j, k;
+    double su1 = 0, su2 = 0;
+
+    for (k = 0; k < n; k++) {
+        int row_max = k;
+        for (i = k + 1; i < n; i++) {
+            if (abs(x[i][k]) > abs(x[row_max][k])) {
+                row_max = i;
+            }
+        }
+        if (row_max != k) {
+            swap_rows(x[k], x[row_max], n+1);
+        }
+        for (j = k + 1; j < n; j++) {
+            su1 = x[k][k];
+            su2 = x[j][k];
+            for (i = k; i <= n; i++) {
+                x[j][i] = x[j][i] - x[k][i] * su2 / su1;
+            }
+        }
+    }
+    for (k = n - 1; k >= 0; k--) {
+        for (j = k - 1; j >= 0; j--) {
+            su1 = x[k][k];
+            su2 = x[j][k];
+            for (i = k; i <= n; i++) {
+                x[j][i] = x[j][i] - x[k][i] * su2 / su1;
+            }
+        }
+    }
+    for (j = 0; j < n; j++) {
+        su1 = x[j][j];
+        for (i = 0; i <= n; i++) {
+            x[j][i] = x[j][i] / su1;
+        }
+    }
+}
+
+void swap_rows(double* a, double* b, int n) {
+    for (int i = 0; i < n; i++) {
+        double temp = a[i];
+        a[i] = b[i];
+        b[i] = temp;
+    }
+}

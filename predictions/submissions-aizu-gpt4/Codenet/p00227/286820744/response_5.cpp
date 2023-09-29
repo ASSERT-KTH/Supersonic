@@ -1,0 +1,23 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <iterator>
+
+int main() {
+    int num, cap;
+    while (std::cin >> num >> cap && (num != 0 || cap != 0)) {
+        std::vector<int> vegetables(num);
+        for(int& price : vegetables) {
+            std::cin >> price;
+        }
+        std::sort(vegetables.begin(), vegetables.end(), std::greater<int>());
+
+        int sum = 0;
+        for(int i = 0; i < num; ++i) {
+            if ((i + 1) % cap != 0) {
+                sum += vegetables[i];
+            }
+        }
+        std::cout << sum << '\n';
+    }
+}

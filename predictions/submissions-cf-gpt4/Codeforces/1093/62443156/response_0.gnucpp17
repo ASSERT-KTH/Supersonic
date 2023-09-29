@@ -1,0 +1,121 @@
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+using T = pair<int, int>;
+constexpr int INF = 1e9;
+
+class seg_tree {
+public:
+    int n_;
+    vector<T> data_;
+    seg_tree(int n) : n_(n), data_(4 * n, {INF, -INF}) {}
+
+    void update(int pos, const T &val) {
+        update(1, 0, n_ - 1, pos, val);
+    }
+
+    T query(int l, int r) {
+        return query(1, 0, n_ - 1, l, r);
+    }
+
+private:
+    void update(int node, int t_first, int t_last, int pos, const T &val) {
+        if (t_first == t_last) {
+            data_[node] = val;
+            return;
+        }
+        int t_mid = (t_first + t_last) / 2;
+        if (pos <= t_mid) {
+            update(2 * node, t_first, t_mid, pos, val);
+        } else {
+            update(2 * node + 1, t_mid + 1, t_last, pos, val);
+        }
+        data_[node] = {min(data_[2 * node].first, data_[2 * node + 1].first), max(data_[2 * node].second, data_[2 * node + 1].second)};
+    }
+
+    T query(int node, int t_first, int t_last, int l, int r) {
+        if (l <= t_first && t_last <= r) {
+            return data_[node];
+        }
+        int t_mid = (t_first + t_last) / 2;
+        if (r <= t_mid) {
+            return query(2 * node, t_first, t_mid, l, r);
+        }
+        if (t_mid < l) {
+            return query(2 * node + 1, t_mid + 1, t_last, l, r);
+        }
+        auto left = query(2 * node, t_first, t_mid, l, r);
+        auto right = query(2 * node + 1, t_mid + 1, t_last, l, r);
+        return {min(left.first, right.first), max(left.second, right.second)};
+    }
+};
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n, k;
+    cin >> n >> k;
+
+    vector<vector<int>> a(n, vector<int>(k));
+    for (auto &row : a) {
+        for (auto &val : row) {
+            cin >> val;
+        }
+    }
+
+    vector<seg_tree> trees(1 << k, seg_tree(n));
+    for (int mask = 0; mask < (1 << k); ++mask) {
+        for (int i = 0; i < n; ++i) {
+            int val = 0;
+            for (int j = 0; j < k; ++j) {
+                if (mask & (1 << j)) {
+                    val += a[i][j];
+                } else {
+                    val -= a[i][j];
+                }
+            }
+            trees[mask].update(i, {val, val});
+        }
+    }
+
+    int q;
+    cin >> q;
+    while (q--) {
+        int type;
+        cin >> type;
+        if (type == 1) {
+            int i;
+            cin >> i;
+            --i;
+            for (int j = 0; j < k; ++j) {
+                cin >> a[i][j];
+            }
+            for (int mask = 0; mask < (1 << k); ++mask) {
+                int val = 0;
+                for (int j = 0; j < k; ++j) {
+                    if (mask & (1 << j)) {
+                        val += a[i][j];
+                    } else {
+                        val -= a[i][j];
+                    }
+                }
+                trees[mask].update(i, {val, val});
+            }
+        } else {
+            int l, r;
+            cin >> l >> r;
+            --l, --r;
+            int ans = -INF;
+            for (int mask = 0; mask < (1 << k); ++mask) {
+                auto res = trees[mask].query(l, r);
+                ans = max(ans, res.second - res.first);
+            }
+            cout << ans << '\n';
+        }
+    }
+
+    return 0;
+}

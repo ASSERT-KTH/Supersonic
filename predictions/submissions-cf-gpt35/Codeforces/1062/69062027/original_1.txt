@@ -1,0 +1,142 @@
+```c++
+#include <bits/stdc++.h>
+using namespace std;
+#define int long long
+typedef long long ll;
+typedef vector<int> vi;
+typedef pair<int, int> pi;
+typedef vector<pi> vpi;
+
+const int MAXN = 100100;
+vector<vector<int>> adj;
+int n, a[MAXN], q;
+struct dat {
+  pair<int, int> mx;
+  pair<int, int> mn;
+} t[4 * MAXN];
+dat zero;
+dat combine(dat x, dat y) {
+  dat res;
+  if (a[x.mx.fs] > a[y.mx.fs]) {
+    res.mx.fs = x.mx.fs;
+    if (a[x.mx.sc] > a[y.mx.fs]) {
+      res.mx.sc = x.mx.sc;
+    } else {
+      res.mx.sc = y.mx.fs;
+    }
+  } else {
+    res.mx.fs = y.mx.fs;
+    if (a[x.mx.fs] > a[y.mx.sc]) {
+      res.mx.sc = x.mx.fs;
+    } else {
+      res.mx.sc = y.mx.sc;
+    }
+  }
+  if (a[x.mn.fs] < a[y.mn.fs]) {
+    res.mn.fs = x.mn.fs;
+    if (a[x.mn.sc] < a[y.mn.fs]) {
+      res.mn.sc = x.mn.sc;
+    } else {
+      res.mn.sc = y.mn.fs;
+    }
+  } else {
+    res.mn.fs = y.mn.fs;
+    if (a[x.mn.fs] < a[y.mn.sc]) {
+      res.mn.sc = x.mn.fs;
+    } else {
+      res.mn.sc = y.mn.sc;
+    }
+  }
+  return res;
+}
+void build(int v, int tl, int tr) {
+  if (tl == tr) {
+    t[v].mn = {tl, n + 1};
+    t[v].mx = {tl, n + 2};
+  } else {
+    int tm = (tl + tr) / 2;
+    build(2 * v, tl, tm);
+    build(2 * v + 1, tm + 1, tr);
+    t[v] = combine(t[2 * v], t[2 * v + 1]);
+  }
+}
+dat get(int v, int tl, int tr, int l, int r) {
+  if (l > r)
+    return zero;
+  if (l == tl && r == tr)
+    return t[v];
+  int tm = (tl + tr) / 2;
+  return combine(get(v * 2, tl, tm, l, min(r, tm)),
+                 get(v * 2 + 1, tm + 1, tr, max(l, tm + 1), r));
+}
+signed main() {
+  ios::sync_with_stdio(0);
+  cin.tie(0);
+  cout.tie(0);
+  cin >> n >> q;
+  zero.mx = {n + 2, n + 2};
+  zero.mn = {n + 1, n + 1};
+  adj.resize(n + 1);
+  for (int i = 1; i < n; i++) {
+    int x;
+    cin >> x;
+    adj[x - 1].push_back(i);
+  }
+  a[n + 1] = 1000000007;
+  a[n + 2] = 0;
+  vector<int> sub(n, 1), tin(n), tout(n), par(n, -1), head(n), dep(n);
+  function<int(int, int, int)> dfs1 = [&](int s, int p, int d) {
+    par[s] = p;
+    dep[s] = d;
+    adj[s].erase(remove(adj[s].begin(), adj[s].end(), p), adj[s].end());
+    for (auto &t : adj[s]) {
+      sub[s] += dfs1(t, s, d + 1);
+      if (sub[adj[s][0]] < sub[t])
+        swap(t, adj[s][0]);
+    }
+    return sub[s];
+  };
+  function<void(int, int)> dfs2 = [&](int s, int h) {
+    head[s] = h;
+    tin[s] = cnt++;
+    for (auto t : adj[s]) {
+      dfs2(t, t == adj[s][0] ? h : t);
+    }
+    tout[s] = cnt;
+  };
+  dfs1(0, -1, 0);
+  dfs2(0, 0);
+  for (int i = 0; i < n; i++) {
+    a[i] = tin[i];
+  }
+  build(1, 0, n - 1);
+  while (q--) {
+    int l, r;
+    cin >> l >> r;
+    l--;
+    r--;
+    if (r - l < 2) {
+      int ans = r, d = dep[l];
+      if (d < dep[r]) {
+        ans = l;
+        d = dep[r];
+      }
+      cout << ans + 1 << " " << d << endl;
+      continue;
+    }
+    dat cur = get(1, 0, n - 1, l, r);
+    int lc1 = l, lc2 = r;
+    while (head[lc1] != head[lc2]) {
+      if (dep[head[lc1]] > dep[head[lc2]])
+        swap(lc1, lc2);
+      lc2 = par[head[lc2]];
+    }
+    if (dep[lc1] > dep[lc2]) {
+      cout << cur.mn.fs + 1 << " " << dep[lc1] << endl;
+    } else {
+      cout << cur.mx.fs + 1 << " " << dep[lc2] << endl;
+    }
+  }
+  return 0;
+}
+```

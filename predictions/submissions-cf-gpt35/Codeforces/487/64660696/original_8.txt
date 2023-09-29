@@ -1,0 +1,114 @@
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+const int maxLig = (1e5) + 5;
+const int maxCol = 12;
+const int maxReq = (1e5) + 5;
+const int sqr = 600;
+
+struct Cell {
+    int nextLig;
+    int nextCol;
+};
+
+int nbLig, nbCol, nbReq;
+char grille[maxLig][maxCol];
+int proc[maxLig][maxCol];
+int tps = 0;
+Cell go[maxLig][maxCol];
+
+void comp(int lig, int col, int safeLig) {
+    if (proc[lig][col] == tps)
+        return;
+    proc[lig][col] = tps;
+    int nextLig = lig, nextCol = col;
+    if (grille[lig][col] == '<')
+        --nextCol;
+    else if (grille[lig][col] == '>')
+        ++nextCol;
+    else if (grille[lig][col] == '^')
+        --nextLig;
+    if (nextLig == safeLig || grille[nextLig][nextCol] == '~') {
+        go[lig][col] = {nextLig, nextCol};
+    } else if (grille[lig][col] != '^' && grille[lig][nextCol] != '^' &&
+               grille[lig][col] != grille[lig][nextCol]) {
+        go[lig][col] = {0, 0};
+    } else {
+        comp(nextLig, nextCol, safeLig);
+        go[lig][col] = go[nextLig][nextCol];
+    }
+}
+
+pair<int, int> getFin(int lig, int col) {
+    while (grille[lig][col] != '~') {
+        Cell e = go[lig][col];
+        lig = e.nextLig;
+        col = e.nextCol;
+    }
+    return {lig, col};
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    cin >> nbLig >> nbCol >> nbReq;
+
+    for (int lig = 1; lig <= nbLig; ++lig) {
+        for (int col = 1; col <= nbCol; ++col) {
+            cin >> grille[lig][col];
+        }
+    }
+
+    ++tps;
+
+    for (int lig = 1; lig <= nbLig; ++lig) {
+        for (int col = 1; col <= nbCol; ++col) {
+            comp(lig, col, 0);
+        }
+    }
+
+    vector<int> blocRef(nbLig + 1, 0);
+
+    for (int lig = 1; lig <= nbLig; ++lig) {
+        blocRef[lig] = (lig - 1) / sqr;
+    }
+
+    for (int req = 0; req < nbReq; ++req) {
+        char mode;
+        cin >> mode;
+        int lig, col;
+        cin >> lig >> col;
+
+        if (mode == 'A') {
+            pair<int, int> res = getFin(lig, col);
+            if (res == make_pair(0, 0))
+                res = make_pair(-1, -1);
+            cout << res.first << " " << res.second << "\n";
+        } else {
+            ++tps;
+            char nv;
+            cin >> nv;
+            grille[lig][col] = nv;
+            int bloc = blocRef[lig];
+            for (int l = max(1, bloc * sqr + 1); l <= min(nbLig, (bloc + 1) * sqr); ++l) {
+                for (int c = 1; c <= nbCol; ++c) {
+                    comp(l, c, bloc * sqr);
+                }
+            }
+            if (bloc > 0) {
+                for (int l = max(1, (bloc - 1) * sqr + 1); l <= min(nbLig, bloc * sqr); ++l) {
+                    for (int c = 1; c <= nbCol; ++c) {
+                        comp(l, c, (bloc - 1) * sqr);
+                    }
+                }
+            }
+        }
+    }
+
+    return 0;
+}
+```

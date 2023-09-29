@@ -1,0 +1,163 @@
+#include <bits/stdc++.h>
+using namespace std;
+constexpr int N = 5e4, M = 1e5, LOGN = 16;
+inline int &mini(int &lhs, int rhs) { return lhs = min(lhs, rhs); }
+class CT {
+public:
+  void create(int r, int t) {
+    yseed = (yseed ? yseed : rand()) * (RAND_MAX + 1u) + rand();
+    storage.push_back({r, yseed, t, {}, {}});
+    if (!add(root, storage.size() - 1)) {
+      storage.pop_back();
+    }
+  }
+  int mintlq(int r) const {
+    int res = M;
+    int pos = *root;
+    const CTVertex *a = storage.data();
+    while (pos != -1) {
+      if (a[pos].x > r) {
+        pos = *a[pos].l;
+      } else {
+        res = a[pos].t;
+        pos = *a[pos].r;
+      }
+    }
+    return res;
+  }
+
+private:
+  struct CTPtr {
+    unsigned pos;
+    CTPtr(unsigned pos = -1) : pos{pos} {}
+    unsigned operator*() const { return pos; }
+    operator bool() const { return pos != -1; }
+  };
+  struct CTVertex {
+    int x, y, t;
+    CTPtr l, r;
+  };
+  CTPtr root;
+  vector<CTVertex> storage;
+  static unsigned yseed;
+  const CTVertex &get(const CTPtr &ptr) const { return storage[*ptr]; }
+  CTVertex &get(const CTPtr &ptr) { return storage[*ptr]; }
+  bool add(CTPtr &t, CTPtr el) {
+    bool adding = 0;
+    CTPtr tt;
+    if (!t) {
+      t = el;
+      adding = 1;
+    } else if (get(t).y > get(el).y) {
+      tie(adding, tt) = split(t, get(el).x, get(el).l, get(el).r, get(el).t);
+      if (adding) {
+        t = el;
+        filterjoin(get(el).r, {}, get(el).r, get(el).t);
+      } else {
+        t = tt;
+      }
+    } else if (get(t).x > get(el).x) {
+      adding = add(get(t).l, el);
+      if (get(t).t > get(el).t) {
+        filterjoin(t, get(t).l, get(t).r, get(el).t);
+      }
+    } else if (get(t).x == get(el).x) {
+      mini(get(t).t, get(el).t);
+      filterjoin(get(t).r, {}, get(t).r, get(el).t);
+    } else if (get(t).t > get(el).t) {
+      adding = add(get(t).r, el);
+    }
+    return adding;
+  }
+  pair<bool, CTPtr> split(CTPtr t, int x, CTPtr &l, CTPtr &r, int tval) {
+    bool splitting = 0;
+    CTPtr tt;
+    if (!t) {
+      l = r = t;
+      splitting = 1;
+    } else if (get(t).x > x) {
+      tie(splitting, tt) = split(get(t).l, x, l, get(t).l, tval);
+      if (splitting) {
+        r = t;
+      } else {
+        get(t).l = tt;
+        if (get(t).t > tval) {
+          filterjoin(t, get(t).l, get(t).r, tval);
+        }
+      }
+    } else if (get(t).x == x) {
+      mini(get(t).t, tval);
+      filterjoin(get(t).r, {}, get(t).r, tval);
+    } else if (get(t).t > tval) {
+      tie(splitting, tt) = split(get(t).r, x, get(t).r, r, tval);
+      if (splitting) {
+        l = t;
+      } else {
+        get(t).r = tt;
+      }
+    }
+    return {splitting, t};
+  }
+  void filterjoin(CTPtr &t, CTPtr l, CTPtr r, int tval) {
+    while (r && get(r).t > tval) {
+      r = get(r).r;
+    }
+    if (!r) {
+      t = l;
+    } else if (!l || get(l).y > get(r).y) {
+      filterjoin(get(r).l, l, get(r).l, tval);
+      t = r;
+    } else {
+      filterjoin(get(l).r, get(l).r, r, tval);
+      t = l;
+    }
+  }
+};
+unsigned CT::yseed{};
+using interval = pair<int, int>;
+interval rent[M + 1];
+vector<int> by_length[N + 1];
+int ans[N + 1];
+CT ft[N];
+void add(int t) {
+  for (int i = N - rent[t].first - 1; i < N; i |= i + 1) {
+    ft[i].create(rent[t].second, t);
+  }
+}
+int query(int l, int r) {
+  int res = M;
+  for (int i = N - l; i > N - r; i &= i - 1) {
+    res = min(res, ft[i - 1].mintlq(r));
+  }
+  return res;
+}
+int main() {
+  cin.tie(0), ios_base::sync_with_stdio(0);
+  int n, m;
+  cin >> n >> m;
+  for (int i = 0; i < m; ++i) {
+    cin >> rent[i].first >> rent[i].second, --rent[i].first;
+    by_length[rent[i].second - rent[i].first].push_back(i);
+  }
+  queue<interval> for_rent;
+  for (int epoch = n; epoch; --epoch) {
+    for (int i : by_length[epoch]) {
+      add(i);
+    }
+    for_rent.emplace(0, n);
+    while (!for_rent.empty()) {
+      auto [l, r] = for_rent.front();
+      for_rent.pop();
+      int t = query(l, r);
+      if (t != M) {
+        ans[epoch] += rent[t].second - rent[t].first;
+        for_rent.emplace(l, rent[t].first);
+        for_rent.emplace(rent[t].second, r);
+      }
+    }
+  }
+  for (int rented = 1; rented <= n; ++rented) {
+    cout << ans[rented] << '\n';
+  }
+  return 0;
+}

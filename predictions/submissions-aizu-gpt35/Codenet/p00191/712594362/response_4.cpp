@@ -1,0 +1,55 @@
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <iostream>
+using namespace std;
+
+const int MAXN = 101;
+int n, m;
+double dp[MAXN][MAXN];
+double t[MAXN][MAXN];
+bool vis[MAXN];
+
+double solve(int times, int prev) {
+  if (dp[times][prev] != -1)
+    return dp[times][prev];
+  if (times == m)
+    return dp[times][prev] = 1;
+  double tmp = -1;
+  for (int i = 0; i < n; i++) {
+    if (times == 0) {
+      tmp = max(tmp, solve(times + 1, i) * 1);
+    } else {
+      if (!vis[i]) {
+        vis[i] = true;
+        tmp = max(tmp, solve(times + 1, i) * t[prev][i]);
+        vis[i] = false;
+      }
+    }
+  }
+  return dp[times][prev] = tmp;
+}
+
+int main(void) {
+  ios_base::sync_with_stdio(false);
+  cin.tie(nullptr);
+  cout.tie(nullptr);
+
+  while (cin >> n >> m) {
+    if (!(n | m))
+      break;
+    fill((double *)dp, (double *)dp + MAXN * MAXN, -1);
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        cin >> t[i][j];
+      }
+    }
+    double ans = 0.0;
+    for (int i = 0; i < n; i++) {
+      vis[i] = true;
+      ans = max(ans, solve(1, i) * t[i][0]);
+      vis[i] = false;
+    }
+    printf("%.2lf\n", ans);
+  }
+}

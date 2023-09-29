@@ -1,0 +1,24 @@
+#include <algorithm>
+#include <iostream>
+#include <stdio.h>
+using namespace std;
+
+int main() {
+  int a = 0, H[100], W[100];
+  while (1) {
+    cin >> H[a] >> W[a];
+    if (H[a] == 0 && W[a] == 0)
+      break;
+    a++;
+  }
+  for (int b = 0; b < a; b++) {
+    for (int i = 0; i < H[b]; i++) {
+      for (int j = 0; j < W[b]; j++) {
+        putchar('#');
+      }
+      putchar('\n');
+    }
+    putchar('\n');
+  }
+  return 0;
+}

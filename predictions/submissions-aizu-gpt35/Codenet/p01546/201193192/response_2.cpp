@@ -1,0 +1,145 @@
+#include <bits/stdc++.h>
+using namespace std;
+const int INF = 1e9 + 7;
+const int MAXN = 155;
+
+int V, K, E, dp[MAXN][MAXN], prv[MAXN][MAXN], dist[MAXN][MAXN];
+vector<vector<int>> adj;
+
+void restore(int step, int v) {
+    int c = step;
+    vector<int> path;
+    while (v != -1) {
+        path.push_back(v);
+        v = prv[c--][v];
+    }
+    reverse(path.begin(), path.end());
+    for (int i = 0; i < step + 1; ++i) cout << path[i] << (i < step ? " " : "\n");
+}
+
+bool shortPhase() {
+    memset(dp, -1, sizeof(dp));
+    memset(prv, -1, sizeof(prv));
+    for (int v = 0; v < V; ++v) dp[0][v] = 0;
+    int max_score = -1, step = -1, terminal = -1;
+    for (int i = 0; i < 150; ++i) {
+        for (int v = 0; v < V; ++v) {
+            if (dp[i][v] == -1) continue;
+            for (int j = 0; j < adj[v].size(); ++j) {
+                int to = adj[v][j];
+                if (dp[i + 1][to] < dp[i][v] + dist[v][to]) {
+                    dp[i + 1][to] = dp[i][v] + dist[v][to];
+                    prv[i + 1][to] = v;
+                    if (max_score < dp[i + 1][to]) {
+                        max_score = dp[i + 1][to];
+                        terminal = to;
+                    }
+                }
+            }
+        }
+        if (max_score >= K) {
+            step = i + 1;
+            break;
+        }
+    }
+    if (max_score >= K) {
+        cout << step << "\n";
+        restore(step, terminal);
+        return true;
+    }
+    if (max_score == -1) {
+        cout << -1 << "\n";
+        return true;
+    }
+    return false;
+}
+
+void calcDist() {
+    for (int i = 0; i < V; ++i) {
+        for (int j = 0; j < V; ++j) {
+            dist[i][j] = -1;
+        }
+    }
+    for (int i = 0; i < V; ++i) {
+        for (int j = 0; j < adj[i].size(); ++j) {
+            int to = adj[i][j];
+            dist[i][to] = max(dist[i][to], 0);
+        }
+    }
+    for (int k = 0; k < V; ++k) {
+        for (int i = 0; i < V; ++i) {
+            for (int j = 0; j < V; ++j) {
+                if (dist[i][k] >= 0 && dist[k][j] >= 0) {
+                    dist[i][j] = max(dist[i][j], dist[i][k] + dist[k][j]);
+                }
+            }
+        }
+    }
+}
+
+int calcMinStep() {
+    vector<vector<int>> tmp(V, vector<int>(V, INF));
+    for (int i = 0; i < V; ++i) {
+        for (int j = 0; j < adj[i].size(); ++j) {
+            int to = adj[i][j];
+            tmp[i][to] = max(dist[i][to], 0);
+        }
+    }
+    for (int k = 0; k < V; ++k) {
+        for (int i = 0; i < V; ++i) {
+            for (int j = 0; j < V; ++j) {
+                tmp[i][j] = min(tmp[i][j], tmp[i][k] + tmp[k][j]);
+            }
+        }
+    }
+    for (int i = 0; i < V; ++i) {
+        if (tmp[i][i] >= K) return 1;
+    }
+    for (int i = 0; i < V; ++i) {
+        for (int j = 0; j < adj[i].size(); ++j) {
+            int to = adj[i][j];
+            tmp[i][to] = max(dist[i][to], 0);
+        }
+    }
+    for (int k = 0; k < V; ++k) {
+        for (int i = 0; i < V; ++i) {
+            for (int j = 0; j < V; ++j) {
+                tmp[i][j] = min(tmp[i][j], tmp[i][k] + tmp[k][j]);
+            }
+        }
+    }
+    int ans = 2;
+    while (true) {
+        bool ok = true;
+        for (int i = 0; i < V; ++i) {
+            if (tmp[i][i] >= K * ans) {
+                ok = false;
+                break;
+            }
+        }
+        if (ok) break;
+        ++ans;
+    }
+    return ans;
+}
+
+void solve() {
+    if (!shortPhase()) {
+        calcDist();
+        int ans = calcMinStep();
+        cout << (ans > 1e6 ? -1 : ans) << "\n";
+    }
+}
+
+int main() {
+    ios::sync_with_stdio(false); cin.tie(nullptr);
+    cin >> V >> E >> K;
+    adj.resize(V);
+    for (int i = 0; i < E; ++i) {
+        int u, v, c;
+        cin >> u >> v >> c;
+        adj[u].push_back(v);
+    }
+    solve();
+    return 0;
+}

@@ -1,0 +1,73 @@
+#include <stdio.h>
+#include <algorithm>
+typedef struct {
+  char suit;
+  int value;
+} Card;
+void swap_Card(Card &x, Card &y) {
+  Card temp = x;
+  x = y;
+  y = temp;
+}
+void BubbleSort(Card A[], int N) {
+  bool flag = true;
+  for (int i = 0; flag; i++) {
+    flag = false;
+    for (int j = N - 1; j >= i + 1; j--) {
+      if (A[j].value < A[j - 1].value) {
+        std::swap(A[j], A[j - 1]);
+        flag = true;
+      }
+    }
+  }
+}
+void SelectionSort(Card A[], int N) {
+  for (int i = 0; i < N; i++) {
+    int minj = i;
+    for (int j = i; j < N; j++) {
+      if (A[j].value < A[minj].value) {
+        minj = j;
+      }
+    }
+    if (i != minj) {
+      std::swap(A[i], A[minj]);
+    }
+  }
+}
+int main() {
+  int N;
+  scanf("%d\n", &N);
+  Card BC[36];
+  Card SC[36];
+  for (int i = 0; i < N; i++) {
+    Card c;
+    scanf("%c%d ", &c.suit, &c.value);
+    BC[i] = c;
+    SC[i] = c;
+  }
+  BubbleSort(BC, N);
+  SelectionSort(SC, N);
+  for (int i = 0; i < N - 1; i++) {
+    printf("%c%d ", BC[i].suit, BC[i].value);
+  }
+  printf("%c%d\n", BC[N - 1].suit, BC[N - 1].value);
+  if (std::is_sorted(SC, SC + N, [](Card const &c1, Card const &c2) {
+        return c1.value < c2.value;
+      })) {
+    puts("Stable");
+  } else {
+    puts("Not stable");
+  }
+  for (int i = 0; i < N - 1; i++) {
+    printf("%c%d ", SC[i].suit, SC[i].value);
+  }
+  printf("%c%d\n", SC[N - 1].suit, SC[N - 1].value);
+  if (std::equal(BC, BC + N, SC, [](Card const &c1, Card const &c2) {
+        return c1.suit == c2.suit;
+      })) {
+    puts("Stable");
+  } else {
+    puts("Not stable");
+  }
+  return 0;
+}

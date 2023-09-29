@@ -1,0 +1,57 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+struct SegmentTree {
+    vector<int> seg, add;
+    int sz;
+    SegmentTree(int n) {
+        sz = 1;
+        while (sz < n) sz <<= 1;
+        seg.assign(sz << 1 | 1, 0), add.assign(sz << 1 | 1, 0);
+    }
+    void Add(int a, int b, int x, int k, int l, int r) {
+        if (a >= r || b <= l) return;
+        if (a <= l && r <= b) {
+            add[k] += x;
+            return;
+        }
+        Add(a, b, x, k << 1 | 1, l, (l + r) >> 1);
+        Add(a, b, x, k << 1 | 2, (l + r) >> 1, r);
+        seg[k] = seg[k << 1 | 1] + add[k << 1 | 1] + seg[k << 1 | 2] + add[k << 1 | 2];
+    }
+    int Query(int a, int b, int k, int l, int r) {
+        if (a >= r || b <= l) return 0;
+        if (a <= l && r <= b) return seg[k] + add[k];
+        return Query(a, b, k << 1 | 1, l, (l + r) >> 1) + Query(a, b, k << 1 | 2, (l + r) >> 1, r) + add[k];
+    }
+    void Add(int a, int b, int x) { Add(a, b, x, 0, 0, sz); }
+    int Query(int a, int b) { return Query(a, b, 0, 0, sz); }
+};
+
+const int MAXN = 1e5;
+
+int N, M, P[MAXN];
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(nullptr);
+    cin >> N >> M;
+    SegmentTree segtree(N);
+    for (int i = 0; i < M; i++) {
+        cin >> P[i];
+        --P[i];
+    }
+    for (int i = 1; i < M; i++) {
+        int u = min(P[i - 1], P[i]), v = max(P[i - 1], P[i]);
+        segtree.Add(u, v, 1);
+    }
+    long long ret = 0;
+    for (int i = 0; i < N - 1; i++) {
+        long long used = segtree.Query(i, i + 1);
+        int A, B, C;
+        cin >> A >> B >> C;
+        ret += min(used * A, C + used * B);
+    }
+    cout << ret << endl;
+    return 0;
+}

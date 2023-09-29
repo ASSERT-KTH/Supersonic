@@ -1,0 +1,130 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cmath>
+using namespace std;
+
+typedef long long ll;
+
+const double EPS = 1e-10;
+
+class P {
+public:
+  double x, y;
+  P(double _x = 0, double _y = 0) : x(_x), y(_y){};
+  P operator+(const P &p) const { return P(x + p.x, y + p.y); }
+  P operator-(const P &p) const { return P(x - p.x, y - p.y); }
+  P operator*(double k) const { return P(x * k, y * k); }
+  P operator/(double k) const { return P(x / k, y / k); }
+  bool operator==(const P &p) const {
+    return (fabs(x - p.x) < EPS && fabs(y - p.y) < EPS);
+  }
+  double norm() const { return x * x + y * y; }
+  double abs() const { return sqrt(norm()); }
+};
+
+double dot(const P& a, const P& b) { return a.x * b.x + a.y * b.y; }
+double cross(const P& a, const P& b) { return a.x * b.y - a.y * b.x; }
+
+enum ccw_t {
+    RIGHT = -1,
+    FRONT = 0,
+    LEFT = 1,
+    BACK = 2,
+    ON = 3
+};
+
+ccw_t ccw(const P& a, const P& b, const P& c) {
+    P ab = b - a;
+    P ac = c - a;
+    double cr = cross(ab, ac);
+    if (cr > EPS) return LEFT;
+    if (cr < -EPS) return RIGHT;
+    if (dot(ab, ac) < -EPS) return BACK;
+    if (ab.norm() < ac.norm() - EPS) return FRONT;
+    return ON;
+}
+
+bool orthogonal(const P& a, const P& b, const P& c, const P& d) {
+  return fabs(dot(a - b, c - d)) < EPS;
+}
+
+bool intersect(const P& a1, const P& a2, const P& b1, const P& b2) {
+  return (ccw(a1, a2, b1) * ccw(a1, a2, b2) <= 0 &&
+          ccw(b1, b2, a1) * ccw(b1, b2, a2) <= 0);
+}
+
+double distance_l_p(const P& a, const P& b, const P& p) {
+  return fabs(cross(b - a, p - a)) / (b - a).abs();
+}
+
+bool intersect_circle_point(const P& center, double r, const P& a, const P& b) {
+  return distance_l_p(a, b, center) <= r + EPS;
+}
+
+bool isSimple(const vector<P>& pol) {
+  int pol_size = pol.size() - 1;
+  for (int i = 0; i < pol_size; i++) {
+    for (int j = i + 2; j < pol_size; j++) {
+      if (i == j || i == (j - 1 + pol_size) % pol_size ||
+          i == (j + 1 + pol_size) % pol_size)
+        continue;
+      if (intersect(pol[i], pol[i + 1], pol[j], pol[j + 1]))
+        return false;
+    }
+  }
+  return true;
+}
+
+bool isPointInsidePolygon(const vector<P>& side, const P& p) {
+  int c = 0, sideSum = side.size();
+  for (int i = 0; i < sideSum; i++) {
+    if (cross(side[i + 1] - side[i], p - side[i]) > 0)
+      c++;
+  }
+  return !(c % sideSum);
+}
+
+#define MAX_N 100
+bool cmp_x(const P &p, const P &q) {
+  if (p.x != q.x)
+    return p.x < q.x;
+  return p.y < q.y;
+}
+
+vector<P> convex_hull(const P* ps, int n) {
+  vector<P> qs(n * 2);
+  int k = 0;
+
+  vector<int> idx(n);
+  iota(idx.begin(), idx.end(), 0);
+  sort(idx.begin(), idx.end(), [&](int i, int j) { return ps[i].x < ps[j].x; });
+
+  for (int i = 0; i < n; i++) {
+    while (k > 1 && cross((qs[k - 1] - qs[k - 2]), (ps[idx[i]] - qs[k - 1])) <= 0)
+      k--;
+    qs[k++] = ps[idx[i]];
+  }
+
+  for (int i = n - 2, t = k; i >= 0; i--) {
+    while (k > t && cross((qs[k - 1] - qs[k - 2]), (ps[idx[i]] - qs[k - 1])) <= 0)
+      k--;
+    qs[k++] = ps[idx[i]];
+  }
+
+  qs.resize(k - 1);
+  return qs;
+}
+
+int main() {
+  int N;
+  while (cin >> N && N) {
+    P ps[MAX_N];
+    for (int i = 0; i < N; i++) {
+      char ch;
+      cin >> ps[i].x >> ch >> ps[i].y;
+    }
+    vector<P> res = convex_hull(ps, N);
+    cout << N - res.size() << endl;
+  }
+}

@@ -1,0 +1,55 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cstring>
+
+constexpr int MaxN = 24;
+int n, x[MaxN], y[MaxN], r[MaxN], c[MaxN];
+int memo[1 << MaxN];
+bool ok[MaxN][1 << MaxN];
+
+inline int dist(int i, int j) {
+    int dx = x[i] - x[j];
+    int dy = y[i] - y[j];
+    return dx * dx + dy * dy;
+}
+
+void solve() {
+    for (int i = 0; i < n; ++i) {
+        for (int bit = 0; bit < (1 << n); ++bit) {
+            ok[i][bit] = true;
+            for (int j = 0; j < n; ++j) {
+                if (bit & (1 << j) && dist(i, j) < (r[i] + r[j]) * (r[i] + r[j])) {
+                    ok[i][bit] = false;
+                    break;
+                }
+            }
+        }
+    }
+    memset(memo, -1, sizeof(memo));
+    memo[0] = 0;
+    for (int bit = 1; bit < (1 << n); ++bit) {
+        for (int i = 0; i < n; ++i) {
+            if (bit & (1 << i) && ok[i][bit]) {
+                for (int j = 0; j < n; ++j) {
+                    if (i == j) continue;
+                    if (bit & (1 << j) && c[i] == c[j]) {
+                        int new_bit = bit ^ (1 << i) ^ (1 << j);
+                        memo[bit] = std::max(memo[bit], memo[new_bit] + 1);
+                    }
+                }
+            }
+        }
+    }
+    std::cout << n - memo[(1 << n) - 1] << std::endl;
+}
+
+int main() {
+    while (std::cin >> n && n) {
+        for (int i = 0; i < n; ++i) {
+            std::cin >> x[i] >> y[i] >> r[i] >> c[i];
+        }
+        solve();
+    }
+    return 0;
+}

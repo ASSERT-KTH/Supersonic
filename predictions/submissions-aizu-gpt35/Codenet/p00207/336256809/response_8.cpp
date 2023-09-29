@@ -1,0 +1,62 @@
+#include <iostream>
+#include <cstring>
+using namespace std;
+
+int C[102][102];
+
+void meiro(int W, int H, int c) {
+  if (C[W][H] != c) {
+    return;
+  }
+  C[W][H] = -1;
+  meiro(W - 1, H, c);
+  meiro(W, H + 1, c);
+  meiro(W + 1, H, c);
+  meiro(W, H - 1, c);
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  
+  while (1) {
+    int w, h;
+    cin >> w >> h;
+    if (w == 0 && h == 0) {
+      break;
+    }
+
+    memset(C, 10, sizeof(C));
+
+    int xs, ys, xg, yg;
+    cin >> xs >> ys >> xg >> yg;
+    int n;
+    cin >> n;
+    int c, d, x, y;
+    for (int i = 0; i < n; i++) {
+      cin >> c >> d >> x >> y;
+      if (d == 0) {
+        for (int j = x; j < x + 4; j++) {
+          for (int k = y; k < y + 2; k++) {
+            C[j][k] = c;
+          }
+        }
+      } else {
+        for (int j = x; j < x + 2; j++) {
+          for (int k = y; k < y + 4; k++) {
+            C[j][k] = c;
+          }
+        }
+      }
+    }
+
+    meiro(xs, ys, C[xs][ys]);
+
+    if (C[xg][yg] == -1) {
+      cout << "OK\n";
+    } else {
+      cout << "NG\n";
+    }
+  }
+  return 0;
+}

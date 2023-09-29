@@ -1,0 +1,73 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cmath>
+using namespace std;
+
+struct LowestCommonAncestor {
+  vector<vector<int>> parent;
+  vector<int> depth;
+  LowestCommonAncestor(const vector<vector<int>> &g, int root)
+      : parent(log2(g.size()) + 1, vector<int>(g.size())),
+        depth(g.size()) {
+    dfs(g, root, -1, 0);
+    
+    for (int k = 0; k + 1 < parent.size(); k++) {
+      for (int v = 0; v < g.size(); v++) {
+        if (parent[k][v] < 0)
+          parent[k + 1][v] = -1;
+        else
+          parent[k + 1][v] = parent[k][parent[k][v]];
+      }
+    }
+  }
+  void dfs(const vector<vector<int>> &g, int s, int p, int d) {
+    parent[0][s] = p;
+    depth[s] = d;
+    for (auto &e : g[s]) {
+      if (e == p)
+        continue;
+      dfs(g, e, s, d + 1);
+    }
+  }
+  int get(int u, int v) {
+    if (depth[u] > depth[v])
+      swap(u, v);
+    for (int k = 0; k < parent.size(); k++) {
+      if ((depth[v] - depth[u]) >> k & 1) {
+        v = parent[k][v];
+      }
+    }
+    if (u == v)
+      return u;
+    for (int k = parent.size() - 1; k >= 0; k--) {
+      if (parent[k][u] != parent[k][v]) {
+        u = parent[k][u];
+        v = parent[k][v];
+      }
+    }
+    return parent[0][u];
+  }
+};
+
+int main() {
+  int n;
+  cin >> n;
+  vector<vector<int>> g(n);
+  for(int i=0; i<n; i++) {
+    int k;
+    cin >> k;
+    g[i].resize(k);
+    for(int j=0; j<k; j++)
+      cin >> g[i][j];
+  }
+  int q;
+  cin >> q;
+  LowestCommonAncestor lca(g, 0);
+  for(int i=0; i<q; i++) {
+    int u, v;
+    cin >> u >> v;
+    cout << lca.get(u, v) << '\n';
+  }
+  return 0;
+}

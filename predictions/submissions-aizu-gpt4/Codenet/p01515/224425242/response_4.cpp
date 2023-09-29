@@ -1,0 +1,64 @@
+#include <iostream>
+#include <string>
+#include <vector>
+
+int mask;
+struct Parser {
+  typedef std::string::const_iterator State;
+
+  bool operator()(const std::string &S) {
+    State begin = S.begin();
+    return equation(begin);
+  }
+
+  private:
+    bool equation(State &begin) {
+      bool left = formula(begin);
+      bool right = formula(begin);
+      return left == right;
+    }
+
+    bool formula(State &begin) {
+      if (*begin == '(') {
+        bool left = formula(++begin);
+        bool right = formula(++begin);
+        return deduce(left, *begin, right);
+      } else if (*begin == '-') {
+        return !formula(++begin);
+      }
+      return boolean(begin);
+    }
+
+    bool deduce(bool x, char op, bool y) {
+      switch(op) {
+        case '*': return x && y;
+        case '+': return x || y;
+        default: return !x || y;
+      }
+    }
+
+    bool boolean(State &begin) {
+      switch(*begin) {
+        case 'T': return true;
+        case 'F': return false;
+        default: return (mask >> (*begin++ - 'a')) & 1;
+      }
+    }
+};
+
+int main() {
+  std::string S;
+  Parser ps;
+
+  while (std::cin >> S && S != "#") {
+    for (mask = 0; mask < (1 << 11); ++mask) {
+      if (!ps(S)) {
+        std::cout << "NO\n";
+        break;
+      }
+    }
+    if (mask == (1 << 11)) std::cout << "YES\n";
+  }
+
+  return 0;
+}

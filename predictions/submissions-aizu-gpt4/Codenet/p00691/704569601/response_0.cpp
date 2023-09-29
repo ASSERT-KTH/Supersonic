@@ -1,0 +1,18 @@
+#include <iostream>
+#include <cmath>
+#include <algorithm>
+using namespace std;
+typedef long long ll;
+
+int main() {
+  ll z;
+  while (cin >> z && z) {
+    ll ans = 0;
+    ll limit = cbrt(z * z * z);
+    for (ll x = 1; x <= limit; ++x)
+      for (ll y = x; y <= limit; ++y)
+        if (x * x * x + y * y * y <= z * z * z)
+          ans = max(ans, x * x * x + y * y * y);
+    cout << z * z * z - ans << endl;
+  }
+}

@@ -1,0 +1,64 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <algorithm>
+
+const int MAX_T = 3000, MAX_M = 300;
+
+using namespace std;
+
+struct State {
+	int position;
+	int cost;
+};
+
+bool operator<(const State& lhs, const State& rhs) {
+	return lhs.cost > rhs.cost;
+}
+
+int main() {
+	int M, start, goal;
+	cin >> M;
+	vector<int> dice(6);
+	for (int& d : dice)
+		cin >> d;
+	cin >> start >> goal;
+	start--, goal--;
+	vector<int> N(M);
+	for (int& n : N)
+		cin >> n;
+	vector<int> path(M, MAX_T + 1);
+	priority_queue<State> que;
+	que.push({ start, 0 });
+	while (!que.empty()) {
+		State cur = que.top(); que.pop();
+		if (cur.position == goal || cur.cost >= path[cur.position])
+			continue;
+		path[cur.position] = cur.cost;
+		for (int d : dice) {
+			if (cur.position + d < M)
+				que.push({ cur.position + d + N[cur.position + d], cur.cost + 1 });
+			if (cur.position - d >= 0)
+				que.push({ cur.position - d + N[cur.position - d], cur.cost + 1 });
+		}
+	}
+	int position = start;
+	for (int t = 0; t < MAX_T; t++) {
+		if (position == goal)
+			break;
+		int r;
+		cin >> r;
+		int d = dice[r - 1];
+		if (position + d < M && path[position] > path[position + d + N[position + d]]) {
+			position += d + N[position + d];
+			cout << 1 << endl;
+		}
+		else if (position - d >= 0 && path[position] > path[position - d + N[position - d]]) {
+			position -= d + N[position - d];
+			cout << -1 << endl;
+		}
+		else
+			cout << 0 << endl;
+	}
+	return 0;
+}

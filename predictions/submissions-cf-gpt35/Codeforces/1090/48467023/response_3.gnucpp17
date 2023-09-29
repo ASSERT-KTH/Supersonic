@@ -1,0 +1,161 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+const int N = 250 * 1000 + 555;
+const int M = 30 * 1000 * 1000 + 555;
+
+int n;
+pair<int, pair<int, int>> qs[N];
+int dead[N];
+int cnt = 0;
+int maxLen = -1;
+
+int nodes[M][4];
+int szn = 0;
+
+inline bool read() {
+  if (!(cin >> n))
+    return false;
+  for (int i = 0; i < n; i++) {
+    cin >> qs[i].first;
+    if (qs[i].first > 1)
+      cin >> qs[i].second.first;
+    if (qs[i].first == 5)
+      cin >> qs[i].second.second;
+  }
+  return true;
+}
+
+inline int getsum(int t, int len) {
+  if (nodes[t][1] != -1)
+    return len * nodes[t][1];
+  return nodes[t][0];
+}
+
+inline int push(int t) {
+  int pushed = nodes[t][1];
+  nodes[t][1] = -1;
+  return pushed;
+}
+
+void upd(int t, int l1, int l2) {
+  nodes[t][0] = getsum(nodes[t][2], l1) + getsum(nodes[t][3], l2);
+}
+
+int getNode(int sum, int sval, int l, int r) {
+  assert(szn < M);
+  nodes[szn][0] = sum;
+  nodes[szn][1] = sval;
+  nodes[szn][2] = l;
+  nodes[szn][3] = r;
+  return szn++;
+}
+
+int setVal(int t, int l, int r, int lf, int rg, int val, int pushed = -1) {
+  int nt =
+      t ? getNode(nodes[t][0], nodes[t][1], nodes[t][2], nodes[t][3]) : getNode(0, -1, 0, 0);
+  if (pushed != -1)
+    nodes[nt][1] = pushed;
+  if (l == lf && r == rg) {
+    nodes[nt][1] = val;
+    return nt;
+  }
+  int mid = (l + r) >> 1;
+  pushed = push(nt);
+  if (lf < mid)
+    nodes[nt][2] = setVal(nodes[nt][2], l, mid, lf, min(mid, rg), val, pushed);
+  else if (pushed != -1)
+    nodes[nt][2] = nodes[nt][2] ? getNode(nodes[nodes[nt][2]][0], pushed, nodes[nodes[nt][2]][2], nodes[nodes[nt][2]][3])
+                  : getNode(0, pushed, 0, 0);
+  if (rg > mid)
+    nodes[nt][3] = setVal(nodes[nt][3], mid, r, max(lf, mid), rg, val, pushed);
+  else if (pushed != -1)
+    nodes[nt][3] = nodes[nt][3] ? getNode(nodes[nodes[nt][3]][0], pushed, nodes[nodes[nt][3]][2], nodes[nodes[nt][3]][3])
+                  : getNode(0, pushed, 0, 0);
+  upd(nt, mid - l, r - mid);
+  return nt;
+}
+
+int getPos(int t, int l, int r, int lf, int rg) {
+  if (!t)
+    return -1;
+  if (l == lf && r == rg) {
+    if (l + 1 == r)
+      return getsum(t, 1) ? l : -1;
+    if (getsum(t, r - l) == 0)
+      return -1;
+  }
+  if (nodes[t][1] != -1)
+    return nodes[t][1] > 0 ? rg - 1 : -1;
+  int mid = (l + r) >> 1;
+  int ans = -1;
+  if (rg > mid && ans == -1)
+    ans = max(ans, getPos(nodes[t][3], mid, r, max(lf, mid), rg));
+  if (lf < mid && ans == -1)
+    ans = max(ans, getPos(nodes[t][2], l, mid, lf, min(mid, rg)));
+  return ans;
+}
+
+bool sub(pair<int, int> &p, int pw) {
+  if (pw >= p.first)
+    return true;
+  pw = p.first - pw - 1;
+  int pos = getPos(p.second, 0, maxLen, 0, pw + 1);
+  if (pos < 0)
+    return true;
+  int nt = setVal(p.second, 0, maxLen, pos, pos + 1, 0);
+  if (pos < pw)
+    nt = setVal(nt, 0, maxLen, pos + 1, pw + 1, 1);
+  p = {p.first, nt};
+  return getsum(nt, maxLen) == 0;
+}
+
+inline void solve() {
+  maxLen = n + 3;
+  for (int i = 0; i < n; i++) {
+    int tp = qs[i].first;
+    int a = qs[i].second.first, b = qs[i].second.second;
+    a--, b--;
+    if (tp == 1) {
+      int id = cnt++;
+      dead[id] = -2;
+      ps[id] = {0, getNode(0, -1, 0, 0)};
+      ps[id].second = setVal(ps[id].second, 0, maxLen, 0, 1, 1);
+    } else if (tp == 2) {
+      if (dead[a] < 0)
+        ps[a].first++;
+    } else if (tp == 3) {
+      if (dead[a] < 0) {
+        ps[a].second = setVal(ps[a].second, 0, maxLen, ps[a].second.first, ps[a].second.first + 1, 0);
+        ps[a].second.first++;
+      }
+    } else if (tp == 4) {
+      int id = cnt++;
+      dead[id] = -2;
+      ps[id] = ps[a];
+      if (dead[a] >= 0)
+        dead[id] = i;
+    } else {
+      if (dead[a] < 0 && dead[b] < 0) {
+        if (sub(ps[a].second, ps[b].first))
+          dead[a] = i;
+        if (sub(ps[b].second, ps[a].first))
+          dead[b] = i;
+      }
+    }
+  }
+  cout << cnt << endl;
+  for (int i = 0; i < cnt; i++)
+    cout << dead[i] + 1 << " ";
+  cout << endl;
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(0), cout.tie(0);
+  cout << fixed << setprecision(15);
+  if (read()) {
+    solve();
+  }
+  return 0;
+}

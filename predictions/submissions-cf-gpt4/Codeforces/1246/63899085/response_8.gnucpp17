@@ -1,0 +1,126 @@
+#include <cstdio>
+#include <map>
+#include <vector>
+using namespace std;
+
+typedef long long ll;
+
+ll gcd(ll a, ll b) {
+    return b == 0 ? a : gcd(b, a % b);
+}
+
+ll mod_mul(ll a, ll b, ll mod) {
+    ll ret = 0;
+    for (; b; b >>= 1, a = (2 * a) % mod)
+        if (b & 1)
+            ret = (ret + a) % mod;
+    return ret;
+}
+
+ll mod_pow(ll a, ll b, ll mod) {
+    ll ret = 1;
+    for (; b; b >>= 1, a = mod_mul(a, a, mod))
+        if (b & 1)
+            ret = mod_mul(ret, a, mod);
+    return ret;
+}
+
+bool isComposite(ll a, ll n, ll x, ll t) {
+    ll res = mod_pow(a, x, n), last = res;
+    for (ll i = 1; i <= t; i++) {
+        res = mod_mul(res, res, n);
+        if (res == 1 && last != 1 && last != n - 1)
+            return true;
+        last = res;
+    }
+    return res != 1;
+}
+
+bool isPrime(ll n) {
+    if (n <= 1 || (n > 2 && n % 2 == 0))
+        return false;
+    ll x = n - 1, t = 0;
+    while (!(x & 1))
+        x >>= 1, t++;
+    for (int i = 0; i < 12; i++) {
+        ll a = 2 + rand() % (n - 3);
+        if (isComposite(a, n, x, t))
+            return false;
+    }
+    return true;
+}
+
+ll rho(ll n) {
+    if (!(n & 1))
+        return 2;
+    ll x = 2, y = 2, d = 1;
+    ll c = rand() % (n - 1) + 1;
+    while (d == 1) {
+        x = (mod_mul(x, x, n) + c) % n;
+        y = (mod_mul(y, y, n) + c) % n;
+        y = (mod_mul(y, y, n) + c) % n;
+        if (y >= x)
+            d = gcd(y - x, n);
+        else
+            d = gcd(x - y, n);
+    }
+    return d == n ? rho(n) : d;
+}
+
+void factor(ll n, map<ll, int> &factors) {
+    if (n == 1)
+        return;
+    if (isPrime(n)) {
+        factors[n]++;
+        return;
+    }
+    ll factor = rho(n);
+    factor(factor, factors);
+    factor(n / factor, factors);
+}
+
+bool prime[100005];
+vector<ll> primes;
+
+void sieve() {
+    for (int i = 2; i <= 100000; i++) {
+        if (!prime[i]) {
+            primes.push_back(i);
+            for (int j = i + i; j <= 100000; j += i)
+                prime[j] = true;
+        }
+    }
+}
+
+int main() {
+    int n, k;
+    scanf("%d%d", &n, &k);
+    ll ans = 0;
+    if (k == 2) {
+        map<ll, ll> all;
+        sieve();
+        for (int i = 0; i < n; i++) {
+            int t;
+            scanf("%d", &t);
+            map<ll, int> factors;
+            for (auto x : primes) {
+                if (x > t)
+                    break;
+                while (t % x == 0) {
+                    factors[x]++;
+                    t /= x;
+                }
+            }
+            ll h = 1;
+            for (auto x : factors)
+                if (x.second & 1)
+                    h *= x.first;
+            all[h]++;
+        }
+        for (auto x : all) {
+            ans += (x.second * (x.second - 1)) / 2;
+        }
+    }
+    printf("%lld\n", ans);
+    return 0;
+}

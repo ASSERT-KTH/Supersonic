@@ -1,0 +1,71 @@
+#include <cstdio>
+#include <vector>
+#include <algorithm>
+#include <cstring>
+#include <queue>
+#define INF 0x3f3f3f3f
+
+using namespace std;
+
+const int MAXN = 50050;
+
+int N, M, s, t, u, v, d[MAXN], d1[MAXN], d2[MAXN], cnt[MAXN], cnt1[MAXN], cnt2[MAXN], w[MAXN], sum[MAXN];
+vector<int> G[MAXN], G1[MAXN], G2[MAXN];
+bool vis[MAXN];
+
+void spfa(int s, int* d, vector<int> G[MAXN]) {
+    queue<int> q;
+    memset(vis, 0, sizeof(vis));
+    memset(d, INF, sizeof(d));
+    d[s] = 0;
+    q.push(s);
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop();
+        vis[u] = false;
+        for (int i = 0; i < G[u].size(); i++) {
+            int v = G[u][i];
+            if (d[v] > d[u] + 1) {
+                d[v] = d[u] + 1;
+                if (!vis[v]) {
+                    vis[v] = true;
+                    q.push(v);
+                }
+            }
+        }
+    }
+}
+
+int main() {
+    scanf("%d%d%d%d", &N, &M, &s, &t);
+    s--, t--;
+    for (int i = 0; i < M; i++) {
+        scanf("%d%d", &u, &v);
+        u--, v--;
+        G[u].push_back(v);
+        G[v].push_back(u);
+    }
+    spfa(s, d1, G), spfa(t, d2, G);
+    int shortest = d1[t];
+    for (int u = 0; u < N; u++) {
+        for (int i = 0; i < G[u].size(); i++) {
+            int v = G[u][i];
+            if (d1[u] + d2[v] + 1 == shortest) {
+                G1[u].push_back(v);
+                G2[v].push_back(u);
+            }
+        }
+    }
+    spfa(s, d, G1);
+    for (int u = 0; u < N; u++) {
+        if (d[u] < INF) {
+            cnt1[d1[u]]++;
+            cnt2[d2[u]]++;
+        }
+    }
+    for (int i = 1; i < shortest; i++) {
+        sum[i] = sum[i - 1] + cnt1[i] * cnt2[shortest - i];
+    }
+    printf("%lld\n", sum[shortest - 1]);
+    return 0;
+}

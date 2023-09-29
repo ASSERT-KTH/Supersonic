@@ -1,0 +1,102 @@
+#include <bits/stdc++.h>
+using namespace std;
+using int64 = long long;
+const int MAXN = 1e5;
+const int MAXM = 2e5;
+int N, M, A[MAXM], B[MAXM], C[MAXM];
+int64 all, ans[MAXM], size[MAXN];
+int parent[MAXN];
+vector<int> tree[MAXN], g[MAXN];
+
+int find(int x) {
+  if (parent[x] == x) return x;
+  return parent[x] = find(parent[x]);
+}
+
+void unite(int x, int y) {
+  x = find(x), y = find(y);
+  if (x == y) return;
+  if (size[x] < size[y]) swap(x, y);
+  size[x] += size[y];
+  parent[y] = x;
+}
+
+void dfs(int node, int par, set<pair<int, int>>& component) {
+  for (auto& e : g[node]) {
+    component.emplace(e, node);
+  }
+
+  for (auto& child : tree[node]) {
+    if (child == par) continue;
+
+    set<pair<int, int>> child_component;
+    dfs(child, node, child_component);
+
+    if (!child_component.empty()) {
+      auto& u = component, &v = child_component;
+      if (!v.empty()) {
+        ans[v.begin()->second] = all;
+        ans[v.begin()->second] -= v.begin()->first;
+        ans[v.begin()->second] += u.begin()->first;
+      }
+      if (u.size() < v.size())
+        swap(u, v);
+      while (!v.empty()) {
+        auto p = v.begin();
+        if (u.count(*p))
+          u.erase(*p);
+        else
+          u.emplace(*p);
+        v.erase(p);
+      }
+    }
+  }
+}
+
+int main() {
+  scanf("%d %d", &N, &M);
+
+  for (int i = 0; i < M; i++) {
+    scanf("%d %d %d", &A[i], &B[i], &C[i]);
+    --A[i], --B[i];
+  }
+
+  vector<int> indices(M);
+  iota(indices.begin(), indices.end(), 0);
+  sort(indices.begin(), indices.end(), [&](int i, int j) {
+    return C[i] < C[j];
+  });
+
+  for (int i = 0; i < N; i++) {
+    parent[i] = i;
+    size[i] = 1;
+  }
+
+  for (auto& i : indices) {
+    if (find(A[i]) != find(B[i])) {
+      unite(A[i], B[i]);
+      all += C[i];
+      tree[A[i]].push_back(B[i]);
+      tree[B[i]].push_back(A[i]);
+    } else {
+      g[A[i]].push_back(C[i]);
+      g[B[i]].push_back(C[i]);
+    }
+  }
+
+  if (size[find(0)] != N) {
+    for (int i = 0; i < M; i++) {
+      puts("-1");
+    }
+    return 0;
+  }
+
+  set<pair<int, int>> component;
+  dfs(0, -1, component);
+
+  for (int i = 0; i < M; i++) {
+    printf("%lld\n", ans[i]);
+  }
+
+  return 0;
+}

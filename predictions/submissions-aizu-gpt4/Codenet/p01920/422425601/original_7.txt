@@ -1,0 +1,101 @@
+```C++
+#include <vector>
+#include <iostream>
+
+using i64 = int64_t;
+constexpr int bucket_size = 256;
+
+struct sqrt_decomp {
+  int length, bucket_num;
+  std::vector<std::vector<int>> buckets;
+  std::vector<int> update, bucket_sum;
+
+  sqrt_decomp(const std::vector<int> &x)
+      : length(x.size()),
+        bucket_num((x.size() + bucket_size - 1) / bucket_size),
+        buckets(bucket_num), update(bucket_num, 2), bucket_sum(bucket_num) {
+    for (int i = 0; i < x.size(); ++i) {
+      buckets[i / bucket_size].push_back(x[i]);
+      bucket_sum[i / bucket_size] += x[i];
+    }
+  }
+
+  int sum() {
+    int res = 0;
+    for (int i = 0; i < bucket_num; ++i) {
+      res += update[i] == 2 ? bucket_sum[i] : update[i] * buckets[i].size();
+    }
+    return res;
+  }
+
+  void query(int l, int r, int b) {
+    l = std::max(0, l);
+    r = std::min(length - 1, r);
+    int i = l, j = r;
+    for (; i <= j && i % bucket_size != 0; ++i)
+        update_bucket(i / bucket_size, i % bucket_size, b);
+    for (; i <= j && (j + 1) % bucket_size != 0; --j)
+        update_bucket(j / bucket_size, j % bucket_size, b);
+    for (; i <= j; i += bucket_size)
+        update[i / bucket_size] = b;
+  }
+
+  int at(int i) {
+    return update[i / bucket_size] < 2 ? update[i / bucket_size] : buckets[i / bucket_size][i % bucket_size];
+  }
+
+private:
+  void update_bucket(int bucket, int idx, int value) {
+    if (update[bucket] < 2) {
+      for (auto &a : buckets[bucket])
+        a = update[bucket];
+      bucket_sum[bucket] = update[bucket] * buckets[bucket].size();
+      update[bucket] = 2;
+    }
+    bucket_sum[bucket] += value - buckets[bucket][idx];
+    buckets[bucket][idx] = value;
+  }
+};
+
+int main() {
+  std::ios::sync_with_stdio(false);
+  std::cout.precision(10);
+  
+  int n, q;
+  std::string s;
+  
+  std::cin >> n >> s >> q;
+  
+  std::vector<int> x1(n), x2(n - 1);
+  
+  for (int i = 0; i < n; ++i) {
+    x1[i] = s[i] - '0';
+    if (i + 1 < n)
+      x2[i] = x1[i] * (s[i + 1] - '0');
+  }
+  
+  sqrt_decomp f(std::move(x1)), g(std::move(x2));
+  
+  for (int i = 0; i < q; ++i) {
+    int l, r, b;
+    std::cin >> l >> r >> b;
+    --l; --r;
+    
+    f.query(l, r, b);
+    if (b == 0)
+      g.query(l - 1, r, 0);
+    else {
+      int l_ = l, r_ = r - 1;
+      if (l > 0 && f.at(l - 1))
+        --l_;
+      if (r + 1 < n && f.at(r + 1))
+        ++r_;
+      g.query(l_, r_, 1);
+    }
+    
+    std::cout << f.sum() - g.sum() << '\n';
+  }
+  
+  return 0;
+}
+```

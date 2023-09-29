@@ -1,0 +1,25 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#define MAX_SIZE 1000
+
+int n, t[MAX_SIZE] = {0};
+
+int main(void) {
+    char i, temp;
+    while(scanf("%d", &n) != EOF) {
+        for (int j = 0; j < MAX_SIZE; ++j)
+            t[j] = 0;
+        for (; n--; ) {
+            scanf(" %c %c", &i, &temp);
+            t[i] = temp;
+        }
+        scanf("%d", &n);
+        for (; n--; ) {
+            scanf(" %c", &i);
+            putchar(t[i] ? t[i] : i);
+        }
+        puts("");
+    }
+    return 0;
+}

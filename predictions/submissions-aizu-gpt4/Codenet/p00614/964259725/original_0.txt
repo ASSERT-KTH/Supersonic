@@ -1,0 +1,73 @@
+```c++
+#include <iostream>
+#include <vector>
+#include <deque>
+#include <algorithm>
+using namespace std;
+using ll = long long;
+using pii = pair<int, int>;
+
+constexpr int C[6] = {1, 5, 10, 50, 100, 500};
+constexpr int T = 10000;
+constexpr int INF = 1e9;
+
+int P;
+int N[6];
+int dp[2][T];
+
+inline void chmin(int& a, int b) {
+    if (a > b) a = b;
+}
+
+inline int calc(int v) {
+  int ans = 0;
+  for (int i = 5; i >= 0; --i) {
+    ans += v / C[i];
+    v %= C[i];
+  }
+  return ans;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(0);
+
+    while (cin >> P) {
+        for (int i = 0; i < 6; ++i) cin >> N[i];
+        if (P == 0) break;
+        fill_n(*dp, 2 * T, INF);
+        int cnt = 0;
+        for (int i = 5; i >= 0; --i) {
+            while (P - C[i] >= 2500 && N[i]) {
+                ++cnt;
+                --N[i];
+                P -= C[i];
+            }
+            if (N[i]) break;
+        }
+        dp[0][0] = 0;
+        for (int i = 0; i < 6; ++i) {
+            fill_n(dp[(i + 1) & 1], T, INF);
+            for (int j = 0; j < C[i]; ++j) {
+                deque<pii> deq;
+                for (int k = j; k < T; k += C[i]) {
+                    int w = T - k / C[i];
+                    chmin(dp[(i + 1) & 1][k], dp[i & 1][k]);
+                    while (!deq.empty() && deq.front().second + C[i] * N[i] < k)
+                        deq.pop_front();
+                    if (!deq.empty())
+                        chmin(dp[(i + 1) & 1][k], deq.front().first - w);
+                    while (!deq.empty() && deq.back().first > dp[i & 1][k] + w)
+                        deq.pop_back();
+                    deq.push_back({dp[i & 1][k] + w, k});
+                }
+            }
+        }
+        int mi = INF;
+        for (int i = P; i < T; ++i) {
+            chmin(mi, dp[0][i] + calc(i - P));
+        }
+        cout << mi + cnt << '\n';
+    }
+}
+```

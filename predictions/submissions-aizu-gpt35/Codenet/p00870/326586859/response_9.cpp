@@ -1,0 +1,73 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+const int MAX_N = 12, MAX_M = 5000;
+
+int n, m, concatenated_len, ans;
+vector<string> e;
+string ts;
+int sum_len[1 << MAX_N];
+bool p[MAX_M][1 << MAX_N];
+vector<vector<int>> heads;
+
+void solve() {
+  cin >> n >> m;
+
+  e.resize(n);
+  concatenated_len = 0;
+  for (int i = 0; i < n; ++i) {
+    cin >> e[i];
+    concatenated_len += e[i].size();
+  }
+
+  ts.resize(m);
+  cin >> ts;
+
+  heads.resize(m);
+  fill_n((bool *)p, m * (1 << n), false);
+  for (int i = 0; i < m; ++i) {
+    for (int j = 0; j < n; ++j) {
+      if (i + e[j].size() > m || e[j] != ts.substr(i, e[j].size()))
+        continue;
+      p[i][1 << j] = true;
+      heads[i].push_back(j);
+    }
+  }
+
+  ans = 0;
+  for (int i = m - 1; i >= 0; --i) {
+    for (int j = 1; j < (1 << n); ++j) {
+      if (p[i][j] || i + sum_len[j] > m)
+        continue;
+      for (int k : heads[i]) {
+        if ((j >> k) & 1) {
+          int i2 = i + e[k].size();
+          if (p[i2][j & (~(1 << k))]) {
+            p[i][j] = true;
+            break;
+          }
+        }
+      }
+    }
+    if (p[i][(1 << n) - 1])
+      ++ans;
+  }
+
+  cout << ans << endl;
+  e.clear(); // Freeing memory for the next test case
+}
+
+int main() {
+  cin.tie(nullptr);
+  ios::sync_with_stdio(false);
+  cout.setf(ios::fixed);
+  cout.precision(10);
+
+  while (true) {
+    solve();
+    if (n == 0 && m == 0)
+      break;
+  }
+
+  return 0;
+}

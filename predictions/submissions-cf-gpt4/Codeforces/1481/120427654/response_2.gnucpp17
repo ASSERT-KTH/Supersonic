@@ -1,0 +1,150 @@
+#include <iostream>
+#include <vector>
+#include <map>
+
+#define BLOCK 518
+#define NMAX 100001
+
+using namespace std;
+typedef long long ll;
+
+int dp[BLOCK][NMAX];
+int cnt[NMAX];
+vector<int> lvl[NMAX];
+vector<int> v[NMAX];
+vector<int> levelecu[NMAX];
+map<int, int> mp;
+map<int, int> l;
+int depth;
+char cul[NMAX];
+int cc[NMAX];
+
+void DFS(int node, int p, int level) {
+  lvl[level].push_back(node);
+  depth = max(depth, level);
+  for (auto x : v[node]) {
+    if (x != p)
+      DFS(x, node, level + 1);
+  }
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+
+  int n, x, i;
+  cin >> n >> x;
+  int a = x;
+  int b = n - x;
+
+  v[1].reserve(n);
+  for (i = 2; i <= n; i++) {
+    cin >> x;
+    v[x].push_back(i);
+    v[i].push_back(x);
+    cnt[i] = v[i].size() - 1;
+  }
+  cnt[1] = v[1].size();
+
+  DFS(1, 0, 1);
+
+  dp[0][0] = 1;
+  int c = 0;
+  for (i = 1; i <= n; i++) {
+    if (!lvl[i].empty()) {
+      levelecu[lvl[i].size()].push_back(i);
+      mp[lvl[i].size()]++;
+    }
+    if (mp.find(i) != mp.end()) {
+      ++c;
+      cc[c] = i;
+      int val = i;
+      int freq = mp[i];
+      for (int j = 0; j < val; j++) {
+        l[j] = -1;
+      }
+      for (int j = 0; j <= a; j++) {
+        if (dp[c - 1][j])
+          l[j % val] = j;
+        int rest = j % val;
+        if (l[rest] != -1 && (j - l[rest]) / val <= freq) {
+          dp[c][j] = 1;
+        }
+      }
+    }
+  }
+  if (dp[c][a]) {
+    vector<int> sol, alvl;
+    int cant = a;
+    while (c > 0) {
+      pair<int, int> r = {cc[c], 0};
+      c--;
+      while (!dp[c][cant]) {
+        cant -= r.first;
+        r.second++;
+      }
+      while (r.second--)
+        sol.push_back(r.first);
+    }
+    for (auto x : sol) {
+      alvl.push_back(levelecu[x].back());
+      levelecu[x].pop_back();
+    }
+    for (auto x : alvl) {
+      for (auto y : lvl[x]) {
+        cul[y] = 'a';
+      }
+    }
+    cout << depth << "\n";
+    for (int i = 1; i <= n; i++) {
+      cout << (cul[i] != 'a' ? 'b' : 'a');
+    }
+    return 0;
+  }
+
+  for (int i = 1; i <= n; i++) {
+    if (!lvl[i].empty()) {
+      int sz = lvl[i].size();
+      if (sz <= a) {
+        a -= sz;
+        for (auto x : lvl[i])
+          cul[x] = 'a';
+      } else if (sz <= b) {
+        b -= sz;
+        for (auto x : lvl[i])
+          cul[x] = 'b';
+      } else if (a >= b) {
+        for (auto x : lvl[i]) {
+          if (a && cnt[x] > 0) {
+            cul[x] = 'a';
+            a--;
+          }
+        }
+        for (auto x : lvl[i]) {
+          if (b && cul[x] != 'b') {
+            cul[x] = 'b';
+            b--;
+          }
+        }
+      } else {
+        for (auto x : lvl[i]) {
+          if (b && cnt[x] > 0) {
+            cul[x] = 'b';
+            b--;
+          }
+        }
+        for (auto x : lvl[i]) {
+          if (a && cul[x] != 'a') {
+            cul[x] = 'a';
+            a--;
+          }
+        }
+      }
+    }
+  }
+  cout << depth + 1 << "\n";
+  for (int i = 1; i <= n; i++) {
+    cout << cul[i];
+  }
+  return 0;
+}

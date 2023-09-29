@@ -1,0 +1,29 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+int solve(vector<string> &s, int &y, int x) {
+  if (isdigit(s[y][x]))
+    return s[y++][x] - '0';
+  char op = s[y][x];
+  ++y, ++x;
+  int term_sum = 0, term_product = 1;
+  while (y < s.size() && x < s[y].size()) {
+    int term = solve(s, y, x);
+    term_sum += term;
+    term_product *= term;
+  }
+  return (op == '+') ? term_sum : term_product;
+}
+
+int main(void) {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+  int n;
+  while (cin >> n, n) {
+    vector<string> s(n);
+    for(auto& str : s) cin >> str;
+    int y = 0;
+    cout << solve(s, y, 0) << '\n';
+  }
+  return 0;
+}

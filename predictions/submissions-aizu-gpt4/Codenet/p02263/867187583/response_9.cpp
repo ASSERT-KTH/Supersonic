@@ -1,0 +1,49 @@
+#include <iostream>
+#include <vector>
+#include <cstdlib>
+
+class Stack {
+public:
+    Stack(int n) : s_(n), top_(-1) {}
+    bool isEmpty() { return top_ == -1; }
+    bool isFull() { return top_ == s_.size() - 1; }
+    void push(int x) {
+        if (!isFull()) {
+            s_[++top_] = x;
+        }
+    }
+    int pop() {
+        return isEmpty() ? -1 : s_[top_--];
+    }
+
+private:
+    std::vector<int> s_;
+    int top_;
+};
+
+int main() {
+    std::ios::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+
+    std::string s;
+    Stack stack(110);
+    while (std::cin >> s) {
+        if (s[0] == '+') {
+            int rhs = stack.pop();
+            int lhs = stack.pop();
+            stack.push(lhs + rhs);
+        } else if (s[0] == '-') {
+            int rhs = stack.pop();
+            int lhs = stack.pop();
+            stack.push(lhs - rhs);
+        } else if (s[0] == '*') {
+            int rhs = stack.pop();
+            int lhs = stack.pop();
+            stack.push(lhs * rhs);
+        } else {
+            stack.push(std::stoi(s));
+        }
+    }
+    std::cout << stack.pop() << '\n';
+    return 0;
+}

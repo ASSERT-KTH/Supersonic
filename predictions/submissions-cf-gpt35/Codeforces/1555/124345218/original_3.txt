@@ -1,0 +1,120 @@
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+const int MAX_N = 1e5 + 5;
+int sgtree[4 * MAX_N];
+int lazy[4 * MAX_N];
+int n, m;
+vector<array<int, 3>> ve;
+
+void build(int node, int st, int en) {
+    if (st == en) {
+        sgtree[node] = 0;
+        lazy[node] = 0;
+        return;
+    }
+    int mid = (st + en) / 2;
+    build(2 * node, st, mid);
+    build(2 * node + 1, mid + 1, en);
+    sgtree[node] = min(sgtree[2 * node], sgtree[2 * node + 1]);
+    lazy[node] = 0;
+}
+
+void update(int node, int st, int en, int rngst, int rngen, int value) {
+    if (lazy[node] != 0) {
+        sgtree[node] += lazy[node];
+        if (st != en) {
+            lazy[2 * node] += lazy[node];
+            lazy[2 * node + 1] += lazy[node];
+        }
+        lazy[node] = 0;
+    }
+    if (st > rngen || en < rngst) {
+        return;
+    }
+    if (st >= rngst && en <= rngen) {
+        sgtree[node] += value;
+        if (st != en) {
+            lazy[2 * node] += value;
+            lazy[2 * node + 1] += value;
+        }
+        return;
+    }
+    int mid = (st + en) / 2;
+    update(2 * node, st, mid, rngst, rngen, value);
+    update(2 * node + 1, mid + 1, en, rngst, rngen, value);
+    sgtree[node] = min(sgtree[2 * node], sgtree[2 * node + 1]);
+}
+
+int query(int node, int st, int en, int rngst, int rngen) {
+    if (lazy[node] != 0) {
+        sgtree[node] += lazy[node];
+        if (st != en) {
+            lazy[2 * node] += lazy[node];
+            lazy[2 * node + 1] += lazy[node];
+        }
+        lazy[node] = 0;
+    }
+    if (st > rngen || en < rngst) {
+        return INT_MAX;
+    }
+    if (st >= rngst && en <= rngen) {
+        return sgtree[node];
+    }
+    int mid = (st + en) / 2;
+    int left = query(2 * node, st, mid, rngst, rngen);
+    int right = query(2 * node + 1, mid + 1, en, rngst, rngen);
+    return min(left, right);
+}
+
+void solve() {
+    cin >> n >> m;
+    if (m == 2) {
+        cout << "0\n";
+        return;
+    }
+    ve.resize(n);
+    for (int i = 0; i < n; i++) {
+        int l, r, w;
+        cin >> l >> r >> w;
+        if (l == 1 && r == m) {
+            cout << "0\n";
+            return;
+        }
+        ve[i] = { w, l, r - 1 };
+    }
+    sort(ve.begin(), ve.end());
+    build(1, 1, m - 1);
+    int i = 0, j = -1, ans = INT_MAX;
+    while (j < (int)ve.size() - 1) {
+        if (query(1, 1, m - 1, 1, m - 1) > 0) {
+            update(1, 1, m - 1, ve[i][1], ve[i][2], -1);
+            ans = min(ans, ve[j][0] - ve[i][0]);
+            i++;
+        }
+        else {
+            j++;
+            update(1, 1, m - 1, ve[j][1], ve[j][2], 1);
+        }
+    }
+    while (query(1, 1, m - 1, 1, m - 1) > 0) {
+        update(1, 1, m - 1, ve[i][1], ve[i][2], -1);
+        ans = min(ans, ve[j][0] - ve[i][0]);
+        i++;
+    }
+    cout << ans << '\n';
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    int t = 1;
+    while (t--) {
+        solve();
+    }
+    return 0;
+}
+```

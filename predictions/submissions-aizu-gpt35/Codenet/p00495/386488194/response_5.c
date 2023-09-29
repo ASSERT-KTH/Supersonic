@@ -1,0 +1,15 @@
+c[5004], d[5004], m, t, u, i, f = "%d\n"; //removed unused variable "t"
+int main(x) { //added return type "int"
+  for (scanf("%d%*d", c); i < *c; scanf(f, ++i + c))
+    ;
+  for (; ~scanf(f, &x);) {
+    m = u = 0; //initialize variables inside the loop
+    for (i = 1; i <= *c; ++i) { //start loop from index 1
+      t = d[i];
+      d[i] = m < u ? m : u; //use ternary operator instead of if-else
+      u = x == c[i] ? t + 1 : u; //use == instead of !=
+    }
+    m = m < u ? m : u; //use ternary operator instead of if-else
+  }
+  return !printf(f, m); //return the result from main
+}

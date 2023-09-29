@@ -1,0 +1,64 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+inline int payment(const vector<int> &p) {
+    return 10 * p[0] + 50 * p[1] + 100 * p[2] + 500 * p[3];
+}
+inline vector<int> charge(int m) {
+    vector<int> ans(4);
+    for (int i = 3; i >= 0; --i) {
+        int div = pow(10, i);
+        ans[i] = m / div;
+        m %= div;
+    }
+    return ans;
+}
+inline bool judge(const vector<int> &f, const vector<int> &ch) {
+    for (int i = 0; i < 4; ++i)
+        if (f[i] == 1 && ch[i] > 0)
+            return false;
+    return true;
+}
+int main() {
+    ios_base::sync_with_stdio(false); cin.tie(nullptr);
+    int N;
+    cin >> N;
+    vector<int> denominations {10, 50, 100, 500};
+    while (N) {
+        vector<int> c(4), pay(4), ans(4), f(4);
+        int sum = 0, mini = 1e9;
+        for (int &i : c) {
+            cin >> i;
+            sum += i;
+        }
+        for (pay[0] = 0; pay[0] <= c[0]; ++pay[0]) {
+            f[0] = pay[0] > 0;
+            for (pay[1] = 0; pay[1] <= c[1]; ++pay[1]) {
+                f[1] = pay[1] > 0;
+                for (pay[2] = 0; pay[2] <= c[2]; ++pay[2]) {
+                    f[2] = pay[2] > 0;
+                    for (pay[3] = 0; pay[3] <= c[3]; ++pay[3]) {
+                        f[3] = pay[3] > 0;
+                        int m_pay = payment(pay),
+                            n_pay = accumulate(pay.begin(), pay.end(), 0);
+                        if (m_pay >= N) {
+                            vector<int> ch = charge(m_pay - N);
+                            int n_charge = accumulate(ch.begin(), ch.end(), 0);
+                            if (mini > sum - n_pay + n_charge && judge(f, ch)) {
+                                ans = pay;
+                                mini = sum - n_pay + n_charge;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        for (int i = 0; i < 4; ++i)
+            if (ans[i] > 0)
+                cout << denominations[i] << ' ' << ans[i] << '\n';
+        cin >> N;
+        if (N)
+            cout << '\n';
+    }
+}

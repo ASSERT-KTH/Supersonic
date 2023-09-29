@@ -1,0 +1,106 @@
+```c++
+#include <iostream>
+#include <random>
+#include <vector>
+using namespace std;
+
+class Treap {
+    struct Node {
+        int value, priority, size;
+        Node *left, *right;
+        Node(int v)
+            : value(v), priority(random_device()()), size(1),
+              left(nullptr), right(nullptr) {}
+    };
+
+    Node *root = nullptr;
+
+    int size(Node *t) const { return t ? t->size : 0; }
+
+    Node *update(Node *t) {
+        t->size = size(t->left) + size(t->right) + 1;
+        return t;
+    }
+
+    Node *merge(Node *l, Node *r) {
+        if (!l || !r) return l ? l : r;
+        if (l->priority > r->priority) {
+            l->right = merge(l->right, r);
+            return update(l);
+        } else {
+            r->left = merge(l, r->left);
+            return update(r);
+        }
+    }
+
+    pair<Node *, Node *> split(Node *t, int k) {
+        if (!t) return {nullptr, nullptr};
+        if (k <= size(t->left)) {
+            auto s = split(t->left, k);
+            t->left = s.second;
+            return {s.first, update(t)};
+        } else {
+            auto s = split(t->right, k - size(t->left) - 1);
+            t->right = s.first;
+            return {update(t), s.second};
+        }
+    }
+
+    Node *insert(Node *t, int k, int val) {
+        auto s = split(t, k);
+        t = merge(s.first, new Node(val));
+        return merge(t, s.second);
+    }
+
+    Node *erase(Node *t, int k) {
+        auto s1 = split(t, k + 1);
+        auto s2 = split(s1.first, k);
+        return merge(s2.first, s1.second);
+    }
+
+public:
+    void insert(int k, int v) { root = insert(root, k, v); }
+
+    void erase(int k) { root = erase(root, k); }
+
+    int findKth(int k) const {
+        Node *t = root;
+        while (t) {
+            int c = size(t->left);
+            if (k < c)
+                t = t->left;
+            else if (k == c)
+                return t->value;
+            else {
+                k -= c + 1;
+                t = t->right;
+            }
+        }
+        return -1;
+    }
+};
+
+int main() {
+    int n, q;
+    cin >> n >> q;
+    Treap treap;
+    for (int i = 0; i < n; ++i) {
+        int a;
+        cin >> a;
+        treap.insert(i, a);
+    }
+
+    while (q--) {
+        int op, x, y;
+        cin >> op >> x >> y;
+        if (op == 0) {
+            int val = treap.findKth(x);
+            treap.erase(x);
+            treap.insert(y, val);
+        } else {
+            treap.erase(x);
+            treap.insert(x, y);
+        }
+    }
+}
+```

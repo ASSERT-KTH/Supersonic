@@ -1,0 +1,32 @@
+#include <iostream>
+#include <unordered_map>
+#include <string>
+
+using namespace std;
+
+typedef long long ll;
+unordered_map<string, bool> dic;
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+
+  int n;
+  cin >> n;
+
+  string op, str;
+
+  for (int i = 0; i < n; ++i) {
+    cin >> op >> str;
+    if (op[0] == 'i') {
+      dic[str] = true;
+    } else if (op[0] == 'f') {
+      if (dic[str]) {
+        cout << "yes\n";
+      } else {
+        cout << "no\n";
+      }
+    }
+  }
+  return 0;
+}

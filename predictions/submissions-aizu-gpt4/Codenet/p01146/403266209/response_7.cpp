@@ -1,0 +1,49 @@
+#include <iostream>
+#include <set>
+#include <vector>
+
+constexpr int INF = 1e9;
+#define r(i, n) for (int i = 0; i < n; i++)
+
+struct Graph {
+    int n;
+    std::vector<std::vector<int>> adj;
+    Graph(int n) : n(n), adj(n, std::vector<int>(n, INF)) {}
+    void add_edge(int u, int v, int w) {
+        adj[u][v] = std::min(adj[u][v], w);
+        adj[v][u] = std::min(adj[v][u], w);
+    }
+    void floyd_warshall() {
+        r(k, n) r(i, n) r(j, n) adj[i][j] = std::min(adj[i][j], adj[i][k] + adj[k][j]);
+    }
+};
+
+int main() {
+    std::ios::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+    int n, m, l, k, a, h;
+    while (std::cin >> n >> m >> l >> k >> a >> h && n) {
+        std::set<int> rei;
+        rei.insert(a); rei.insert(h);
+        Graph x(n), b(n);
+        r(i, l) {
+            int re; std::cin >> re; 
+            rei.insert(re);
+        }
+        r(i, k) {
+            int t1, t2, t3; 
+            std::cin >> t1 >> t2 >> t3;
+            b.add_edge(t1, t2, t3);
+        }
+        b.floyd_warshall();
+        r(i, n) if (rei.count(i)) r(j, n) if (rei.count(j)) if (b.adj[i][j] <= m)
+            x.adj[i][j] = b.adj[i][j];
+        x.floyd_warshall();
+        if (x.adj[a][h] < INF) {
+            std::cout << (x.adj[a][h] < m ? x.adj[a][h] : x.adj[a][h] * 2 - m) << '\n';
+        } else {
+            std::cout << "Help!\n";
+        }
+    }
+    return 0;
+}

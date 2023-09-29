@@ -1,0 +1,35 @@
+#include <iostream>
+#include <vector>
+#include <cmath>
+
+using namespace std;
+
+int main(void) {
+  int n = 51000;
+  vector<bool> isPrime(n + 1, true);
+  isPrime[0] = isPrime[1] = false;
+
+  for (int i = 2; i <= sqrt(n); ++i) {
+    if (isPrime[i]) {
+      for (int j = i * i; j <= n; j += i) {
+        isPrime[j] = false;
+      }
+    }
+  }
+  
+  vector<int> primes;
+  for (int i = 2; i <= n; ++i) {
+    if (isPrime[i]) primes.push_back(i);
+  }
+
+  int m;
+  while (cin >> m && m != 0) {
+    int count = 0;
+    for (int i = 0; i < primes.size() && primes[i] <= m / 2; ++i) {
+      if (isPrime[m - primes[i]]) ++count;
+    }
+    cout << count << endl;
+  }
+
+  return 0;
+}

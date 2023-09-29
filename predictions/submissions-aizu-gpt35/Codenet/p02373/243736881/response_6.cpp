@@ -1,0 +1,81 @@
+#include <algorithm>
+#include <cassert>
+#include <iostream>
+#include <queue>
+#include <vector>
+using namespace std;
+
+#define rep(i, n) for (int i = 0; i < (int)(n); i++)
+const int B = 200;
+int color[100010], par[100010], depth[100010];
+int top[100010];
+int goUp[100010];
+bool vis[100010];
+int n;
+vector<vector<int>> g;
+vector<int> tord;
+int c = 0;
+
+void dfs(int v, int p) {
+    vis[v] = true;
+    par[v] = p;
+    depth[v] = depth[p] + 1;
+    tord.push_back(v);
+    for (int c : g[v]) {
+        if (!vis[c]) {
+            dfs(c, v);
+        }
+    }
+}
+
+void decomp(int root) {
+  tord.clear();
+  dfs(root, root);
+  int n = tord.size();
+  int num_blocks = (n + B - 1) / B;
+  c = 0;
+  rep(i, n) color[tord[i]] = -1;
+  rep(i, num_blocks) {
+    int l = i * B, r = min(n, l + B);
+    for (int j = l; j < r; j++) {
+      color[tord[j]] = c;
+      top[tord[j]] = tord[l];
+      goUp[tord[j]] = ((j == l) ? par[tord[l]] : goUp[tord[j - 1]]);
+    }
+    c++;
+  }
+}
+
+int solve(int u, int v) {
+  while (color[u] != color[v]) {
+    if (depth[top[u]] > depth[top[v]]) swap(u, v);
+    v = goUp[top[v]];
+  }
+  while (u != v) {
+    if (depth[u] > depth[v]) swap(u, v);
+    v = par[v];
+  }
+  return u;
+}
+
+int main() {
+  cin >> n;
+  g.resize(n);
+  rep(i, n) {
+    int k;
+    cin >> k;
+    rep(j, k) {
+      int c;
+      cin >> c;
+      g[i].push_back(c);
+    }
+  }
+  decomp(0);
+  int q;
+  cin >> q;
+  rep(i, q) {
+    int u, v;
+    cin >> u >> v;
+    cout << solve(u, v) << endl;
+  }
+}

@@ -1,0 +1,62 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+const int N = 10005;
+int d[N][N];
+
+int damerau_levenshtein_distance(const string &a, const string &b,
+                                 const int alphabet_size) {
+  int maxdist = a.size() + b.size();
+  for (int i = 0; i <= a.size(); ++i) {
+    d[i][0] = i;
+  }
+  for (int i = 0; i <= b.size(); ++i) {
+    d[0][i] = i;
+  }
+  for (int i = 1; i <= a.size(); ++i) {
+    for (int j = 1; j <= b.size(); ++j) {
+      int cost = (a[i - 1] == b[j - 1]) ? 0 : 1;
+      d[i][j] = min({d[i - 1][j - 1] + cost, d[i][j - 1] + 1, d[i - 1][j] + 1});
+      if (i > 1 && j > 1 && a[i - 1] == b[j - 2] && a[i - 2] == b[j - 1]) {
+        d[i][j] = min(d[i][j], d[i - 2][j - 2] + cost);
+      }
+    }
+  }
+  return d[a.size()][b.size()];
+}
+
+void solve(int n) {
+  int d;
+  vector<string> name(n);
+  cin >> d;
+  for (int i = 0; i < n; ++i) {
+    cin >> name[i];
+  }
+  sort(name.begin(), name.end());
+  int count = 0;
+  for (int i = 0; i < n; ++i) {
+    for (int j = i + 1; j < n; ++j) {
+      if (damerau_levenshtein_distance(name[i], name[j], 26) > d) {
+        continue;
+      }
+      ++count;
+      cout << name[i] << "," << name[j] << endl;
+    }
+  }
+  cout << count << endl;
+}
+
+int main() {
+  cin.tie(0);
+  ios::sync_with_stdio(false);
+  cout << fixed << setprecision(10);
+  for (;;) {
+    int n;
+    cin >> n;
+    if (!n) {
+      break;
+    }
+    solve(n);
+  }
+  return 0;
+}

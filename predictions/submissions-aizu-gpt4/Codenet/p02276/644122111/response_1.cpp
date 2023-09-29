@@ -1,0 +1,36 @@
+#include <iostream>
+#include <algorithm>
+#include <vector>
+using namespace std;
+
+void print_partition_ints(const vector<int>& as, const size_t q) {
+    for (size_t i = 0; i < as.size(); ++i) {
+        if (i > 0) cout << " ";
+        if (i == q) cout << "[" << as[i] << "]";
+        else cout << as[i];
+    }
+    cout << "\n";
+}
+
+size_t partition(vector<int>& as) {
+    int pivot = as.back();
+    size_t i = 0;
+    for (size_t j = 0; j < as.size(); j++) {
+        if (as[j] <= pivot) {
+            swap(as[i], as[j]);
+            i++;
+        }
+    }
+    return i - 1;
+}
+
+int main() {
+    size_t n;
+    cin >> n;
+    vector<int> as(n);
+    for (size_t i = 0; i < n; ++i) {
+        cin >> as[i];
+    }
+    size_t q = partition(as);
+    print_partition_ints(as, q);
+}

@@ -1,0 +1,30 @@
+#include <iostream>
+#include <algorithm>
+#include <vector>
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n;
+    cin >> n;
+    int min = 2000000;
+    vector<int> A(10001,0);
+    for (int i = 0; i < n; ++i) {
+        int t;
+        cin >> t;
+        if (t < min) {
+            min = t;
+        }
+        ++A[t];
+    }
+    cout << min;
+    --A[min];
+    for (int i = min; i < 10001; ++i) {
+        for (int j = 0; j < A[i]; ++j) {
+            cout << ' ' << i;
+        }
+    }
+    cout << endl;
+    return 0;
+}

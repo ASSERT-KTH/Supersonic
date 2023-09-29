@@ -1,0 +1,84 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#define M 100010
+#define N 5000010
+using namespace std;
+
+vector<int> e[N], escc[N], ops[N];
+int nscc, idscc[N], dfn[N], lowlink[N], clo, stk[N], top, dp[N];
+bool instk[N], vis[N], open[M][55];
+int n, m, d;
+
+inline void dn(int &x, int y) {
+    if (y < x)
+        x = y;
+}
+
+inline int id(int u, int t) { 
+    return (u - 1) * d + t; 
+}
+
+void dfscc(int k) {
+    dfn[k] = lowlink[k] = ++clo;
+    instk[stk[top++] = k] = true;
+    for (auto &p : e[k]) {
+        if (!dfn[p])
+            dfscc(p), dn(lowlink[k], lowlink[p]);
+        else if (instk[p])
+            dn(lowlink[k], dfn[p]);
+    }
+    if (lowlink[k] == dfn[k]) {
+        ++nscc;
+        do {
+            instk[stk[--top]] = false;
+            idscc[stk[top]] = nscc;
+        } while (stk[top] != k);
+    }
+}
+
+void getSCC(int n) {
+    for (int k = 1; k <= n; ++k)
+        if (!dfn[k])
+            dfscc(k);
+    for (int k = 1; k <= n; ++k)
+        for (auto &p : e[k])
+            if (idscc[k] != idscc[p])
+                escc[idscc[k]].push_back(idscc[p]);
+}
+
+int dfsdp(int k) {
+    if (vis[k])
+        return dp[k];
+    for (auto p : escc[k])
+        dp[k] = max(dp[k], dfsdp(p));
+    dp[k] += ops[k].size();
+    vis[k] = 1;
+    return dp[k];
+}
+
+int main() {
+    scanf("%d%d%d", &n, &m, &d);
+    for (int i = 1; i <= m; ++i) {
+        int u, v;
+        scanf("%d%d", &u, &v);
+        for (int j = 1; j <= d; ++j)
+            e[id(u, j)].push_back(id(v, j % d + 1));
+    }
+    for (int i = 1; i <= n; ++i)
+        for (int j = 1; j <= d; ++j)
+            open[i][j] = getchar() - '0';
+    getSCC(n * d);
+    for (int i = 1; i <= n; ++i) {
+        int tmp[55];
+        for (int j = 1; j <= d; ++j)
+            if (open[i][j])
+                tmp[j] = idscc[id(i, j)];
+        sort(tmp + 1, tmp + d + 1);
+        for (int j = 1; j <= d; ++j)
+            if (j == 1 || tmp[j] != tmp[j - 1])
+                ops[tmp[j]].push_back(i);
+    }
+    printf("%d", dfsdp(idscc[id(1, 1)]));
+    return 0;
+}

@@ -1,0 +1,62 @@
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+const int MAXN = 800005;
+ll a[MAXN], seg_tree[MAXN * 4];
+void build_tree(int tree_index, int strt_i, int end_i) {
+    if (strt_i == end_i) {
+        seg_tree[tree_index] = a[strt_i];
+        return;
+    }
+    int mid = strt_i + ((end_i - strt_i) / 2);
+    build_tree(tree_index << 1, strt_i, mid);
+    build_tree((tree_index << 1) | 1, mid + 1, end_i);
+    seg_tree[tree_index] = __gcd(seg_tree[tree_index << 1], seg_tree[(tree_index << 1) | 1]);
+}
+ll query(int tree_index, int strt_i, int end_i, int q_strt, int q_end) {
+    if (strt_i > q_end || end_i < q_strt)
+        return 0;
+    if (q_strt <= strt_i && q_end >= end_i)
+        return seg_tree[tree_index];
+    int mid = strt_i + ((end_i - strt_i) / 2);
+    return __gcd(query(tree_index << 1, strt_i, mid, q_strt, q_end),
+                 query((tree_index << 1) | 1, mid + 1, end_i, q_strt, q_end));
+}
+void solve() {
+    int n;
+    cin >> n;
+    for (int i = 1; i <= n; ++i) {
+        cin >> a[i];
+        a[i + n] = a[i];
+    }
+    build_tree(1, 1, 2 * n);
+    ll ans = 0, g = 0;
+    for (int i = 1; i <= n; ++i) g = __gcd(g, a[i]);
+    for (int i = 1; i <= n; ++i) {
+        if (a[i] == g)
+            continue;
+        int r = 2 * n, l = i + 1, cnt = 0;
+        ll temp = 1e18;
+        while (l <= r) {
+            int mid = l + ((r - l) / 2);
+            ll x = query(1, 1, 2 * n, l, mid);
+            ll y = __gcd(x, a[i]);
+            if (y == g)
+                temp = min(temp, (ll)mid - l + 1 + cnt), r = mid - 1;
+            else
+                a[i] = __gcd(a[i], x), cnt += mid - l + 1, l = mid + 1;
+        }
+        ans = max(ans, temp);
+    }
+    cout << ans << "\n";
+}
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(NULL);
+    int t;
+    cin >> t;
+    while (t--) {
+        solve();
+    }
+    return 0;
+}

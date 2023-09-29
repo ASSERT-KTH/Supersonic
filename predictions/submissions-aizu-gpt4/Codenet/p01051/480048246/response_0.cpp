@@ -1,0 +1,66 @@
+#define _CRT_SECURE_NO_WARNINGS
+#include <algorithm>
+#include <cstdio>
+#include <functional>
+#include <queue>
+#include <utility>
+#include <vector>
+struct Edge { int to, cost; };
+typedef std::pair<int, int> P;
+constexpr int kMaxSize = 32, kMaxField = kMaxSize * kMaxSize, kCostFriendlyInk = 1, kCostShot = 2, kCostBlank = 2, kShotRange = 3, kInf = 1 << 16;
+constexpr char kWall = '#', kFriend = 'o', kEnemy = 'x', kStart = 'S', kGoal = 'G', kBlank = '.';
+char field[kMaxField];
+int way[4] = {-1, 1, -kMaxSize, kMaxSize};
+int d[kMaxField], R, C;
+std::vector<Edge> cost[kMaxField];
+inline int xy2pos(const int x, const int y) { return x + y * kMaxSize; }
+void initCost() {
+  for (int y = 1; y <= R; ++y) {
+    for (int x = 1; x <= C; ++x) {
+      int pos = xy2pos(x, y);
+      if (field[pos] == kWall) continue;
+      for (int i = 0; i < 4; ++i) {
+        for (int j = 1; j <= kShotRange; ++j) {
+          int newpos = pos + j * way[i];
+          if (field[newpos] == kWall) break;
+          int newcost = (j == 1) ? ((field[newpos] == kFriend) ? kCostFriendlyInk : ((field[newpos] == kEnemy) ? kCostShot + kCostFriendlyInk : kCostBlank))
+                                 : ((field[newpos] == kFriend) ? std::min(kCostShot + kCostFriendlyInk * j, cost[pos].back().cost + kCostFriendlyInk)
+                                                                : ((field[newpos] == kEnemy) ? kCostShot + kCostFriendlyInk * j : std::min(kCostShot + kCostFriendlyInk * j, cost[pos].back().cost + kCostBlank)));
+          cost[pos].push_back({newpos, newcost});
+        }
+      }
+    }
+  }
+}
+void dijkstra(int spos) {
+  std::priority_queue<P, std::vector<P>, std::greater<P>> q;
+  std::fill(d, d + kMaxField, kInf);
+  d[spos] = 0;
+  q.push(P(0, spos));
+  while (!q.empty()) {
+    P p = q.top(); q.pop();
+    if (d[p.second] < p.first) continue;
+    for (Edge &e : cost[p.second]) {
+      if (d[e.to] > d[p.second] + e.cost) {
+        d[e.to] = d[p.second] + e.cost;
+        q.push(P(d[e.to], e.to));
+      }
+    }
+  }
+}
+int main() {
+  int start, goal;
+  std::fill(field, field + kMaxField, kWall);
+  std::scanf("%d %d", &R, &C);
+  for (int y = 1; y <= R; ++y)
+    for (int x = 1; x <= C; ++x) {
+      int pos = xy2pos(x, y);
+      std::scanf(" %c", &field[pos]);
+      if (field[pos] == kStart) start = pos;
+      else if (field[pos] == kGoal) goal = pos;
+    }
+  initCost();
+  dijkstra(start);
+  printf("%d\n", d[goal]);
+  return 0;
+}

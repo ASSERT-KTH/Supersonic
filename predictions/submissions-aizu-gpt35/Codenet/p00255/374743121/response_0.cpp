@@ -1,0 +1,22 @@
+#include <algorithm>
+#include <iostream>
+using namespace std;
+int main() {
+  long long i, n, j[99999], s, a;
+  while (cin >> n) {
+    if (!n)
+      break;
+    for (i = s = 0; i++ < n; s += a)
+      cin >> a;
+    for (i = n; i > 1; cin >> j[--i])
+      ;
+    sort(j + 1, j + n);
+    a = 0;
+    for (i = 1; i <= n; i++) {
+      s += j[i];
+      a = max(a, s * i);
+    }
+    cout << a << endl;
+  }
+  return 0;
+}

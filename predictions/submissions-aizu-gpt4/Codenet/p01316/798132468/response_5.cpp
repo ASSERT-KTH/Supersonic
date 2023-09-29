@@ -1,0 +1,31 @@
+#include <iostream>
+#include <algorithm>
+using namespace std;
+
+const int INF = 100000000;
+int dp[20001][256];
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+
+  int n, m;
+  while (cin >> n >> m, n) {
+    int b[m];
+    int a[n + 1];
+    for (int i = 0; i < m; i++) cin >> b[i];
+    for (int i = 0; i < n; i++) cin >> a[i + 1];
+    fill(&dp[0][0], &dp[0][0] + sizeof(dp) / sizeof(int), INF);
+    dp[0][128] = 0;
+    for (int i = 0; i < n; i++) 
+        for (int j = 0; j < 256; j++) 
+            if (dp[i][j] != INF) 
+                for (int k = 0; k < m; k++) {
+                  int p = min(max(j + b[k], 0), 255);
+                  dp[i + 1][p] = min(dp[i + 1][p], dp[i][j] + (a[i + 1] - p) * (a[i + 1] - p));
+                }
+    int p = *min_element(dp[n], dp[n] + 256);
+    cout << p << "\n";
+  }
+  return 0;
+}

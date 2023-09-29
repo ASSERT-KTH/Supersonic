@@ -1,0 +1,68 @@
+#include <iostream>
+#include <deque>
+#include <vector>
+
+#define int long long
+#define rep(i, n) for (int i = 0; i < (n); i++)
+
+using namespace std;
+
+int C[6] = {1, 5, 10, 50, 100, 500};
+int P;
+int N[6];
+const int T = 10000;
+int dp[2][T];
+
+int calc(int v) {
+  int ans = 0;
+  for (int i = 5; i >= 0; i--) {
+    ans += v / C[i];
+    v %= C[i];
+  }
+  return ans;
+}
+
+signed main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(0);
+
+  while (cin >> P) {
+    rep(i, 6) cin >> N[i];
+    if (P == 0) break;
+
+    fill_n(*dp, 2 * T, 1e9+7);
+    int cnt = 0;
+
+    for (int i = 5; i >= 0; i--) {
+      while (P - C[i] >= 2500 && N[i]) {
+        cnt++;
+        N[i]--;
+        P -= C[i];
+      }
+      if (N[i]) break;
+    }
+
+    dp[0][0] = 0;
+    rep(i, 6) {
+      int prev = i & 1;
+      int curr = (i + 1) & 1;
+
+      rep(j, C[i]) {
+        deque<pair<int, int>> deq;
+        for (int k = j; k < T; k += C[i]) {
+          int w = T - k / C[i];
+          dp[curr][k] = min(dp[curr][k], dp[prev][k]);
+          while (!deq.empty() && deq.front().second + C[i] * N[i] < k) deq.pop_front();
+          if (!deq.empty()) dp[curr][k] = min(dp[curr][k], deq.front().first - w);
+          deq.push_back(make_pair(dp[prev][k] + w, k));
+        }
+      }
+      if (i != 5) fill_n(dp[prev], T, 1e9+7);
+    }
+
+    int mi = 1e9+7;
+    for (int i = P; i < T; i++) mi = min(mi, dp[0][i] + calc(i - P));
+    cout << mi + cnt << '\n';
+  }
+  return 0;
+}

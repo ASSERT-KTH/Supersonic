@@ -1,0 +1,55 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+#define MAX_PACKET 100000
+
+int num_packet;
+int num_track;
+std::vector<int> weight(MAX_PACKET);
+
+bool canAlloc(long capacity) {
+  long long total = 0;
+  int track_id = 0;
+  for (int i = 0; i < num_packet; i++) {
+    if (total + weight[i] > capacity) {
+      total = weight[i];
+      track_id++;
+      if(track_id >= num_track)
+        return false;
+    } else {
+      total += weight[i];
+    }
+  }
+  return true;
+}
+
+int main(void) {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(NULL);
+  
+  std::cin >> num_packet >> num_track;
+  
+  long long sum_weight = 0;
+  int max_weight = 0;
+  
+  for (int i = 0; i < num_packet; i++) {
+    std::cin >> weight[i];
+    max_weight = std::max(max_weight, weight[i]);
+    sum_weight += weight[i];
+  }
+
+  long long low = max_weight;
+  long long high = sum_weight;
+  while (low < high) {
+    long long mid = low + (high - low) / 2;
+    if (canAlloc(mid)) {
+      high = mid;
+    } else {
+      low = mid + 1;
+    }
+  }
+
+  std::cout << low << "\n";
+  return 0;
+}

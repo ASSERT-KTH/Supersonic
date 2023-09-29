@@ -1,0 +1,61 @@
+#include <algorithm>
+#include <cstdio>
+#include <vector>
+#include <queue>
+using uint = unsigned int;
+using pii = std::pair<int, int>;
+
+class Graph {
+  const uint n_;
+  std::vector<std::vector<pii>> adj_;
+  const uint INFINIT;
+
+public:
+  Graph(uint n)
+      : n_(n), adj_(n), INFINIT(100000 * (n_ - 1) + 1) {
+  }
+  void addEdge(uint u, uint v, uint w) {
+    adj_[u].push_back({v, w});
+  }
+  void dijkstra(std::vector<uint>& dist) {
+    dist.assign(n_, INFINIT);
+    std::vector<bool> visited(n_, false);
+    std::priority_queue<pii, std::vector<pii>, std::greater<pii>> pq;
+    dist[0] = 0;
+    pq.push({0, 0});
+    while(!pq.empty()) {
+      int u = pq.top().second;
+      pq.pop();
+      if (visited[u])
+        continue;
+      visited[u] = true;
+      for(auto &edge : adj_[u]) {
+        uint v = edge.first;
+        uint w = edge.second;
+        if (dist[u] + w < dist[v]) {
+          dist[v] = dist[u] + w;
+          pq.push({dist[v], v});
+        }
+      }
+    }
+  }
+};
+
+int main() {
+  uint n;
+  std::scanf("%u", &n);
+  Graph g(n);
+  uint u, k, c, v;
+  for (auto i = 0u; i < n; ++i) {
+    std::scanf("%u %u", &u, &k);
+    while(k--) {
+      std::scanf("%u %u", &c, &v);
+      g.addEdge(u, c, v);
+    }
+  }
+  std::vector<uint> dist;
+  g.dijkstra(dist);
+  for (auto i = 0u; i < n; ++i) {
+    std::printf("%u %u\n", i, dist[i]);
+  }
+}

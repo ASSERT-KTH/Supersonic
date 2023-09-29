@@ -1,0 +1,106 @@
+```cpp
+#include <cstdio>
+#include <vector>
+#include <cmath>
+#include <algorithm>
+#include <cassert>
+using namespace std;
+class Point {
+public:
+  double x, y;
+  Point(double x = 0, double y = 0) : x(x), y(y) {}
+  Point operator+(Point p) { return Point(x + p.x, y + p.y); }
+  Point operator-(Point p) { return Point(x - p.x, y - p.y); }
+  Point operator*(double a) { return Point(a * x, a * y); }
+  Point operator/(double a) { return Point(x / a, y / a); }
+  bool operator<(const Point &p) const {
+    return x != p.x ? x < p.x : y < p.y;
+  }
+  bool operator==(const Point &p) const {
+    return x == p.x && y == p.y;
+  }
+};
+struct Segment {
+  Point p1, p2;
+  Segment(Point p1 = Point(), Point p2 = Point()) : p1(p1), p2(p2) {}
+  bool operator<(const Segment &s) const {
+    return (p2 == s.p2) ? p1 < s.p1 : p2 < s.p2;
+  }
+};
+typedef Point Vector;
+typedef Segment Line;
+typedef vector<Point> Polygon;
+double dot(Point a, Point b) { return a.x * b.x + a.y * b.y; }
+double cross(Point a, Point b) { return a.x * b.y - a.y * b.x; }
+double norm(Point a) { return a.x * a.x + a.y * a.y; }
+double abs(Point a) { return sqrt(norm(a)); }
+Point rotate(Point a, double rad) {
+  return Point(cos(rad) * a.x - sin(rad) * a.y, sin(rad) * a.x + cos(rad) * a.y);
+}
+double toRad(double agl) { return agl * M_PI / 180.0; }
+double getArg(Point a, Point b, Point c) {
+  double arg1 = atan2(b.y - a.y, b.x - a.x);
+  double arg2 = atan2(c.y - b.y, c.x - b.x);
+  double arg = fabs(arg1 - arg2);
+  while (arg > M_PI) arg -= 2.0 * M_PI;
+  return fabs(arg);
+}
+bool intersectSS(Line s, Line t) {
+  return cross(s.p2 - s.p1, t.p1 - s.p1) * cross(s.p2 - s.p1, t.p2 - s.p1) <= 0 &&
+         cross(t.p2 - t.p1, s.p1 - t.p1) * cross(t.p2 - t.p1, s.p2 - t.p1) <= 0;
+}
+Point crosspoint(Line l, Line m) {
+  double A = cross(l.p2 - l.p1, m.p2 - m.p1);
+  double B = cross(l.p2 - l.p1, l.p2 - m.p1);
+  if (abs(A) < EPS && abs(B) < EPS) {
+    vector<Point> v = {l.p1, l.p2, m.p1, m.p2};
+    sort(v.begin(), v.end());
+    assert(v[1] == v[2]);
+    return v[1];
+  }
+  if (abs(A) < EPS) assert(false);
+  return m.p1 + (m.p2 - m.p1) * (B / A);
+}
+const string MANY = "Many";
+const string NONE = "None";
+void compute(vector<Line> &vec) {
+  if (vec.size() <= 2) {
+    printf("%s\n", MANY.c_str());
+    return;
+  }
+  vector<Point> cp;
+  for (int i = 0; i < vec.size(); ++i) {
+    for (int j = i + 1; j < vec.size(); ++j) {
+      if (intersectSS(vec[i], vec[j])) cp.push_back(crosspoint(vec[i], vec[j]));
+    }
+  }
+  sort(cp.begin(), cp.end());
+  cp.erase(unique(cp.begin(), cp.end()), cp.end());
+  for (int i = 0; i < cp.size(); ++i) {
+    double d = abs(vec[0].p2 - cp[i]);
+    bool ok = true;
+    for (int j = 1; j < vec.size(); ++j) {
+      if (abs(abs(vec[j].p2 - cp[i]) - d) > EPS) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok) {
+      printf("%.10f %.10f\n", cp[i].x, cp[i].y);
+      return;
+    }
+  }
+  printf("%s\n", NONE.c_str());
+}
+int main() {
+  int n;
+  while (scanf("%d", &n), n) {
+    vector<Line> vec(n);
+    for (int i = 0; i < n; ++i) {
+      scanf("%lf%lf%lf%lf", &vec[i].p1.x, &vec[i].p1.y, &vec[i].p2.x, &vec[i].p2.y);
+    }
+    compute(vec);
+  }
+  return 0;
+}
+```

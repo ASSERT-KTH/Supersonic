@@ -1,0 +1,18 @@
+#include <iostream>
+#include <string>
+auto main() -> int {
+  int h, w;
+  std::string row;
+  for (;;) {
+    std::cin >> h >> w;
+    if (h == 0 && w == 0) {
+      break;
+    }
+    row.assign(w, '#');
+    for (int y = 0; y < h; ++y) {
+      std::cout << row << '\n';
+    }
+    std::cout << std::endl;
+  }
+  return 0;
+}

@@ -1,0 +1,123 @@
+```C++
+#include <bits/stdc++.h>
+#define ll long long int
+
+using namespace std;
+
+const int N = 1e5 + 5;
+const int LOG = 20;
+ll lca[N][LOG + 1], ans[N];
+ll depth[N];
+vector<ll> graph[N], centroidTree[N];
+ll parent[N], subtree[N];
+ll n, q;
+ll total;
+
+void computeLCA(ll source, ll parent) {
+    depth[source] = depth[parent] + 1;
+    lca[source][0] = parent;
+    for (ll i = 1; i <= LOG; i++)
+        if (lca[source][i - 1] != -1)
+            lca[source][i] = lca[lca[source][i - 1]][i - 1];
+    for (ll child : graph[source])
+        if (child != parent)
+            computeLCA(child, source);
+}
+
+ll getLCA(ll a, ll b) {
+    if (depth[a] < depth[b])
+        swap(a, b);
+    for (ll i = LOG; i >= 0; i--)
+        if (depth[a] - (1 << i) >= depth[b])
+            a = lca[a][i];
+    if (a == b)
+        return a;
+    for (ll i = LOG; i >= 0; i--)
+        if (lca[a][i] != lca[b][i])
+            a = lca[a][i], b = lca[b][i];
+    return lca[a][0];
+}
+
+ll dist(ll a, ll b) {
+    return depth[a] + depth[b] - 2 * depth[getLCA(a, b)];
+}
+
+void dfs(ll source, ll parent) {
+    total++;
+    subtree[source] = 1;
+    for (ll child : graph[source])
+        if (child != parent)
+            dfs(child, source), subtree[source] += subtree[child];
+}
+
+ll getCentroid(ll source, ll parent) {
+    for (ll child : graph[source])
+        if (child != parent && subtree[child] > total / 2)
+            return getCentroid(child, source);
+    return source;
+}
+
+void decompose(ll root, ll last) {
+    total = 0;
+    dfs(root, root);
+    ll centroid = getCentroid(root, root);
+    if (last == -1)
+        last = centroid;
+    parent[centroid] = last;
+    for (ll child : graph[centroid]) {
+        graph[child].erase(find(graph[child].begin(), graph[child].end(), centroid));
+        decompose(child, centroid);
+    }
+    graph[centroid].clear();
+}
+
+void update(ll node) {
+    ll x = node;
+    while (1) {
+        ans[x] = min(ans[x], dist(x, node));
+        if (x == parent[x])
+            break;
+        x = parent[x];
+    }
+}
+
+ll query(ll node) {
+    ll x = node;
+    ll res = 1e18;
+    while (1) {
+        res = min(res, ans[x] + dist(x, node));
+        if (x == parent[x])
+            break;
+        x = parent[x];
+    }
+    return res;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    cin >> n >> q;
+    for (ll i = 1; i < n; i++) {
+        ll u, v;
+        cin >> u >> v;
+        graph[u].push_back(v);
+        graph[v].push_back(u);
+    }
+    memset(lca, -1, sizeof lca);
+    computeLCA(1, 1);
+    decompose(1, -1);
+    fill(ans, ans + N, 1e18);
+    update(1);
+
+    while (q--) {
+        ll type, v;
+        cin >> type >> v;
+        if (type == 1)
+            update(v);
+        else
+            cout << query(v) << "\n";
+    }
+    return 0;
+}
+```

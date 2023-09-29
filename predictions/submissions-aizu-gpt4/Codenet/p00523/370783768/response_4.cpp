@@ -1,0 +1,45 @@
+#include <algorithm>
+#include <cstdio>
+#include <iterator>
+#define MAX_NUM 200000
+typedef long long int64;
+const int64 INF = 1LL << 58;
+int N, A[MAX_NUM * 2];
+int64 sum[MAX_NUM * 2];
+
+inline bool Find(const int pos, const int64 size) {
+  int64 *end = sum + N + pos + 1;
+  int64 *sum_pos = sum + pos;
+  int64 *hoge = std::lower_bound(sum_pos + 1, end, *sum_pos + size);
+  if (hoge == end) return false;
+  int64 *fuga = std::lower_bound(hoge + 1, end, *hoge + size);
+  if (fuga == end) return false;
+  return std::lower_bound(fuga + 1, end, *fuga + size) != end;
+}
+
+inline bool calc(int64 size) {
+  for (int pos = 0; pos < N; ++pos) {
+    if (Find(pos, size)) return true;
+  }
+  return false;
+}
+
+int main() {
+  scanf("%d", &N);
+  for (int i = 0; i < N; ++i) {
+    scanf("%d", A + i);
+    A[N + i] = A[i];
+  }
+  sum[0] = A[0];
+  for (int i = 1; i < 2 * N; ++i) {
+    sum[i] = sum[i - 1] + A[i];
+  }
+  int64 low = 0, high = INF;
+  while (high != low) {
+    int64 mid = (low + high + 1) >> 1;
+    if (calc(mid)) low = mid;
+    else high = mid - 1;
+  }
+  printf("%lld\n", low);
+  return 0;
+}

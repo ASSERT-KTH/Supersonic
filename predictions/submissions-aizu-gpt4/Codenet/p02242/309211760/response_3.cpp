@@ -1,0 +1,60 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <limits>
+
+using namespace std;
+
+using P = pair<int, int>;
+const int INFTY = numeric_limits<int>::max();
+
+struct Edge {
+    int to, cost;
+};
+
+vector<vector<Edge>> adjList;
+vector<int> d;
+
+void dijkstra(int start) {
+    priority_queue<P, vector<P>, greater<P>> pq;
+    d[start] = 0;
+    pq.push({0, start});
+
+    while(!pq.empty()) {
+        P p = pq.top(); pq.pop();
+        int u = p.second;
+        if(d[u] < p.first) continue;
+        for(auto& edge: adjList[u]) {
+            if(d[edge.to] > d[u] + edge.cost) {
+                d[edge.to] = d[u] + edge.cost;
+                pq.push({d[edge.to], edge.to});
+            }
+        }
+    }
+}
+
+int main() {
+    int n;
+    cin >> n;
+
+    adjList.resize(n);
+    d.resize(n, INFTY);
+
+    for(int i = 0; i < n; ++i) {
+        int u, k;
+        cin >> u >> k;
+        for(int j = 0; j < k; ++j) {
+            int v, c;
+            cin >> v >> c;
+            adjList[u].push_back({v, c});
+        }
+    }
+
+    dijkstra(0);
+
+    for(int i = 0; i < n; ++i) {
+        cout << i << " " << (d[i] == INFTY ? -1 : d[i]) << endl;
+    }
+
+    return 0;
+}

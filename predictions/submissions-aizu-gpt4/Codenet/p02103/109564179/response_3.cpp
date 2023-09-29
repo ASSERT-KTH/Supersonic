@@ -1,0 +1,80 @@
+#include <algorithm>
+#include <cstdio>
+#include <unordered_map>
+#include <queue>
+#include <vector>
+#define MOD 1000000007LL
+using namespace std;
+typedef long long ll;
+typedef pair<int, int> P;
+constexpr int MAX_SIZE = 100001;
+int n, m, k;
+int x[MAX_SIZE], y[MAX_SIZE];
+unordered_map<ll, int> g;
+int cost[MAX_SIZE];
+
+static inline int bfs(int x_start, int x_end, int x_step, int y_start, int y_end, int y_step, bool is_x_bounded) {
+  queue<int> que[2];
+  bool flag = false;
+  fill(cost, cost + MAX_SIZE, -1);
+  for (int i = x_start; i != x_end; i += x_step) {
+    ll val = (ll)i * (is_x_bounded ? n : m) + (is_x_bounded ? 0 : n - 1);
+    auto it = g.find(val);
+    if (it != g.end()) {
+      que[0].push(it->second);
+      cost[it->second] = 0;
+    }
+  }
+  for (int p = 0; p < 2; ++p) {
+    while (!que[p].empty()) {
+      int q = que[p].front();
+      que[p].pop();
+      for (int i = -2 + p; i <= 2 - p; i++) {
+        for (int j = -2 + p; j <= 2 - p; j++) {
+          int nc = abs(i) > 1 || abs(j) > 1;
+          int nx = j + x[q], ny = i + y[q];
+          if (nx == 0 && ny == 0)
+            continue;
+          if (nx == n - 1 && ny == m - 1)
+            continue;
+          if ((is_x_bounded && (nx < 0 || nx >= n)) || (!is_x_bounded && (ny < 0 || ny >= m))) {
+            if (nc == 0)
+              return 0;
+            if (nc == 1)
+              flag = true;
+            continue;
+          }
+          ll nval = (ll)ny * n + nx;
+          auto it = g.find(nval);
+          if (it != g.end()) {
+            if (cost[it->second] == -1) {
+              cost[it->second] = nc;
+              que[nc].push(it->second);
+            } else if (cost[it->second] == 1 && nc == 0) {
+              cost[it->second] = 0;
+              que[0].push(it->second);
+            }
+          }
+        }
+      }
+    }
+    if (flag)
+      return 1;
+  }
+  return 2;
+}
+
+int main(void) {
+  scanf("%d%d%d", &n, &m, &k);
+  for (int i = 0; i < k; i++) {
+    scanf("%d%d", &x[i], &y[i]);
+    g[(ll)y[i] * n + x[i]] = i;
+  }
+  int res = 2;
+  res = min(res, bfs(1, m, 1, 0, n, 1, true));
+  res = min(res, bfs(1, n, 1, 0, m, 1, false));
+  res = min(res, bfs(0, n - 1, 1, m - 1, -1, -1, true));
+  res = min(res, bfs(0, m - 1, 1, n - 1, -1, -1, false));
+  printf("%d\n", res);
+  return 0;
+}

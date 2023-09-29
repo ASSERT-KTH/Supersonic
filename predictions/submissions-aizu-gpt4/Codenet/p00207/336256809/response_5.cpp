@@ -1,0 +1,51 @@
+#include <iostream>
+using namespace std;
+
+int C[102][102];
+int dx[4] = {0, 1, 0, -1};
+int dy[4] = {-1, 0, 1, 0};
+
+void meiro(int W, int H, int c) {
+  if (W < 0 || H < 0 || W >= 102 || H >= 102 || C[W][H] != c)
+    return;
+  
+  C[W][H] = -1;
+
+  for(int i = 0; i < 4; i++)
+    meiro(W + dx[i], H + dy[i], c);
+}
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+
+  while (1) {
+    int w, h;
+    cin >> w >> h;
+    if (w == 0 && h == 0) break;
+
+    fill(&C[0][0], &C[0][0] + sizeof(C) / sizeof(int), 10);
+
+    int xs, ys, xg, yg;
+    cin >> xs >> ys >> xg >> yg;
+
+    int n;
+    cin >> n;
+
+    for (int i = 0; i < n; i++) {
+      int c, d, x, y;
+      cin >> c >> d >> x >> y;
+      int dx = d == 0 ? 4 : 2;
+      int dy = d == 0 ? 2 : 4;
+
+      for (int j = x; j < x + dx; j++)
+        for (int k = y; k < y + dy; k++)
+          C[j][k] = c;
+    }
+
+    meiro(xs, ys, C[xs][ys]);
+    cout << (C[xg][yg] == -1 ? "OK" : "NG") << '\n';
+  }
+
+  return 0;
+}

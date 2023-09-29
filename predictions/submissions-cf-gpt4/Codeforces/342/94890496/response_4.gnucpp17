@@ -1,0 +1,126 @@
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+
+const int MAXN = 1e5+5, MAXM = 1e5+5;
+vector<int> adj[MAXN], adj2[MAXN];
+int n, m, sz[MAXN], par[MAXN], lvl[MAXN], lca[MAXN][20], ans[MAXN];
+bool vis[MAXN];
+
+void dfs(int node, int parent, int level) {
+    sz[node] = 1;
+    par[node] = parent;
+    lvl[node] = level;
+    for(int i : adj[node]) {
+        if(i != parent) {
+            dfs(i, node, level+1);
+            sz[node] += sz[i];
+        }
+    }
+}
+
+int find_centroid(int node, int parent, int size) {
+    for(int i : adj[node]) {
+        if(i != parent && sz[i] > size/2) {
+            return find_centroid(i, node, size);
+        }
+    }
+    return node;
+}
+
+void centroid_decomposition(int node, int parent) {
+    dfs(node, -1, 0);
+    int centroid = find_centroid(node, -1, sz[node]);
+    if(parent == -1) parent = centroid;
+    par[centroid] = parent;
+    vis[centroid] = true;
+    for(int i : adj[centroid]) {
+        adj[i].erase(remove(adj[i].begin(), adj[i].end(), centroid), adj[i].end());
+        if(!vis[i]) {
+            centroid_decomposition(i, centroid);
+        }
+    }
+}
+
+void build_lca() {
+    for(int j = 1; j < 20; j++) {
+        for(int i = 1; i <= n; i++) {
+            lca[i][j] = lca[lca[i][j-1]][j-1];
+        }
+    }
+}
+
+int get_lca(int a, int b) {
+    if(lvl[a] < lvl[b]) {
+        swap(a, b);
+    }
+    for(int i = 19; i >= 0; i--) {
+        if(lvl[a]-(1<<i) >= lvl[b]) {
+            a = lca[a][i];
+        }
+    }
+    if(a == b) {
+        return a;
+    }
+    for(int i = 19; i >= 0; i--) {
+        if(lca[a][i] != lca[b][i]) {
+            a = lca[a][i];
+            b = lca[b][i];
+        }
+    }
+    return par[a];
+}
+
+int dist(int a, int b) {
+    return lvl[a] + lvl[b] - 2 * lvl[get_lca(a, b)];
+}
+
+void update(int node) {
+    int x = node;
+    while(1) {
+        ans[x] = min(ans[x], dist(node, x));
+        if(x == par[x]) {
+            break;
+        }
+        x = par[x];
+    }
+}
+
+int query(int node) {
+    int x = node, res = 1e9;
+    while(1) {
+        res = min(res, ans[x] + dist(node, x));
+        if(x == par[x]) {
+            break;
+        }
+        x = par[x];
+    }
+    return res;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    cout.tie(NULL);
+    cin >> n >> m;
+    for(int i = 1; i < n; i++) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back(b);
+        adj[b].push_back(a);
+    }
+    memset(ans, 0x3f, sizeof(ans));
+    centroid_decomposition(1, -1);
+    build_lca();
+    update(1);
+    while(m--) {
+        int t, v;
+        cin >> t >> v;
+        if(t == 1) {
+            update(v);
+        } else {
+            cout << query(v) << '\n';
+        }
+    }
+    return 0;
+}

@@ -1,0 +1,86 @@
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+#define int long long
+#define IOS ios::sync_with_stdio(0);cin.tie(0);cout.tie(0)
+typedef vector<int> vi;
+const int MAXN = 100100;
+vi adj[MAXN];
+int n, a[MAXN], q, tin[MAXN], tout[MAXN], sub[MAXN], dep[MAXN], head[MAXN], par[MAXN];
+pair<int, int> t[4 * MAXN];
+pair<int, int> zero;
+int dfs1(int s, int p, int d) {
+  par[s] = p;
+  dep[s] = d;
+  adj[s].erase(remove(adj[s].begin(), adj[s].end(), p), adj[s].end());
+  for (auto &t : adj[s]) {
+    sub[s] += dfs1(t, s, d + 1);
+    if (sub[adj[s][0]] < sub[t])
+        swap(t, adj[s][0]);
+  }
+  return sub[s];
+}
+void dfs2(int s, int h, int &cnt) {
+  head[s] = h;
+  tin[s] = cnt++;
+  for (auto t : adj[s]) {
+    dfs2(t, t == adj[s][0] ? h : t, cnt);
+  }
+  tout[s] = cnt;
+}
+int lca(int a, int b) {
+  while (head[a] != head[b]) {
+    if (dep[head[a]] > dep[head[b]])
+      swap(a, b);
+    b = par[head[b]];
+  }
+  return dep[a] > dep[b] ? b : a;
+}
+pair<int, int> combine(pair<int, int> x, pair<int, int> y) {
+  return make_pair(max(x.first, y.first), min(x.second, y.second));
+}
+void build(int v, int tl, int tr) {
+  if (tl == tr) {
+    t[v] = make_pair(a[tl], a[tl]);
+  } else {
+    int tm = (tl + tr) / 2;
+    build(v * 2, tl, tm);
+    build(v * 2 + 1, tm + 1, tr);
+    t[v] = combine(t[v * 2], t[v * 2 + 1]);
+  }
+}
+pair<int, int> get(int v, int tl, int tr, int l, int r) {
+  if (l > r || tl > r || tr < l)
+    return zero;
+  if (l <= tl && tr <= r)
+    return t[v];
+  int tm = (tl + tr) / 2;
+  return combine(get(v * 2, tl, tm, l, r), get(v * 2 + 1, tm + 1, tr, l, r));
+}
+signed main() {
+  IOS;
+  cin >> n >> q;
+  zero = make_pair(n + 2, n + 1);
+  for (int i = 1; i < n; i++) {
+    int x;
+    cin >> x;
+    adj[x - 1].push_back(i);
+  }
+  dfs1(0, -1, 0);
+  int cnt = 0;
+  dfs2(0, 0, cnt);
+  for (int i = 0; i < n; i++)
+    a[i] = tin[i];
+  build(1, 0, n - 1);
+  while (q--) {
+    int l, r;
+    cin >> l >> r;
+    l--;
+    r--;
+    pair<int, int> cur = get(1, 0, n - 1, l, r);
+    int lc1 = lca(cur.first, cur.second);
+    cout << lc1 + 1 << " " << dep[lc1] << endl;
+  }
+  return 0;
+}
+```

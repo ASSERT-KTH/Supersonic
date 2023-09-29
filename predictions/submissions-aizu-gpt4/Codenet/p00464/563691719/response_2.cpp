@@ -1,0 +1,34 @@
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+int main() {
+    int h, w, n;
+    while (cin >> h >> w >> n, h | w | n) {
+        vector<vector<int>> mp(h, vector<int>(w));
+        for (auto &row : mp)
+            for (auto &element : row)
+                cin >> element;
+
+        vector<vector<int>> dp(h+1, vector<int>(w+1));
+        dp[0][0] = n - 1;
+        for (int i = 0; i < h; ++i) {
+            for (int j = 0; j < w; ++j) {
+                dp[i][j+1] += dp[i][j] / 2 + mp[i][j] * dp[i][j] % 2;
+                dp[i+1][j] += dp[i][j] / 2 + !mp[i][j] * dp[i][j] % 2;
+                if (dp[i][j] % 2)
+                    mp[i][j] = !mp[i][j];
+            }
+        }
+
+        for (int x = 0, y = 0;;) {
+            if (y == h || x == w) {
+                cout << y + 1 << " " << x + 1 << endl;
+                break;
+            }
+            if (mp[y][x]) ++x; else ++y;
+        }
+    }
+    return 0;
+}

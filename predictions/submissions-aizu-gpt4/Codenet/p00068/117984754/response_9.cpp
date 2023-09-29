@@ -1,0 +1,60 @@
+#include <algorithm>
+#include <iostream>
+#include <vector>
+#include <cmath>
+
+struct Point{
+  double x, y;
+  Point(double x = 0, double y = 0) : x(x), y(y) {}
+  Point operator+(Point p){ return Point(x + p.x, y + p.y); }
+  Point operator-(Point p){ return Point(x - p.x, y - p.y); }
+  Point operator*(double a){ return Point(x * a, y * a); }
+  double abs(){ return sqrt(norm()); }
+  double norm(){ return x * x + y * y; }
+};
+
+typedef Point Vector;
+typedef std::vector<Point> Polygon;
+
+double dot(Vector a, Vector b){ return a.x * b.x + a.y * b.y; }
+double cross(Vector a, Vector b){ return a.x * b.y - a.y * b.x; }
+
+static const int COUNTER_CLOCKWISE = 1;
+static const int CLOCKWISE = -1;
+static const int ONLINE_BACK = 2;
+static const int ONLINE_FRONT = -2;
+static const int ON_SEGMENT = 0;
+
+int ccw(Point p0, Point p1, Point p2){
+  Vector a = p1 - p0;
+  Vector b = p2 - p0;
+  if (cross(a, b) > 0) return COUNTER_CLOCKWISE;
+  if (cross(a, b) < 0) return CLOCKWISE;
+  if (dot(a, b) < 0) return ONLINE_BACK;
+  if (a.norm() < b.norm()) return ONLINE_FRONT;
+  return ON_SEGMENT;
+}
+
+Polygon convex_hull(Polygon ps){
+  int n = ps.size(), k = 0;
+  std::sort(ps.begin(), ps.end(), [](const Point& p, const Point& q){ return p.x != q.x ? p.x < q.x : p.y < q.y; });
+  Polygon ch(2 * n);
+  for (int i = 0; i < n; ch[k++] = ps[i++])
+    while (k >= 2 && ccw(ch[k - 2], ch[k - 1], ps[i]) <= 0) --k;
+  for (int i = n - 2, t = k + 1; i >= 0; ch[k++] = ps[i--])
+    while (k >= t && ccw(ch[k - 2], ch[k - 1], ps[i]) <= 0) --k;
+  ch.resize(k - 1);
+  return ch;
+}
+
+int main() {
+  int n;
+  while (std::cin >> n && n) {
+    Polygon ps(n);
+    for (auto& p : ps)
+      std::cin >> p.x >> p.y;
+    Polygon res = convex_hull(ps);
+    std::cout << n - res.size() << std::endl;
+  }
+  return 0;
+}

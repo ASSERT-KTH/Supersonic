@@ -1,0 +1,79 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cctype>
+using namespace std;
+using ll = long long;
+vector<ll> parse(const string& S, int p = 0);
+ll eval(const vector<ll>& v, int p = 0, int prec = 0) {
+    ll res;
+    if (v[p] >= 0) {
+        res = v[p++];
+    } else if (v[p] == -2) {
+        res = eval(v, p+1, 0);
+        p = v[p+1];
+    } else {
+        res = eval(v, p+1, v[p]);
+        p = v[p+1];
+    }
+    while (p < v.size() && v[p] > prec) {
+        ll a = res, b = eval(v, p+2, v[p]);
+        p = v[p+1];
+        if (v[p] == -3) res = a+b;
+        else if (v[p] == -4) res = a-b;
+        else if (v[p] == -5) res = a*b;
+    }
+    return res;
+}
+vector<ll> parse(const string& S, int p) {
+    vector<ll> res, stk;
+    while (p < S.size()) {
+        if (isdigit(S[p])) {
+            ll n = 0;
+            while (p < S.size() && isdigit(S[p])) n = n*10 + S[p++] - '0';
+            res.push_back(n);
+        } else if (S[p] == '(') {
+            stk.push_back(res.size());
+            res.push_back(-2);
+            p++;
+        } else if (S[p] == ')') {
+            while (res[stk.back()] != -2) {
+                res[stk.back()] = res[stk.back()+2];
+                stk.pop_back();
+            }
+            res[stk.back()+1] = res.size();
+            p++;
+        } else {
+            while (!stk.empty() && res[stk.back()] >= 0 && res[stk.back()] <= 2) {
+                res[stk.back()] = res[stk.back()+2];
+                stk.pop_back();
+            }
+            stk.push_back(res.size());
+            res.push_back(S[p] == '+' ? 0 : S[p] == '-' ? 1 : 2);
+            res.push_back(-1);
+            p++;
+        }
+    }
+    while (!stk.empty()) {
+        res[stk.back()] = res[stk.back()+2];
+        stk.pop_back();
+    }
+    return res;
+}
+int main() {
+    string S; cin >> S;
+    vector<ll> v = parse(S);
+    vector<int> perm = {0, 1, 2};
+    ll ans = -1e18;
+    do {
+        for (int i=0; i<v.size(); i++) {
+            if (v[i] >= 0 && v[i] <= 2) v[i] = -3 - perm[v[i]];
+        }
+        ans = max(ans, eval(v));
+        for (int i=0; i<v.size(); i++) {
+            if (v[i] >= -5 && v[i] <= -3) v[i] = v[i] + 3;
+        }
+    } while (next_permutation(perm.begin(), perm.end()));
+    cout << ans << endl;
+    return 0;
+}

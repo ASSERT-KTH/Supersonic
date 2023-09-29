@@ -1,0 +1,64 @@
+#include <iostream>
+#include <vector>
+#include <numeric>
+#include <array>
+using namespace std;
+constexpr array<int, 4> currencyValues = {10, 50, 100, 500};
+int payment(const array<int, 4>& p) {
+  return inner_product(begin(currencyValues), end(currencyValues), begin(p), 0);
+}
+array<int, 4> charge(int m) {
+  array<int, 4> ans;
+  for (int i = 3; i >= 0; --i) {
+    ans[i] = m / currencyValues[i];
+    m %= currencyValues[i];
+  }
+  return ans;
+}
+bool judge(const array<int, 4>& f, const array<int, 4>& ch) {
+  return inner_product(begin(f), end(f), begin(ch), true, logical_and<>(), less_equal<>());
+}
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(nullptr);
+  int N;
+  while (cin >> N && N) {
+    array<int, 4> c;
+    int sum = 0;
+    for (int& ci : c) {
+      cin >> ci;
+      sum += ci;
+    }
+    array<int, 4> f = {};
+    int mini = numeric_limits<int>::max();
+    array<int, 4> pay, ans;
+    for (pay[0] = 0; pay[0] <= c[0]; ++pay[0]) {
+      f[0] = pay[0] > 0;
+      for (pay[1] = 0; pay[1] <= c[1]; ++pay[1]) {
+        f[1] = pay[1] > 0;
+        for (pay[2] = 0; pay[2] <= c[2]; ++pay[2]) {
+          f[2] = pay[2] > 0;
+          for (pay[3] = 0; pay[3] <= c[3]; ++pay[3]) {
+            f[3] = pay[3] > 0;
+            int m_pay = payment(pay);
+            int n_pay = accumulate(begin(pay), end(pay), 0);
+            if (m_pay >= N) {
+              array<int, 4> ch = charge(m_pay - N);
+              int n_charge = accumulate(begin(ch), end(ch), 0);
+              if (mini > sum - n_pay + n_charge && judge(f, ch)) {
+                ans = pay;
+                mini = sum - n_pay + n_charge;
+              }
+            }
+          }
+        }
+      }
+    }
+    for (int i = 0; i < 4; ++i) {
+      if (ans[i] > 0) {
+        cout << currencyValues[i] << ' ' << ans[i] << '\n';
+      }
+    }
+    cout << '\n';
+  }
+}

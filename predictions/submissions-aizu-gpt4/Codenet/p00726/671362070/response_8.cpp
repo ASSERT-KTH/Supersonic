@@ -1,0 +1,58 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <algorithm>
+
+std::vector<int> generateTable(std::string &str) {
+    int n = str.size();
+    std::vector<int> table(n, 0);
+    std::vector<int> stack;
+    for (int i = 0; i < n; ++i) {
+        if (str[i] == '(') {
+            stack.push_back(i);
+        }
+        else if (str[i] == ')') {
+            int j = stack.back();
+            stack.pop_back();
+            table[j] = i;
+            table[i] = j;
+        }
+    }
+    return table;
+}
+
+char expand(std::string &str, std::vector<int> &table, int &n, int s, int e) {
+    for (int i = s; i < e; ++i) {
+        if (isdigit(str[i])) {
+            int num = 0;
+            while (isdigit(str[i])) {
+                num = num * 10 + (str[i++] - '0');
+            }
+            if (str[i] == '(') {
+                int j = table[i];
+                char ch = expand(str, table, n, i + 1, j);
+                if (ch != '0') return ch;
+                num--;
+                i = j;
+            }
+            while (num-- > 0 && n > 0) n--;
+            if (num >= 0 && n == 0) return '0';
+        }
+        else if (--n == 0) {
+            return str[i];
+        }
+    }
+    return '0';
+}
+
+int main() {
+    while (true) {
+        std::string str;
+        int n;
+        std::cin >> str >> n;
+        if (str == "0" && n == 0) break;
+        std::vector<int> table = generateTable(str);
+        std::cout << expand(str, table, n, 0, str.size()) << std::endl;
+    }
+    return 0;
+}

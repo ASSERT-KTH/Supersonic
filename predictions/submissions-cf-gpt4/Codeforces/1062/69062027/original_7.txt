@@ -1,0 +1,105 @@
+```c++
+#include <bits/stdc++.h>
+using namespace std;
+
+#define MAXN 100100
+typedef long long ll;
+
+struct node {
+    ll max_val, max_idx, min_val, min_idx;
+};
+
+vector<vector<ll>> adj;
+vector<node> tree(4 * MAXN);
+ll a[MAXN], depth[MAXN], tin[MAXN], tout[MAXN], timer;
+ll n, q, parent[MAXN];
+
+void dfs(ll v, ll p, ll d) {
+    tin[v] = ++timer;
+    parent[v] = p;
+    depth[v] = d;
+    for (ll u : adj[v]) {
+        if (u != p) dfs(u, v, d + 1);
+    }
+    tout[v] = ++timer;
+}
+
+bool is_ancestor(ll u, ll v) {
+    return tin[u] <= tin[v] && tout[u] >= tout[v];
+}
+
+ll lca(ll u, ll v) {
+    if (is_ancestor(u, v)) return u;
+    if (is_ancestor(v, u)) return v;
+    for (ll i = log2(n); i >= 0; --i) {
+        if (!is_ancestor(parent[i][u], v)) {
+            u = parent[i][u];
+        }
+    }
+    return parent[0][u];
+}
+
+void build(ll v, ll tl, ll tr) {
+    if (tl == tr) {
+        tree[v] = {a[tl], tl, a[tl], tl};
+    } else {
+        ll tm = (tl + tr) / 2;
+        build(v * 2, tl, tm);
+        build(v * 2 + 1, tm + 1, tr);
+        node left = tree[2 * v], right = tree[2 * v + 1];
+        tree[v] = {
+            max(left.max_val, right.max_val),
+            (left.max_val > right.max_val ? left.max_idx : right.max_idx),
+            min(left.min_val, right.min_val),
+            (left.min_val < right.min_val ? left.min_idx : right.min_idx)
+        };
+    }
+}
+
+node query(ll v, ll tl, ll tr, ll l, ll r) {
+    if (l > r) return {LLONG_MIN, -1, LLONG_MAX, -1};
+    if (l <= tl && tr <= r) return tree[v];
+
+    ll tm = (tl + tr) / 2;
+    node left = query(v * 2, tl, tm, l, min(r, tm));
+    node right = query(v * 2 + 1, tm + 1, tr, max(l, tm + 1), r);
+    
+    return {
+        max(left.max_val, right.max_val),
+        (left.max_val > right.max_val ? left.max_idx : right.max_idx),
+        min(left.min_val, right.min_val),
+        (left.min_val < right.min_val ? left.min_idx : right.min_idx)
+    };
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    cin >> n >> q;
+    adj.resize(n);
+    for (ll i = 1; i < n; i++) {
+        ll x;
+        cin >> x;
+        adj[x - 1].push_back(i);
+        adj[i].push_back(x - 1);
+    }
+    dfs(0, 0, 0);
+    for (ll i = 0; i < n; i++) a[tin[i] - 1] = i;
+    build(1, 0, n - 1);
+    
+    while (q--) {
+        ll l, r;
+        cin >> l >> r;
+        l--; r--;
+        node cur = query(1, 0, n - 1, l, r);
+        ll lc1 = lca(cur.max_idx, cur.min_idx), lc2 = lca(l, r);
+        if (depth[lc1] > depth[lc2]) {
+            cout << cur.min_idx + 1 << " " << depth[lc1] << "\n";
+        } else {
+            cout << cur.max_idx + 1 << " " << depth[lc2] << "\n";
+        }
+    }
+    return 0;
+}
+```

@@ -1,0 +1,42 @@
+#include <algorithm>
+#include <cstring>
+#include <iostream>
+#include <string>
+#include <vector>
+using namespace std;
+
+class Data {
+public:
+  string mName;
+  int mC, mV, mD, mL;
+  Data(string _n, int _c, int _v, int _d, int _l) : mName(_n), mC(_c), mV(_v), mD(_d), mL(_l) {}
+};
+
+int dp[301][3];
+
+int main() {
+  int N, M;
+  string line;
+  while (getline(cin, line)) {
+    sscanf(line.c_str(), "%d %d", &N, &M);
+    vector<Data> idols;
+    for (int i = 0; i < N; i++) {
+      string name;
+      getline(cin, name);
+      int C, V, D, L;
+      getline(cin, line);
+      sscanf(line.c_str(), "%d %d %d %d", &C, &V, &D, &L);
+      idols.push_back(Data(name, C, V, D, L));
+    }
+    memset(dp, 0, sizeof(dp));
+    for (int j = 0; j < idols.size(); j++) {
+      for (int i = idols[j].mC; i <= M; i++) {
+        for (int k = 0; k < 3; k++) {
+          int v[] = { idols[j].mV, idols[j].mD, idols[j].mL };
+          dp[i][k] = max(dp[i][k], dp[i - idols[j].mC][k] + v[k]);
+        }
+      }
+    }
+    printf("%d\n", *max_element(&dp[0][0], &dp[M + 1][0]));
+  }
+}

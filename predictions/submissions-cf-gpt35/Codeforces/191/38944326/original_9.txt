@@ -1,0 +1,104 @@
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+using namespace std;
+const int N = 100001;
+int par[N], hev[N], siz[N], dep[N], top[N], dif[N], bak[N];
+vector<int> edg[N];
+pair<int, int> out[N];
+unordered_map<int, unordered_map<int, int>> ans;
+void dfs(int u) {
+  siz[u] = 1;
+  hev[u] = -1;
+  for (int v : edg[u]) {
+    if (v == par[u])
+      continue;
+    par[v] = u;
+    dep[v] = dep[u] + 1;
+    dfs(v);
+    siz[u] += siz[v];
+    if (hev[u] == -1 || siz[v] > siz[hev[u]])
+      hev[u] = v;
+  }
+}
+void dfs2(int u) {
+  for (int v : edg[u]) {
+    if (v == par[u])
+      continue;
+    if (v == hev[u])
+      top[v] = top[u];
+    else
+      top[v] = v;
+    dfs2(v);
+  }
+}
+void path(int u, int v) {
+  while (true) {
+    if (top[u] == top[v]) {
+      if (dep[u] > dep[v])
+        swap(u, v);
+      dif[u]++;
+      dif[v]--;
+      return;
+    }
+    if (dep[top[u]] > dep[top[v]])
+      swap(u, v);
+    dif[top[v]]++;
+    dif[v]--;
+    bak[top[v]]++;
+    v = par[top[v]];
+  }
+}
+void dfs3(int u, int cnt) {
+  for (int v : edg[u]) {
+    if (v == par[u])
+      continue;
+    if (v == hev[u]) {
+      ans[min(u, v)][max(u, v)] += cnt + dif[u];
+      dfs3(v, cnt + dif[u]);
+    } else {
+      ans[min(u, v)][max(u, v)] += bak[v];
+      dfs3(v, 0);
+    }
+  }
+}
+int main() {
+  int n, k, u, v;
+  scanf("%d\n", &n);
+  for (int i = 0; i < n; i++)
+    edg[i].reserve(2); // Reserve space for at most 2 elements
+  for (int i = 0; i < n - 1; i++) {
+    scanf("%d%d", &u, &v);
+    u--;
+    v--;
+    if (u > v)
+      swap(u, v);
+    edg[u].push_back(v);
+    edg[v].push_back(u);
+    out[i] = {u, v};
+    ans[u][v] = 0;
+  }
+  par[0] = 0;
+  dep[0] = 0;
+  dfs(0);
+  top[0] = 0;
+  dfs2(0);
+  fill_n(dif, n, 0);
+  fill_n(bak, n, 0);
+  scanf("%d\n", &k);
+  while (k--) {
+    scanf("%d%d", &u, &v);
+    u--;
+    v--;
+    path(u, v);
+  }
+  dfs3(0, 0);
+  printf("%d", ans[out[0].first][out[0].second]);
+  for (int i = 1; i < n - 1; i++)
+    printf(" %d", ans[out[i].first][out[i].second]);
+  printf("\n");
+}
+```

@@ -1,0 +1,141 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+const double EPS = 1e-7;
+
+struct Point3d {
+    double x, y, z;
+    Point3d(double x = 0, double y = 0, double z = 0) : x(x), y(y), z(z) {}
+    Point3d operator+(const Point3d& a) const {
+        return Point3d(x + a.x, y + a.y, z + a.z);
+    }
+    Point3d operator-(const Point3d& a) const {
+        return Point3d(x - a.x, y - a.y, z - a.z);
+    }
+    Point3d operator*(const double& d) const {
+        return Point3d(x * d, y * d, z * d);
+    }
+    Point3d operator/(const double& d) const {
+        return Point3d(x / d, y / d, z / d);
+    }
+    bool operator<(const Point3d& p) const {
+        return x != p.x ? x < p.x : (y != p.y ? y < p.y : z < p.z);
+    }
+    bool operator==(const Point3d& p) const {
+        return abs(x - p.x) < EPS && abs(y - p.y) < EPS && abs(z - p.z) < EPS;
+    }
+    double norm() const {
+        return x * x + y * y + z * z;
+    }
+    double abs() const {
+        return sqrt(norm());
+    }
+};
+
+using Vector3d = Point3d;
+using Segment3d = pair<Point3d, Point3d>;
+using Line3d = Segment3d;
+
+double dot(const Point3d& a, const Point3d& b) {
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+Vector3d cross(const Point3d& a, const Point3d& b) {
+    return Vector3d(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+}
+
+bool on_line3d(const Line3d& line, const Point3d& p) {
+    return abs(cross(p - line.first, line.second - line.first).abs()) < EPS;
+}
+
+bool on_segment3d(const Segment3d& seg, const Point3d& p) {
+    if (!on_line3d(seg, p)) {
+        return false;
+    }
+    double dist = (seg.second - seg.first).abs();
+    double dist1 = (p - seg.first).abs();
+    double dist2 = (p - seg.second).abs();
+    return abs(dist - (dist1 + dist2)) < EPS;
+}
+
+bool point_on_the_triangle3d(const Point3d& tri1, const Point3d& tri2, const Point3d& tri3, const Point3d& p) {
+    if (on_segment3d({tri1, tri2}, p) || on_segment3d({tri2, tri3}, p) || on_segment3d({tri3, tri1}, p)) {
+        return true;
+    }
+    Vector3d v1 = tri2 - tri1;
+    Vector3d v2 = tri3 - tri2;
+    Vector3d v3 = tri1 - tri3;
+    Vector3d cp1 = cross(v1, p - tri1);
+    Vector3d cp2 = cross(v2, p - tri2);
+    Vector3d cp3 = cross(v3, p - tri3);
+    double d1 = dot(cp1, cp2);
+    double d2 = dot(cp2, cp3);
+    if ((d1 > EPS && d2 > EPS) || (d1 < -EPS && d2 < -EPS)) {
+        return true;
+    }
+    return false;
+}
+
+class Plane3d {
+public:
+    Vector3d normal_vector;
+    double d;
+    Plane3d(const Vector3d& normal_vector = Vector3d(), double d = 0) : normal_vector(normal_vector), d(d) {}
+    Plane3d(const Point3d& a, const Point3d& b, const Point3d& c) {
+        Vector3d v1 = b - a;
+        Vector3d v2 = c - a;
+        Vector3d tmp = cross(v1, v2);
+        normal_vector = tmp / tmp.abs();
+        set_d(a);
+    }
+    void set_d(const Point3d& p) {
+        d = dot(normal_vector, p);
+    }
+    double distanceP(const Point3d& p) const {
+        Point3d a = normal_vector * d;
+        return abs(dot(p - a, normal_vector));
+    }
+    Point3d nearest_point(const Point3d& p) const {
+        Point3d a = normal_vector * d;
+        return p - (normal_vector * dot(p - a, normal_vector));
+    }
+    bool intersectS(const Segment3d& seg) const {
+        Point3d a = normal_vector * d;
+        double res1 = dot(a - seg.first, normal_vector);
+        double res2 = dot(a - seg.second, normal_vector);
+        if (res1 > res2) {
+            swap(res1, res2);
+        }
+        if ((abs(res1) < EPS || res1 < 0) && (abs(res2) < EPS || res2 > 0)) {
+            return true;
+        }
+        return false;
+    }
+    Point3d crosspointS(const Segment3d& seg) const {
+        Point3d a = normal_vector * d;
+        double dot_p0a = abs(dot(seg.first - a, normal_vector));
+        double dot_p1a = abs(dot(seg.second - a, normal_vector));
+        if (abs(dot_p0a + dot_p1a) < EPS) {
+            return seg.first;
+        }
+        return seg.first + (seg.second - seg.first) * (dot_p0a / (dot_p0a + dot_p1a));
+    }
+};
+
+Point3d crosspointTS(const Point3d& tri1, const Point3d& tri2, const Point3d& tri3, const Segment3d& seg) {
+    Vector3d normal_vector = cross(tri2 - tri1, tri3 - tri1);
+    normal_vector = normal_vector / normal_vector.abs();
+    double dist1 = dot(seg.second - seg.first, normal_vector);
+    double dist2 = dot(tri1 - seg.first, normal_vector);
+    double t = dist2 / dist1;
+    Vector3d e = (seg.second - seg.first) / (seg.second - seg.first).abs();
+    return seg.first + e * t;
+}
+
+const string Y = "HIT", N = "MISS";
+
+int main() {
+    Point3d tri[3], S, G;
+    cin >> S.x >> S.y >> S.z >> G.x >> G.y >> G.z;
+    for (int i = 0; i < 3; ++i) {
+        cin >> tri[i].x >> tri[i

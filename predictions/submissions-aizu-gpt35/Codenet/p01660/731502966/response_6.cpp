@@ -1,0 +1,112 @@
+#include <iostream>
+using namespace std;
+
+const int MAX_T = 3000, MAX_M = 300;
+
+int M, start, goal, dice[6], *N, path[MAX_M], d1[2*MAX_T], d2[2*MAX_T], *dp1, *dp2;
+
+inline bool isPositionValid(int p) { return 0 <= p && p < M; }
+
+void MakePath(int from) {
+    for (int m = 0; m < M; m++)
+        path[m] = MAX_T + 1;
+    static bool visit[MAX_M] = {};
+    static int queue[MAX_M];
+    int qh = 0, qt = 0;
+    queue[qt++] = from;
+    visit[from] = true;
+    path[from] = 0;
+
+    while (qh < qt) {
+        int pos = queue[qh++];
+        visit[pos] = false;
+        for (int r = 0; r < 6; r++) {
+            int moveto = pos + dice[r];
+            if (isPositionValid(moveto)) {
+                int position = moveto + N[moveto];
+                if (path[position] > path[pos] + 1) {
+                    path[position] = path[pos] + 1;
+                    if (!visit[position]) {
+                        visit[position] = true;
+                        queue[qt++] = position;
+                    }
+                }
+            }
+        }
+        for (int r = 0; r < 6; r++) {
+            int moveto = pos - dice[r];
+            if (isPositionValid(moveto)) {
+                int position = moveto + N[moveto];
+                if (path[position] > path[pos] + 1) {
+                    path[position] = path[pos] + 1;
+                    if (!visit[position]) {
+                        visit[position] = true;
+                        queue[qt++] = position;
+                    }
+                }
+            }
+        }
+    }
+}
+
+int main() {
+    cin >> M;
+    for (int r = 0; r < 6; r++)
+        cin >> dice[r];
+    cin >> start >> goal;
+    start--;
+    goal--;
+    N = new int[M];
+    for (int m = 0; m < M; m++)
+        cin >> N[m];
+    MakePath(start);
+
+    dp1 = d1 + MAX_T;
+    dp2 = d2 + MAX_T;
+    dp1[start] = 0;
+    for (int t = 0; t < MAX_T; t++) {
+        if (dp1[goal] <= t) break;
+        for (int pos = 0; pos < M; pos++) {
+            if (dp1[pos] <= t) {
+                int value = dp1[pos] + 1;
+                for (int r = 0; r < 6; r++) {
+                    int moveto = pos + dice[r];
+                    if (isPositionValid(moveto))
+                        dp2[moveto] = max(dp2[moveto], value);
+                    moveto = pos - dice[r];
+                    if (isPositionValid(moveto))
+                        dp2[moveto] = max(dp2[moveto], value);
+                }
+            }
+        }
+        swap(dp1, dp2);
+        fill(dp2 - MAX_T, dp2 + MAX_T, -1);
+    }
+    int position = start;
+    for (int t = 0; t < MAX_T; t++) {
+        if (position == goal) break;
+        int r;
+        cin >> r;
+        int d = dice[r - 1];
+        bool moved = false;
+        for (int r = 0; r < 6; r++) {
+            int moveto = position + dice[r];
+            if (isPositionValid(moveto) && dp1[moveto] >= t + 1) {
+                position = moveto + N[moveto];
+                cout << "1\n";
+                moved = true;
+                break;
+            }
+            moveto = position - dice[r];
+            if (isPositionValid(moveto) && dp1[moveto] >= t + 1) {
+                position = moveto + N[moveto];
+                cout << "-1\n";
+                moved = true;
+                break;
+            }
+        }
+        if (!moved) cout << "0\n";
+    }
+    delete[] N;
+    return 0;
+}

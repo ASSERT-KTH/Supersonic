@@ -1,0 +1,33 @@
+#include <iostream>
+#include <algorithm>
+#include <cstring>
+#define rep(i, n) for (int i = 0; i < n; ++i)
+using namespace std;
+typedef long long ll;
+
+int n, m, c[333], v[3][333], dp[333][333];
+
+int dpru(int *v) {
+  memset(dp, 0, sizeof(dp));
+  for (int i = 0; i < n; ++i) {
+    memcpy(dp[i + 1], dp[i], sizeof(dp[i]));
+    for (int j = c[i]; j <= m; ++j) {
+      dp[i + 1][j] = max(dp[i + 1][j], dp[i + 1][j - c[i]] + v[i]);
+    }
+  }
+  return dp[n][m];
+}
+
+int main() {
+  while (cin >> n >> m) {
+    rep(i, n) {
+      cin.ignore();
+      cin >> c[i];
+      rep(j, 3) cin >> v[j][i];
+    }
+    int res = 0;
+    rep(i, 3) res = max(res, dpru(v[i]));
+    cout << res << "\n";
+  }
+  return 0;
+}

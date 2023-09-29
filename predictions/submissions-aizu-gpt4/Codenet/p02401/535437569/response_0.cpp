@@ -1,0 +1,17 @@
+#include <cstdio>
+
+int main() {
+    int x, y;
+    char z;
+
+    while (scanf("%d %c %d", &x, &z, &y), z != '?') {
+        switch (z) {
+            case '+' : printf("%d\n", x + y); break;
+            case '-' : printf("%d\n", x - y); break;
+            case '/' : printf("%d\n", x / y); break;
+            case '*' : printf("%d\n", x * y); break;
+        }
+    }
+
+    return 0;
+}

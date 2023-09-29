@@ -1,0 +1,67 @@
+#include <iostream>
+#include <cstring>
+using namespace std;
+const int MAX_T = 3000, MAX_M = 300;
+int M, start, goal, dice[6], N[MAX_M], path[MAX_M];
+bool isPositionValid(int p) { return 0 <= p && p < M; }
+
+void MakePath(int from) {
+  static bool visit[MAX_M] = {};
+  memset(path, MAX_T + 1, sizeof(path));
+  path[goal] = 0;
+  visit[goal] = true;
+  int q[MAX_M], head = 0, tail = 0;
+  q[tail++] = goal;
+  while (head < tail) {
+    int here = q[head++];
+    visit[here] = false;
+    for (int r = 0; r < 6; r++) {
+      int moveto = here + dice[r];
+      if (!isPositionValid(moveto))
+        continue;
+      moveto += N[moveto];
+      if (path[here] + 1 < path[moveto]) {
+        path[moveto] = path[here] + 1;
+        if (!visit[moveto]) {
+          visit[moveto] = true;
+          q[tail++] = moveto;
+        }
+      }
+    }
+  }
+}
+
+int main() {
+  cin >> M;
+  for (int r = 0; r < 6; r++)
+    cin >> dice[r];
+  cin >> start >> goal;
+  start--, goal--;
+  for (int m = 0; m < M; m++)
+    cin >> N[m];
+
+  MakePath(goal);
+
+  int position = start;
+  for (int t = 0; t < MAX_T; t++) {
+    if (position == goal)
+      break;
+    int r;
+    cin >> r;
+    int d = dice[r - 1];
+    int output = 0;
+    if (isPositionValid(position + d)) {
+      int moveto = position + d + N[position + d];
+      if (path[moveto] < path[position])
+        position = moveto, output = 1;
+    }
+    if (isPositionValid(position - d)) {
+      int moveto = position - d + N[position - d];
+      if (path[moveto] < path[position])
+        position = moveto, output = -1;
+    }
+    cout << output << endl;
+  }
+
+  return 0;
+}

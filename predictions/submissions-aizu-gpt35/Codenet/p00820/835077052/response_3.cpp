@@ -1,0 +1,22 @@
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+const int MAXN = 1e6+5;
+int dp[5][MAXN];
+
+int main() {
+    int n;
+    while (~scanf("%d", &n)) {
+        if (n == 0) break;
+        memset(dp, 0, sizeof(dp));
+        dp[0][0] = 1;
+        for (int i = 1; i * i <= n; i++) {
+            for (int k = 4; k >= 1; k--) {
+                for (int j = i * i; j <= n; j++) {
+                    dp[k][j] += dp[k - 1][j - i * i];
+                }
+            }
+        }
+        printf("%d\n", dp[4][n] + dp[3][n] + dp[2][n] + dp[1][n]);
+    }
+}

@@ -1,0 +1,111 @@
+#include <iostream>
+#include <map>
+#include <queue>
+#include <set>
+#include <vector>
+#define fi first
+#define se second
+using namespace std;
+const int MAXN = 200005;
+struct node {
+  int cnt, par, lev, inp;
+  int chn, idx, col, adj;
+};
+int n, q;
+vector<int> g[MAXN];
+node a[MAXN];
+int bit[2 * MAXN];
+int chains = 0, timer = 0, colour = 0;
+vector<int> chain[MAXN];
+map<int, int> col[MAXN];
+map<int, set<int>> pos[MAXN];
+int root[MAXN];
+
+void DFS(int u) {
+  a[u].inp = ++timer;
+  a[u].cnt = 1;
+  for (auto v : g[u]) {
+    if (!a[v].par) {
+      a[v].par = u;
+      a[v].lev = a[u].lev + 1;
+      DFS(v);
+      a[u].cnt += a[v].cnt;
+    }
+  }
+}
+
+void HLD(int u) {
+  chain[a[u].chn].push_back(u);
+  int heavy = 0, which = 0;
+  for (auto v : g[u]) {
+    if (v != a[u].par and a[v].cnt > heavy) {
+      heavy = a[v].cnt;
+      which = v;
+    }
+  }
+  if (heavy) {
+    a[which].chn = a[u].chn;
+    a[which].idx = a[u].idx + 1;
+  }
+  for (auto v : g[u]) {
+    if (v == a[u].par)
+      continue;
+    if (v != which) {
+      a[v].chn = ++chains;
+      a[v].idx = 0;
+    }
+    HLD(v);
+  }
+}
+
+void up(int u, int t) {
+  while (1) {
+    int c = a[u].chn;
+    auto iter = col[c].lower_bound(a[u].idx);
+    auto jter = iter;
+    while (iter != col[c].end() && (c != a[t].chn || a[t].idx < iter->fi)) {
+      update(iter->se, -1);
+      iter = col[c].erase(iter);
+    }
+    while (jter != col[c].begin()) {
+      --jter;
+      if (jter->se != colour)
+        update(jter->se, -1);
+      if (jter->fi < a[u].idx) break;
+      jter = col[c].erase(jter);
+    }
+    col[c][a[u].idx] = colour;
+    if (c == a[t].chn)
+      break;
+    u = a[chain[c][0]].par;
+  }
+}
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(NULL);
+  cin >> n >> q;
+  for (int i = 1; i < n; ++i) {
+    int u, v;
+    cin >> u >> v;
+    g[u].push_back(v);
+    g[v].push_back(u);
+  }
+  DFS(n);
+  HLD(n);
+  while (q--) {
+    string type;
+    cin >> type;
+    if (type[0] == 'u') {
+      int u;
+      cin >> u;
+      up(u, LCA(u, root[colour - n]));
+      root[colour++] = u;
+    } else {
+      int u, v;
+      cin >> u >> v;
+      cout << (when(u) < when(v) ? u : v) << '\n';
+    }
+  }
+  return 0;
+}

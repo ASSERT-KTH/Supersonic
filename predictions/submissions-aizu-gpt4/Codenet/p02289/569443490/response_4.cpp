@@ -1,0 +1,49 @@
+#include <iostream>
+#include <stdio.h>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+class Heap {
+public:
+    Heap() : n(0) {}
+
+    void insert(int data) {
+        array.push_back(data);
+        push_heap(array.begin(), array.end(), less<int>());
+    }
+
+    int extract() {
+        pop_heap(array.begin(), array.end(), less<int>());
+        int ret = array.back();
+        array.pop_back();
+        return ret;
+    }
+
+private:
+    vector<int> array;
+    int n;
+};
+
+int main() {
+    int insert_data;
+    char buf[22];
+    Heap heap;
+    while (true) {
+        fgets(buf, 22, stdin);
+        if (buf[2] == 'd')
+            break;
+        if (buf[0] == 'i') {
+            insert_data = 0;
+            for (int i = 0; buf[i] != '\0'; i++) {
+                if (buf[i] >= '0' && buf[i] <= '9') {
+                    insert_data = 10 * insert_data + (buf[i] - '0');
+                }
+            }
+            heap.insert(insert_data);
+        } else {
+            printf("%d\n", heap.extract());
+        }
+    }
+}

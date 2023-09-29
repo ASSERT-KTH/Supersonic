@@ -1,0 +1,20 @@
+#include <iostream>
+#include <cmath>
+using namespace std;
+
+int main() {
+  int e;
+  while (cin >> e, e) {
+    int ans = 1e9;
+    int z_max = cbrt(e) + 1;
+    for (int z = 0; z < z_max; ++z) {
+      int y_max = sqrt(e - z * z * z) + 1;
+      for (int y = 0; y < y_max; ++y) {
+        int x = e - y * y - z * z * z;
+        ans = min(ans, x + y + z);
+      }
+    }
+    cout << ans << endl;
+  }
+  return 0;
+}

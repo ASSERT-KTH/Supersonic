@@ -1,0 +1,45 @@
+#include <cstdio>
+#include <queue>
+#include <vector>
+using namespace std;
+const int INF = 1000000000;
+struct edge {
+  int to, cost;
+};
+vector<edge> G[100000];
+int v, e, r;
+typedef pair<int, int> P;
+int d[100000];
+priority_queue<P, vector<P>, greater<P> > q;
+int main() {
+  scanf("%d %d %d", &v, &e, &r);
+  for (int i = 0; i < e; i++) {
+    int s, t, d;
+    scanf("%d %d %d", &s, &t, &d);
+    G[s].push_back((edge){t, d});
+  }
+  fill(d, d + v, INF);
+  d[r] = 0;
+  q.push(P(0, r));
+  while (!q.empty()) {
+    P p = q.top();
+    q.pop();
+    int nv = p.second;
+    if (p.first > d[nv])
+      continue;
+    for (int i = 0; i < G[nv].size(); i++) {
+      edge e = G[nv][i];
+      if (d[nv] + e.cost < d[e.to]) {
+        d[e.to] = d[nv] + e.cost;
+        q.push(P(d[e.to], e.to));
+      }
+    }
+  }
+  for (int i = 0; i < v; i++) {
+    if (d[i] == INF)
+      puts("INF");
+    else
+      printf("%d\n", d[i]);
+  }
+  return 0;
+}

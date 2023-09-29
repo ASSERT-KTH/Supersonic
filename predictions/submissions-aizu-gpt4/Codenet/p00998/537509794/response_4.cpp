@@ -1,0 +1,66 @@
+#include<iostream>
+#include<cstdio>
+#include<algorithm>
+#include<vector>
+#include<cmath>
+#define MAX_N 200005
+#define INF 1000000005
+#define L(x) seg[x].l
+#define R(x) seg[x].r
+#define MID(x,y) ((x+y)>>1)
+using namespace std;
+struct Node {
+	int val;
+	int l, r;
+};
+struct Node seg[MAX_N<<2];
+int n, m, root, idx, a[MAX_N];
+vector<int> G[MAX_N];
+void build(int &x, int l, int r) {
+	x = ++idx;
+	if(l == r) {
+		seg[x].val = a[l];
+		return;
+	}
+	build(L(x), l, MID(l, r));
+	build(R(x), MID(l, r) + 1, r);
+}
+void change(int &x, int l, int r, int pos, int val) {
+	seg[++idx] = seg[x];
+	x = idx;
+	if(l == r) {
+		seg[x].val = val;
+		return;
+	}
+	if(pos <= MID(l, r)) change(L(x), l, MID(l, r), pos, val);
+	else change(R(x), MID(l, r) + 1, r, pos, val);
+}
+int query(int x, int l, int r, int L, int R) {
+	if(L <= l && r <= R) return seg[x].val;
+	int res = INF;
+	if(L <= MID(l, r)) res = min(res, query(L(x), l, MID(l, r), L, R));
+	if(R > MID(l, r)) res = min(res, query(R(x), MID(l, r) + 1, r, L, R));
+	return res;
+}
+int main() {
+	scanf("%d %d", &n, &m);
+	for(int i = 1; i <= n; i++) scanf("%d", &a[i]);
+	build(root, 1, n);
+	int last = root;
+	while(m--) {
+		int op, x, y;
+		scanf("%d %d %d", &op, &x, &y);
+		if(op == 0) {
+			int val = query(last, 1, n, y + 1, y + 1);
+			change(root, 1, n, x + 1, val);
+			G[x + 1].push_back(root);
+		}
+		else if(op == 1) printf("%d\n", query(last, 1, n, x + 1, y + 1));
+		else {
+			change(root, 1, n, x + 1 ,y);
+			G[x + 1].push_back(root);
+		}
+		last = root;
+	}
+	return 0;
+}

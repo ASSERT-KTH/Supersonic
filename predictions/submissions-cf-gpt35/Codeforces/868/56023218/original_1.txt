@@ -1,0 +1,97 @@
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+using ll = long long;
+
+template <typename T, typename Compare = less<T>>
+vector<vector<T>> divide_and_conquer(ll h, ll w, const function<T(ll, ll)> &f,
+                                     const Compare &comp = Compare()) {
+  const T inf = numeric_limits<T>::max() / 10;
+  vector<vector<T>> dp(h, vector<T>(w, inf));
+  function<void(ll, ll, ll, ll, ll)> dfs = [&](ll i, ll l, ll r, ll optl,
+                                               ll optr) {
+    if (l > r)
+      return;
+    ll mid = (l + r) / 2, optm = -1;
+    for (ll j = optl; j <= min(mid, optr); ++j) {
+      T cost = dp[i][j] + f(j + 1, mid);
+      if (comp(cost, dp[i + 1][mid])) {
+        dp[i + 1][mid] = cost;
+        optm = j;
+      }
+    }
+    dfs(i, l, mid - 1, optl, optm);
+    dfs(i, mid + 1, r, optm, optr);
+  };
+  for (ll i = 0; i < w; ++i) dp[0][i] = f(0, i);
+  for (ll i = 1; i < h; ++i) {
+    for (ll j = 0; j < w; ++j) {
+      dp[i][j] = inf;
+    }
+  }
+  for (ll i = 0; i < h - 1; ++i) {
+    dfs(i, 0, w - 1, 0, w - 1);
+  }
+  return dp;
+}
+
+namespace cf190div1E {
+void solve() {
+  int n, k;
+  scanf("%d %d ", &n, &k);
+  vector<vector<int>> u(n, vector<int>(n));
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < n; ++j) {
+      u[i][j] = getchar() - '0';
+      getchar();
+    }
+  }
+  vector<vector<int>> W(n, vector<int>(n));
+  for (int w = 1; w <= n; ++w) {
+    for (int l = 0, r = l + w; r < n; ++l, ++r) {
+      W[l][r] = u[l][r];
+      if (w >= 2)
+        W[l][r] += W[l + 1][r] + W[l][r - 1] - W[l + 1][r - 1];
+    }
+  }
+  auto f = [&](ll i, ll j) { return W[i][j]; };
+  auto dp = divide_and_conquer<ll>(k, n, f);
+  cout << dp[k - 1][n - 1] << endl;
+}
+} // namespace cf190div1E
+
+namespace cf438F {
+void solve() {
+  ll N, K;
+  cin >> N >> K;
+  vector<ll> A(N);
+  for (int i = 0; i < N; ++i) {
+    cin >> A[i];
+    --A[i];
+  }
+  ll L = 0, R = 0, sum = 0;
+  vector<ll> appear(100010);
+  appear[A[0]]++;
+  auto add = [&](ll idx) { sum += appear[A[idx]]++; };
+  auto del = [&](ll idx) { sum -= --appear[A[idx]]; };
+  function<ll(ll, ll)> f = [&](ll l, ll r) {
+    while (L > l)
+      add(--L);
+    while (L < l)
+      del(L++);
+    while (R < r)
+      add(++R);
+    while (R > r)
+      del(R--);
+    return sum;
+  };
+  auto dp = divide_and_conquer(K, N, f);
+  cout << dp[K - 1][N - 1] << endl;
+}
+} // namespace cf438F
+
+signed main(void) {
+  cf438F::solve();
+  return 0;
+}
+```

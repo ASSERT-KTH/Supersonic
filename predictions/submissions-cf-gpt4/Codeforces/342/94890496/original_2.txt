@@ -1,0 +1,147 @@
+```
+#include <iostream>
+#include <vector>
+#include <set>
+#include <cmath>
+#include <limits>
+
+using namespace std;
+
+typedef long long ll;
+const int MAXN = 1e5 + 5;
+const int LOG = 20;
+
+vector<int> g[MAXN], centroidTree[MAXN];
+int parent[MAXN];
+int depth[MAXN];
+int dp[MAXN][LOG];
+int subtree[MAXN];
+int ans[MAXN];
+bool centroidMarked[MAXN];
+
+void dfs(int u, int p){
+    depth[u] = depth[p] + 1;
+    dp[u][0] = p;
+    for(auto v : g[u]){
+        if(v != p){
+            dfs(v, u);
+        }
+    }
+}
+
+void preprocess(int n){
+    depth[0] = -1;
+    dfs(1, 0);
+    for(int j = 1; j < LOG; j++){
+        for(int i = 1; i <= n; i++){
+            if(dp[i][j - 1] != -1){
+                dp[i][j] = dp[dp[i][j - 1]][j - 1];
+            }
+        }
+    }
+}
+
+int lca(int u, int v){
+    if(depth[u] < depth[v]){
+        swap(u, v);
+    }
+    for(int i = LOG - 1; i >= 0; i--){
+        if(depth[u] - (1 << i) >= depth[v]){
+            u = dp[u][i];
+        }
+    }
+    if(u == v){
+        return u;
+    }
+    for(int i = LOG - 1; i >= 0; i--){
+        if(dp[u][i] != dp[v][i]){
+            u = dp[u][i];
+            v = dp[v][i];
+        }
+    }
+    return dp[u][0];
+}
+
+int dist(int u, int v){
+    return depth[u] + depth[v] - 2 * depth[lca(u, v)];
+}
+
+void dfs1(int u, int p){
+    subtree[u] = 1;
+    for(auto v : g[u]){
+        if(v != p && !centroidMarked[v]){
+            dfs1(v, u);
+            subtree[u] += subtree[v];
+        }
+    }
+}
+
+int getCentroid(int u, int p, int n){
+    for(auto v : g[u]){
+        if(v != p && !centroidMarked[v] && subtree[v] > n / 2){
+            return getCentroid(v, u, n);
+        }
+    }
+    return u;
+}
+
+void decompose(int u, int p){
+    dfs1(u, p);
+    int c = getCentroid(u, p, subtree[u]);
+    centroidMarked[c] = true;
+    parent[c] = p;
+    for(auto v : g[c]){
+        if(!centroidMarked[v]){
+            decompose(v, c);
+        }
+    }
+}
+
+void update(int u){
+    int x = u;
+    while(x != -1){
+        ans[x] = min(ans[x], dist(u, x));
+        x = parent[x];
+    }
+}
+
+int query(int u){
+    int x = u;
+    int res = numeric_limits<int>::max();
+    while(x != -1){
+        res = min(res, ans[x] + dist(u, x));
+        x = parent[x];
+    }
+    return res;
+}
+
+int main(){
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    int n, m;
+    cin >> n >> m;
+    for(int i = 1; i < n; i++){
+        int u, v;
+        cin >> u >> v;
+        g[u].push_back(v);
+        g[v].push_back(u);
+    }
+    preprocess(n);
+    decompose(1, -1);
+    fill(ans, ans + n + 1, numeric_limits<int>::max());
+    ans[1] = 0;
+    update(1);
+    while(m--){
+        int type, v;
+        cin >> type >> v;
+        if(type == 1){
+            ans[v] = 0;
+            update(v);
+        }
+        else{
+            cout << query(v) << "\n";
+        }
+    }
+    return 0;
+}
+```

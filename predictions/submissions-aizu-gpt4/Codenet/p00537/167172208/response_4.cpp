@@ -1,0 +1,59 @@
+#include <vector>
+#include <algorithm>
+#include <cstdio>
+using namespace std;
+
+class SegmentTree {
+  vector<int> seg, add;
+  int sz;
+  void Add(int a, int b, int x, int k, int l, int r) {
+    if (!(a >= r || b <= l)) {
+      if (a <= l && r <= b) {
+        add[k] += x;
+      } else {
+        int m = (l + r) >> 1;
+        Add(a, b, x, 2 * k + 1, l, m);
+        Add(a, b, x, 2 * k + 2, m, r);
+        seg[k] = seg[2 * k + 1] + add[2 * k + 1] + seg[2 * k + 2] + add[2 * k + 2];
+      }
+    }
+  }
+  int Query(int a, int b, int k, int l, int r) {
+    if (a >= r || b <= l) return 0;
+    int res = seg[k] + add[k];
+    if (!(a <= l && r <= b)) {
+      int m = (l + r) >> 1;
+      res += Query(a, b, 2 * k + 1, l, m) + Query(a, b, 2 * k + 2, m, r);
+    }
+    return res;
+  }
+public:
+  SegmentTree(int n) {
+    sz = 1;
+    while (sz < n) sz <<= 1;
+    seg.assign(sz << 1, 0), add.assign(sz << 1, 0);
+  }
+  void Add(int a, int b, int x) { Add(a, b, x, 0, 0, sz); }
+  int Query(int a, int b) { return Query(a, b, 0, 0, sz); }
+};
+
+int main() {
+  int N, M, P[100000];
+  scanf("%d %d", &N, &M);
+  SegmentTree segtree(N);
+  for (int i = 0; i < M; i++) {
+    scanf("%d", &P[i]);
+    --P[i];
+  }
+  for (int i = 1; i < M; i++) {
+    segtree.Add(min(P[i - 1], P[i]), max(P[i - 1], P[i]), 1);
+  }
+  long long ret = 0;
+  for (int i = 0; i < N - 1; i++) {
+    long long used = segtree.Query(i, i + 1);
+    int A, B, C;
+    scanf("%d %d %d", &A, &B, &C);
+    ret += min(used * A, C + used * B);
+  }
+  printf("%lld\n", ret);
+}

@@ -1,0 +1,47 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+using namespace std;
+
+const int MAXN = 105;
+
+vector<int> adj[MAXN];
+int n, d[MAXN];
+
+void bfs(int s) {
+    queue<int> q;
+    q.push(s);
+    d[s] = 0;
+
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop();
+        for (int v : adj[u]) {
+            if (d[v] == -1) {
+                d[v] = d[u] + 1;
+                q.push(v);
+            }
+        }
+    }
+}
+
+int main() {
+    cin >> n;
+    for (int i = 0; i < n; i++)
+        d[i] = -1;
+    for (int i = 0; i < n; i++) {
+        int u, k;
+        cin >> u >> k;
+        u--;
+        for (int j = 0; j < k; j++) {
+            int v;
+            cin >> v;
+            v--;
+            adj[u].push_back(v);
+        }
+    }
+    bfs(0);
+    for (int i = 0; i < n; i++)
+        cout << i + 1 << ' ' << d[i] << endl;
+    return 0;
+}

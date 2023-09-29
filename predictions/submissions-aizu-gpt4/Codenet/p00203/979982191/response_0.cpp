@@ -1,0 +1,50 @@
+#include <iostream>
+#define N 15
+using namespace std;
+
+int X, Y, data[N][N], memo[N][N];
+
+void func(int y, int x) {
+  if (y == Y - 1) {
+    memo[y][x] = 1;
+    return;
+  }
+  static const int dx[] = {-1, 0, 1};
+  for(int i = 0; i < 3; ++i) {
+    int nx = x + dx[i];
+    if (0 <= nx && nx < X && data[y + 1][nx] == 0 && memo[y + 1][nx] == 0) {
+      func(y + 1, nx);
+    }
+    memo[y][x] += memo[y + 1][nx];
+  }
+  if (data[y + 1][x] == 2) {
+    for(int ny = y + 2; ny < Y; ny += 2) {
+      if (data[ny][x] == 1)
+        break;
+      if (data[ny][x] == 0) {
+        if(memo[ny][x] == 0)
+          func(ny, x);
+        memo[y][x] += memo[ny][x];
+        break;
+      }
+    }
+    if (memo[y][x] == 0)
+      ++memo[y][x];
+  }  
+}
+
+int main() {
+  ios::sync_with_stdio(false); cin.tie(nullptr); cout.tie(nullptr);
+  while (cin >> X >> Y && (X || Y)) {
+    fill(&data[0][0], &data[0][0] + sizeof(data) / sizeof(int), 0);
+    fill(&memo[0][0], &memo[0][0] + sizeof(memo) / sizeof(int), 0);
+    for (int i = 0; i < Y; ++i)
+      for (int j = 0; j < X; ++j)
+        cin >> data[i][j];
+    for (int i = 0; i < X; ++i)
+      if (data[0][i] == 0)
+        func(0, i);
+    cout << accumulate(&memo[0][0], &memo[0][0] + X, 0) << '\n';
+  }
+  return 0;
+}

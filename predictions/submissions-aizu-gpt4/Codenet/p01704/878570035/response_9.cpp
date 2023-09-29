@@ -1,0 +1,41 @@
+#include <cstdio>
+#include <climits>
+using flt = double;
+
+constexpr int MAXN = 100000 + 10;
+constexpr flt eps = 1e-7;
+
+int vw[MAXN], pf[MAXN], vf[MAXN], th[MAXN];
+int N, pw;
+
+flt calc(flt W) {
+  flt cost = W * pw;
+  for (int i = 0; i < N; ++i) {
+    flt need = th[i] - W * vw[i];
+    if (need > eps) {
+      flt f = need / vf[i];
+      cost += f * pf[i];
+    }
+  }
+  return cost;
+}
+
+int main() {
+  while (scanf("%d", &N) == 1 && N) {
+    scanf("%d", &pw);
+    for (int i = 0; i < N; ++i) {
+      scanf("%d%d%d%d", vw + i, pf + i, vf + i, th + i);
+    }
+    flt left = 0, right = INT_MAX;
+    while (right - left > eps) {
+      flt m1 = left + (right - left) / 3;
+      flt m2 = right - (right - left) / 3;
+      if (calc(m1) < calc(m2))
+        right = m2;
+      else
+        left = m1;
+    }
+    printf("%.10f\n", calc(left));
+  }
+  return 0;
+}

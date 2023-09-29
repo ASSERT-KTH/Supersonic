@@ -1,0 +1,112 @@
+#include <bits/stdc++.h>
+#define ll long long
+#define pp pair<ll, ll>
+#define ld long double
+#define fi first
+#define se second
+#define all(x) (x).begin(), (x).end()
+#define rep(i, a, b) for (ll i = a; i < b; i++)
+#define sz(v) (ll)(v.size())
+#define inf 1e18
+#define slld(x) scanf("%lld", &x)
+using namespace std;
+
+const ll maxn = 1e6 + 5;
+ll segtree[4 * maxn], lazy[4 * maxn], value[maxn], adj[26][maxn];
+vector<ll> good(maxn, 0), seta, tmp, dp(maxn, inf);
+
+void lazify(ll node, ll l, ll r) {
+    if (lazy[node] != 0) {
+        segtree[node] += lazy[node];
+        if (l < r) {
+            lazy[node << 1] += lazy[node];
+            lazy[node << 1 | 1] += lazy[node];
+        }
+        lazy[node] = 0;
+    }
+}
+
+void assign(ll node, ll l, ll r, ll idx, ll val) {
+    lazify(node, l, r);
+    if (l == r) {
+        segtree[node] = val;
+        return;
+    }
+    ll mid = (l + r) >> 1;
+    if (l <= idx and idx <= mid)
+        assign(node << 1, l, mid, idx, val);
+    else
+        assign(node << 1 | 1, mid + 1, r, idx, val);
+    segtree[node] = min(segtree[node << 1], segtree[node << 1 | 1]);
+}
+
+void updateRange(ll node, ll l, ll r, ll a, ll b, ll val) {
+    lazify(node, l, r);
+    if (l > b || r < a)
+        return;
+    if (a <= l and r <= b) {
+        segtree[node] += val;
+        if (l < r) {
+            lazy[node << 1] += val;
+            lazy[node << 1 | 1] += val;
+        }
+        return;
+    }
+    ll mid = (l + r) >> 1;
+    updateRange(node << 1, l, mid, a, b, val);
+    updateRange(node << 1 | 1, mid + 1, r, a, b, val);
+    segtree[node] = min(segtree[node << 1], segtree[node << 1 | 1]);
+}
+
+ll query(ll node, ll l, ll r, ll a, ll b) {
+    lazify(node, l, r);
+    if (l > b || r < a)
+        return inf;
+    if (a <= l and r <= b)
+        return segtree[node];
+    ll mid = (l + r) >> 1;
+    return min(query(node << 1, l, mid, a, b), query(node << 1 | 1, mid + 1, r, a, b));
+}
+
+void dfs(ll node) {
+    if (good[node]) {
+        updateRange(1, 1, maxn, 1, sz(tmp), 1);
+        dp[node] = min(dp[node], query(1, 1, maxn, 1, sz(tmp)));
+    }
+    tmp.push_back(dp[node]);
+    assign(1, 1, maxn, sz(tmp), dp[node] + good[node]);
+    for (auto next : adj[node]) {
+        dfs(next);
+    }
+    assign(1, 1, maxn, sz(tmp), inf);
+    tmp.pop_back();
+}
+
+void solve() {
+    memset(adj, -1, sizeof adj);
+    ll n, x, k;
+    cin >> n;
+    char c;
+    fill(value, value+maxn, inf);
+    rep(i, 1, n + 1) {
+        cin >> x >> c;
+        adj[c - 'a'][x] = i;
+    }
+    cin >> k;
+    rep(i, 0, k) {
+        cin >> x;
+        good[x] = 1;
+        seta.push_back(x);
+    }
+    dp[0] = 0;
+    dfs(0);
+    for(auto i: seta) 
+        cout << dp[i] << " ";
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    solve();
+    return 0;
+}

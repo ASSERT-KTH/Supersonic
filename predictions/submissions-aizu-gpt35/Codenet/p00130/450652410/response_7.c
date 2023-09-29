@@ -1,0 +1,34 @@
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+bool ope_line() {
+  char train[52] = {0}; // initialize array with zeros
+  int t = 25, s = 25;
+  char c = getchar();
+  train[t] = c;
+  char a = getchar();
+  while (a != '\n' && a != EOF) {
+    char b = getchar();
+    c = getchar();
+    if (a == '<' && b == '-') {
+      train[--t] = c;
+      if (t < s)
+        s = t;
+    } else if (a == '-' && b == '>')
+      train[++t] = c;
+    a = getchar();
+  }
+  printf("%s\n", &train[s]);
+  return a != EOF; // simplified return statement
+}
+
+int main(int argc, char **argv) {
+  int n;
+  scanf("%d\n", &n);
+  for (int i = 0; i < n; ++i) {
+    if (!ope_line())
+      break;
+  }
+  return 0;
+}

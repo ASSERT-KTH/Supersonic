@@ -1,0 +1,69 @@
+```C++
+#include <iostream>
+#include <vector>
+#include <cmath>
+
+const double EPS = 1e-10;
+
+struct P {
+  double x, y;
+  P(double x = 0, double y = 0) : x(x), y(y) {}
+  P operator+(P p) const { return P(x + p.x, y + p.y); }
+  P operator-(P p) const { return P(x - p.x, y - p.y); }
+  bool operator==(const P &p) const { return std::abs(x - p.x) < EPS && std::abs(y - p.y) < EPS; }
+};
+
+typedef std::pair<P, P> Segment;
+
+double cross(P a, P b) { return a.x * b.y - a.y * b.x; }
+double dot(P a, P b) { return a.x * b.x + a.y * b.y; }
+double norm(P p) { return p.x * p.x + p.y * p.y; }
+
+int ccw(P p, P q, P r) {
+  P a = q - p;
+  P b = r - p;
+  if (cross(a, b) > EPS) return 1;
+  if (cross(a, b) < -EPS) return -1;
+  if (dot(a, b) < -EPS) return 2;
+  if (norm(a) < norm(b)) return -2;
+  return 0;
+}
+
+bool isIntersect(P p1, P p2, P p3, P p4) {
+  return (ccw(p1, p2, p3) * ccw(p1, p2, p4) <= 0 && ccw(p3, p4, p1) * ccw(p3, p4, p2) <= 0);
+}
+
+P crosspoint(const Segment &l, const Segment &m) {
+  double A = cross(l.second - l.first, m.second - m.first);
+  double B = cross(l.second - l.first, l.second - m.first);
+  if (std::abs(A) < EPS && std::abs(B) < EPS) return m.first;
+  return m.first + (m.second - m.first) * (B / A);
+}
+
+int main() {
+  int n;
+  while (std::cin >> n && n) {
+    int field = 1;
+    std::vector<Segment> pos;
+    std::vector<P> exist;
+    for (int i = 0; i < n; i++) {
+      double x1, y1, x2, y2;
+      std::cin >> x1 >> y1 >> x2 >> y2;
+      pos.push_back(Segment(P(x1, y1), P(x2, y2)));
+      int newPointCount = 0;
+      for (int j = 0; j < pos.size() - 1; j++) {
+        if (isIntersect(pos[j].first, pos[j].second, pos.back().first, pos.back().second)) {
+          P xp = crosspoint(pos[j], pos.back());
+          if (std::find(exist.begin(), exist.end(), xp) == exist.end() && std::abs(xp.x) < 100 && std::abs(xp.y) < 100) {
+            exist.push_back(xp);
+            newPointCount++;
+          }
+        }
+      }
+      field += newPointCount + 1;
+    }
+    std::cout << field << std::endl;
+  }
+  return 0;
+}
+```

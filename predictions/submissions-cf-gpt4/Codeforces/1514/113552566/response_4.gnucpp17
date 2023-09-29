@@ -1,0 +1,71 @@
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+typedef long double ld;
+#define FASTIO ios_base::sync_with_stdio(false); cin.tie(NULL); cout.tie(NULL);
+#define PRECISION cout << fixed << setprecision(20);
+
+struct SegTree {
+  vector<int> tree, arr;
+  vector<vector<int>> store;
+  int n;
+  SegTree(int n, vector<int> _arr) : n(n) {
+    tree.resize(4 * n);
+    store.resize(n + 1);
+    arr = _arr;
+    for (int i = 0; i < n; i++)
+      store[arr[i]].push_back(i);
+    build(0, n - 1, 0);
+  }
+  int merge(int lval, int rval, int sl, int sr) {
+    return (count(store[lval].begin(), store[lval].end(), sr) >= count(store[rval].begin(), store[rval].end(), sr)) ? lval : rval;
+  }
+  void build(int ss, int se, int si) {
+    if (ss == se) {
+      tree[si] = arr[ss];
+    } else {
+      int mid = ss + (se - ss) / 2;
+      build(ss, mid, 2 * si + 1);
+      build(mid + 1, se, 2 * si + 2);
+      tree[si] = merge(tree[2 * si + 1], tree[2 * si + 2], ss, se);
+    }
+  }
+  int query(int qs, int qe, int ss, int se, int si) {
+    if (qs <= ss && qe >= se) {
+      return tree[si];
+    }
+    if (se < qs || ss > qe) {
+      return -1;
+    }
+    int mid = ss + (se - ss) / 2;
+    int l = query(qs, qe, ss, mid, 2 * si + 1);
+    int r = query(qs, qe, mid + 1, se, 2 * si + 2);
+    if(l == -1) return r;
+    if(r == -1) return l;
+    return merge(l, r, qs, qe);
+  }
+  int query(int qs, int qe) { return query(qs, qe, 0, n - 1, 0); }
+};
+
+int main() {
+  FASTIO;
+  PRECISION;
+  int n, q;
+  cin >> n >> q;
+  vector<int> arr(n);
+  for (int i = 0; i < n; i++)
+    cin >> arr[i];
+  SegTree tree(n, arr);
+  while (q--) {
+    int l, r;
+    cin >> l >> r;
+    l--; r--;
+    int x = tree.query(l, r);
+    int mx = upper_bound(tree.store[x].begin(), tree.store[x].end(), r) -
+             lower_bound(tree.store[x].begin(), tree.store[x].end(), l);
+    int len = (r - l + 1);
+    int extra = len - mx;
+    int left = max(0, mx - extra - 1);
+    cout << 1 + left << "\n";
+  }
+}

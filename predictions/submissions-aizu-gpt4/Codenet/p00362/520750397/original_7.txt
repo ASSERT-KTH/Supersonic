@@ -1,0 +1,128 @@
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cmath>
+
+using namespace std;
+
+typedef long long ll;
+
+const int MAXN = 200005;
+
+int n, k;
+vector<pair<int, ll> > g[MAXN];
+ll a[MAXN], b[MAXN], c[MAXN], d[MAXN], e[MAXN], f[MAXN], p[MAXN], s[MAXN];
+int h[MAXN], l[MAXN], r[MAXN], t;
+
+void dfs1(int u, int fa) {
+    p[u] = fa;
+    d[u] = d[fa] + 1;
+    s[u] = 1;
+    for(int i = 0; i < g[u].size(); i++) {
+        int v = g[u][i].first;
+        ll w = g[u][i].second;
+        if(v == fa) continue;
+        a[v] = a[u] + w;
+        c[v] = w;
+        dfs1(v, u);
+        s[u] += s[v];
+        if(s[v] > s[h[u]]) h[u] = v;
+    }
+}
+
+void dfs2(int u, int tp) {
+    l[u] = ++t;
+    e[t] = a[u];
+    f[t] = u;
+    b[u] = tp;
+    if(h[u]) dfs2(h[u], tp);
+    for(int i = 0; i < g[u].size(); i++) {
+        int v = g[u][i].first;
+        if(v == p[u] || v == h[u]) continue;
+        dfs2(v, v);
+    }
+    r[u] = t;
+}
+
+struct SegmentTree {
+    int left, right;
+    ll sum;
+}tree[MAXN << 2];
+
+void build(int i, int l, int r) {
+    tree[i].left = l, tree[i].right = r;
+    if(l == r) {
+        tree[i].sum = e[l] % k == 0 ? e[l] : 0;
+        return ;
+    }
+    int mid = (l + r) >> 1;
+    build(i << 1, l, mid);
+    build(i << 1 | 1, mid + 1, r);
+    tree[i].sum = tree[i << 1].sum + tree[i << 1 | 1].sum;
+}
+
+void modify(int i, int x, ll v) {
+    if(tree[i].left == tree[i].right) {
+        tree[i].sum = v % k == 0 ? v : 0;
+        return ;
+    }
+    int mid = (tree[i].left + tree[i].right) >> 1;
+    if(x <= mid) modify(i << 1, x, v);
+    else modify(i << 1 | 1, x, v);
+    tree[i].sum = tree[i << 1].sum + tree[i << 1 | 1].sum;
+}
+
+ll query(int i, int l, int r) {
+    if(l <= tree[i].left && tree[i].right <= r) return tree[i].sum;
+    int mid = (tree[i].left + tree[i].right) >> 1;
+    ll ans = 0;
+    if(l <= mid) ans += query(i << 1, l, r);
+    if(r > mid) ans += query(i << 1 | 1, l, r);
+    return ans;
+}
+
+ll path(int u, int v) {
+    ll ans = 0;
+    while(b[u] != b[v]) {
+        if(d[b[u]] < d[b[v]]) swap(u, v);
+        ans += query(1, l[b[u]], l[u]);
+        u = p[b[u]];
+    }
+    if(d[u] > d[v]) swap(u, v);
+    ans += query(1, l[u], l[v]);
+    return ans;
+}
+
+int main() {
+    scanf("%d%d", &n, &k);
+    for(int i = 1, u, v; i < n; i++) {
+        ll w;
+        scanf("%d%d%lld", &u, &v, &w);
+        g[u].push_back(make_pair(v, w));
+        g[v].push_back(make_pair(u, w));
+    }
+    dfs1(1, 0);
+    dfs2(1, 1);
+    build(1, 1, n);
+    int q;
+    scanf("%d", &q);
+    while(q--) {
+        char op[5];
+        int u, v;
+        ll w;
+        scanf("%s", op);
+        if(op[0] == 'Q') {
+            scanf("%d%d", &u, &v);
+            printf("%lld\n", path(u, v));
+        } else {
+            scanf("%d%lld", &u, &w);
+            a[u] += w;
+            a[f[l[u] + 1]] += w;
+            modify(1, l[u], a[u]);
+            modify(1, l[u] + 1, a[f[l[u] + 1]]);
+        }
+    }
+    return 0;
+}
+```

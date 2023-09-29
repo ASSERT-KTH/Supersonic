@@ -1,0 +1,86 @@
+#include<iostream>
+#include<utility>
+#include<algorithm>
+using pii = std::pair<int, int>;
+const int MAX = 1e5 + 5;
+const int sqr = 316;
+int nbLig, nbCol, nbReq;
+char grille[MAX][13];
+int tps = 0;
+pii go[MAX][13];
+void comp(int lig, int col, int safeLig) {
+  static int proc[MAX][13] = {0};
+  if (proc[lig][col] == tps)
+    return;
+  proc[lig][col] = tps;
+  int nextLig = lig, nextCol = col;
+  if (grille[lig][col] == '<')
+    --nextCol;
+  else if (grille[lig][col] == '>')
+    ++nextCol;
+  else if (grille[lig][col] == '^')
+    --nextLig;
+  if (nextLig == safeLig || grille[nextLig][nextCol] == '~') {
+    go[lig][col] = {nextLig, nextCol};
+  } else {
+    comp(nextLig, nextCol, safeLig);
+    go[lig][col] = go[nextLig][nextCol];
+  }
+}
+pii getFin(int lig, int col) {
+  while (grille[lig][col] != '~') {
+    pii e = go[lig][col];
+    lig = e.first;
+    col = e.second;
+  }
+  return {lig, col};
+}
+int blocRef[MAX];
+void compBloc(int bloc) {
+  int deb = bloc * sqr, fin = std::min(nbLig, (bloc + 1) * sqr);
+  if (deb > nbLig)
+    return;
+  for (int lig = deb + 1; lig <= fin; ++lig) {
+    blocRef[lig] = bloc;
+    for (int col = 1; col <= nbCol; ++col) {
+      comp(lig, col, deb);
+    }
+  }
+}
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(NULL);
+  std::cout.tie(NULL);
+  std::cin >> nbLig >> nbCol >> nbReq;
+  std::fill(&grille[0][0], &grille[MAX-1][13], '~');
+  for (int lig = 1; lig <= nbLig; ++lig) {
+    for (int col = 1; col <= nbCol; ++col) {
+      std::cin >> grille[lig][col];
+    }
+  }
+  ++tps;
+  for (int bloc = 0; bloc <= (nbLig/sqr); ++bloc) {
+    compBloc(bloc);
+  }
+  for (int req = 0; req < nbReq; ++req) {
+    char mode;
+    std::cin >> mode;
+    int lig, col;
+    std::cin >> lig >> col;
+    if (mode == 'A') {
+      pii res = getFin(lig, col);
+      if (res == pii{0, 0})
+        res = {-1, -1};
+      std::cout << res.first << " " << res.second << "\n";
+    } else {
+      ++tps;
+      char nv;
+      std::cin >> nv;
+      grille[lig][col] = nv;
+      int bloc = blocRef[lig];
+      compBloc(bloc);
+      if (bloc)
+        compBloc(bloc - 1);
+    }
+  }
+}

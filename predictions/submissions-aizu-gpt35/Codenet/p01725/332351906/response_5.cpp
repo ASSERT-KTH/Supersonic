@@ -1,0 +1,39 @@
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+string S;
+int ch[1 << 8];
+ll bnf(int c, int &p) {
+    ll res, t;
+    if (S[p] == '(') {
+        p++;
+        res = bnf(-1, p);
+        p++;
+    } else {
+        res = 0;
+        while(isdigit(S[p])) {
+            res = res * 10 + S[p++] - '0';
+        }
+    }
+    while(p < S.size() && S[p] != ')' && ch[S[p]] > c) {
+        t = S[p++];
+        ll b = bnf(ch[t], p);
+        res = (t == '+') ? res + b : (t == '-') ? res - b : res * b;
+    }
+    return res;
+}
+int main() {
+    cin >> S;
+    ll res = 0;
+    for(int i = 0; i < 3; i++) {
+        for(int j = 0; j < 3; j++) {
+            for(int k = 0; k < 3; k++) {
+                ch['+'] = i, ch['-'] = j, ch['*'] = k;
+                int p = 0;
+                res = max(res, bnf(-100, p));
+            }
+        }
+    }
+    cout << res << endl;
+    return 0;
+}

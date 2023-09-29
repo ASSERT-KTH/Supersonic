@@ -1,0 +1,83 @@
+#include <bits/stdc++.h>
+using namespace std;
+const int INF = 1 << 30;
+struct node {
+    int value, priority, cnt, small;
+    node *left, *right;
+    node(int v) : value(v), priority(rand()), cnt(1), small(v), left(NULL), right(NULL) {}
+};
+inline int count(node *t) { return !t ? 0 : t->cnt; }
+inline int mini(node *t) { return !t ? INF : t->small; }
+node* update(node *t) {
+    t->cnt = count(t->left) + count(t->right) + 1;
+    t->small = min({mini(t->left), mini(t->right), t->value});
+    return t;
+}
+node* merge(node *l, node *r) {
+    if (!l || !r) return l ? l : r;
+    if (l->priority > r->priority) {
+        l->right = merge(l->right, r);
+        return update(l);
+    } else {
+        r->left = merge(l, r->left);
+        return update(r);
+    }
+}
+pair<node *, node *> split(node *t, int k) {
+    if (!t) return make_pair((node *)NULL, (node *)NULL);
+    if (k <= count(t->left)) {
+        auto s = split(t->left, k);
+        t->left = s.second;
+        return make_pair(s.first, update(t));
+    } else {
+        auto s = split(t->right, k - count(t->left) - 1);
+        t->right = s.first;
+        return make_pair(update(t), s.second);
+    }
+}
+node* insert(node *t, int k, int val) {
+    pair<node *, node *> s = split(t, k);
+    t = merge(s.first, new node(val));
+    t = merge(t, s.second);
+    return update(t);
+}
+node* erase(node *t, int k) {
+    auto s1 = split(t, k + 1);
+    auto s2 = split(s1.first, k);
+    t = merge(s2.first, s1.second);
+    return update(t);
+}
+int rmq(node *t, int l, int r) {
+    if (l >= count(t) || r <= 0) return INF;
+    if (l <= 0 && r >= count(t)) return mini(t);
+    int size = count(t->left);
+    int ret = min(rmq(t->left, l, r), rmq(t->right, l - size - 1, r - size - 1));
+    if (l <= size && size < r) ret = min(ret, t->value);
+    return ret;
+}
+int main() {
+    int n, q;
+    scanf("%d %d", &n, &q);
+    node* root = NULL;
+    for (int i = 0, a; i < n; i++) {
+        scanf("%d", &a);
+        root = insert(root, i, a);
+    }
+    while (q--) {
+        int x, y, z;
+        scanf("%d %d %d", &x, &y, &z);
+        if (x == 0) {
+            z++;
+            auto c = split(root, z);
+            auto b = split(c.first, z - 1);
+            auto a = split(b.first, y);
+            root = merge(merge(a.first, b.second), merge(a.second, c.second));
+        } else if (x == 1) {
+            printf("%d\n", rmq(root, y, z + 1));
+        } else {
+            root = erase(root, y);
+            root = insert(root, y, z);
+        }
+    }
+    return 0;
+}

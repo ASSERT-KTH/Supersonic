@@ -1,0 +1,61 @@
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <iostream>
+#include <vector>
+using namespace std;
+double EPS = 1e-6;
+double add(double a, double b) {
+  if (abs(a + b) < EPS * (abs(a) + abs(b)))
+    return 0;
+  return a + b;
+}
+// Use const reference to avoid copying the point parameter
+struct point {
+  double x, y;
+  point() {}
+  point(double x, double y) : x(x), y(y) {}
+  point operator+(const point& p) const { return point(add(x, p.x), add(y, p.y)); }
+  point operator-(const point& p) const { return point(add(x, -p.x), add(y, -p.y)); }
+  point operator*(double d) const { return point(x * d, y * d); }
+  point operator/(double d) const { return point(x / d, y / d); }
+};
+double dist(const point& a, const point& b) {
+  return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2));
+}
+int main(void) {
+  int n, x, y, v;
+  vector<point> P;
+  vector<double> V;
+  while (cin >> n, n) {
+    P.clear();
+    V.clear();
+    for (int i = 0; i < n; i++) {
+      cin >> x >> y >> v;
+      P.emplace_back(x, y);
+      V.push_back(v);
+    }
+    double r = 0.98;
+    point now(0, 0);
+    for (double d = 10; d > EPS; d *= r) {
+      int mx = 0;
+      double mxd = 0;
+      for (int j = 0; j < n; j++) {
+        const double curr_dist = dist(now, P[j]) / V[j];
+        if (curr_dist > mxd) {
+          mx = j;
+          mxd = curr_dist;
+        }
+      }
+      // Store the result of the division to avoid doing it twice
+      const double dist_to_mx = dist(P[mx], now);
+      now = now + ((P[mx] - now) / dist_to_mx * d);
+    }
+    double ans = 0;
+    for (int i = 0; i < n; i++) {
+      ans = max(ans, dist(now, P[i]) / V[i]);
+    }
+    printf("%.8f\n", ans);
+  }
+  return 0;
+}

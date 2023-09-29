@@ -1,0 +1,146 @@
+```cpp
+#include <cstdio>
+#include <map>
+#include <queue>
+#include <cstring>
+#define rep(i, n) for (int i = 0; i < (n); i++)
+using namespace std;
+const int V_MAX = 6000;
+const int CAPA_INF = 1 << 29;
+const int COST_INF = 1 << 29;
+template <class T, class U> struct edge {
+  int v, rev;
+  T capa;
+  U cost;
+  T flow;
+};
+template <class T, class U>
+void add_directed_edge(vector<edge<T, U>> *G, int u, int v, T capa, U cost) {
+  G[u].push_back((edge<T, U>){v, G[v].size(), capa, cost, 0});
+  G[v].push_back((edge<T, U>){u, G[u].size() - 1, 0, -cost, 0});
+}
+template <class T, class U>
+pair<T, U> augment(int n, vector<edge<T, U>> *G, int s, int t, U *pot) {
+  static int pre[V_MAX];
+  static U d[V_MAX];
+  memset(pre, -1, sizeof(pre));
+  rep(u, n) d[u] = (u == s ? 0 : COST_INF);
+  bool ok = false;
+  priority_queue<pair<U, int>> Q;
+  Q.push(make_pair(0, s));
+  while (!Q.empty()) {
+    int u = Q.top().second;
+    U cost = -Q.top().first;
+    Q.pop();
+    if (cost < d[u])
+      continue;
+    if (u == t)
+      ok = true;
+    rep(i, G[u].size()) {
+      edge<T, U> &e = G[u][i];
+      U cost2 = cost + e.cost + pot[u] - pot[e.v];
+      if (e.capa - e.flow > 0 && cost2 < d[e.v]) {
+        d[e.v] = cost2;
+        pre[e.v] = e.rev;
+        Q.push(make_pair(-cost2, e.v));
+      }
+    }
+  }
+  if (!ok)
+    return make_pair(0, 0);
+  T water = CAPA_INF;
+  for (int v = t; v != s;) {
+    edge<T, U> &e1 = G[v][pre[v]];
+    edge<T, U> &e2 = G[e1.v][e1.rev];
+    water = min(water, e2.capa - e2.flow);
+    v = e1.v;
+  }
+  U cost = 0;
+  for (int v = t; v != s;) {
+    edge<T, U> &e1 = G[v][pre[v]];
+    edge<T, U> &e2 = G[e1.v][e1.rev];
+    e1.flow -= water;
+    e2.flow += water;
+    cost += water * e2.cost;
+    v = e1.v;
+  }
+  rep(u, n) pot[u] += d[u];
+  return make_pair(water, cost);
+}
+template <class T, class U>
+pair<T, U> primal_dual(int n, vector<edge<T, U>> *G, int s, int t) {
+  T ans1 = 0;
+  U ans2 = 0;
+  static U pot[V_MAX];
+  while (1) {
+    pair<T, U> tmp = augment(n, G, s, t, pot);
+    if (tmp.first == 0)
+      break;
+    ans1 += tmp.first;
+    ans2 += tmp.second;
+  }
+  return make_pair(ans1, ans2);
+}
+struct train {
+  int t1, t2, cost;
+};
+int main() {
+  int n;
+  while (scanf("%d", &n), n) {
+    vector<train> T[99];
+    rep(i, n - 1) {
+      int m;
+      scanf("%d", &m);
+      T[i].resize(m);
+      rep(j, m) scanf("%d%d%d", &T[i][j].t1, &T[i][j].t2, &T[i][j].cost);
+    }
+    int n_class;
+    scanf("%d", &n_class);
+    int f[100][2][1000];
+    rep(i, n - 1) {
+      memset(f[i][0], -1, sizeof(f[i][0]));
+      memset(f[i + 1][0], -1, sizeof(f[i + 1][0]));
+      memset(f[i + 1][1], -1, sizeof(f[i + 1][1]));
+      rep(j, T[i].size()) {
+        int t1 = T[i][j].t1, t2 = T[i][j].t2;
+        if (f[i][0][t1] == -1)
+          f[i][0][t1] = j;
+        int id1 = f[i][0][t1];
+        if (f[i + 1][0][t2] == -1)
+          f[i + 1][0][t2] = n_class * (i + 1) + id1;
+        int id2 = f[i + 1][0][t2];
+        if (f[i + 1][1][t2] == -1)
+          f[i + 1][1][t2] = n_class * (i + 1) + id1;
+        int id3 = f[i + 1][1][t2];
+        if (id1 / n_class != id2 / n_class)
+          f[i + 1][0][t2] = id2 = n_class * (i + 1) + id1;
+        add_directed_edge(G, id1, id2, 1, T[i][j].cost);
+        add_directed_edge(G, id2, id3, 1, 0);
+      }
+    }
+    static vector<edge<int, int>> G[V_MAX];
+    rep(u, V_MAX) G[u].clear();
+    int s = n_class * n;
+    int t = n_class * n + 1;
+    add_directed_edge(G, s, f[0][0].begin()->second, n_class, 0);
+    add_directed_edge(G, f[n - 1][0].rbegin()->second, t, n_class, 0);
+    rep(i, n) {
+      for (int id1 = 0; id1 < n_class * i; id1++) {
+        if (f[i][0][T[i - 1][id1 % n_class].t2] != -1) {
+          int id2 = f[i][0][T[i - 1][id1 % n_class].t2];
+          add_directed_edge(G, id1, id2, 1, 0);
+        }
+      }
+      for (int id1 = 0; id1 < n_class * i; id1++) {
+        if (f[i][1][T[i][id1 % n_class].t2] != -1) {
+          int id2 = f[i][1][T[i][id1 % n_class].t2];
+          add_directed_edge(G, id2, id1, 1, 0);
+        }
+      }
+    }
+    pair<int, int> ans = primal_dual(n_class * n + 2, G, s, t);
+    printf("%d %d\n", ans.first, ans.second);
+  }
+  return 0;
+}
+```

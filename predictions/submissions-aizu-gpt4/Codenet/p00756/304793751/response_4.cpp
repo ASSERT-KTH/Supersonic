@@ -1,0 +1,65 @@
+#include <iostream>
+#include <algorithm>
+#include <vector>
+#include <cmath>
+
+#define MAXN 24
+
+using namespace std;
+
+struct Circle {
+    int x, y, r, c;
+};
+
+int n;
+Circle circles[MAXN];
+bool memo[1 << MAXN];
+
+inline int distSquared(const Circle &a, const Circle &b) {
+    int dx = a.x - b.x, dy = a.y - b.y;
+    return dx * dx + dy * dy;
+}
+
+inline bool isOverlap(int a, int bit) {
+    for (int i = 0; i < a; ++i) {
+        if (!(bit & (1 << i))) continue;
+        if (distSquared(circles[i], circles[a]) < (circles[i].r + circles[a].r) * (circles[i].r + circles[a].r)) return true;
+    }
+    return false;
+}
+
+int dfs(int bit) {
+    if (memo[bit]) return __builtin_popcount(bit);
+    memo[bit] = true;
+    int ret = n - __builtin_popcount(bit);
+    for (int i = 0; i < n; ++i) {
+        if (!(bit & (1 << i)) || isOverlap(i, bit)) continue;
+        for (int j = i + 1; j < n; ++j) {
+            if (!(bit & (1 << j)) || circles[i].c != circles[j].c) continue;
+            if (!isOverlap(j, bit) && !memo[bit ^ (1 << i) ^ (1 << j)]) {
+                ret = max(ret, dfs(bit ^ (1 << i) ^ (1 << j)));
+            }
+        }
+    }
+    return ret;
+}
+
+void solve() {
+    fill_n(memo, 1 << n, false);
+    cout << dfs((1 << n) - 1) << '\n';
+}
+
+bool input() {
+    cin >> n;
+    if (!n) return false;
+    for (int i = 0; i < n; ++i)
+        cin >> circles[i].x >> circles[i].y >> circles[i].r >> circles[i].c;
+    return true;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(nullptr);
+    while (input()) solve();
+    return 0;
+}

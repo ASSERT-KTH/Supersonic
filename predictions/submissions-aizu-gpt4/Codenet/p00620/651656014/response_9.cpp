@@ -1,0 +1,57 @@
+#include <algorithm>
+#include <iostream>
+#include <vector>
+using namespace std;
+typedef long long ll;
+typedef pair<int, int> Point;
+typedef pair<int, Point> SP;
+typedef vector<vector<int>> Mat;
+int dx[] = {0, 1, 0, -1};
+int dy[] = {-1, 0, 1, 0};
+int n;
+Mat mat;
+vector<vector<bool>> used;
+vector<SP> starts;
+bool dfs(int cur, int sum, int x, int y) {
+    if (starts[cur].first == sum) {
+        if (++cur == starts.size()) return true;
+        sum = 0;
+        x = starts[cur].second.second;
+        y = starts[cur].second.first;
+    } else if (starts[cur].first < sum) return false;
+    for (int i = 0; i < 4; i++) {
+        int nx = x + dx[i], ny = y + dy[i];
+        if (nx < 0 || nx >= n || ny < 0 || ny >= n || used[ny][nx]) continue;
+        used[ny][nx] = true;
+        if (dfs(cur, sum + mat[ny][nx], nx, ny)) return true;
+        used[ny][nx] = false;
+    }
+    return false;
+}
+void solve() {
+    mat.assign(n, vector<int>(n));
+    used.assign(n, vector<bool>(n, false));
+    starts.clear();
+    int sum = 0;
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            cin >> mat[i][j];
+            if (mat[i][j] < 0) {
+                starts.emplace_back(-mat[i][j], Point(i, j));
+                used[i][j] = true;
+            }
+            sum += abs(mat[i][j]);
+        }
+    }
+    if (sum != 0 || starts.empty()) {
+        cout << "NO\n";
+        return;
+    }
+    sort(starts.rbegin(), starts.rend());
+    cout << (dfs(0, 0, starts[0].second.second, starts[0].second.first) ? "YES\n" : "NO\n");
+}
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(0);
+    while (cin >> n && n) solve();
+}

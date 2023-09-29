@@ -1,0 +1,66 @@
+#include <iostream>
+#include <cmath>
+using namespace std;
+class Point3d {
+public:
+  double x, y, z;
+  Point3d(double x = 0, double y = 0, double z = 0) : x(x), y(y), z(z) {}
+  Point3d operator+(const Point3d &a) const {
+    return Point3d(x + a.x, y + a.y, z + a.z);
+  }
+  Point3d operator-(const Point3d &a) const {
+    return Point3d(x - a.x, y - a.y, z - a.z);
+  }
+  bool operator==(const Point3d &p) const {
+    static const double EPS = 1e-7;
+    return fabs(x - p.x) < EPS && fabs(y - p.y) < EPS && fabs(z - p.z) < EPS;
+  }
+};
+struct Segment3d {
+  Point3d p1, p2;
+  Segment3d(Point3d p1 = Point3d(), Point3d p2 = Point3d()) : p1(p1), p2(p2) {}
+};
+double dot(const Point3d &a, const Point3d &b) {
+  return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+Point3d cross(const Point3d &a, const Point3d &b) {
+  return Point3d(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+}
+double abs(const Point3d &p) { return sqrt(p.x * p.x + p.y * p.y + p.z * p.z); }
+bool on_segment3d(Segment3d seg, Point3d p) {
+  double d1 = abs(p - seg.p1);
+  double d2 = abs(p - seg.p2);
+  double d3 = abs(seg.p1 - seg.p2);
+  static const double EPS = 1e-7;
+  return fabs(d1 + d2 - d3) < EPS;
+}
+bool point_on_the_triangle3d(Point3d tri1, Point3d tri2, Point3d tri3, Point3d p) {
+  if (on_segment3d(Segment3d(tri1, tri2), p) || on_segment3d(Segment3d(tri2, tri3), p) || on_segment3d(Segment3d(tri3, tri1), p))
+    return true;
+  Point3d v1 = cross(tri2 - tri1, p - tri1);
+  Point3d v2 = cross(tri3 - tri2, p - tri2);
+  Point3d v3 = cross(tri1 - tri3, p - tri3);
+  double d1 = dot(v1, v2);
+  double d2 = dot(v1, v3);
+  return d1 > 0 && d2 > 0;
+}
+Point3d crosspointTS(Point3d tri1, Point3d tri2, Point3d tri3, Segment3d seg) {
+  Point3d normal_vector = cross(tri2 - tri1, tri3 - tri1);
+  normal_vector = normal_vector / abs(normal_vector);
+  double d1 = dot(seg.p2 - seg.p1, normal_vector);
+  double d2 = dot(tri1 - seg.p1, normal_vector);
+  double t = d2 / d1;
+  Point3d e = (seg.p2 - seg.p1) / abs(seg.p2 - seg.p1);
+  return seg.p1 + e * t;
+}
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+  Point3d tri[3], S, G;
+  cin >> S.x >> S.y >> S.z;
+  cin >> G.x >> G.y >> G.z;
+  for (int i = 0; i < 3; ++i) cin >> tri[i].x >> tri[i].y >> tri[i].z;
+  Point3d cp = crosspointTS(tri[0], tri[1], tri[2], Segment3d(S, G));
+  cout << (point_on_the_triangle3d(tri[0], tri[1], tri[2], cp) ? "MISS" : "HIT") << '\n';
+  return 0;
+}

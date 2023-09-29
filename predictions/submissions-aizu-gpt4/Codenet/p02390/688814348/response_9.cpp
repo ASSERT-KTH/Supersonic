@@ -1,0 +1,11 @@
+#include <iostream>
+using namespace std;
+int main() {
+  int S, hours, minutes, seconds;
+  cin >> S;
+  hours = S / 3600;
+  S %= 3600;
+  minutes = S / 60;
+  seconds = S % 60;
+  cout << hours << ":" << minutes << ":" << seconds << endl;
+}

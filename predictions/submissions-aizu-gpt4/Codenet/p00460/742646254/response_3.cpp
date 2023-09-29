@@ -1,0 +1,27 @@
+#include <iostream>
+#define REP(i, a, b) for (int i = a; i < (int)b; i++)
+typedef long long ll;
+
+const int MOD = 100000;
+const int MAXN = 55;
+const int MAXS = 3030;
+int dp[MAXN][MAXS];
+
+int main() {
+  std::ios::sync_with_stdio(false);
+  std::cin.tie(nullptr);
+  
+  for (int N, M, S; std::cin >> N >> M >> S, N || M || S;) {
+    std::fill(&dp[0][0], &dp[0][0] + sizeof(dp) / sizeof(int), 0);
+    dp[0][0] = 1;
+    REP(add, 1, M + 1) {
+      for (int currIndex = N * N; currIndex >= 1; currIndex--) {
+        for (int currSum = add; currSum <= S; currSum++) {
+          (dp[currIndex][currSum] += dp[currIndex - 1][currSum - add]) %= MOD;
+        }
+      }
+    }
+    std::cout << dp[N * N][S] << '\n';
+  }
+  return 0;
+}

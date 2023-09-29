@@ -1,0 +1,86 @@
+```cpp
+#include <algorithm>
+#include <cassert>
+#include <cstdio>
+#include <vector>
+using namespace std;
+const int M = 100000 + 10, N = 50 * M;
+char gc() {
+  char c = getchar();
+  while (c != '0' && c != '1')
+    c = getchar();
+  return c;
+}
+int n, m, d;
+bool open[M][50 + 5];
+int id(int u, int t) { return (u - 1) * d + t; }
+vector<int> e[N], escc[N];
+int nscc, idscc[N], dfn[N], lowlink[N], clo;
+int stk[N], top;
+bool instk[N];
+void dfscc(int k) {
+  dfn[k] = lowlink[k] = ++clo;
+  instk[stk[top++] = k] = true;
+  for (int &p : e[k]) {
+    if (!dfn[p])
+      dfscc(p), lowlink[k] = min(lowlink[k], lowlink[p]);
+    else if (instk[p])
+      lowlink[k] = min(lowlink[k], dfn[p]);
+  }
+  if (lowlink[k] == dfn[k]) {
+    ++nscc;
+    do {
+      instk[stk[--top]] = false;
+      idscc[stk[top]] = nscc;
+    } while (stk[top] != k);
+  }
+}
+void getSCC(int n) {
+  for (int k = 1; k <= n; ++k)
+    if (!dfn[k])
+      dfscc(k);
+  for (int k = 1; k <= n; ++k) {
+    for (int &p : e[k]) {
+      if (idscc[k] != idscc[p])
+        escc[idscc[k]].push_back(idscc[p]);
+    }
+  }
+}
+int ops[N];
+int dp[N];
+bool vis[N];
+int dfsdp(int k) {
+  if (vis[k])
+    return dp[k];
+  for (auto p : escc[k])
+    dp[k] = max(dp[k], dfsdp(p));
+  dp[k] += ops[k];
+  vis[k] = 1;
+  return dp[k];
+}
+int main() {
+  scanf("%d%d%d", &n, &m, &d);
+  for (int i = 1; i <= m; ++i) {
+    int u, v;
+    scanf("%d%d", &u, &v);
+    for (int j = 1; j <= d; ++j)
+      e[id(u, j)].push_back(id(v, j % d + 1));
+  }
+  for (int i = 1; i <= n; ++i)
+    for (int j = 1; j <= d; ++j)
+      open[i][j] = gc() - '0';
+  getSCC(n * d);
+  for (int i = 1; i <= n; ++i) {
+    vector<int> tmp;
+    for (int j = 1; j <= d; ++j)
+      if (open[i][j])
+        tmp.push_back(idscc[id(i, j)]);
+    sort(tmp.begin(), tmp.end());
+    tmp.erase(unique(tmp.begin(), tmp.end()), tmp.end());
+    for (auto j : tmp)
+      ++ops[j];
+  }
+  printf("%d", dfsdp(idscc[id(1, 1)]));
+  return 0;
+}
+```

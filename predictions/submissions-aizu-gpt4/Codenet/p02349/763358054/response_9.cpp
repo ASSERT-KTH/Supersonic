@@ -1,0 +1,39 @@
+#include <iostream>
+#include <vector>
+using namespace std;
+typedef long long ll;
+
+vector<ll> S;
+int n, q;
+
+void update(int idx, ll val){
+    for(; idx<=n; idx += idx & -idx)
+        S[idx] += val;
+}
+
+ll getSum(int idx){
+    ll sum = 0;
+    for(; idx>0; idx -= idx & -idx)
+        sum += S[idx];
+    return sum;
+}
+
+int main() {
+    cin >> n >> q;
+    S.resize(n+1, 0);
+    for (int i = 0; i < q; i++) {
+        bool op;
+        cin >> op;
+        if (op) {
+            int k;
+            cin >> k;
+            cout << getSum(k) << '\n';
+        } else {
+            int s, t, x;
+            cin >> s >> t >> x;
+            update(s, x);
+            update(t+1, -x);
+        }
+    }
+    return 0;
+}

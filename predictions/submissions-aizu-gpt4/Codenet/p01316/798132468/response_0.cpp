@@ -1,0 +1,31 @@
+#include <iostream>
+#include <algorithm>
+#include <climits>
+
+#define r(i, n) for (int i = 0; i < n; i++)
+#define INF INT_MAX
+
+int dp[20001][256];
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(NULL);
+
+  int n, m;
+  while (std::cin >> n >> m, n) {
+    int b[m];
+    int a[n + 1];
+    r(i, m) std::cin >> b[i];
+    r(i, n) std::cin >> a[i + 1];
+    r(i, n + 1) r(j, 256) dp[i][j] = INF;
+    dp[0][128] = 0;
+    r(i, n) r(j, 256) if (dp[i][j] != INF) r(k, m) {
+      int p = std::clamp(j + b[k], 0, 255);
+      int diff = a[i + 1] - p;
+      dp[i + 1][p] = std::min(dp[i + 1][p], dp[i][j] + diff * diff);
+    }
+    int p = *std::min_element(dp[n], dp[n] + 256);
+    std::cout << p << '\n';
+  }
+  return 0;
+}

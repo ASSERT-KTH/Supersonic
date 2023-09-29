@@ -1,0 +1,27 @@
+#include <iostream>
+using namespace std;
+
+const int mod = 1e9 + 7;
+const int maxn = 4001;
+const int maxk = 5;
+unsigned long long dp[maxn][maxk];
+
+void precompute() {
+    for (int i = 0; i < maxk; i++)
+        for (int j = 0; j < maxn; j++)
+            dp[j][i] = i == 1 && j <= 1000 ? 1 : 0;
+    for (int i = 2; i < maxk; i++)
+        for (int j = 0; j < maxn; j++)
+            for (int k = 0; k <= j && k <= 1000; k++)
+                dp[j][i] = (dp[j][i] + dp[j - k][i - 1]) % mod;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(0);
+    precompute();
+    int n;
+    while (cin >> n)
+        cout << dp[n][4] << '\n';
+    return 0;
+}

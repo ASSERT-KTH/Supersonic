@@ -1,0 +1,109 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+struct SegTree {
+  vector<int> sand, sor, lazy;
+  int n;
+  
+  SegTree(int n_) : n(n_), sand(2 * n, 0), sor(2 * n, 0), lazy(2 * n, 0) {}
+
+  inline void upd(int id, int v) {
+    sand[id] |= v;
+    sor[id] |= v;
+    lazy[id] |= v;
+  }
+
+  inline void push(int id, int il, int ir) {
+    if (lazy[id]) {
+      upd(il, lazy[id]);
+      upd(ir, lazy[id]);
+      lazy[id] = 0;
+    }
+  }
+
+  void update(int x, int y, int v, int id, int l, int r) {
+    if (x <= l && r <= y) {
+      upd(id, v);
+      return;
+    }
+    if (x >= r || l >= y)
+      return;
+    int mid = (l + r) >> 1, il = id + 1, ir = id + 2 * (mid - l);
+    push(id, il, ir);
+    update(x, y, v, il, l, mid);
+    update(x, y, v, ir, mid, r);
+    sand[id] = sand[il] & sand[ir];
+    sor[id] = sor[il] | sor[ir];
+  }
+
+  void update(int x, int y, int v) { update(x, y, v, 0, 0, n); }
+
+  pair<int, int> get(int x, int y, int id, int l, int r) {
+    if (x <= l && r <= y) {
+      return {sand[id], sor[id]};
+    }
+    if (x >= r || l >= y)
+      return {(1 << 16) - 1, 0};
+    int mid = (l + r) >> 1, il = id + 1, ir = id + 2 * (mid - l);
+    push(id, il, ir);
+    auto retl = get(x, y, il, l, mid);
+    auto retr = get(x, y, ir, mid, r);
+    return {retl.first & retr.first, retl.second | retr.second};
+  }
+
+  pair<int, int> get(int x, int y) { return get(x, y, 0, 0, n); }
+};
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  
+  int k, q;
+  cin >> k >> q;
+  int n = 1 << k, mask = (1 << k) - 1;
+  SegTree low(n), hig(n);
+
+  vector<tuple<long long, long long, int>> cons;
+  for (int i = 0; i < q; ++i) {
+    long long l, r;
+    int v;
+    cin >> l >> r >> v;
+    int la = l & mask, lb = (l >> k) & mask;
+    int ra = r & mask, rb = (r >> k) & mask;
+    if (lb + 1 < rb) {
+      low.update(0, n, v);
+    } else if (lb < rb) {
+      low.update(la, n, v);
+      low.update(0, ra + 1, v);
+    } else {
+      low.update(la, ra + 1, v);
+    }
+    hig.update(lb, rb + 1, v);
+    cons.emplace_back(l, r, v);
+  }
+
+  auto cek = [&](int la, int ra, int lb, int rb, int v) {
+    return ((low.get(la, ra + 1).second & hig.get(lb, rb + 1).second) == v);
+  };
+  
+  bool ok = all_of(cons.begin(), cons.end(), [&](auto &c) {
+    long long l, r;
+    int v;
+    tie(l, r, v) = c;
+    int la = l & mask, lb = (l >> k) & mask;
+    int ra = r & mask, rb = (r >> k) & mask;
+    if (lb == rb) {
+      return cek(la, ra, lb, rb, v);
+    } else {
+      return cek(la, n - 1, lb, lb, v) && cek(0, ra, rb, rb, v) && (lb + 1 < rb ? cek(0, n - 1, lb + 1, rb - 1, v) : true);
+    }
+  });
+  
+  if (!ok) {
+    cout << "impossible\n";
+  } else {
+    cout << "possible\n";
+  }
+  
+  return 0;
+}

@@ -1,0 +1,53 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+enum Color { WHITE, GRAY, BLACK };
+
+vector<vector<int>> G;
+vector<Color> color;
+int n;
+vector<int> discovery_time, finishing_time;
+int t = 0;
+
+void search_loop(int i) {
+    discovery_time[i] = ++t;
+    color[i] = GRAY;
+    for (int j = 0; j < n; j++) {
+        if(G[i][j] && color[j] == WHITE)
+            search_loop(j);
+    }
+    finishing_time[i] = ++t;
+    color[i] = BLACK;
+}
+
+void dfs() {
+    fill(color.begin(), color.end(), WHITE);
+    t = 0;
+    for (int i = 0; i < n; i++) {
+        if (color[i] == WHITE)
+            search_loop(i);
+    }
+    for (int i = 0; i < n; i++) {
+        cout << i+1 << " " << discovery_time[i] << " " << finishing_time[i] << endl;
+    }
+}
+
+int main() {
+    cin >> n;
+    G.resize(n, vector<int>(n, 0));
+    color.resize(n);
+    discovery_time.resize(n);
+    finishing_time.resize(n);
+    for (int i = 0; i < n; i++) {
+        int e; cin >> e;
+        for (int j = 0; j < e; j++) {
+            int k; cin >> k;
+            G[i][--k] = 1;
+        }
+    }
+    dfs();
+    return 0;
+}

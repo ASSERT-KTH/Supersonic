@@ -1,0 +1,19 @@
+#include <iostream>
+#include <string>
+using namespace std;
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  int n;
+  while (cin >> n, n) {
+    int ans = 0;
+    string now = "", next;
+    for(int i=0; i<n; ++i) {
+      cin >> next;
+      if ((now[1] == 'u' && next[1] == 'd') || (now[1] == 'd' && next[1] == 'u')) ans++;
+      now = next;
+    }
+    cout << ans << '\n';
+  }
+  return 0;
+}

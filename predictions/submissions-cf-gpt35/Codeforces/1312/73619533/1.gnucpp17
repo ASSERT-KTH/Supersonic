@@ -1,0 +1,135 @@
+#include <bits/stdc++.h>
+#include <ext/pb_ds/assoc_container.hpp>
+#include <ext/pb_ds/tree_policy.hpp>
+using namespace std;
+using namespace __gnu_pbds;
+#define ll int
+#define pp pair<ll, ll>
+typedef tree<pp, null_type, less<pp>, rb_tree_tag,
+             tree_order_statistics_node_update>
+    ordered_set;
+#define ld double
+#define fi first
+#define se second
+#define pb push_back
+#define all(x) (x).begin(), (x).end()
+#define rep(i, a, b) for (ll i = a; i < b; i += 1)
+#define sz(v) (ll)(v.size())
+#define hell (ll)1000000007
+#define slld(x) scanf("%lld", &x)
+ll t = 1, nn;
+const ll maxn = 1e6 + 5, N = 1e6, nax = 26, inf = hell;
+ll segtree[4 * maxn], lazy[4 * maxn], value[maxn], adj[nax][maxn];
+vector<ll> good(maxn, 0), seta, tmp, dp(maxn, inf);
+ll combine(ll x, ll y) { return min(x, y); }
+void build(ll node, ll l, ll r) {
+  if (l == r) {
+    segtree[node] = value[l];
+    return;
+  }
+  ll mid = (l + r) / 2;
+  build(node << 1, l, mid);
+  build(node << 1 | 1, mid + 1, r);
+  segtree[node] = combine(segtree[node << 1], segtree[node << 1 | 1]);
+}
+void lazify(ll node, ll l, ll r) {
+  if (lazy[node] != 0) {
+    segtree[node] += lazy[node];
+    if (l < r) {
+      lazy[node << 1] += lazy[node];
+      lazy[node << 1 | 1] += lazy[node];
+    }
+    lazy[node] = 0;
+  }
+}
+void assign(ll node, ll l, ll r, ll idx, ll val) {
+  lazify(node, l, r);
+  if (l == r) {
+    segtree[node] = val;
+    return;
+  }
+  ll mid = (l + r) / 2;
+  lazify(node << 1, l, mid);
+  lazify(node << 1 | 1, mid + 1, r);
+  if (l <= idx and idx <= mid)
+    assign(node << 1, l, mid, idx, val);
+  else
+    assign(node << 1 | 1, mid + 1, r, idx, val);
+  segtree[node] = combine(segtree[node << 1], segtree[node << 1 | 1]);
+}
+void updateRange(ll node, ll l, ll r, ll a, ll b, ll val) {
+  lazify(node, l, r);
+  if (l > b || l > r || r < a)
+    return;
+  if (a <= l and r <= b) {
+    segtree[node] += val;
+    if (l < r) {
+      lazy[node << 1] += val;
+      lazy[node << 1 | 1] += val;
+    }
+    return;
+  }
+  ll mid = (l + r) / 2;
+  updateRange(node << 1, l, mid, a, b, val);
+  updateRange(node << 1 | 1, mid + 1, r, a, b, val);
+  segtree[node] = combine(segtree[node << 1], segtree[node << 1 | 1]);
+}
+ll query(ll node, ll l, ll r, ll a, ll b) {
+  lazify(node, l, r);
+  if (l > b || a > r || l > r)
+    return inf;
+  if (a <= l and r <= b)
+    return segtree[node];
+  ll mid = (l + r) / 2;
+  ll lq = query(node << 1, l, mid, a, b),
+     rq = query(node << 1 | 1, mid + 1, r, a, b);
+  return combine(lq, rq);
+}
+void dfs(ll node, ll par) {
+  if (par != -1)
+    dp[node] = min(dp[node], dp[par] + 1);
+  if (good[node]) {
+    updateRange(1, 1, N, 1, sz(tmp), 1);
+    dp[node] = min(dp[node], query(1, 1, N, 1, sz(tmp)));
+  }
+  tmp.pb(dp[node]);
+  assign(1, 1, N, sz(tmp), dp[node] + good[node]);
+  rep(i, 0, nax) {
+    if (adj[i][node] != -1) {
+      dfs(adj[i][node], node);
+    }
+  }
+  assign(1, 1, N, sz(tmp), inf);
+  tmp.pop_back();
+}
+void solve() {
+  memset(adj, -1, sizeof adj);
+  ll n, x, k;
+  cin >> n;
+  nn = n;
+  char c;
+  rep(i, 1, N + 1) value[i] = inf;
+  build(1, 1, N);
+  rep(i, 1, n + 1) {
+    cin >> x >> c;
+    adj[c - 'a'][x] = i;
+  }
+  cin >> k;
+  rep(i, 0, k) {
+    cin >> x;
+    good[x] = 1;
+    seta.pb(x);
+  }
+  dp[0] = 0;
+  dfs(0, -1);
+  rep(i, 0, k) cout << dp[seta[i]] << " ";
+}
+signed main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(0);
+  cout.tie(0);
+  while (t--) {
+    solve();
+  }
+  return 0;
+}

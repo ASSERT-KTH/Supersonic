@@ -1,0 +1,95 @@
+#include <bits/stdc++.h>
+#define TYLER
+using namespace std;
+class seg_tree {
+public:
+  vector<pair<int, int>> data_;
+  int n_;
+  pair<int, int> join(const pair<int, int> &a, const pair<int, int> &b) {
+    return pair(min(a.first, b.first), max(a.second, b.second));
+  }
+  seg_tree(int n, const pair<int, int> &zero = {1e9, -1e9})
+      : n_(n), data_(2 * n_ - 1, zero) {}
+  void update(int pos, const pair<int, int> &val) {
+    pos += n_ - 1;
+    data_[pos] = val;
+    while (pos > 0) {
+      pos = (pos - 1) / 2;
+      data_[pos] = join(data_[2 * pos + 1], data_[2 * pos + 2]);
+    }
+  }
+  pair<int, int> query(int a, int b, int k, int l, int r) {
+    if (r <= a || b <= l)
+      return {1e9, -1e9};
+    if (a <= l && r <= b)
+      return data_[k];
+    else {
+      pair<int, int> vl = query(a, b, 2 * k + 1, l, (l + r) / 2);
+      pair<int, int> vr = query(a, b, 2 * k + 2, (l + r) / 2, r);
+      return join(vl, vr);
+    }
+  }
+  pair<int, int> query(int a, int b) { return query(a, b, 0, 0, n_); }
+};
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+  cout << boolalpha;
+  cerr << boolalpha;
+  int n, k;
+  cin >> n >> k;
+  vector<vector<int>> a(n, vector<int>(k));
+  for (auto &ai : a)
+    for (auto &aij : ai)
+      cin >> aij;
+  vector<seg_tree> trees(1 << k, seg_tree(n));
+  for (int mask = 0; mask < (1 << k); ++mask) {
+    for (int i = 0; i < n; ++i) {
+      int val = 0;
+      for (int j = 0; j < k; ++j) {
+        if (mask & (1 << j)) {
+          val += a[i][j];
+        } else {
+          val -= a[i][j];
+        }
+      }
+      trees[mask].update(i, {val, val});
+    }
+  }
+  int q;
+  cin >> q;
+  while (q--) {
+    int type;
+    cin >> type;
+    if (type == 1) {
+      int i;
+      cin >> i;
+      --i;
+      vector<int> b(k);
+      for (auto &bj : b)
+        cin >> bj;
+      for (int mask = 0; mask < (1 << k); ++mask) {
+        int val = 0;
+        for (int j = 0; j < k; ++j) {
+          if (mask & (1 << j)) {
+            val += b[j];
+          } else {
+            val -= b[j];
+          }
+        }
+        trees[mask].update(i, {val, val});
+      }
+    } else {
+      int l, r;
+      cin >> l >> r;
+      --l, --r;
+      int ans = -1e9;
+      for (auto &tree : trees) {
+        auto a = tree.query(l, r + 1);
+        ans = max(ans, a.second - a.first);
+      }
+      cout << ans << '\n';
+    }
+  }
+  return 0;
+}

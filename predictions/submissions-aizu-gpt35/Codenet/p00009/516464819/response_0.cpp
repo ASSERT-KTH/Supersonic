@@ -1,0 +1,50 @@
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <vector>
+using namespace std;
+
+void sieve(int n, vector<int> &primes) {
+  vector<bool> v(n + 1, true);
+  primes.push_back(2);
+  for (int i = 3, end = sqrt(n); i <= end; i += 2) {
+    if (!v[i])
+      continue;
+    primes.push_back(i);
+    for (int j = i * i, skip = i * 2; j <= n; j += skip)
+      v[j] = false;
+  }
+  for (int i = ((n % 2 == 0) ? n - 1 : n); i >= 3; i -= 2)
+    if (v[i])
+      primes.push_back(i);
+}
+
+int binary_search(const vector<int> &primes, int x) {
+  int lo = -1, hi = primes.size();
+  while (lo + 1 < hi) {
+    int mid = (lo + hi) >> 1;
+    if (primes[mid] <= x)
+      lo = mid;
+    else
+      hi = mid;
+  }
+  return lo + 1;
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  int n = 0;
+  vector<int> inputs;
+  while (cin >> n)
+    inputs.push_back(n);
+
+  vector<int> primes;
+  sieve(*max_element(inputs.begin(), inputs.end()), primes);
+
+  for (auto x : inputs)
+    cout << binary_search(primes, x) << '\n';
+
+  return 0;
+}

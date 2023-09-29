@@ -1,0 +1,64 @@
+#include <iostream>
+#include <vector>
+#include <unordered_set>
+
+using namespace std;
+
+struct Circle {
+    int x, y, r, c;
+};
+
+bool isOverlap(const Circle& a, const Circle& b) {
+    int dist = (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
+    int sum = (a.r + b.r) * (a.r + b.r);
+    return dist < sum;
+}
+
+int maxCircles(vector<Circle>& circles, vector<int>& taken, int idx, unordered_set<int>& memo) {
+    int n = circles.size();
+    int key = 0;
+    for (int i = 0; i < n; i++) {
+        key = (key * 31 + taken[i]);
+    }
+
+    if (memo.count(key)) {
+        return 0;
+    }
+
+    memo.insert(key);
+
+    int ret = 0;
+    for (int j = idx + 1; j < n; j++) {
+        if (taken[j] == 0 && circles[idx].c == circles[j].c && !isOverlap(circles[idx], circles[j])) {
+            taken[idx] = taken[j] = 1;
+            ret = max(ret, 2 + maxCircles(circles, taken, j + 1, memo));
+            taken[idx] = taken[j] = 0;
+        }
+    }
+
+    return ret;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(0);
+
+    int n;
+    while (cin >> n && n) {
+        vector<Circle> circles(n);
+        for (auto& c : circles) {
+            cin >> c.x >> c.y >> c.r >> c.c;
+        }
+
+        vector<int> taken(n, 0);
+        unordered_set<int> memo;
+        int maxCount = 0;
+        for (int i = 0; i < n; i++) {
+            maxCount = max(maxCount, maxCircles(circles, taken, i, memo));
+        }
+
+        cout << n - maxCount << "\n";
+    }
+
+    return 0;
+}

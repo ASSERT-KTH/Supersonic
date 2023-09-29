@@ -1,0 +1,83 @@
+#include <iostream>
+using namespace std;
+
+const int MAX_T = 3000, MAX_M = 300;
+
+int M, start, goal, dice[6], N[MAX_M], path[MAX_M];
+
+bool isPositionValid(int p) { 
+    return 0 <= p && p < M; 
+}
+
+int *MakePath(int from) {
+    static bool visit[MAX_M] = {};
+    static int bestpath = MAX_T;
+    if (path[from] <= bestpath) 
+        return path;
+    visit[from] = true;
+    path[from] = bestpath;
+    if (from == goal) 
+        bestpath = 0;
+    else {
+        for (int r = 0; r < 6; r++) {
+            int moveto = from + dice[r];
+            if (isPositionValid(moveto)) {
+                int position = moveto + N[moveto];
+                if (!visit[position])
+                    MakePath(position);
+                bestpath = min(bestpath, path[position] + 1);
+            }
+            moveto = from - dice[r];
+            if (isPositionValid(moveto)) {
+                int position = moveto + N[moveto];
+                if (!visit[position])
+                    MakePath(position);
+                bestpath = min(bestpath, path[position] + 1);
+            }
+        }
+    }
+    return path;
+}
+
+int main() {
+    cin >> M;
+    for (int r = 0; r < 6; r++)
+        cin >> dice[r];
+    cin >> start >> goal;
+    start--, goal--;
+    for (int m = 0; m < M; m++)
+        cin >> N[m];
+    for (int m = 0; m < M; m++)
+        path[m] = MAX_T + 1;
+    int *pathptr = MakePath(start);
+    int position = start;
+    for (int t = 0; t < MAX_T; t++) {
+        if (position == goal)
+            break;
+        int r;
+        cin >> r;
+        int d = dice[r - 1];
+        if (isPositionValid(position + d + N[position + d])) {
+            int path_before = path[position];
+            path[position] = path[position + d + N[position + d]] + 1;
+            if (path_before <= path[position])
+                path[position] = path_before;
+            else
+                position = position + d + N[position + d];
+            cout << 1 << endl;
+        }
+        else if (isPositionValid(position - d + N[position - d])) {
+            int path_before = path[position];
+            path[position] = path[position - d + N[position - d]] + 1;
+            if (path_before <= path[position])
+                path[position] = path_before;
+            else
+                position = position - d + N[position - d];
+            cout << -1 << endl;
+        }
+        else {
+            cout << 0 << endl;
+        }
+    }
+    return 0;
+}

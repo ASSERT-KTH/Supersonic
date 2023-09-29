@@ -1,0 +1,69 @@
+#include <iostream>
+#include <vector>
+#include <cstring>
+
+#define MOD 1000000007LL
+
+using namespace std;
+
+typedef vector<int> vi;
+
+int N, M;
+vi g[1010], r[1010];
+int used[1010];
+int List[1010], l;
+int cycle[1010], c;
+int inCycle[1010];
+long long dp[1010];
+
+void dfs(int cur) {
+    used[cur] = 1;
+    List[l++] = cur;
+    for(int i : g[cur]) {
+        if (used[i]) {
+            for (int j = 0; List[j] != i; j++) {}
+            for (int j = j; j < l; j++) cycle[c++] = List[j];
+            return;
+        }
+        dfs(i);
+        if (c > 0) return;
+    }
+    l--;
+}
+
+long long solve(int v) {
+    long long &res = dp[v];
+    if (res != -1)
+        return res;
+    used[v] = 1;
+    res = 1;
+    for(int i : r[v]) res = res * solve(i) % MOD;
+    return res = (res + 1) % MOD;
+}
+
+long long f(int start) {
+    l = c = 0;
+    dfs(start);
+    long long res = 1;
+    for(int i = 0; i < c; i++) inCycle[cycle[i]] = 1;
+    for(int i = 0; i < c; i++) for(int j : r[cycle[i]]) if(!inCycle[j]) res = res * solve(j) % MOD;
+    return (res + 1) % MOD;
+}
+
+int main() {
+    cin.tie(0);
+    ios_base::sync_with_stdio(0);
+    cin >> N >> M;
+    for(int i = 0; i < M; i++) {
+        int s, d;
+        cin >> s >> d;
+        s--;
+        d--;
+        g[s].push_back(d);
+        r[d].push_back(s);
+    }
+    memset(dp, -1, sizeof(dp));
+    long long ans = 1;
+    for(int i = 0; i < N; i++) if (!used[i]) ans = ans * f(i) % MOD;
+    cout << ans << endl;
+}

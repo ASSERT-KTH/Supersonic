@@ -1,0 +1,37 @@
+#include <iostream>
+#include <vector>
+
+void insertionSort(std::vector<int>& arr, int h) {
+    for (int i = h; i < arr.size(); ++i) {
+        int v = arr[i], j = i - h;
+        while (j >= 0 && arr[j] > v) {
+            arr[j + h] = arr[j];
+            j -= h;
+        }
+        arr[j + h] = v;
+    }
+}
+
+void shellSort(std::vector<int>& arr) {
+    std::vector<int> h = {1};
+    for (int i = 0; i < 19; ++i) {
+        h.push_back(3 * h[i] + 1);
+    }
+    for (int i = h.size() - 1; i >= 0; --i) {
+        insertionSort(arr, h[i]);
+    }
+}
+
+int main() {
+    int num;
+    std::cin >> num;
+    std::vector<int> arr(num);
+    for (int& elem : arr) {
+        std::cin >> elem;
+    }
+    shellSort(arr);
+    for (const int& elem : arr) {
+        std::cout << elem << '\n';
+    }
+    return 0;
+}

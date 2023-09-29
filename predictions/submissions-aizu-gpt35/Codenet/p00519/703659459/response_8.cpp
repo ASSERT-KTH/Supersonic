@@ -1,0 +1,81 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <cstring>
+using namespace std;
+
+const int MAXN = 6000;
+const int INF = 1e9;
+
+vector<int> pass[MAXN];
+int n, k;
+int c[MAXN];
+int r[MAXN];
+int d[MAXN];
+bool visited[MAXN];
+
+void dijkstra(int s) {
+    priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
+    pq.push({0, s});
+    d[s] = 0;
+
+    while (!pq.empty()) {
+        int u = pq.top().second;
+        pq.pop();
+        if (visited[u])
+            continue;
+        visited[u] = true;
+        for (int v : pass[u]) {
+            int cost = (v == n-1) ? 0 : c[u];
+            if (d[v] > d[u]+cost) {
+                d[v] = d[u]+cost;
+                pq.push({d[v], v});
+            }
+        }
+    }
+}
+
+void dfs(int u, int f, int end) {
+    if (visited[u])
+        return;
+    visited[u] = true;
+    d[u] = min(d[u], d[f] + c[f]);
+    if (f >= end)
+        return;
+    for (int v : pass[u]) {
+        dfs(v, f, end);
+    }
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    cin >> n >> k;
+
+    for (int i = 0; i < n; i++) {
+        cin >> c[i] >> r[i];
+        d[i] = INF;
+    }
+
+    for (int i = 0; i < k; i++) {
+        int a, b;
+        cin >> a >> b;
+        a--, b--;
+        pass[a].push_back(b);
+        pass[b].push_back(a);
+    }
+
+    dijkstra(0);
+    memset(visited, 0, sizeof visited);
+
+    for (int i = 0; i < n; i++) {
+        for (int j : pass[i]) {
+            memset(visited, 0, sizeof visited);
+            dfs(j, i, r[i]);
+        }
+    }
+
+    cout << d[n-1] << endl;
+    return 0;
+}

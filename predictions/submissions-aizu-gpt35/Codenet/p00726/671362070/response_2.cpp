@@ -1,0 +1,74 @@
+#include <cstdlib>
+#include <iostream>
+#include <string>
+#include <vector>
+using namespace std;
+
+int cket(string &str, int i) {
+  int n = 1;
+  for (; i < str.size(); ++i) {
+    if (str[i] == '(')
+      n++;
+    if (str[i] == ')')
+      n--;
+    if (n == 0)
+      break;
+  }
+  return i;
+}
+int n;
+char expand(string str) {
+  vector<pair<int,int>> indices; // store indices in a vector of pairs to reduce substring operations
+  for (int i = 0; i < str.size(); ++i) {
+    if (isdigit(str[i])) {
+      int j = 1;
+      while (isdigit(str[i + j]))
+        j++;
+      int num = std::atoi(str.substr(i, j).c_str());
+      int s, e;
+      if (str[i + j] == '(') {
+        int k;
+        k = cket(str, i + j + 1);
+        s = i + j + 1;
+        e = k - (i + j + 1);
+        i = k;
+      } else {
+        s = i + j;
+        e = 1;
+        i = i + j;
+      }
+      indices.push_back(make_pair(s,e)); // push indices to vector
+      indices.push_back(make_pair(-1,num)); // use -1 to signify a number in the vector of pairs
+    } else {
+      if (n == 0) {
+        return str[i];
+      }
+      n--;
+    }
+  }
+  // iterate through vector of pairs to expand each substring and return the first non-zero character
+  for (auto p : indices) {
+      if (p.first == -1) {
+          n = p.second;
+      } else {
+          string s = str.substr(p.first,p.second);
+          for (int l = 0; l < n; ++l) {
+              char a = expand(s);
+              if (a != '0')
+                  return a;
+          }
+      }
+  }
+  return '0';
+}
+
+int main(void) {
+  while (true) {
+    string str;
+    cin >> str >> n;
+    if (str == "0" && n == 0)
+      break;
+    cout << expand(str) << endl;
+  }
+  return 0;
+}

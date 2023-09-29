@@ -1,0 +1,95 @@
+#include <cstdio>
+#include <algorithm>
+#include <climits>
+#include <vector>
+using namespace std;
+
+struct Node {
+    int v, size, height;
+    Node* ch[2];
+    Node(int v) : v(v), size(1), height(1), ch{nullptr, nullptr} {}
+};
+
+inline int size(Node* n) { return n ? n->size : 0; }
+inline int height(Node* n) { return n ? n->height : 0; }
+inline void update(Node* n) {
+    n->size = size(n->ch[0]) + 1 + size(n->ch[1]);
+    n->height = max(height(n->ch[0]), height(n->ch[1])) + 1;
+}
+
+Node* rotate(Node* n, int dir) {
+    Node* m = n->ch[!dir];
+    n->ch[!dir] = m->ch[dir];
+    m->ch[dir] = n;
+    update(n);
+    update(m);
+    return m;
+}
+
+Node* balance(Node* n) {
+    if (height(n->ch[0]) - height(n->ch[1]) > 1) {
+        if (height(n->ch[0]->ch[0]) < height(n->ch[0]->ch[1]))
+            n->ch[0] = rotate(n->ch[0], 0);
+        n = rotate(n, 1);
+    } else if (height(n->ch[0]) - height(n->ch[1]) < -1) {
+        if (height(n->ch[1]->ch[0]) > height(n->ch[1]->ch[1]))
+            n->ch[1] = rotate(n->ch[1], 1);
+        n = rotate(n, 0);
+    }
+    return n;
+}
+
+Node* insert(Node* n, int k, int v) {
+    if (!n) return new Node(v);
+    int dir = k > size(n->ch[0]);
+    n->ch[dir] = insert(n->ch[dir], k - dir * (size(n->ch[0]) + 1), v);
+    update(n);
+    return balance(n);
+}
+
+Node* erase(Node* n, int k) {
+    int dir = k > size(n->ch[0]);
+    if (dir) k -= size(n->ch[0]) + 1;
+    if (n && k != size(n->ch[0])) {
+        n->ch[dir] = erase(n->ch[dir], k);
+        update(n);
+        return balance(n);
+    }
+    Node* ret = n->ch[!dir] ? n->ch[!dir] : n->ch[dir];
+    delete n;
+    return ret;
+}
+
+int find(Node* n, int k) {
+    while (k != size(n->ch[0])) {
+        int dir = k > size(n->ch[0]);
+        if (dir) k -= size(n->ch[0]) + 1;
+        n = n->ch[dir];
+    }
+    return n->v;
+}
+
+int main() {
+    int n, q;
+    scanf("%d %d", &n, &q);
+    Node* root = nullptr;
+    for (int i = 0; i < n; i++) {
+        int a; scanf("%d", &a);
+        root = insert(root, i, a);
+    }
+    while (q--) {
+        int x, y, z;
+        scanf("%d %d %d", &x, &y, &z);
+        if (x == 0) {
+            int val = find(root, z);
+            root = erase(root, z);
+            root = insert(root, y, val);
+        } else if (x == 1) {
+            printf("%d\n", find(root, y));
+        } else {
+            root = erase(root, y);
+            root = insert(root, y, z);
+        }
+    }
+    return 0;
+}

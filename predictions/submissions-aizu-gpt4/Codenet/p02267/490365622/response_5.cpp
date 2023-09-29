@@ -1,0 +1,23 @@
+#include <stdio.h>
+#include <unordered_set>
+
+int main() {
+    int n, q, i, cnt = 0;
+    std::unordered_set<int> S;
+    scanf("%d", &n);
+    for (i = 0; i < n; i++) {
+        int val;
+        scanf("%d", &val);
+        S.insert(val);
+    }
+    scanf("%d", &q);
+    for (i = 0; i < q; i++) {
+        int val;
+        scanf("%d", &val);
+        if (S.count(val)) {
+            cnt++;
+        }
+    }
+    printf("%d\n", cnt);
+    return 0;
+}

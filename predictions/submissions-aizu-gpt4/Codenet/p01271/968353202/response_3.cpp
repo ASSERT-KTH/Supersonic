@@ -1,0 +1,55 @@
+#include <iostream>
+#include <queue>
+using namespace std;
+typedef pair<int,int> pii;
+const int dx[4] = {0, 0, 1, -1};
+const int dy[4] = {1, -1, 0, 0};
+int w, h;
+char mp[2][51][51];
+bool visited[51][51][51][51];
+
+bool bfs(int lx, int ly, int rx, int ry) {
+  queue<pair<pii,pii>> Q;
+  Q.push({{lx, ly}, {rx, ry}});
+  while (!Q.empty()) {
+    auto [l, r] = Q.front();
+    Q.pop();
+    lx = l.first; ly = l.second;
+    rx = r.first; ry = r.second;
+    int cnt = (mp[0][ly][lx] == '%') + (mp[1][ry][rx] == '%');
+    if (cnt == 2) return true;
+    if (visited[ly][lx][ry][rx] || cnt == 1)
+      continue;
+    visited[ly][lx][ry][rx] = 1;
+    for (int i = 0; i < 4; i++) {
+      int nlx = lx + dx[i], nly = ly + dy[i];
+      int nrx = rx - dx[i], nry = ry - dy[i];
+      if (nlx < 0 || nly < 0 || nlx >= w || nly >= h || mp[0][nly][nlx] == '#')
+        nlx = lx, nly = ly;
+      if (nrx < 0 || nry < 0 || nrx >= w || nry >= h || mp[1][nry][nrx] == '#')
+        nrx = rx, nry = ry;
+      Q.push({{nlx, nly}, {nrx, nry}});
+    }
+  }
+  return false;
+}
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+  while (cin >> w >> h && (w || h)) {
+    pii l, r;
+    for (int i = 0; i < h; i++) {
+      for (int f = 0; f < 2; f++) {
+        for (int j = 0; j < w; j++) {
+          cin >> mp[f][i][j];
+          if (mp[f][i][j] == 'L') l = {j, i};
+          if (mp[f][i][j] == 'R') r = {j, i};
+        }
+      }
+    }
+    fill(&visited[0][0][0][0], &visited[51][0][0][0], false);
+    cout << (bfs(l.first, l.second, r.first, r.second) ? "Yes" : "No") << endl;
+  }
+  return 0;
+}

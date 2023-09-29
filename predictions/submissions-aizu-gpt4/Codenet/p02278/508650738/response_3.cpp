@@ -1,0 +1,66 @@
+#include <vector>
+#include <algorithm>
+#include <map>
+#include <iostream>
+using namespace std;
+#define int long long
+struct QuickFind {
+  vector<int> r, p, v;
+  QuickFind() {}
+  QuickFind(int size) { init(size); }
+  void init(int size) {
+    r.resize(size, 0);
+    p.resize(size, 0);
+    v.resize(size);
+    for (int i = 0; i < size; i++) {
+      r[i] = 1, p[i] = i;
+      v[i] = i;
+    }
+  }
+  int root(int x) { return p[x] == x ? x : p[x] = root(p[x]); }
+  void unite(int x, int y) {
+    x = root(x);
+    y = root(y);
+    if (x != y) {
+      if (r[x] < r[y])
+        swap(x, y);
+      p[y] = x;
+      r[x] += r[y];
+    }
+  }
+};
+signed main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  int n;
+  cin >> n;
+  vector<int> a(n);
+  for (int &x : a)
+    cin >> x;
+  QuickFind qf(n);
+  vector<int> b(a);
+  sort(b.begin(), b.end());
+  map<int, int> p, q;
+  for (int i = 0; i < n; i++) {
+    p[a[i]] = i;
+    q[b[i]] = i;
+  }
+  for (int i = 0; i < n; i++)
+    qf.unite(i, p[b[i]]);
+  vector<int> sum(n, 0);
+  vector<int> mn(n, INT_MAX);
+  for (int i = 0; i < n; i++) {
+    int r = qf.root(i);
+    sum[r] += a[i];
+    mn[r] = min(mn[r], a[i]);
+  }
+  int ans = 0;
+  for (int i = 0; i < n; i++) {
+    if (qf.root(i) == i) {
+      int k = qf.r[i];
+      ans += min(sum[i] + mn[i] * (k - 2), sum[i] + mn[i] + b[0] * (k + 1));
+    }
+  }
+  cout << ans << endl;
+  return 0;
+}

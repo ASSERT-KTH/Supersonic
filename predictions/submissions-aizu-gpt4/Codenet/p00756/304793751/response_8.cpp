@@ -1,0 +1,41 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+constexpr int MAX_N = 24;
+int x[MAX_N], y[MAX_N], r[MAX_N], c[MAX_N];
+int dp[1 << MAX_N];
+
+int squareDistance(int i, int j) {
+    int dx = x[i] - x[j];
+    int dy = y[i] - y[j];
+    return dx * dx + dy * dy;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(nullptr);
+    while (true) {
+        int n;
+        cin >> n;
+        if (n == 0)
+            break;
+        for (int i = 0; i < n; ++i) {
+            cin >> x[i] >> y[i] >> r[i] >> c[i];
+        }
+        fill(dp, dp + (1 << n), n);
+        for (int mask = 0; mask < (1 << n); ++mask) {
+            for (int i = 0; i < n; ++i) {
+                if (mask & (1 << i)) {
+                    for (int j = 0; j < n; ++j) {
+                        if (i != j && c[i] == c[j] && (mask & (1 << j)) &&
+                            squareDistance(i, j) >= (r[i] + r[j]) * (r[i] + r[j])) {
+                            dp[mask] = min(dp[mask], dp[mask ^ (1 << i) ^ (1 << j)]);
+                        }
+                    }
+                }
+            }
+        }
+        cout << dp[(1 << n) - 1] << '\n';
+    }
+    return 0;
+}

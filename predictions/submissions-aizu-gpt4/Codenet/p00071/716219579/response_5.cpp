@@ -1,0 +1,34 @@
+#include <iostream>
+#include <vector>
+using namespace std;
+typedef vector<int> vi;
+typedef vector<vi> vvi;
+#define REP(i, N) for (int i = 0; i < (N); i++)
+const int dx[] = {1, 0, -1, 0};
+const int dy[] = {0, 1, 0, -1};
+int n, x, y;
+vvi M(9, vi(9));
+void solve(int y, int x) {
+  M[y][x] = 0;
+  for (int i = 0; i < 4; i++) {
+    int nx = x + dx[i], ny = y + dy[i];
+    if (ny >= 0 && ny < 8 && nx >= 0 && nx < 8 && M[ny][nx] == 1)
+      solve(ny, nx);
+  }
+}
+int main() {
+  cin >> n;
+  REP(i, n) {
+    REP(j, 8) {
+      string s; cin >> s;
+      REP(k, 8) M[j][k] = s[k] - '0';
+    }
+    cin >> x >> y;
+    solve(y - 1, x - 1);
+    cout << "Data " << i + 1 << ":" << endl;
+    REP(j, 8) {
+      REP(k, 8) cout << M[j][k];
+      cout << endl;
+    }
+  }
+}

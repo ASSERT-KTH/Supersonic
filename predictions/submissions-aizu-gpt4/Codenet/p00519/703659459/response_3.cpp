@@ -1,0 +1,66 @@
+#include <vector>
+#include <queue>
+#include <limits>
+
+using namespace std;
+
+#define INF numeric_limits<int>::max()
+
+struct Node{
+    int nodeID;
+    int cost;
+};
+
+vector<vector<Node>> graph(3005);
+int n, k;
+int c[3005];
+int r[3005];
+int d[3005];
+
+bool operator<(const Node &a, const Node &b){
+    return a.cost > b.cost;
+}
+
+void dijkstra(int start){
+    priority_queue<Node> pq;
+    for(int i=1; i<=n; i++) d[i] = INF;
+    d[start] = 0;
+    pq.push({start,0});
+
+    while(!pq.empty()){
+        Node current = pq.top();
+        pq.pop();
+        if(d[current.nodeID] < current.cost) continue;
+        
+        for(auto &next : graph[current.nodeID]){
+            if(d[next.nodeID] > next.cost + current.cost){
+                d[next.nodeID] = next.cost + current.cost;
+                pq.push({next.nodeID, d[next.nodeID]});
+            }
+        }
+    }
+}
+
+int main(){
+    cin >> n >> k;
+    for(int i=1; i<=n; i++) cin >> c[i] >> r[i];
+
+    for(int i=1; i<=n; i++){
+        for(int j=i-1; j>max(i-r[i]-1, 0); j--)
+            graph[i].push_back({j, c[i]});
+        for(int j=i+1; j<min(i+r[i]+1, n+1); j++)
+            graph[i].push_back({j, c[i]});
+    }
+
+    for(int i=0; i<k; i++){
+        int a, b;
+        cin >> a >> b;
+        graph[a].push_back({b, 0});
+        graph[b].push_back({a, 0});
+    }
+
+    dijkstra(1);
+
+    cout << d[n] << "\n";
+    return 0;
+}

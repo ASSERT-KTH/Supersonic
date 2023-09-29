@@ -1,0 +1,48 @@
+#include <algorithm>
+#include <cstring>
+#include <iostream>
+using namespace std;
+
+#define rep(i, n) for (int i = 0; i < n; ++i)
+
+const int MAXN = 333;
+
+int n, m;
+int c[MAXN], v[3][MAXN];
+int dp[2][MAXN];
+
+void max_swap(int &a, const int &b) { a = max(a, b); }
+
+int dpru(int *c, int *v) {
+  memset(dp, 0, sizeof(dp));
+  int now = 0, pre = 1;
+  for (int i = 0; i < n; ++i) {
+    swap(now, pre);
+    for (int j = 0; j <= m; ++j) {
+      dp[now][j] = dp[pre][j];
+      if (j >= c[i])
+        max_swap(dp[now][j], dp[now][j - c[i]] + v[i]);
+    }
+  }
+  return dp[now][m];
+}
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+  while (cin >> n >> m) {
+    rep(i, n) {
+      string s;
+      int t;
+      getline(cin, s);
+      getline(cin, s);
+      cin >> t;
+      c[i] = t;
+      rep(j, 3) cin >> v[j][i];
+    }
+    int res = 0;
+    rep(i, 3) max_swap(res, dpru(c, v[i]));
+    cout << res << endl;
+  }
+  return 0;
+}

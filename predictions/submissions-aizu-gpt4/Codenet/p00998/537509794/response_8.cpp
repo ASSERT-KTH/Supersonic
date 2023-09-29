@@ -1,0 +1,112 @@
+#include <iostream>
+#include <algorithm>
+#include <vector>
+
+using namespace std;
+
+typedef pair<int, int> P;
+
+struct Node {
+    P val;
+    Node *lch, *rch;
+    int pri, cnt;
+
+    Node(P val) : val(val), lch(nullptr), rch(nullptr), pri(rand()), cnt(1) {}
+};
+
+int count(Node *t) { return !t ? 0 : t->cnt; }
+
+Node *update(Node *t) {
+    t->cnt = count(t->lch) + count(t->rch) + 1;
+    return t;
+}
+
+Node *merge(Node *l, Node *r) {
+    if (!l || !r) return !l ? r : l;
+
+    if (l->pri > r->pri) {
+        l->rch = merge(l->rch, r);
+        return update(l);
+    } else {
+        r->lch = merge(l, r->lch);
+        return update(r);
+    }
+}
+
+pair<Node *, Node *> split(Node *t, int k) {
+    if (!t) return make_pair(nullptr, nullptr);
+
+    if (k <= count(t->lch)) {
+        pair<Node *, Node *> s = split(t->lch, k);
+        t->lch = s.second;
+        return make_pair(s.first, update(t));
+    } else {
+        pair<Node *, Node *> s = split(t->rch, k - count(t->lch) - 1);
+        t->rch = s.first;
+        return make_pair(update(t), s.second);
+    }
+}
+
+Node *insert(Node *t, int k, P val) {
+    pair<Node *, Node *> s = split(t, k);
+    t = merge(s.first, new Node(val));
+    t = merge(t, s.second);
+    return t;
+}
+
+Node *erase(Node *t, int k) {
+    pair<Node *, Node *> s1, s2;
+    s1 = split(t, k + 1), s2 = split(s1.first, k);
+    t = merge(s2.first, s1.second);
+    delete s2.second;
+    return t;
+}
+
+P find(Node *t, int k) {
+    int c = count(t->lch);
+    if (k < c) return find(t->lch, k);
+    if (k == c) return t->val;
+    return find(t->rch, k - c - 1);
+}
+
+Node *find(Node *t, P val) {
+    if (!t) return nullptr;
+    if (t->val == val) return t;
+    if (val < t->val) return find(t->lch, val);
+    return find(t->rch, val);
+}
+
+int main() {
+    int n, q;
+    cin >> n >> q;
+    Node *root = nullptr;
+    for (int i = 0; i < n; ++i) {
+        int a;
+        cin >> a;
+        root = insert(root, i, P(a, i));
+    }
+
+    for (int i = 0; i < q; ++i) {
+        int x, y, z;
+        cin >> x >> y >> z;
+        if (x == 0) {
+            P val = find(root, z);
+            root = erase(root, z);
+            root = insert(root, y, val);
+        } else if (x == 1) {
+            Node *t1, *t2, *t3;
+            tie(t1, t2) = split(root, y);
+            tie(t2, t3) = split(t2, z - y + 1);
+            vector<P> a;
+            for (int j = 0; j < z - y + 1; ++j) a.push_back(find(t2, j));
+            sort(a.begin(), a.end());
+            printf("%d\n", a[0].first);
+            root = merge(t1, merge(t2, t3));
+        } else {
+            root = erase(root, y);
+            root = insert(root, y, P(z, y));
+        }
+    }
+
+    return 0;
+}

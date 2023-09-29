@@ -1,0 +1,49 @@
+#include <cmath>
+#include <cstdio>
+#include <vector>
+#include <queue>
+using namespace std;
+
+#define M 9999
+
+int parent[M], a[M], b[M];
+
+priority_queue<pair<double, int>, vector<pair<double, int>>, greater<pair<double, int>>> pq;
+
+int root(int a) { return parent[a] == a ? a : parent[a] = root(parent[a]); }
+
+bool unite(int a, int b) {
+    int x = root(a), y = root(b);
+    if (x == y)
+        return false;
+    parent[x] = y;
+    return true;
+}
+
+int main() {
+    int i, j, k, m, n;
+    double x, y, z, r;
+    for (; scanf("%d", &n), n;) {
+        vector<vector<double>> v(n, vector<double>(4));
+        for (i = 0; i < n; i++)
+            scanf("%lf%lf%lf%lf", &v[i][0], &v[i][1], &v[i][2], &v[i][3]);
+        for (i = 0; i < n; i++)
+            parent[i] = i;
+        for (m = i = 0; i < n; i++)
+            for (j = i + 1; j < n; j++) {
+                for (x = k = 0; k < 3; k++)
+                    x += (v[i][k] - v[j][k]) * (v[i][k] - v[j][k]);
+                x = sqrt(x) - v[i][3] - v[j][3];
+                if (x <= 0)
+                    unite(i, j);
+                else
+                    pq.push({x, m++}), a[m - 1] = i, b[m - 1] = j;
+            }
+        for (x = i = 0; i < m; i++)
+            if (unite(a[pq.top().second], b[pq.top().second]))
+                x += pq.top().first, pq.pop();
+            else
+                pq.pop();
+        printf("%.3f\n", x);
+    }
+}

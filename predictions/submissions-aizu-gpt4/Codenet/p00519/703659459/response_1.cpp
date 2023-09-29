@@ -1,0 +1,54 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <utility>
+#include <algorithm>
+#include <limits>
+
+using namespace std;
+
+constexpr long long INF = numeric_limits<long long>::max() / 2;
+constexpr size_t MAXN = 6000;
+
+vector<int> pass[MAXN];
+int n, k;
+int c[MAXN];
+int r[MAXN];
+long long d[MAXN];
+
+void dijk(int s, int g) {
+    fill(d, d + n, INF);
+    d[s] = 0;
+    priority_queue<pair<long long, int>, vector<pair<long long, int>>, greater<>> que;
+    que.push({0, s});
+    while (!que.empty()) {
+        auto [dist, v] = que.top();
+        que.pop();
+        if (d[v] < dist) continue;
+        for (int i = 0; i < pass[v].size(); i++) {
+            int u = pass[v][i];
+            if (d[u] > d[v] + c[v]) {
+                d[u] = d[v] + c[v];
+                que.push({d[u], u});
+            }
+        }
+    }
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(nullptr);
+    
+    cin >> n >> k;
+    for (int i = 0; i < n; i++) cin >> c[i] >> r[i];
+    for (int i = 0; i < k; i++) {
+        int a, b;
+        cin >> a >> b;
+        a--, b--;
+        pass[a].push_back(b);
+        pass[b].push_back(a);
+    }
+    dijk(0, n - 1);
+    cout << d[n - 1] << "\n";
+    return 0;
+}

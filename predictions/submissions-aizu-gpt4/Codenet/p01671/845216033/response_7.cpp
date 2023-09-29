@@ -1,0 +1,94 @@
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+typedef vector<int> vi;
+typedef pair<int, int> pii;
+typedef pair<ll, int> pli;
+
+struct UnionFind {
+    vi par;
+    UnionFind(int n) : par(n, -1) {}
+    int root(int x) {
+        if (par[x] < 0) return x;
+        else return par[x] = root(par[x]);
+    }
+    bool issame(int x, int y) {
+        return root(x) == root(y);
+    }
+    bool merge(int x, int y) {
+        x = root(x), y = root(y);
+        if (x == y) return false;
+        if (par[x] > par[y]) swap(x, y);
+        par[x] += par[y];
+        par[y] = x;
+        return true;
+    }
+    int size(int x) {
+        return -par[root(x)];
+    }
+};
+
+struct edge {
+    int u, v, idx;
+    ll cost;
+    bool operator<(const edge& e) const {
+        return cost < e.cost;
+    }
+};
+
+vector<edge> es;
+vector<ll> ans;
+vector<vi> g;
+vector<set<pli>> st;
+ll total_cost = 0;
+
+void dfs(int v, int p, ll maxcost) {
+    for (int i : g[v]) {
+        edge& e = es[i];
+        if (e.u == p || e.v == p) continue;
+        int to = (e.u == v ? e.v : e.u);
+        dfs(to, v, max(e.cost, maxcost));
+    }
+    if (p >= 0) {
+        ans[es[p].idx] = total_cost - maxcost + st[v].begin()->first;
+    }
+}
+
+int main() {
+    int n, m;
+    scanf("%d%d", &n, &m);
+    es.resize(m);
+    ans.resize(m);
+    g.resize(n);
+    st.resize(n);
+    for (int i = 0; i < m; ++i) {
+        scanf("%d%d%lld", &es[i].u, &es[i].v, &es[i].cost);
+        --es[i].u, --es[i].v;
+        es[i].idx = i;
+    }
+    sort(es.begin(), es.end());
+    UnionFind uf(n);
+    for (const edge& e : es) {
+        if (uf.merge(e.u, e.v)) {
+            g[e.u].push_back(e.idx);
+            g[e.v].push_back(e.idx);
+            total_cost += e.cost;
+        } else {
+            st[e.u].emplace(e.cost, e.idx);
+            st[e.v].emplace(e.cost, e.idx);
+        }
+    }
+    for (int i = 0; i < n; ++i) {
+        if (uf.root(i) != uf.root(0)) {
+            for (int j = 0; j < m; ++j) {
+                printf("-1\n");
+            }
+            return 0;
+        }
+    }
+    dfs(0, -1, 0);
+    for (const edge& e : es) {
+        printf("%lld\n", ans[e.idx]);
+    }
+    return 0;
+}

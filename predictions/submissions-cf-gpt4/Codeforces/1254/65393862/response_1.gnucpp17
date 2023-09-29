@@ -1,0 +1,110 @@
+#include <algorithm>
+#include <vector>
+using namespace std;
+const int MOD = 998244353;
+typedef long long ll;
+struct mod_int {
+  int val;
+  mod_int(ll v = 0) {
+    if (v < 0) v = v % MOD + MOD;
+    if (v >= MOD) v %= MOD;
+    val = v;
+  }
+  mod_int &operator+=(const mod_int &other) {
+    val += other.val;
+    if (val >= MOD) val -= MOD;
+    return *this;
+  }
+  mod_int &operator-=(const mod_int &other) {
+    val -= other.val;
+    if (val < 0) val += MOD;
+    return *this;
+  }
+  mod_int &operator*=(const mod_int &other) {
+    val = (ll)val * other.val % MOD;
+    return *this;
+  }
+  friend mod_int operator+(const mod_int &a, const mod_int &b) {
+    return mod_int(a) += b;
+  }
+  friend mod_int operator-(const mod_int &a, const mod_int &b) {
+    return mod_int(a) -= b;
+  }
+  friend mod_int operator*(const mod_int &a, const mod_int &b) {
+    return mod_int(a) *= b;
+  }
+};
+struct query {
+  int type, v;
+  mod_int d;
+};
+const int MAXN = 2e5 + 5;
+vector<int> g[MAXN];
+int sz[MAXN], tin[MAXN], tout[MAXN], t;
+void dfs(int v, int p) {
+  tin[v] = t++;
+  sz[v] = 1;
+  for (auto &u : g[v]) {
+    if (u == p) continue;
+    dfs(u, v);
+    sz[v] += sz[u];
+  }
+  tout[v] = t;
+}
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+  int n, q;
+  cin >> n >> q;
+  for (int i = 1; i < n; i++) {
+    int u, v;
+    cin >> u >> v;
+    g[--u].push_back(--v);
+    g[v].push_back(u);
+  }
+  dfs(0, -1);
+  vector<query> pending_queries;
+  mod_int inv_n = mod_int(1) / n;
+  vector<mod_int> values(n), updates(n), query_d(n);
+  for (int _ = 0; _ < q; _++) {
+    query qry;
+    cin >> qry.type >> qry.v;
+    --qry.v;
+    if (qry.type == 1) {
+      int d;
+      cin >> d;
+      qry.d = d;
+      pending_queries.push_back(qry);
+      query_d[qry.v] += qry.d;
+    } else {
+      mod_int answer = values[qry.v];
+      for (auto &prev : pending_queries) {
+        if (prev.v == qry.v) {
+          answer += prev.d;
+        } else if (tin[prev.v] <= tin[qry.v] && tout[qry.v] <= tout[prev.v]) {
+          mod_int prob = (n - sz[qry.v]) * inv_n;
+          answer += prob * prev.d;
+        } else {
+          mod_int prob = sz[prev.v] * inv_n;
+          answer += prob * prev.d;
+        }
+      }
+      cout << answer.val << '\n';
+    }
+    if ((int)pending_queries.size() >= sqrt(n)) {
+      for (int i = 0; i < n; i++)
+        if (query_d[i] != 0) {
+          mod_int base_prob = sz[i] * inv_n;
+          updates[0] += base_prob * query_d[i];
+          updates[i] += (1 - base_prob) * query_d[i];
+        }
+      for (int i = 0; i < n; i++) {
+        values[i] += updates[i];
+        for (auto &j : g[i]) if (tin[j] > tin[i]) updates[j] += updates[i];
+        updates[i] = 0;
+        query_d[i] = 0;
+      }
+      pending_queries.clear();
+    }
+  }
+}

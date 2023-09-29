@@ -1,0 +1,45 @@
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <map>
+#include <set>
+#include <vector>
+using namespace std;
+typedef long long ll;
+
+ll b_pow(ll x, ll n) {
+  if (n == 0) {
+    return 1;
+  }
+  if (n == 1) {
+    return x;
+  }
+  ll temp = b_pow(x, n >> 1);
+  if (n & 1) {
+    return x * temp * temp;
+  }
+  return temp * temp;
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  ll z;
+  while (cin >> z && z) {
+    ll ans = 0;
+    ll max_y = cbrt(z * z * z);
+    for (ll x = 1; x <= max_y; x++) {
+      ll y_cubed = z * z * z - b_pow(x, 3);
+      ll y = cbrt(y_cubed);
+      if (b_pow(y, 3) != y_cubed) {
+        y++;
+      }
+      if (y <= x) {
+        continue;
+      }
+      ans = max(ans, b_pow(x, 3) + b_pow(y, 3));
+    }
+    cout << z * z * z - ans << '\n';
+  }
+}

@@ -1,0 +1,59 @@
+#include <algorithm>
+#include <iostream>
+#include <string>
+using namespace std;
+const int INF = 1000000001;
+const int MAX = 500000;
+int cnt;
+int S[MAX], L[MAX/2+2], R[MAX/2+2];
+void merge(int *A, int left, int mid, int right) {
+  int n1 = mid - left, n2 = right - mid;
+  for (int i = 0; i < n1; ++i) {
+    L[i] = A[left + i];
+  }
+  for (int i = 0; i < n2; ++i) {
+    R[i] = A[mid + i];
+  }
+  int i = 0, j = 0, k = left;
+  while (i < n1 && j < n2) {
+    if (L[i] <= R[j]) {
+      A[k] = L[i++];
+    } else {
+      A[k] = R[j++];
+    }
+    ++k;
+  }
+  while (i < n1) {
+    A[k++] = L[i++];
+  }
+  while (j < n2) {
+    A[k++] = R[j++];
+  }
+  cnt += right - left;
+}
+void mergesort(int *A, int left, int right) {
+  if (left + 1 < right) {
+    int mid = (left + right) / 2;
+    mergesort(A, left, mid);
+    mergesort(A, mid, right);
+    merge(A, left, mid, right);
+  }
+}
+int main() {
+  int N;
+  cnt = 0;
+  cin >> N;
+  for (int i = 0; i < N; ++i) {
+    cin >> S[i];
+  }
+  mergesort(S, 0, N);
+  for (int i = 0; i < N; ++i) {
+    if (i == N - 1) {
+      cout << S[i] << endl;
+    } else {
+      cout << S[i] << " ";
+    }
+  }
+  cout << cnt << endl;
+  return 0;
+}

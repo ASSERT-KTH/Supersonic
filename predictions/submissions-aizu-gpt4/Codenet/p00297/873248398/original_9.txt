@@ -1,0 +1,82 @@
+```cpp
+#include <vector>
+#include <algorithm>
+#include <iostream>
+#define all(a) a.begin(), a.end()
+#define PB push_back
+typedef long long ll;
+typedef std::pair<int, int> pii;
+typedef std::vector<pii> vpii;
+
+struct SegTree {
+  int n;
+  std::vector<int> Max;
+  std::vector<int> Min;
+  void init(int n_) {
+    n = 1;
+    while (n < n_)
+      n *= 2;
+    Max.resize(2 * n, -1e9);
+    Min.resize(2 * n, 1e9);
+  }
+  void min_update(int idx, int val) {
+    for (Min[idx += n - 1] = val; idx > 0; idx = (idx - 1) / 2)
+      Min[idx / 2] = std::min(Min[idx], Min[idx ^ 1]);
+  }
+  void max_update(int idx, int val) {
+    for (Max[idx += n - 1] = val; idx > 0; idx = (idx - 1) / 2)
+      Max[idx / 2] = std::max(Max[idx], Max[idx ^ 1]);
+  }
+  int get_min(int a, int b) {
+    int res = 1e9;
+    for (a += n, b += n; a < b; a /= 2, b /= 2) {
+      if (a & 1) res = std::min(res, Min[a++]);
+      if (b & 1) res = std::min(res, Min[--b]);
+    }
+    return res;
+  }
+  int get_max(int a, int b) {
+    int res = -1e9;
+    for (a += n, b += n; a < b; a /= 2, b /= 2) {
+      if (a & 1) res = std::max(res, Max[a++]);
+      if (b & 1) res = std::max(res, Max[--b]);
+    }
+    return res;
+  }
+};
+
+int main() {
+  ios::sync_with_stdio(false);                                                 
+  cin.tie(0);
+  int N, d;
+  std::cin >> N >> d;
+  SegTree x_seg, y_seg;
+  x_seg.init(N), y_seg.init(N);
+  vpii hoge;
+  std::vector<int> X(N), Y(N);
+  for (int i = 0; i < N; ++i) {
+    int x, y, b;
+    std::cin >> x >> y >> b;
+    X[i] = x, Y[i] = y;
+    hoge.PB({b, i});
+  }
+  std::sort(all(hoge));
+  for (int i = 0; i < N; ++i) {
+    x_seg.min_update(i, X[hoge[i].second]);
+    x_seg.max_update(i, X[hoge[i].second]);
+    y_seg.min_update(i, Y[hoge[i].second]);
+    y_seg.max_update(i, Y[hoge[i].second]);
+  }
+  ll ans = -1e18;
+  for (int i = 0; i < N; ++i) {
+    int b = hoge[i].first;
+    int idx = upper_bound(all(hoge), pii(b + d, 1e9)) - hoge.begin();
+    ll min_x = x_seg.get_min(i, idx);
+    ll max_x = x_seg.get_max(i, idx);
+    ll min_y = y_seg.get_min(i, idx);
+    ll max_y = y_seg.get_max(i, idx);
+    ans = std::max(ans, (max_x - min_x) * (max_y - min_y));
+  }
+  std::cout << ans << '\n';
+}
+```

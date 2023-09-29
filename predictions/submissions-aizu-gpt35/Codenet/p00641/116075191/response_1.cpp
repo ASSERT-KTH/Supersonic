@@ -1,0 +1,60 @@
+#include <iostream>
+#include <vector>
+using namespace std;
+
+const int MOD = 10007;
+
+int n;
+vector<pair<int, int>> b[100100];
+bool v[100100];
+
+int dfs(int s, int now, int maxi, int num) {
+  v[now] = true;
+  
+  for (auto& [i, f] : b[now]) {
+    if (!v[i]) {
+      if (maxi == f)
+        num++;
+      else if (maxi < f) {
+        maxi = f;
+        num = 1;
+      }
+      if (i == s)
+        return num;
+      return dfs(s, i, maxi, num);
+    }
+  }
+  
+  if (maxi == b[s][1].second)
+    return num + 1;
+  else if (maxi < b[s][1].second)
+    return 1;
+  else
+    return num;
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(0);
+  
+  while (cin >> n, n) {
+    for (int i = 0; i < n; i++) {
+      int x, y, z, w;
+      cin >> x >> y >> z >> w;
+      b[x].emplace_back(z, w);
+      b[z].emplace_back(x, y);
+      v[i] = false;
+    }
+    int ans = 1;
+    for (int i = 0; i < n; i++) {
+      if (!v[i]) {
+        v[i] = true;
+        ans = (ans * dfs(i, b[i][0].first, b[i][0].second, 1)) % MOD;
+      }
+    }
+    cout << ans << endl;
+    for (int i = 0; i < n; i++) {
+        b[i].clear();
+    }
+  }
+}

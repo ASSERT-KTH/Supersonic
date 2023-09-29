@@ -1,0 +1,61 @@
+```c++
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+struct SegmentTree {
+    std::vector<int> seg, add;
+    int sz;
+    SegmentTree(int n) : sz(1), seg(2 * n + 1, 0), add(2 * n + 1, 0) {
+        while (sz < n)
+            sz *= 2;
+    }
+    void addRange(int a, int b, int x, int k, int l, int r) {
+        if (a >= r || b <= l) {
+            return;
+        } else if (a <= l && r <= b) {
+            add[k] += x;
+        } else {
+            addRange(a, b, x, 2 * k + 1, l, (l + r) / 2);
+            addRange(a, b, x, 2 * k + 2, (l + r) / 2, r);
+            seg[k] = seg[2 * k + 1] + add[2 * k + 1] * ((l + r) / 2 - l) + seg[2 * k + 2] + add[2 * k + 2] * (r - (l + r) / 2);
+        }
+    }
+    int queryRange(int a, int b, int k, int l, int r) {
+        if (a >= r || b <= l)
+            return 0;
+        if (a <= l && r <= b)
+            return seg[k] + add[k] * (r - l);
+        return queryRange(a, b, 2 * k + 1, l, (l + r) / 2) + queryRange(a, b, 2 * k + 2, (l + r) / 2, r) + add[k] * (std::min(b, r) - std::max(a, l));
+    }
+    void addRange(int a, int b, int x) { addRange(a, b, x, 0, 0, sz); }
+    int queryRange(int a, int b) { return queryRange(a, b, 0, 0, sz); }
+};
+
+int main() {
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(NULL);
+
+    int N, M;
+    std::cin >> N >> M;
+    std::vector<int> P(M);
+    SegmentTree segtree(N + 1);
+    for (int i = 0; i < M; i++) {
+        std::cin >> P[i];
+        --P[i];
+    }
+    for (int i = 1; i < M; i++) {
+        int u = std::min(P[i - 1], P[i]), v = std::max(P[i - 1], P[i]);
+        segtree.addRange(u, v, 1);
+    }
+    long long ret = 0;
+    for (int i = 0; i < N - 1; i++) {
+        long long used = segtree.queryRange(i, i + 1);
+        int A, B, C;
+        std::cin >> A >> B >> C;
+        ret += std::min(used * A, C + used * B);
+    }
+    std::cout << ret << '\n';
+    return 0;
+}
+```

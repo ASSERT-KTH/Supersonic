@@ -1,0 +1,9 @@
+#include <stdio.h>
+int main(void) {
+  int x;
+  scanf("%d", &x);
+  // Store the result of x * x in a variable
+  int square_x = x * x;
+  printf("%d\n", square_x * x);
+  return 0;
+}

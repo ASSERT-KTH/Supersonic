@@ -1,0 +1,184 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <string>
+#include <algorithm>
+
+using namespace std;
+
+const int dx[4] = {-1, 0, 1, 0};
+const int dy[4] = {0, 1, 0, -1};
+const int dx2[4] = {-1, 0, 2, 1};
+const int dy2[4] = {0, 2, 1, -1};
+
+struct Node {
+  int x, y, turn;
+};
+
+struct State {
+  int kx, ky, opway, turn;
+  
+  bool operator>(const State &other) const {
+    return turn > other.turn;
+  }
+};
+
+int getDis(const vector<vector<int>> &field, const int fx, const int fy, const int gx, const int gy) {
+  vector<vector<int>> memo(field.size(), vector<int>(field[0].size(), INT_MAX));
+  queue<Node> que;
+  que.push({fx, fy, 0});
+  
+  while (!que.empty()) {
+    Node cur = que.front();
+    que.pop();
+    
+    if (cur.x == gx && cur.y == gy) {
+      return cur.turn;
+    }
+    
+    for (int i = 0; i < 4; ++i) {
+      int nx = cur.x + dx[i], ny = cur.y + dy[i];
+      
+      if (!field[ny][nx] && cur.turn + 1 < memo[ny][nx]) {
+        memo[ny][nx] = cur.turn + 1;
+        que.push({nx, ny, cur.turn + 1});
+      }
+    }
+  }
+  
+  return INT_MAX;
+}
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+  
+  int H, W;
+  while (cin >> H >> W, H) {
+    vector<vector<int>> field(H + 2, vector<int>(W + 2, 1));
+    priority_queue<State, vector<State>, greater<State>> que;
+    vector<vector<vector<int>>> memo(60, vector<vector<int>>(60, vector<int>(4, INT_MAX)));
+    
+    int kx = INT_MAX, ky = INT_MAX, num = 0;
+    vector<int> ox(2), oy(2);
+    
+    for (int i = 0; i < H; ++i) {
+      string s;
+      cin >> s;
+      
+      for (int j = 0; j < W; ++j) {
+        if (s[j] == 'X') {
+          kx = min(kx, j + 1);
+          ky = min(ky, i + 1);
+        } else if (s[j] == '.') {
+          ox[num] = j + 1;
+          oy[num] = i + 1;
+          ++num;
+        }
+        
+        if (s[j] != 'o') {
+          field[i + 1][j + 1] = 0;
+        }
+      }
+    }
+    
+    if (kx == 1 && ky == 1) {
+      cout << 0 << "\n";
+      continue;
+    }
+    
+    for (int way = 0; way < 4; ++way) {
+      int minTime = INT_MAX;
+      
+      for (int op = 0; op < 2; ++op) {
+        int atime = 0;
+        
+        for (int lu = 0; lu < 2; ++lu) {
+          int fx = ox[op ^ lu], fy = oy[op ^ lu];
+          int gx = kx + dx2[way], gy = ky + dy2[way];
+          
+          if (lu == 1) {
+            gx += dx[(way + 1) % 4];
+            gy += dy[(way + 1) % 4];
+          }
+          
+          if (field[gy][gx]) {
+            atime = INT_MAX;
+            break;
+          }
+          
+          atime += getDis(field, fx, fy, gx, gy);
+        }
+        
+        minTime = min(minTime, atime);
+      }
+      
+      if (minTime != INT_MAX) {
+        memo[kx][ky][way] = minTime;
+        que.push({kx, ky, way, minTime});
+      }
+    }
+    
+    int ans = -1;
+    while (!que.empty()) {
+      State cur = que.top();
+      que.pop();
+      
+      if (cur.kx == 1 && cur.ky == 1) {
+        ans = cur.turn;
+        break;
+      }
+      
+      for (int nextWay = 0; nextWay < 4; ++nextWay) {
+        if (cur.opway == nextWay) continue;
+        
+        int minTime = INT_MAX;
+        
+        for (int op = 0; op < 2; ++op) {
+          int atime = 0;
+          
+          for (int lu = 0; lu < 2; ++lu) {
+            int fx = cur.kx + dx2[cur.opway], fy = cur.ky + dy2[cur.opway];
+            int gx = cur.kx + dx2[nextWay], gy = cur.ky + dy2[nextWay];
+            
+            if (lu == 1) {
+              gx += dx[(nextWay + 1) % 4];
+              gy += dy[(nextWay + 1) % 4];
+            }
+            
+            if (op ^ lu) {
+              fx += dx[(cur.opway + 1) % 4];
+              fy += dy[(cur.opway + 1) % 4];
+            }
+            
+            if (field[gy][gx]) {
+              atime = INT_MAX;
+              break;
+            }
+            
+            atime += getDis(field, fx, fy, gx, gy);
+          }
+          
+          minTime = min(minTime, atime);
+        }
+        
+        if (minTime != INT_MAX && cur.turn + minTime < memo[cur.kx][cur.ky][nextWay]) {
+          memo[cur.kx][cur.ky][nextWay] = cur.turn + minTime;
+          que.push({cur.kx, cur.ky, nextWay, cur.turn + minTime});
+        }
+      }
+      
+      int nkx = cur.kx + dx[cur.opway], nky = cur.ky + dy[cur.opway];
+      int nway = (cur.opway + 2) % 4;
+      
+      if (cur.turn + 1 < memo[nkx][nky][nway]) {
+        memo[nkx][nky][nway] = cur.turn + 1;
+        que.push({nkx, nky, nway, cur.turn + 1});
+      }
+    }
+    
+    cout << ans << "\n";
+  }
+  
+  return 0;
+}

@@ -1,0 +1,102 @@
+#include <algorithm>
+#include <vector>
+#include <iostream>
+using namespace std;
+
+struct Sum {
+    int val = 0;
+};
+
+struct Trap {
+    int l, r, d;
+    bool operator<(const Trap& rhs) const { return d > rhs.d; }
+};
+
+vector<Sum> arr, lazy;
+vector<int> a;
+vector<Trap> traps;
+int m, n, k, t;
+
+void push(int node, int left_node, int right_node) {
+    if (lazy[node].val != 0) {
+        arr[node].val += (right_node - left_node) * lazy[node].val;
+        if (right_node - left_node > 1) {
+            lazy[2 * node + 1].val += lazy[node].val;
+            lazy[2 * node + 2].val += lazy[node].val;
+        }
+        lazy[node].val = 0;
+    }
+}
+
+Sum query(int node, int left_node, int right_node, int left, int right) {
+    push(node, left_node, right_node);
+    if (right <= left_node || right_node <= left) {
+        return Sum{0};
+    }
+    if (left <= left_node && right_node <= right) {
+        return arr[node];
+    }
+    int mid = (left_node + right_node) / 2;
+    Sum a = query(2 * node + 1, left_node, mid, left, right);
+    Sum b = query(2 * node + 2, mid, right_node, left, right);
+    return Sum{a.val + b.val};
+}
+
+void update(int node, int left_node, int right_node, int left, int right, int val) {
+    push(node, left_node, right_node);
+    if (right <= left_node || right_node <= left) {
+        return;
+    }
+    if (left <= left_node && right_node <= right) {
+        lazy[node].val += val;
+        push(node, left_node, right_node);
+        return;
+    }
+    int mid = (left_node + right_node) / 2;
+    update(2 * node + 1, left_node, mid, left, right, val);
+    update(2 * node + 2, mid, right_node, left, right, val);
+    arr[node].val = arr[2 * node + 1].val + arr[2 * node + 2].val;
+}
+
+bool is_possible(int mid) {
+    fill(arr.begin(), arr.end(), Sum{0});
+    fill(lazy.begin(), lazy.end(), Sum{0});
+
+    int min_agility = a[mid];
+    for (const Trap& trap : traps) {
+        if (trap.d > min_agility) {
+            update(0, 0, n, trap.l - 1, trap.r, 1);
+        } else break;
+    }
+    int req_time = n + 1 + 2 * query(0, 0, n, 0, n).val;
+    return req_time <= t;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cin >> m >> n >> k >> t;
+    
+    a.resize(m);
+    for (int& x : a) cin >> x;
+
+    traps.resize(k);
+    for (Trap& trap : traps) cin >> trap.l >> trap.r >> trap.d;
+
+    sort(a.begin(), a.end());
+    sort(traps.begin(), traps.end());
+
+    arr.resize(4 * n);
+    lazy.resize(4 * n);
+
+    int left = 0, right = m - 1;
+    while (left < right) {
+        int mid = (left + right + 1) / 2;
+        if (is_possible(mid)) {
+            left = mid;
+        } else {
+            right = mid - 1;
+        }
+    }
+    cout << m - left << '\n';
+}

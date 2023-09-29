@@ -1,0 +1,79 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+#ifdef INFOARENA
+ifstream in("bellmanford.in");
+ofstream out("bellmanford.out");
+#else
+#define in cin
+#define out cout
+#endif
+
+const int NMax = 1e7 + 5;
+
+int height[NMax];
+long long cost[NMax], dp[NMax];
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int N, M;
+    in >> N >> M;
+    vector<vector<int>> heightsOfBlock(N + 1), costsOfBlock(N + 1);
+    for (int i = 1; i <= N; ++i) {
+        int K;
+        in >> K;
+        heightsOfBlock[i].resize(K);
+        costsOfBlock[i].resize(K);
+        for (int j = 0; j < K; ++j) {
+            in >> heightsOfBlock[i][j];
+        }
+        for (int j = 0; j < K; ++j) {
+            in >> costsOfBlock[i][j];
+        }
+    }
+
+    int Q, curr = 0;
+    in >> Q;
+    for (int i = 0; i < Q; ++i) {
+        int id, mult;
+        in >> id >> mult;
+        for (int j = 0; j < heightsOfBlock[id].size(); ++j) {
+            int h = heightsOfBlock[id][j], c = costsOfBlock[id][j];
+            height[++curr] = h;
+            cost[curr] = 1LL * mult * c;
+        }
+    }
+
+    vector<pair<int, long long>> stackPushLeft, stackPushRight;
+    for (int i = 1; i <= M; ++i) {
+        long long minLeft = dp[i - 1];
+        while (!stackPushLeft.empty() && i - height[i] + 1 <= stackPushLeft.back().first) {
+            minLeft = min(minLeft, stackPushLeft.back().second);
+            stackPushLeft.pop_back();
+        }
+        dp[i] = minLeft + cost[i];
+        long long valHere = dp[i - 1];
+        minLeft = min(minLeft, valHere);
+        stackPushLeft.push_back({i, minLeft});
+        int idx = -1;
+        while (!stackPushRight.empty() && ((idx = stackPushRight.back().first) || true) &&
+               idx + height[idx] - 1 < i) {
+            stackPushRight.pop_back();
+        }
+        if (!stackPushRight.empty()) {
+            long long dpPlusCost = stackPushRight.back().second;
+            dp[i] = min(dp[i], dpPlusCost);
+        }
+        long long dpPlusCost = dp[i - 1] + cost[i];
+        if (!stackPushRight.empty()) {
+            dpPlusCost = min(dpPlusCost, stackPushRight.back().second);
+        }
+        stackPushRight.push_back({i, dpPlusCost});
+    }
+
+    out << dp[M] << '\n';
+
+    return 0;
+}

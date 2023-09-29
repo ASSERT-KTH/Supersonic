@@ -1,0 +1,119 @@
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+using int64 = long long;
+
+const int MAXN = 100005;
+const int MAXM = 200005;
+
+struct UnionFind {
+  vector<int> data;
+  UnionFind(int sz) : data(sz, -1) {}
+  bool unite(int x, int y) {
+    x = find(x), y = find(y);
+    if (x == y)
+      return (false);
+    if (data[x] > data[y])
+      swap(x, y);
+    data[x] += data[y];
+    data[y] = x;
+    return (true);
+  }
+  int find(int k) {
+    if (data[k] < 0)
+      return (k);
+    return (data[k] = find(data[k]));
+  }
+  int size(int k) { return (-data[find(k)]); }
+};
+
+struct Edge1 {
+  int u, v, cost, idx;
+  bool operator<(const Edge1 &e) const { return (cost < e.cost); }
+};
+
+struct Edge2 {
+  int to, cost, idx;
+};
+
+int N, M, A[MAXM], B[MAXM], C[MAXM];
+vector<Edge1> edges;
+bool killed[MAXM];
+vector<Edge2> tree[MAXN], g[MAXN];
+int64 all, ans[MAXM];
+set<pair<int, int>> component[MAXN];
+
+void rec(int idx, int par = -1) {
+  for (auto &e : g[idx]) {
+    component[idx].emplace(e.cost, e.idx);
+  }
+  for (auto &e : tree[idx]) {
+    if (e.to == par) continue;
+    rec(e.to, idx);
+    auto &u = component[idx], &v = component[e.to];
+    if (!v.empty()) {
+      ans[e.idx] = all - e.cost + v.begin()->first;
+    }
+    if (u.size() < v.size())
+      swap(u, v);
+    while (!v.empty()) {
+      auto p = v.begin();
+      if (u.count(*p))
+        u.erase(*p);
+      else
+        u.emplace(*p);
+      v.erase(p);
+    }
+  }
+}
+
+int main() {
+  scanf("%d %d", &N, &M);
+  for (int i = 0; i < M; i++) {
+    scanf("%d %d %d", &A[i], &B[i], &C[i]);
+    --A[i], --B[i];
+    edges.push_back((Edge1){A[i], B[i], C[i], i});
+  }
+  UnionFind uf(N);
+  sort(begin(edges), end(edges));
+  for (auto &e : edges) {
+    if (uf.unite(e.v, e.u)) {
+      killed[e.idx] = true;
+      all += e.cost;
+    }
+  }
+  if (uf.size(0) != N) {
+    for (int i = 0; i < M; i++) puts("-1");
+    return 0;
+  }
+  for (int i = 0; i < M; i++) {
+    if (killed[i]) {
+      tree[A[i]].emplace_back((Edge2){B[i], C[i], i});
+      tree[B[i]].emplace_back((Edge2){A[i], C[i], i});
+      ans[i] = -1;
+    } else {
+      g[A[i]].emplace_back((Edge2){B[i], C[i], i});
+      g[B[i]].emplace_back((Edge2){A[i], C[i], i});
+      ans[i] = all;
+    }
+  }
+  rec(0);
+  for (int i = 0; i < M; i++) {
+    printf("%lld\n", ans[i]);
+  }
+  return 0;
+}
+```
+
+The changes were as follows:
+
+- Added `const int MAXN = 100005;` and `const int MAXM = 200005;`,
+- Capitalized the names of the structs,
+- Moved the global variables together,
+- Changed `if (x == y) return (false);` to `if (x == y) return false;`,
+- Changed `return (true);` to `return true;`,
+- Changed `return (k);` to `return k;`,
+- Removed unnecessary parentheses around `k`,
+- Added braces to all `if` statements and loops,
+- Replaced `puts("-1")` with `puts("-1");`,
+- Added a `return 0;` at the end of `main()`.

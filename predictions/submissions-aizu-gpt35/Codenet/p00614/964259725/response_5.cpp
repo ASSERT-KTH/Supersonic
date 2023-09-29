@@ -1,0 +1,70 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+#define int long long
+
+const int MAXN = 6;
+const int MAXT = 10000;
+
+int C[MAXN] = {1, 5, 10, 50, 100, 500};
+int P, N[MAXN];
+int dp[2][MAXT];
+
+int calc(int v) {
+  int ans = 0;
+  for (int i = MAXN - 1; i >= 0; i--) {
+    ans += v / C[i];
+    v %= C[i];
+  }
+  return ans;
+}
+
+signed main() {
+  ios_base::sync_with_stdio(false); // added for optimization
+  cin.tie(NULL); // added for optimization
+  
+  while (cin >> P) {
+    if (P == 0)
+      break;
+    for (int i = 0; i < MAXN; i++) {
+      cin >> N[i];
+    }
+    int cnt = 0;
+    for (int i = MAXN - 1; i >= 0; i--) {
+      while (P - C[i] >= 2500 && N[i]) {
+        cnt++;
+        N[i]--;
+        P -= C[i];
+      }
+      if (N[i])
+        break;
+    }
+    fill_n(*dp, 2 * MAXT, 1001001001);
+    dp[0][0] = 0;
+    for (int i = 0; i < MAXN; i++) {
+      for (int j = 0; j < C[i]; j++) {
+        deque<int> deq;
+        for (int k = j; k < MAXT; k += C[i]) {
+          int w = MAXT - k / C[i];
+          if (deq.size()) {
+            dp[(i + 1) & 1][k] = min(dp[(i + 1) & 1][k], deq.front() - w);
+          }
+          dp[(i + 1) & 1][k] = min(dp[(i + 1) & 1][k], dp[i & 1][k]);
+          while (deq.size() && deq.back() > dp[i & 1][k] + w) {
+            deq.pop_back();
+          }
+          deq.push_back(dp[i & 1][k] + w);
+          if (deq.size() && deq.front() + (MAXT - k - C[i]) / C[i] < dp[(i + 1) & 1][k]) {
+            dp[(i + 1) & 1][k] = deq.front() + (MAXT - k - C[i]) / C[i];
+          }
+        }
+      }
+    }
+    int mi = 1001001001;
+    for (int i = P; i < MAXT; i++) {
+      mi = min(mi, dp[0][i] + calc(i - P));
+    }
+    cout << mi + cnt << '\n';
+  }
+  return 0;
+}

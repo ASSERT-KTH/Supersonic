@@ -1,0 +1,64 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <algorithm>
+using namespace std;
+
+vector<vector<int>> board, temp_board;
+int dx[4] = {-1, 0, 1, 0};
+int dy[4] = {0, 1, 0, -1};
+int width, height, target_color, max_count;
+
+void fill(int y, int x, int color) {
+    if (x < 0 || y < 0 || x >= width || y >= height) return;
+    if (temp_board[y][x] != target_color) return;
+    temp_board[y][x] = color;
+    for (int i = 0; i < 4; ++i) fill(y + dy[i], x + dx[i], color);
+}
+
+void bfs(int color, int count) {
+    if (count == 5) {
+        temp_board = board;
+        int current_count = 0;
+        fill(0, 0, target_color);
+        for (auto &row : temp_board)
+            for (int cell : row) if (cell == target_color) ++current_count;
+        max_count = max(max_count, current_count);
+        return;
+    }
+
+    int original_color = board[0][0];
+    queue<pair<int, int>> q;
+    vector<vector<bool>> visited(height, vector<bool>(width, false));
+    q.push({0, 0});
+    visited[0][0] = true;
+    board[0][0] = color;
+
+    while (!q.empty()) {
+        int x = q.front().first, y = q.front().second;
+        q.pop();
+        for (int i = 0; i < 4; ++i) {
+            int nx = x + dx[i], ny = y + dy[i];
+            if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+            if (!visited[ny][nx] && board[ny][nx] == original_color) {
+                q.push({nx, ny});
+                visited[ny][nx] = true;
+                board[ny][nx] = color;
+            }
+        }
+    }
+
+    for (int i = 1; i <= 6; ++i) bfs(i, count + 1);
+    for (auto &row : board) fill(row.begin(), row.end(), original_color);
+}
+
+int main() {
+    while (cin >> height >> width >> target_color, width) {
+        max_count = 0;
+        board.assign(height, vector<int>(width));
+        for (auto &row : board) for (int &cell : row) cin >> cell;
+        for (int i = 1; i <= 6; ++i) if (board[0][0] != i) bfs(i, 0);
+        cout << max_count << "\n";
+    }
+    return 0;
+}

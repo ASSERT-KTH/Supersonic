@@ -1,0 +1,59 @@
+#include <iostream>
+#include <vector>
+#include <cstring>
+using namespace std;
+const int MAX_N = 24;
+int n;
+int x[MAX_N], y[MAX_N], r[MAX_N], c[MAX_N];
+bool memo[1 << MAX_N];
+bool ok(int a, int bit, int sum[MAX_N]) {
+  for (int i = 0; i < n; i++) {
+    if (((bit >> i) & 1) == 0 || i == a)
+      continue;
+    int dist = (x[i] - x[a]) * (x[i] - x[a]) + (y[i] - y[a]) * (y[i] - y[a]);
+    if (dist < sum[i])
+      return false;
+  }
+  return true;
+}
+int dfs(int bit, int sum[MAX_N]) {
+  memo[bit] = true;
+  int ret = n;
+  for (int i = 0; i < n; i++)
+    if ((bit >> i) & 1)
+      ret--;
+  for (int i = 0; i < n; i++) {
+    if (((bit >> i) & 1) == 0 || ok(i, bit, sum) == false)
+      continue;
+    for (int j = i + 1; j < n; j++) {
+      if (((bit >> j) & 1) == 0 || c[i] != c[j])
+        continue;
+      int to_bit = (bit ^ (1 << i)) ^ (1 << j);
+      if (ok(j, bit, sum) && !memo[to_bit]) {
+        sum[i] = sum[j] = (r[i] + r[j]) * (r[i] + r[j]);
+        ret = max(ret, dfs(to_bit, sum));
+        sum[i] = sum[j] = 0;
+      }
+    }
+  }
+  return ret;
+}
+void solve() {
+  memset(memo, false, sizeof(memo));
+  int sum[MAX_N];
+  memset(sum, 0, sizeof(sum));
+  cout << dfs((1 << n) - 1, sum) << endl;
+}
+bool input() {
+  cin >> n;
+  if (!n)
+    return false;
+  for (int i = 0; i < n; i++)
+    cin >> x[i] >> y[i] >> r[i] >> c[i];
+  return true;
+}
+int main() {
+  while (input())
+    solve();
+  return 0;
+}

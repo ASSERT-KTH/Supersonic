@@ -1,0 +1,23 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int n;
+    cin >> n;
+    vector<int> A(n);
+    for (int &i : A) {
+        cin >> i;
+    }
+    sort(A.begin(), A.end());
+
+    for (const int &i : A) {
+        cout << i << ' ';
+    }
+    cout << '\n';
+    return 0;
+}

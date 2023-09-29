@@ -1,0 +1,79 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+#define int long long
+#define MAXN 4000005
+#define INF 1e18
+using namespace std;
+
+int dp[MAXN], lazy[MAXN];
+vector<int> pos[MAXN];
+
+void push(int id, int l, int r) {
+    dp[id] = min(dp[id], lazy[id]);
+    if (l != r) {
+        lazy[id << 1] = min(lazy[id << 1], lazy[id]);
+        lazy[id << 1 | 1] = min(lazy[id << 1 | 1], lazy[id]);
+    }
+    lazy[id] = INF;
+}
+
+void update(int id, int l, int r, int lq, int rq, int val) {
+    push(id, l, r);
+    if (l > r || l > rq || r < lq)
+        return;
+    if (lq <= l && r <= rq) {
+        lazy[id] = min(lazy[id], val);
+        push(id, l, r);
+        return;
+    }
+    int mid = (l + r) >> 1;
+    update(id << 1, l, mid, lq, rq, val);
+    update(id << 1 | 1, mid + 1, r, lq, rq, val);
+    dp[id] = min(dp[id << 1], dp[id << 1 | 1]);
+}
+
+int query(int id, int l, int r, int lq, int rq) {
+    push(id, l, r);
+    if (l > r || l > rq || r < lq)
+        return INF;
+    if (lq <= l && r <= rq)
+        return dp[id];
+    int mid = (l + r) >> 1;
+    return min(query(id << 1, l, mid, lq, rq),
+               query(id << 1 | 1, mid + 1, r, lq, rq));
+}
+
+void solve() {
+    for (int i = 0; i < MAXN; i++) {
+        dp[i] = INF;
+        lazy[i] = INF;
+        pos[i].clear();
+    }
+    int n, k;
+    cin >> n >> k;
+    string s;
+    cin >> s;
+    int m = 2 * n + 1;
+    for (int i = 1; i <= n; i++) {
+        if (i == 1)
+            update(1, 1, m, i, i, i);
+        else
+            update(1, 1, m, i, i, query(1, 1, m, i - 1, i - 1) + i);
+        if(s[i - 1] == '1')
+            pos[i + k + 1].push_back(i);
+        if (!pos[i].empty())
+            update(1, 1, m, pos[i].front(), i + k, query(1, 1, m, i - k - 1, i) + i);
+        if (!pos[i + 1].empty() && pos[i + 1].front() == i + 1 - k)
+            pos[i + 1].erase(pos[i + 1].begin());
+    }
+    cout << query(1, 1, m, n, n) << "\n";
+}
+
+signed main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    solve();
+    return 0;
+}

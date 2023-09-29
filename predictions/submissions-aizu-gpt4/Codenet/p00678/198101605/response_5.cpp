@@ -1,0 +1,54 @@
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <vector>
+using namespace std;
+constexpr double EPS = 1e-6;
+struct point {
+  double x, y;
+  point() {}
+  point(double x, double y) : x(x), y(y) {}
+  point operator+(const point& p) const { return point(x + p.x, y + p.y); }
+  point operator-(const point& p) const { return point(x - p.x, y - p.y); }
+  point operator*(double d) const { return point(x * d, y * d); }
+  point operator/(double d) const { return point(x / d, y / d); }
+};
+inline double dist(const point& a, const point& b) {
+  double dx = a.x - b.x;
+  double dy = a.y - b.y;
+  return sqrt(dx * dx + dy * dy);
+}
+int main(void) {
+  int n;
+  double x, y, v;
+  vector<point> P;
+  vector<double> V;
+  while (scanf("%d", &n), n) {
+    P.resize(n);
+    V.resize(n);
+    for (int i = 0; i < n; i++) {
+      scanf("%lf%lf%lf", &x, &y, &v);
+      P[i] = point(x, y);
+      V[i] = v;
+    }
+    constexpr double r = 0.98;
+    point now(0, 0);
+    for (double d = 10; d > EPS; d *= r) {
+      int mx = 0;
+      double mxd = 0, temp_dist;
+      for (int j = 0; j < n; j++) {
+        temp_dist = dist(now, P[j]) / V[j];
+        if (temp_dist > mxd)
+          mx = j, mxd = temp_dist;
+      }
+      now = now + ((P[mx] - now) / dist(P[mx], now) * d);
+    }
+    double ans = 0, temp_dist;
+    for (int i = 0; i < n; i++) {
+      temp_dist = dist(now, P[i]) / V[i];
+      ans = max(ans, temp_dist);
+    }
+    printf("%.8f\n", ans);
+  }
+  return 0;
+}

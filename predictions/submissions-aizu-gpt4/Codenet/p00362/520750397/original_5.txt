@@ -1,0 +1,92 @@
+```c++
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+using namespace std;
+typedef long long ll;
+
+const int N = 2e5+5;
+int n, q, a, b, c, x, k;
+ll dist[N], bit[N], ans[N], cnt[N];
+char type;
+vector<pair<int, int>> adj[N];
+unordered_map<int, int> back[N];
+
+void update(int x, ll val) {
+    for(; x <= n; x += x & -x)
+        bit[x] += val;
+}
+
+ll query(int x) {
+    ll ret = 0;
+    for(; x > 0; x -= x & -x)
+        ret += bit[x];
+    return ret;
+}
+
+void dfs(int node, int parent, ll sofar) {
+    dist[node] = sofar;
+    cnt[node] = 1;
+    for(auto it : adj[node]) {
+        if(it.first != parent) {
+            dfs(it.first, node, sofar + it.second);
+            cnt[node] += cnt[it.first];
+            if(cnt[it.first] > cnt[adj[node][0].first]) swap(it, adj[node][0]);
+        }
+    }
+}
+
+void add(int node, int parent, ll sofar, bool keep) {
+    update(dist[node]%k, sofar);
+    for(auto it : adj[node]) {
+        if(it.first != parent && (keep || it.first != adj[node][0].first))
+            add(it.first, node, sofar + it.second, keep);
+    }
+}
+
+void sub(int node, int parent, ll sofar) {
+    update(dist[node]%k, -sofar);
+    for(auto it : adj[node]) {
+        if(it.first != parent)
+            sub(it.first, node, sofar + it.second);
+    }
+}
+
+void solve(int node, int parent, bool keep) {
+    for(auto it : adj[node]) {
+        if(it.first != parent && it.first != adj[node][0].first)
+            solve(it.first, node, 0);
+    }
+
+    if(!adj[node].empty() && adj[node][0].first != parent)
+        solve(adj[node][0].first, node, 1);
+
+    add(node, parent, back[node][parent], 1);
+    ans[node] = query(dist[node]%k);
+    if(!keep) sub(node, parent, back[node][parent]);
+}
+
+int main() {
+    cin >> n >> k;
+    for(int i = 1; i < n; i++) {
+        cin >> a >> b >> c;
+        adj[a].push_back({b, c});
+        adj[b].push_back({a, c});
+        back[a][b] = back[b][a] = c;
+    }
+    dfs(1, 0, 0);
+    solve(1, 0, 1);
+    cin >> q;
+    while(q--) {
+        cin >> type >> a;
+        if(type == '+') {
+            cin >> b;
+            x = (back[a][b] += b);
+            if(a == adj[b][0].first) swap(a, b);
+            sub(a, 0, 0);
+            solve(a, 0, 1);
+        } else cout << ans[a] << '\n';
+    }
+    return 0;
+}
+```

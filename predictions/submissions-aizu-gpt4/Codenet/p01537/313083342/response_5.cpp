@@ -1,0 +1,117 @@
+#include <complex>
+#include <iostream>
+#include <random>
+#include <algorithm>
+#include <utility>
+#include <vector>
+
+using ld = long double;
+using P = std::complex<ld>;
+using C = std::pair<ld, P>;
+#define rad first
+#define pnt second
+
+ld cross(const P &a, const P &b) {
+  return a.real() * b.imag() - a.imag() * b.real();
+}
+
+C smallest_enclosing_disc(std::vector<P> &ps) {
+  auto c3 = [](const P &a, const P &b, const P &c) {
+    ld A = std::norm(b - c);
+    ld B = std::norm(c - a);
+    ld C = std::norm(a - b);
+    ld S = std::abs(cross(b - a, c - a));
+    P p = (A * (B + C - A) * a + B * (C + A - B) * b + C * (A + B - C) * c) /
+          (4 * S * S);
+    ld r = std::abs(p - a);
+    return std::make_pair(r, p);
+  };
+  auto c2 = [](const P &a, const P &b) {
+    P c = (a + b) / (ld)2;
+    ld r = std::abs(a - c);
+    return std::make_pair(r, c);
+  };
+  auto in_circle = [](const P &a, const C &c) {
+    return std::norm(a - c.pnt) <= c.rad * c.rad;
+  };
+  int n = ps.size();
+  std::random_device rd;
+  std::mt19937 g(rd());
+  std::shuffle(ps.begin(), ps.end(), g);
+  C c = c2(ps[0], ps[1]);
+  for (int i = 2; i < n; ++i) {
+    if (!in_circle(ps[i], c)) {
+      for (int j = 0; j < i; ++j) {
+        if (!in_circle(ps[j], c)) {
+          for (int k = 0; k < j; ++k) {
+            if (!in_circle(ps[k], c)) {
+              c = c3(ps[i], ps[j], ps[k]);
+            }
+          }
+        }
+      }
+    }
+  }
+  return c;
+}
+
+bool chk(std::vector<ld> &a, std::vector<int> &b) {
+  std::sort(a.begin(), a.end());
+  std::sort(b.begin(), b.end());
+  int last = -1;
+  for (int i = 0; i < a.size(); ++i) {
+    bool found = false;
+    for (int j = last + 1; j < b.size(); ++j) {
+      if (a[i] < b[j]) {
+        found = true;
+        last = j;
+        break;
+      }
+    }
+    if (!found)
+      return false;
+  }
+  return true;
+}
+
+int main() {
+  int n, m;
+  std::cin >> n >> m;
+  std::vector<int> r(n), ans, used(n, 0);
+  std::vector<ld> mb(m);
+  for (auto &i : r) std::cin >> i;
+  for (int i = 0; i < m; ++i) {
+    int k;
+    std::cin >> k;
+    std::vector<P> g(k);
+    for (auto &j : g) {
+      ld x, y;
+      std::cin >> x >> y;
+      j = P(x, y);
+    }
+    mb[i] = smallest_enclosing_disc(g).rad;
+  }
+  bool f = true;
+  for (int i = 0; i < m; ++i) {
+    bool found = false;
+    for (int j = 0; j < n; ++j) {
+      if (used[j] || !(mb[i] < r[j])) continue;
+      used[j] = true;
+      if (chk(mb, r)) {
+        ans.push_back(j);
+        found = true;
+        break;
+      }
+      used[j] = false;
+    }
+    if (!found) {
+      f = false;
+      break;
+    }
+  }
+  if (f) {
+    for (auto i : ans) std::cout << i + 1 << "\n";
+  } else {
+    std::cout << "NG" << std::endl;
+  }
+}

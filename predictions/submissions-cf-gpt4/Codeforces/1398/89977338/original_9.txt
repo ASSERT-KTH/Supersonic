@@ -1,0 +1,132 @@
+```C++
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+typedef pair<int, int> ii;
+
+const int MAXN = 1 << 20;
+int n, x, y, lp[MAXN + 1], res[MAXN];
+bool can[MAXN];
+vector<int> pr;
+
+void SieveOfEratosthenes() {
+  for (int i = 2; i <= MAXN; i++) {
+    if (lp[i] == 0)
+      lp[i] = i, pr.push_back(i);
+    for (int j = 0; j < pr.size() && pr[j] <= lp[i] && i * pr[j] <= MAXN; ++j)
+      lp[i * pr[j]] = pr[j];
+  }
+}
+
+void div_rec(vector<ll> &r, vector<pair<ll, int>> &f, int k, ll c) {
+  if (k == f.size()) {
+    r.push_back(c);
+    return;
+  }
+  for (int i = 0; i <= f[k].second; ++i) {
+    div_rec(r, f, k + 1, c);
+    c *= f[k].first;
+  }
+}
+
+typedef ll tf;
+typedef vector<tf> poly;
+typedef complex<double> base;
+vector<base> w;
+int rev[MAXN];
+
+void fft(poly &a, bool invert) {
+  int n = a.size();
+  for (int i = 0; i < n; ++i)
+    if (i < rev[i])
+      swap(a[i], a[rev[i]]);
+  for (int len = 2; len <= n; len <<= 1) {
+    double ang = 2 * 3.14159265358979323846 / len * (invert ? -1 : 1);
+    int len2 = len >> 1;
+    base wlen(cos(ang), sin(ang));
+    w[0] = base(1, 0);
+    for (int i = 1; i < len2; ++i)
+      w[i] = w[i - 1] * wlen;
+    for (int i = 0; i < n; i += len) {
+      base u, v;
+      for (int j = 0; j < len2; ++j) {
+        u = a[i + j], v = a[i + j + len2] * w[j];
+        a[i + j] = u + v, a[i + j + len2] = u - v;
+      }
+    }
+  }
+  if (invert)
+    for (int i = 0; i < n; ++i)
+      a[i] /= n;
+}
+
+poly multiply(poly &a, poly &b) {
+  int n = 1, c = 0, two = 0;
+  while (n < a.size() + b.size()) {
+    n <<= 1;
+    two++;
+  }
+  a.resize(n), b.resize(n);
+  for (int i = 0; i < n; ++i) {
+    rev[i] = 0;
+    for (int j = 0; j < two; ++j)
+      rev[i] = (rev[i] << 1) | ((i >> j) & 1);
+  }
+  w.resize(n);
+  fft(a, false), fft(b, false);
+  for (int i = 0; i < n; ++i)
+    a[i] *= b[i];
+  fft(a, true);
+  return a;
+}
+
+vector<int> g[MAXN];
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(0);
+  SieveOfEratosthenes();
+  cin >> n >> x >> y;
+  int OFFSET = x;
+  poly l(2 * OFFSET + 1), r(2 * OFFSET + 1);
+  for (int i = 0; i < n+1; ++i) {
+    int X;
+    cin >> X;
+    l[X + OFFSET]++;
+    r[-X + OFFSET]++;
+  }
+  poly p = multiply(l, r);
+  for (int i = 0; i < 2 * OFFSET; ++i)
+    if (i + 2 * OFFSET < p.size() && p[i + 2 * OFFSET])
+      can[i] = 1;
+  int q;
+  cin >> q;
+  memset(res, -1, sizeof(res));
+  for (int i = 0; i < q+1; ++i) {
+    int X;
+    cin >> X;
+    if (g[X].empty()) {
+      int it = X;
+      vector<ii> aux;
+      while (it != 1) {
+        if (aux.empty() || aux.back().first != lp[it])
+          aux.push_back({lp[it], 1});
+        else
+          aux.back().second++;
+        it /= lp[it];
+      }
+      div_rec(g[X], aux, 0, 1);
+    }
+    for (int i : g[X]) {
+      ll need = i - 2 * y;
+      if (need <= 0 || need % 2)
+        continue;
+      if (can[need / 2])
+        res[i] = max(res[i], i);
+    }
+  }
+  for (int i = 0; i < q; ++i)
+    cout << res[i] << ' ';
+  return 0;
+}
+```

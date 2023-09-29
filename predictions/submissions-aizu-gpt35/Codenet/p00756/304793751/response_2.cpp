@@ -1,0 +1,53 @@
+#include <bits/stdc++.h>
+using namespace std;
+const int MAXN = 24;
+int n;
+int x[MAXN], y[MAXN], r[MAXN], c[MAXN];
+bool memo[1 << MAXN];
+bool ok(int a, int bit, int* x, int* y, int* r) {
+  for (int i = 0; i < a; i++) {
+    if (((bit >> i) & 1) == 0)
+      continue;
+    int dx = x[i] - x[a], dy = y[i] - y[a], dr = r[i] + r[a];
+    if (dx * dx + dy * dy < dr * dr)
+      return false;
+  }
+  return true;
+}
+int dfs(int bit, int* c) {
+  memo[bit] = true;
+  int ret = n;
+  for (int i = 0; i < n; i++)
+    if ((bit >> i) & 1)
+      ret--;
+  for (int i = 0; i < n; i++) {
+    if (((bit >> i) & 1) == 0 || ok(i, bit, x, y, r) == false)
+      continue;
+    for (int j = i + 1; j < n; j++) {
+      if (((bit >> j) & 1) == 0 || c[i] != c[j])
+        continue;
+      int to_bit = (bit ^ (1 << i)) ^ (1 << j);
+      if (ok(j, bit, x, y, r) && !memo[to_bit]) {
+        ret = max(ret, dfs(to_bit, c));
+      }
+    }
+  }
+  return ret;
+}
+void solve() {
+  fill_n(memo, 1 << n, false);
+  cout << dfs((1 << n) - 1, c) << endl;
+}
+bool input() {
+  cin >> n;
+  if (!n)
+    return false;
+  for (int i = 0; i < n; i++)
+    cin >> x[i] >> y[i] >> r[i] >> c[i];
+  return true;
+}
+int main() {
+  while (input())
+    solve();
+  return 0;
+}

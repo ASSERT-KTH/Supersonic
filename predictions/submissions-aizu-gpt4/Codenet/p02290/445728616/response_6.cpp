@@ -1,0 +1,26 @@
+#include <complex>
+#include <iostream>
+
+using namespace std;
+typedef complex<double> P;
+
+P project(const P& a, const P& b, const P& c) {
+  P b1 = b - a;
+  P c1 = c - a;
+  return a + b1 * (c1 / b1).real();
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  
+  int n;
+  double ax, ay, bx, by, cx, cy;
+  cin >> ax >> ay >> bx >> by >> n;
+  while (n--) {
+    cin >> cx >> cy;
+    P p = project({ax, ay}, {bx, by}, {cx, cy});
+    cout << fixed << setprecision(8) << p.real() << " " << p.imag() << "\n";
+  }
+  return 0;
+}

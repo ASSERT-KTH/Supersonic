@@ -1,0 +1,125 @@
+```
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+typedef pair<ll, ll> ii;
+const int MAXN = 1 << 20;
+ll n, x, y, lp[MAXN + 1], res[MAXN];
+bool can[MAXN];
+vector<ll> pr;
+vector<ll> g[MAXN];
+double pi = acos(-1.0);
+complex<double> cp1[MAXN + 9], cp2[MAXN + 9];
+ll R[MAXN + 9];
+
+void SieveOfEratosthenes() {
+  for (ll i = 2; i <= MAXN; i++) {
+    if (lp[i] == 0) lp[i] = i, pr.push_back(i);
+    for (ll j = 0; j < pr.size() && pr[j] <= lp[i] && i * pr[j] <= MAXN; ++j)
+      lp[i * pr[j]] = pr[j];
+  }
+}
+
+void div_rec(vector<ll> &r, vector<pair<ll, ll>> &f, ll k, ll c) {
+  if (k == f.size()) {
+    r.push_back(c);
+    return;
+  }
+  for (ll i = 0; i < f[k].second + 1; i++) div_rec(r, f, k + 1, c), c *= f[k].first;
+}
+
+void dft(complex<double> *a, ll n, bool inv) {
+  for (ll i = 0; i < n; i++) if (R[i] < i) swap(a[R[i]], a[i]);
+  for (ll m = 2; m <= n; m *= 2) {
+    double z = 2 * pi / m * (inv ? -1 : 1);
+    complex<double> wi(cos(z), sin(z));
+    for (ll j = 0; j < n; j += m) {
+      complex<double> w(1);
+      for (ll k = j, k2 = j + m / 2; k2 < j + m; k++, k2++) {
+        complex<double> u = a[k];
+        complex<double> v = a[k2] * w;
+        a[k] = u + v;
+        a[k2] = u - v;
+        w = w * wi;
+      }
+    }
+  }
+  if (inv) for (ll i = 0; i < n; i++) a[i] /= n;
+}
+
+vector<ll> multiply(vector<ll> &p1, vector<ll> &p2) {
+  ll n = p1.size() + p2.size() + 1;
+  ll m = 1, cnt = 0;
+  while (m <= n) m += m, cnt++;
+  for (ll i = 0; i < m; i++) {
+    R[i] = 0;
+    for (ll j = 0; j < cnt; j++) R[i] = (R[i] << 1) | ((i >> j) & 1);
+  }
+  for (ll i = 0; i < m; i++) cp1[i] = 0, cp2[i] = 0;
+  for (ll i = 0; i < p1.size(); i++) cp1[i] = p1[i];
+  for (ll i = 0; i < p2.size(); i++) cp2[i] = p2[i];
+  dft(cp1, m, false);
+  dft(cp2, m, false);
+  for (ll i = 0; i < m; i++) cp1[i] = cp1[i] * cp2[i];
+  dft(cp1, m, true);
+  vector<ll> res;
+  n -= 2;
+  for (ll i = 0; i < n; i++) res.push_back((ll)floor(cp1[i].real() + 0.5));
+  return res;
+}
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+  cout.tie(0);
+  
+  SieveOfEratosthenes();
+  
+  cin >> n >> x >> y;
+  ll OFFSET = x;
+  vector<ll> l(2 * OFFSET + 1), r(2 * OFFSET + 1);
+  
+  for (ll i = 0; i < n + 1; i++) {
+    ll X;
+    cin >> X;
+    l[X + OFFSET]++;
+    r[-X + OFFSET]++;
+  }
+  
+  vector<ll> p = multiply(l, r);
+  
+  for (ll i = 0; i < 2 * OFFSET; i++) 
+    if (i + 2 * OFFSET < p.size() && p[i + 2 * OFFSET])
+      can[i] = 1;
+  
+  ll q;
+  cin >> q;
+  memset(res, -1, sizeof(res));
+  
+  for (ll _ = 0; _ < q + 1; _++) {
+    ll X;
+    cin >> X;
+    if (!g[X].size()) {
+      ll it = X;
+      vector<ii> aux;
+      while (it != 1) {
+        if (!aux.size() || aux.back().first != lp[it])
+          aux.push_back({lp[it], 1});
+        else
+          aux.back().second++;
+        it /= lp[it];
+      }
+      div_rec(g[X], aux, 0, 1);
+    }
+    for (ll i : g[X]) {
+      ll need = i - 2 * y;
+      if (need <= 0 || need % 2)
+        continue;
+      if (can[need / 2])
+        res[_] = max(res[_], i);
+    }
+  }
+  for (ll i = 0; i < q; i++) cout << res[i] << " \n"[i == q - 1];
+  return 0;
+}
+```

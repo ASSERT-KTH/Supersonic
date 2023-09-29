@@ -1,0 +1,51 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+const int divisor = 1000000007;
+
+int main() {
+    vector<long long> factmodary(100001);
+    long long fact = 1;
+    for (int i = 1; i <= 100000; i++) {
+        fact *= i;
+        fact %= divisor;
+        factmodary[i] = fact;
+    }
+
+    vector<int> word(100000);
+
+    while (true) {
+        int N, R;
+        cin >> N;
+        if (N == 0)
+            break;
+
+        cin >> R;
+        for (int i = 0; i < N; i++)
+            word[i] = i + 1;
+
+        for (int i = 0; i < R; i++) {
+            int s, t;
+            cin >> s >> t;
+            swap(word[s - 1], word[t - 1]);
+        }
+
+        vector<int> sorted_word = word;
+        sort(sorted_word.begin(), sorted_word.begin() + N);
+
+        long long ans = 0;
+        for (int i = 0; i < N; i++) {
+            int pos = lower_bound(sorted_word.begin(), sorted_word.begin() + N, word[i]) - sorted_word.begin();
+            ans += factmodary[N - (i + 1)] * pos;
+            ans %= divisor;
+            sorted_word.erase(sorted_word.begin() + pos);
+        }
+
+        cout << ans << "\n";
+    }
+
+    return 0;
+}

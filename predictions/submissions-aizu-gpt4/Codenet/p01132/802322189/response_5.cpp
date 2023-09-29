@@ -1,0 +1,68 @@
+#include <iostream>
+#include <vector>
+#include <numeric>
+using namespace std;
+
+int payment(const vector<int>& p) {
+    static const int rates[] = {10, 50, 100, 500};
+    return inner_product(p.begin(), p.end(), rates, 0);
+}
+
+vector<int> charge(int m) {
+    static const int rates[] = {500, 100, 50, 10};
+    vector<int> ans(4);
+    for (int i = 0; i < 4; ++i) {
+        ans[i] = m / rates[i];
+        m %= rates[i];
+    }
+    return ans;
+}
+
+bool judge(const vector<int>& f, const vector<int>& ch) {
+    return inner_product(f.begin(), f.end(), ch.begin(), 0) == 0;
+}
+
+int main() {
+    int N;
+    while (cin >> N && N) {
+        vector<int> c(4);
+        int sum = 0;
+        for (int& ci : c) {
+            cin >> ci;
+            sum += ci;
+        }
+        vector<int> f(4, 0);
+        int mini = 1e+9;
+        vector<int> pay(4);
+        vector<int> ans(4);
+        for (pay[0] = 0; pay[0] <= c[0]; ++pay[0]) {
+            for (pay[1] = 0; pay[1] <= c[1]; ++pay[1]) {
+                for (pay[2] = 0; pay[2] <= c[2]; ++pay[2]) {
+                    for (pay[3] = 0; pay[3] <= c[3]; ++pay[3]) {
+                        int m_pay = payment(pay);
+                        if (m_pay >= N) {
+                            vector<int> ch = charge(m_pay - N);
+                            int remaining = sum - accumulate(pay.begin(), pay.end(), 0) + accumulate(ch.begin(), ch.end(), 0);
+                            if (mini > remaining) {
+                                f = pay;
+                                transform(f.begin(), f.end(), f.begin(), [](int a) { return a > 0; });
+                                if (judge(f, ch)) {
+                                    ans = pay;
+                                    mini = remaining;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        static const int rates[] = {10, 50, 100, 500};
+        for (int i = 0; i < 4; ++i) {
+            if (ans[i] > 0) {
+                cout << rates[i] << " " << ans[i] << "\n";
+            }
+        }
+        cout << "\n";
+    }
+    return 0;
+}

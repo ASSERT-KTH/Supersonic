@@ -1,0 +1,41 @@
+#include <cstdio>
+#include <cstring>
+#include <vector>
+using namespace std;
+
+int N[20];
+bool dp[20][2000];
+int n;
+
+void solve() {
+  dp[0][0] = true;
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j <= 2000; ++j) {
+      if (dp[i][j]) {
+        dp[i + 1][j] = true;
+        dp[i + 1][j + N[i]] = true;
+      }
+    }
+  }
+}
+
+int main() {
+  int t;
+  scanf("%d", &n);
+  for (int i = 0; i < n; ++i) {
+    scanf("%d", &N[i]);
+  }
+  memset(dp, 0, sizeof(dp));
+  solve();
+  scanf("%d", &t);
+  for (int i = 0; i < t; ++i) {
+    int p;
+    scanf("%d", &p);
+    if (p <= 2000 && dp[n][p]) {
+      printf("yes\n");
+    } else {
+      printf("no\n");
+    }
+  }
+  return 0;
+}

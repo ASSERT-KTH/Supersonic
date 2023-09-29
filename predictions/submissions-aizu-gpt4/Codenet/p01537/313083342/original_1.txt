@@ -1,0 +1,94 @@
+```cpp
+#include <cmath>
+#include <complex>
+#include <random>
+#include <vector>
+#include <algorithm>
+#include <iostream>
+#define EPS 1e-10
+#define rep(i, n) for (int i = 0; i < (int)(n); ++i)
+using namespace std;
+using ld = long double;
+using P = complex<ld>;
+using C = pair<ld, P>;
+C smallest_enclosing_disc(vector<P> ps) {
+  int n = ps.size();
+  auto c3 = [](const P &a, const P &b, const P &c) {
+    ld A = norm(b - c);
+    ld B = norm(c - a);
+    ld C = norm(a - b);
+    ld S = abs((b - a).real() * (c - a).imag() - (b - a).imag() * (c - a).real());
+    P p = (A * (B + C - A) * a + B * (C + A - B) * b + C * (A + B - C) * c) / (4 * S * S);
+    return make_pair(abs(p - a), p);
+  };
+  auto c2 = [](const P &a, const P &b) {
+    P c = (a + b) / (ld)2;
+    return make_pair(abs(a - c), c);
+  };
+  auto in_circle = [](const P &a, const C &c) {
+    return norm(a - c.second) <= c.first * c.first + EPS;
+  };
+  random_device seed_gen;
+  mt19937 engine(seed_gen());
+  shuffle(ps.begin(), ps.end(), engine);
+  C c = c2(ps[0], ps[1]);
+  for (int i = 2; i < n; ++i) {
+    if (!in_circle(ps[i], c)) {
+      c = c2(ps[0], ps[i]);
+      for (int j = 1; j < i; ++j) {
+        if (!in_circle(ps[j], c)) {
+          c = c2(ps[j], ps[i]);
+          for (int k = 0; k < j; ++k) {
+            if (!in_circle(ps[k], c)) {
+              c = c3(ps[i], ps[j], ps[k]);
+            }
+          }
+        }
+      }
+    }
+  }
+  return c;
+}
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+  int n, m;
+  cin >> n >> m;
+  vector<ld> r(n), mb(m);
+  vector<P> g;
+  for (auto &e : r) cin >> e;
+  for (auto &e : mb) {
+    int k;
+    cin >> k;
+    g.resize(k);
+    for (auto &e : g) {
+      ld x, y;
+      cin >> x >> y;
+      e = P(x, y);
+    }
+    e = smallest_enclosing_disc(g).first;
+  }
+  vector<int> used(n), ans(m);
+  iota(ans.begin(), ans.end(), 0);
+  sort(ans.begin(), ans.end(), [&](int a, int b){ return mb[a] > mb[b]; });
+  for (auto &e : ans) {
+    e = [&]{
+      for (int i = 0; i < n; ++i) {
+        if (!used[i] && r[i] >= mb[e]) {
+          used[i] = 1;
+          return i + 1;
+        }
+      }
+      return -1;
+    }();
+  }
+  if (ans.back() == -1) {
+    cout << "NG\n";
+  } else {
+    for (auto &e : ans) {
+      cout << e << "\n";
+    }
+  }
+  return 0;
+}
+```

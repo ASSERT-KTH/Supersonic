@@ -1,0 +1,33 @@
+#include <iostream>
+#include <string>
+#include <queue>
+using namespace std;
+
+inline void pop_and_print(priority_queue<int> &qu) {
+    cout << qu.top() << '\n';
+    qu.pop();  
+}
+
+int main() {
+    ios_base::sync_with_stdio(false); 
+    cin.tie(NULL); 
+
+    string s;
+    int inp;
+    priority_queue<int> qu;
+
+    while (true) {
+        cin >> s;
+        if (s == "end") {
+            break;
+        } 
+        if (s == "insert") {
+            cin >> inp;
+            qu.push(move(inp));
+        } else {
+            pop_and_print(qu);
+        }
+    }
+
+    return 0;
+}

@@ -1,0 +1,52 @@
+#include <iostream>
+#include <vector>
+#include <cstdint>
+#include <algorithm>
+
+using namespace std;
+
+using int64 = int_fast64_t;
+using uint32 = uint_fast32_t;
+
+class RMQ {
+public:
+    RMQ(const vector<uint32>& data) : data_(data) {
+        size_t n = data.size();
+        size_ = 1;
+        while (size_ < n) size_ <<= 1;
+        rmq_.resize(size_ * 2, numeric_limits<uint32>::max());
+        for (size_t i = 0; i < n; ++i) rmq_[i + size_] = data[i];
+        for (int64 i = size_ - 1; i > 0; --i) rmq_[i] = min(rmq_[i * 2], rmq_[i * 2 + 1]);
+    }
+
+    uint32 query(int64 left, int64 right) const { return queryImpl(left, right, 1, 0, size_); }
+
+private:
+    uint32 queryImpl(int64 left, int64 right, int64 k, int64 l, int64 r) const {
+        if (r <= left || right <= l) return numeric_limits<uint32>::max();
+        if (left <= l && r <= right) return rmq_[k];
+        uint32 vl = queryImpl(left, right, k * 2, l, (l + r) / 2);
+        uint32 vr = queryImpl(left, right, k * 2 + 1, (l + r) / 2, r);
+        return min(vl, vr);
+    }
+
+    vector<uint32> rmq_;
+    const vector<uint32>& data_;
+    size_t size_ = 0;
+};
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(0);
+    uint32 n, l;
+    cin >> n >> l;
+    vector<uint32> a(n);
+    for (uint32 i = 0; i < n; ++i) cin >> a[i];
+    RMQ S(a);
+    for (uint32 i = 0; i <= n - l; ++i) {
+        if (i > 0) cout << " ";
+        cout << S.query(i, i + l);
+    }
+    cout << "\n";
+    return 0;
+}

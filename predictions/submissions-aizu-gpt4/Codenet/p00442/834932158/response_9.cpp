@@ -1,0 +1,66 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <algorithm>
+#include <map>
+#define int long long
+using namespace std;
+
+vector<int> edge[100005], rev[100005];
+int visited[100005], post[100005], counter = 1;
+map<pair<int, int>, int> mp;
+
+void dfs(int node) {
+    visited[node] = 1;
+    for(int i: edge[node]) {
+        if(!visited[i]) dfs(i);
+    }
+    post[node] = counter++;
+}
+
+void dfsrev(int node, int component) {
+    visited[node] = component;
+    for(int i: rev[node]) {
+        if(!visited[i]) dfsrev(i, component);
+    }
+}
+
+signed main() {
+    int n, m;
+    cin >> n >> m;
+    for(int i = 1; i <= m; i++) {
+        int x, y;
+        cin >> x >> y;
+        edge[x].push_back(y);
+        rev[y].push_back(x);
+        mp[{x, y}] = 1;
+    }
+
+    for(int i = 1; i <= n; i++) {
+        if(!visited[i]) dfs(i);
+    }
+
+    vector<pair<int, int>> order;
+    for(int i = 1; i <= n; i++) {
+        order.push_back({post[i], i});
+    }
+
+    sort(order.begin(), order.end());
+    reverse(order.begin(), order.end());
+
+    for(int i = 1; i <= n; i++) visited[i] = 0;
+
+    int component = 1;
+    for(auto i: order) {
+        if(!visited[i.second]) dfsrev(i.second, component++);
+    }
+
+    for(auto i: order) cout << i.second << "\n";
+
+    int res = 1;
+    for(int i = 0; i < n - 1; i++) {
+        if(mp[{order[i].second, order[i+1].second}] == 0) res = 0;
+    }
+    cout << (res == 1 ? 0 : 1) << "\n";
+    return 0;
+}

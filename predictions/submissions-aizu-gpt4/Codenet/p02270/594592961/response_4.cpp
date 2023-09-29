@@ -1,0 +1,48 @@
+#include <iostream>
+#include <numeric>
+#include <vector>
+using namespace std;
+
+bool IsAllLoaded(int P, const vector<int>& W, int k) {
+  int TrackIndex = 0;
+  int CurrentSum = 0;
+  for (int i = 0; i < W.size(); i++) {
+    if (W[i] > P) {
+      return false;
+    }
+    if (CurrentSum + W[i] > P) {
+      TrackIndex++;
+      if (TrackIndex == k) {
+        return false;
+      }
+      CurrentSum = 0;
+    }
+    CurrentSum += W[i];
+  }
+  return true;
+}
+
+int Calc(const vector<int>& W, int k) {
+  int Sum = accumulate(W.begin(), W.end(), 0);
+  int low = *max_element(W.begin(), W.end());
+  int high = Sum;
+  while (low < high) {
+    int mid = low + (high - low) / 2;
+    if (IsAllLoaded(mid, W, k))
+      high = mid;
+    else
+      low = mid + 1;
+  }
+  return high;
+}
+
+int main() {
+  int n, k;
+  cin >> n >> k;
+  vector<int> W(n);
+  for (int i = 0; i < n; i++) {
+    cin >> W[i];
+  }
+  cout << Calc(W, k) << endl;
+  return 0;
+}

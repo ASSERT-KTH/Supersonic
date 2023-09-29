@@ -1,0 +1,100 @@
+#include <cstdio>
+#include <cstring>
+#include <queue>
+#include <algorithm>
+
+using namespace std;
+
+const int maxn = 362880+10;
+const int INF = 0x3f3f3f3f;
+
+struct Node
+{
+    int s[9]; // 存放八数码的状态
+    int pos; // 空格的位置
+    int f, g; // f是估计值，g是已经走的步数
+    bool operator < (const Node& rhs) const
+    {
+        return f > rhs.f; // 优先队列是大顶堆，但我们需要从小到大取出元素，所以这里写成f>rhs.f
+    }
+};
+
+int vis[maxn]; // 记录状态是否已经出现过
+int fac[9]; // 存放0~8的阶乘
+int sx[4] = {0, 0, 1, -1}; // 四个方向
+int sy[4] = {1, -1, 0, 0};
+int dx[9], dy[9]; // 目标状态的坐标
+int h(Node& u) // 估计函数h，曼哈顿距离
+{
+    int res = 0;
+    for(int i=0; i<9; i++)
+    {
+        if(u.s[i] != 0)
+        {
+            int tx = dx[u.s[i]], ty = dy[u.s[i]];
+            int x = i/3, y = i%3;
+            res += abs(x-tx) + abs(y-ty);
+        }
+    }
+    return res;
+}
+
+int bfs(Node& start, Node& goal)
+{
+    priority_queue<Node> q;
+    memset(vis, 0, sizeof(vis));
+    start.f = h(start);
+    start.g = 0;
+    vis[start.pos] = 1;
+    q.push(start);
+    while(!q.empty())
+    {
+        Node u = q.top(); q.pop();
+        if(memcmp(u.s, goal.s, sizeof(u.s)) == 0) return u.f; // 找到目标状态，返回已经走的步数
+        int x = u.pos/3, y = u.pos % 3;
+        for(int i=0; i<4; i++)
+        {
+            int nx = x + sx[i], ny = y + sy[i];
+            if(nx>=0 && nx<3 && ny>=0 && ny<3)
+            {
+                Node v = u;
+                v.pos = nx*3 + ny;
+                v.s[u.pos] = u.s[v.pos];
+                v.s[v.pos] = 0;
+                if(!vis[v.pos] || v.f < vis[v.pos]) // 如果没有出现过，或者找到更优的解
+                {
+                    vis[v.pos] = v.f;
+                    v.g = u.g + 1;
+                    v.f = v.g + h(v);
+                    q.push(v);
+                }
+            }
+        }
+    }
+    return INF;
+}
+
+int main()
+{
+    fac[0] = 1;
+    for(int i=1; i<9; i++) fac[i] = fac[i-1]*i;
+    Node start, goal;
+    for(int i=0; i<9; i++)
+    {
+        scanf("%d", &start.s[i]);
+        if(start.s[i] == 0) start.pos = i;
+    }
+    for(int i=0; i<9; i++)
+    {
+        scanf("%d", &goal.s[i]);
+        if(goal.s[i] != 0)
+        {
+            dx[goal.s[i]] = i/3;
+            dy[goal.s[i]] = i%3;
+        }
+    }
+    int ans = bfs(start, goal);
+    if(ans == INF) printf("-1\n");
+    else printf("%d\n", ans);
+    return 0;
+}

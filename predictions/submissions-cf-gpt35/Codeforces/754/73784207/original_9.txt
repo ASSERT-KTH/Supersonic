@@ -1,0 +1,166 @@
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <limits>
+using namespace std;
+
+const int N = 6e5 + 5;
+
+struct Range {
+  long long start;
+  long long end;
+};
+
+struct Query {
+  Range range;
+  int index;
+};
+
+bool cmp(const Query& q1, const Query& q2) {
+  if (q1.range.start != q2.range.start) {
+    return q1.range.start < q2.range.start;
+  }
+  return q1.range.end < q2.range.end;
+}
+
+void update(vector<int>& segtree, vector<int>& lazy, int x, int y, int val, int node = 0, int l = 0, int r = N - 1) {
+  if (lazy[node] != 0) {
+    segtree[node] += lazy[node];
+    if (l != r) {
+      lazy[2 * node + 1] += lazy[node];
+      lazy[2 * node + 2] += lazy[node];
+    }
+    lazy[node] = 0;
+  }
+  if (l > y || r < x || x > y) {
+    return;
+  }
+  if (l >= x && r <= y) {
+    lazy[node] += val;
+    if (lazy[node] != 0) {
+      segtree[node] += lazy[node];
+      if (l != r) {
+        lazy[2 * node + 1] += lazy[node];
+        lazy[2 * node + 2] += lazy[node];
+      }
+      lazy[node] = 0;
+    }
+    return;
+  }
+  int mid = (l + r) >> 1;
+  update(segtree, lazy, x, y, val, 2 * node + 1, l, mid);
+  update(segtree, lazy, x, y, val, 2 * node + 2, mid + 1, r);
+  segtree[node] = min(segtree[2 * node + 1], segtree[2 * node + 2]);
+}
+
+int query(const vector<int>& segtree, const vector<int>& lazy, int x, int y, int node = 0, int l = 0, int r = N - 1) {
+  if (lazy[node] != 0) {
+    segtree[node] += lazy[node];
+    if (l != r) {
+      lazy[2 * node + 1] += lazy[node];
+      lazy[2 * node + 2] += lazy[node];
+    }
+    lazy[node] = 0;
+  }
+  if (l > y || r < x) {
+    return numeric_limits<int>::max() - 1;
+  }
+  if (l >= x && r <= y) {
+    return segtree[node];
+  }
+  int mid = (l + r) >> 1;
+  return min(query(segtree, lazy, x, y, 2 * node + 1, l, mid),
+             query(segtree, lazy, x, y, 2 * node + 2, mid + 1, r));
+}
+
+void solve() {
+  int n, k;
+  cin >> n >> k;
+  vector<Query> queries(n);
+  for (int i = 0; i < n; i++) {
+    cin >> queries[i].range.start >> queries[i].range.end;
+    queries[i].index = i + 1;
+  }
+  
+  sort(queries.begin(), queries.end(), cmp);
+  
+  vector<long long> uniquePoints;
+  for (const auto& query : queries) {
+    uniquePoints.push_back(query.range.start);
+    uniquePoints.push_back(query.range.end);
+  }
+  sort(uniquePoints.begin(), uniquePoints.end());
+  uniquePoints.erase(unique(uniquePoints.begin(), uniquePoints.end()), uniquePoints.end());
+  
+  vector<int> segtree(4 * uniquePoints.size(), 0), lazy(4 * uniquePoints.size(), 0);
+  
+  long long mx = 0, idx = -1;
+  for (int i = 0; i < n; i++) {
+    const auto& query = queries[i];
+    int scaled_start = lower_bound(uniquePoints.begin(), uniquePoints.end(), query.range.start) - uniquePoints.begin();
+    int scaled_end = lower_bound(uniquePoints.begin(), uniquePoints.end(), query.range.end) - uniquePoints.begin();
+    update(segtree, lazy, scaled_start, scaled_end, 1);
+    int tt = -1;
+    int s = scaled_start, e = uniquePoints.size();
+    while (s <= e) {
+      int mid = (s + e) >> 1;
+      int val = query(segtree, lazy, scaled_start, mid);
+      if (val >= k) {
+        tt = mid;
+        s = mid + 1;
+      } else {
+        e = mid - 1;
+      }
+    }
+    if (tt == -1) {
+      continue;
+    }
+    long long temp = uniquePoints[tt] - query.range.start + 1;
+    if (temp > mx) {
+      mx = temp;
+      idx = query.index;
+    }
+  }
+  
+  if (idx == -1) {
+    cout << 0 << endl;
+    for (int i = 1; i <= k; i++) {
+      cout << i << ' ';
+    }
+    cout << endl;
+    return;
+  }
+  
+  long long l = queries[idx - 1].range.start;
+  long long r = l + mx - 1;
+  
+  vector<int> ans;
+  for (const auto& query : queries) {
+    if (k == 0) {
+      break;
+    }
+    if (query.range.start <= l && r <= query.range.end) {
+      ans.push_back(query.index);
+      k--;
+    }
+  }
+  
+  sort(ans.begin(), ans.end());
+  cout << mx << endl;
+  for (int i : ans) {
+    cout << i << " ";
+  }
+  cout << endl;
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  cout.tie(NULL);
+  
+  solve();
+  
+  return 0;
+}
+```

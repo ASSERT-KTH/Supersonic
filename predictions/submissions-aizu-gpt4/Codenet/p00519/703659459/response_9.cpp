@@ -1,0 +1,72 @@
+#include <vector>
+#include <queue>
+#include <algorithm>
+#include <iostream>
+using namespace std;
+
+typedef pair<int,int> pii;
+
+const int maxN = 6005;
+const int INF = 1e9;
+
+vector<int> pass[maxN];
+int c[maxN], r[maxN], d[maxN];
+bool used[maxN];
+
+void bfs(int v) {
+    queue<int> Q;
+    Q.push(v);
+    used[v] = true;
+    int depth = 0;
+    while (!Q.empty() && depth <= r[v]) {
+        int sz = Q.size();
+        while (sz--) {
+            int u = Q.front();
+            Q.pop();
+            d[u] = min(d[u], d[v] + c[v]);
+            for (int adj : pass[u]) {
+                if (!used[adj]) {
+                    Q.push(adj);
+                    used[adj] = true;
+                }
+            }
+        }
+        depth++;
+    }
+    for (int i = 0; i < maxN; i++) used[i] = false;
+}
+
+int dijk(int s, int g, int n) {
+    priority_queue<pii, vector<pii>, greater<pii> > Q;
+    fill(d, d + maxN, INF);
+    d[s] = 0;
+    Q.push(make_pair(0, s));
+    while (!Q.empty()) {
+        pii p = Q.top();
+        Q.pop();
+        int v = p.second;
+        if (d[v] < p.first) continue;
+        for (int u : pass[v]) {
+            if (d[u] > d[v] + c[v]) {
+                d[u] = d[v] + c[v];
+                Q.push(make_pair(d[u], u));
+            }
+        }
+        bfs(v);
+    }
+    return d[g];
+}
+
+int main() {
+    int n, k;
+    cin >> n >> k;
+    for (int i = 0; i < n; i++) cin >> c[i] >> r[i];
+    for (int i = 0; i < k; i++) {
+        int a, b;
+        cin >> a >> b;
+        a--, b--;
+        pass[a].push_back(b);
+        pass[b].push_back(a);
+    }
+    cout << dijk(0, n - 1, n) << endl;
+}

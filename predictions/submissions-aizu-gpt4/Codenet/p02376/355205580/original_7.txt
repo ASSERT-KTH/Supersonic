@@ -1,0 +1,95 @@
+```cpp
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <algorithm>
+using namespace std;
+
+template <typename Weight> 
+class Dinic {
+public:
+  struct Edge {
+    int src, dst, rev;
+    Weight cap, flow;
+    Edge(int src, int dst, Weight cap, Weight flow, int rev)
+      : src(src), dst(dst), cap(cap), flow(flow), rev(rev)
+    {}
+  };
+
+  vector<vector<Edge>> adjList;
+  vector<int> level, start;
+  int N;
+  const Weight INF = numeric_limits<Weight>::max();
+
+  Dinic(int N) : N(N), adjList(N), level(N), start(N) {}
+
+  void add_edge(int src, int dst, Weight cap) {
+    Edge forwardEdge = Edge(src, dst, cap, 0, adjList[dst].size());
+    Edge backwardEdge = Edge(dst, src, 0, 0, adjList[src].size());
+    adjList[src].push_back(forwardEdge);
+    adjList[dst].push_back(backwardEdge);
+  }
+
+  bool BFS(int src, int dst) {
+    fill(level.begin(), level.end(), -1);
+    level[src] = 0;
+
+    queue<int> q; q.push(src);
+    while (!q.empty()) {
+      int node = q.front(); q.pop();
+      for (Edge &edge : adjList[node]) {
+        if (level[edge.dst] == -1 && edge.flow < edge.cap) {
+          level[edge.dst] = level[node] + 1;
+          if (edge.dst == dst) return true;
+          q.push(edge.dst);
+        }
+      }
+    }
+    return false;
+  }
+
+  Weight DFS(int src, int dst, Weight flow) {
+    if (src == dst) return flow;
+    for (; start[src] != adjList[src].size(); start[src]++) {
+      Edge &edge = adjList[src][start[src]];
+      if (level[edge.dst] == level[src] + 1 && edge.flow < edge.cap) {
+        Weight min_cap = min(flow, edge.cap - edge.flow);
+        Weight bottleneck = DFS(edge.dst, dst, min_cap);
+        if (bottleneck > 0) {
+          edge.flow += bottleneck;
+          adjList[edge.dst][edge.rev].flow -= bottleneck;
+          return bottleneck;
+        }
+      }
+    }
+    return Weight(0);
+  }
+
+  Weight MaximumFlow(int src, int dst) {
+    if (src == dst) return -1;
+    Weight total_flow = 0;
+    while (BFS(src, dst)) {
+      fill(start.begin(), start.end(), 0);
+      while (Weight flow = DFS(src, dst, INF))
+        total_flow += flow;
+    }
+    return total_flow;
+  }
+};
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+
+  int n, m;
+  cin >> n >> m;
+  Dinic<int> dinic(n);
+  for (int i = 0; i < m; i++) {
+    int u, v, c;
+    cin >> u >> v >> c;
+    dinic.add_edge(u, v, c);
+  }
+  cout << dinic.MaximumFlow(0, n - 1) << '\n';
+  return 0;
+}
+```

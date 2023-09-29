@@ -1,0 +1,57 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+using namespace std;
+
+struct Edge {
+    int to, cost;
+};
+
+typedef pair<int, int> P; // pair is used to keep the cost and node number.
+
+const int MAX = 100;
+const int INFTY = (1<<21);
+
+vector<Edge> G[MAX];
+int n;
+int d[MAX];
+
+void dijkstra() {
+    priority_queue<P, vector<P>, greater<P> > PQ;
+
+    for (int i = 0; i < n; i++)
+        d[i] = INFTY;
+
+    d[0] = 0;
+    PQ.push(P(0, 0)); // Push the source node into the priority queue.
+
+    while(!PQ.empty()) {
+        P p = PQ.top(); PQ.pop();
+        int v = p.second;
+        if (d[v] < p.first) continue; // If there is a shorter path, then we don't process this node.
+        for (int i = 0; i < G[v].size(); i++) {
+            Edge e = G[v][i];
+            if (d[e.to] > d[v] + e.cost) {
+                d[e.to] = d[v] + e.cost;
+                PQ.push(P(d[e.to], e.to));
+            }
+        }
+    }
+
+    for (int i = 0; i < n; i++)
+        cout << i << " " << (d[i] == INFTY ? -1 : d[i]) << endl;
+}
+
+int main() {
+    cin >> n;
+    int k, c, u, v;
+    for (int i = 0; i < n; i++) {
+        cin >> u >> k;
+        for (int j = 0; j < k; j++) {
+            cin >> v >> c;
+            G[u].push_back((Edge){v, c});
+        }
+    }
+    dijkstra();
+    return 0;
+}

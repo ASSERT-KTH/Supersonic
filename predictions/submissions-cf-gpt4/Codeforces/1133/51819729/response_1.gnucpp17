@@ -1,0 +1,86 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+typedef pair<int, int> Pair;
+
+const int N = 2e5 + 10;
+vector<int> adj[N], tree[N], deg(N), parent(N, -1);
+vector<bool> visited(N, false);
+vector<Pair> edges, MST;
+int n, m, k;
+
+void DFS(int u) {
+    visited[u] = true;
+    for (auto v : adj[u]) {
+        if (!visited[v]) {
+            tree[u].push_back(v);
+            tree[v].push_back(u);
+            MST.push_back({min(u, v), max(u, v)});
+            DFS(v);
+        }
+    }
+}
+
+void build_tree(int u) {
+    for (auto v : tree[u])
+        if (parent[v] == -1) {
+            parent[v] = u;
+            build_tree(v);
+        }
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(0);
+
+    cin >> n >> m >> k;
+    for (int i = 0; i < m; ++i) {
+        int u, v;
+        cin >> u >> v;
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+        ++deg[u];
+        ++deg[v];
+        edges.push_back({u, v});
+    }
+    if (deg[1] < k) {
+        cout << "NO";
+        return 0;
+    }
+    sort(adj[1].begin(), adj[1].end(), [](int u, int v) {
+        return (deg[u] < deg[v]) || (deg[u] == deg[v] && u < v);
+    });
+    int cnt = 0;
+    for (auto v : adj[1])
+        if (!visited[v]) {
+            MST.push_back({1, v});
+            DFS(v);
+            ++cnt;
+            if (cnt == k)
+                break;
+        }
+    if (cnt < k || MST.size() < n-1) {
+        cout << "NO";
+        return 0;
+    }
+    parent[1] = 1;
+    build_tree(1);
+    for (auto v : adj[1]) {
+        if (!visited[v]) {
+            int p = parent[v];
+            if (p != 1) {
+                auto it = lower_bound(MST.begin(), MST.end(), make_pair(min(v, p), max(v, p)));
+                MST.erase(it);
+                MST.push_back({1, v});
+                parent[v] = 1;
+                ++cnt;
+                if (cnt == k)
+                    break;
+            }
+        }
+    }
+    cout << "YES\n";
+    for (auto x : MST)
+        cout << x.first << ' ' << x.second << '\n';
+    return 0;
+}

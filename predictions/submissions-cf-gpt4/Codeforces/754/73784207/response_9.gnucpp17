@@ -1,0 +1,125 @@
+#include <iostream>
+#include <vector>
+#include <utility>
+#include <algorithm>
+#include <map>
+#include <limits>
+#include <set>
+#include <iterator>
+
+using namespace std;
+
+typedef pair<long long, pair<int, int>> pp;
+
+vector<long long> tree, lazy;
+vector<pp> events;
+vector<int> ans;
+map<long long, int> comp;
+set<int> active;
+
+void build(int node, int start, int end) {
+    if(start == end) {
+        tree[node] = 0;
+    }
+    else {
+        int mid = (start + end) / 2;
+        build(2*node+1, start, mid);
+        build(2*node+2, mid+1, end);
+        tree[node] = min(tree[2*node+1], tree[2*node+2]);
+    }
+}
+
+void update(int node, int start, int end, int l, int r, int val) {
+    if(lazy[node] != 0) {
+        tree[node] += lazy[node];
+        if(start != end) {
+            lazy[node*2+1] += lazy[node];
+            lazy[node*2+2] += lazy[node];
+        }
+        lazy[node] = 0;
+    }
+    
+    if(start > end || start > r || end < l) return;
+    
+    if(start >= l && end <= r) {
+        tree[node] += val;
+        if(start != end) {
+            lazy[node*2+1] += val;
+            lazy[node*2+2] += val;
+        }
+        return;
+    }
+    
+    int mid = (start + end) / 2;
+    update(node*2+1, start, mid, l, r, val);
+    update(node*2+2, mid+1, end, l, r, val);
+    tree[node] = min(tree[node*2+1], tree[node*2+2]);
+}
+
+int query(int node, int start, int end, int l, int r) {
+    if(start > end || start > r || end < l) return numeric_limits<int>::max();
+    
+    if(lazy[node] != 0) {
+        tree[node] += lazy[node];
+        if(start != end) {
+            lazy[node*2+1] += lazy[node];
+            lazy[node*2+2] += lazy[node];
+        }
+        lazy[node] = 0;
+    }
+    
+    if(start >= l && end <= r) return tree[node];
+    
+    int mid = (start + end) / 2;
+    int p1 = query(node*2+1, start, mid, l, r);
+    int p2 = query(node*2+2, mid+1, end, l, r);
+    return min(p1, p2);
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    int n, k;
+    cin >> n >> k;
+    for(int i = 0; i < n; i++) {
+        long long a, b;
+        cin >> a >> b;
+        events.push_back({a, {1, i+1}});
+        events.push_back({b+1, {-1, i+1}});
+        comp[a] = 0;
+        comp[b+1] = 0;
+    }
+    
+    int compSize = comp.size(), index = 0;
+    for(auto &i : comp) i.second = index++;
+    
+    tree.resize(4*compSize);
+    lazy.resize(4*compSize);
+    build(0, 0, compSize-1);
+    
+    sort(events.begin(), events.end());
+    
+    for(auto &i : events) {
+        int pos = comp[i.first], id = i.second.second, type = i.second.first;
+        if(type == 1) {
+            update(0, 0, compSize-1, 0, pos, 1);
+            active.insert(id);
+        }
+        else {
+            update(0, 0, compSize-1, 0, pos, -1);
+            active.erase(id);
+            if(query(0, 0, compSize-1, 0, pos) < k) {
+                update(0, 0, compSize-1, 0, pos, 1);
+                active.erase(active.lower_bound(id));
+            }
+        }
+    }
+    
+    for(auto &i : active) {
+        if(ans.size() < k) ans.push_back(i);
+    }
+    cout << ans.size() << "\n";
+    for(auto &i : ans) cout << i << " ";
+    
+    return 0;
+}

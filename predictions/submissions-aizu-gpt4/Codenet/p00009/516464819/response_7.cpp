@@ -1,0 +1,37 @@
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <algorithm>
+using namespace std;
+
+vector<int> sieve(int n) {
+  vector<bool> isPrime(n + 1, true);
+  isPrime[0] = isPrime[1] = false;
+  for (int i = 2; i * i <= n; ++i) {
+    if (isPrime[i]) {
+      for (int j = i * i; j <= n; j += i) {
+        isPrime[j] = false;
+      }
+    }
+  }
+  vector<int> primes;
+  for (int i = 2; i <= n; ++i) {
+    if (isPrime[i]) {
+      primes.push_back(i);
+    }
+  }
+  return primes;
+}
+
+int main() {
+  vector<int> inputs;
+  for (int x; cin >> x;) {
+    inputs.push_back(x);
+  }
+  int max_input = *max_element(inputs.begin(), inputs.end());
+  vector<int> primes = sieve(max_input);
+  for (int x : inputs) {
+    cout << lower_bound(primes.begin(), primes.end(), x) - primes.begin() << "\n";
+  }
+  return 0;
+}

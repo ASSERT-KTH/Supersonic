@@ -1,0 +1,48 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+using namespace std;
+static const int MAX = 100;
+static const int INFTY = (1 << 21);
+vector<pair<int,int>> adj[MAX];
+int n;
+void dijkstra() {
+    int d[MAX];
+    for (int i = 0; i < n; i++)
+        d[i] = INFTY;
+
+    priority_queue<pair<int,int>, vector<pair<int,int>>, greater<pair<int,int>>> pq;
+    pq.push(make_pair(0,0));
+    d[0] = 0;
+
+    while(!pq.empty()) {
+        pair<int,int> f = pq.top(); pq.pop();
+        int u = f.second;
+        if(d[u] < f.first) continue;
+        for(int j = 0; j < adj[u].size(); j++) {
+            int v = adj[u][j].first;
+            if(d[v] > d[u] + adj[u][j].second) {
+                d[v] = d[u] + adj[u][j].second;
+                pq.push(make_pair(d[v], v));
+            }
+        }
+    }
+    for (int i = 0; i < n; i++) {
+        cout << i << " " << (d[i] == INFTY ? -1 : d[i]) << endl;
+    }
+}
+int main() {
+    int m;
+    cin >> n;
+    for (int i = 0; i < n; i++) {
+        int u, k;
+        cin >> u >> k;
+        for (int j = 0; j < k; j++) {
+            int v, c;
+            cin >> v >> c;
+            adj[u].push_back(make_pair(v,c));
+        }
+    }
+    dijkstra();
+    return 0;
+}

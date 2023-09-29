@@ -1,0 +1,37 @@
+#include <bits/stdc++.h>
+using namespace std;
+int N[21], n, t, p;
+bool dp[21][1001];
+
+void solve() {
+  memset(dp, false, sizeof(dp));
+  dp[0][0] = true;
+
+  for (int i = 1; i <= n; i++) {
+    for (int j = 0; j <= 1000; j++) {
+      if (j - N[i] >= 0) {
+        dp[i][j] = dp[i - 1][j] || dp[i - 1][j - N[i]];
+      } else {
+        dp[i][j] = dp[i - 1][j];
+      }
+    }
+  }
+}
+
+int main() {
+  scanf("%d", &n);
+  for (int i = 1; i <= n; i++) {
+    scanf("%d", &N[i]);
+  }
+  solve();
+  scanf("%d", &t);
+  while (t--) {
+    scanf("%d", &p);
+    if (dp[n][p]) {
+      cout << "yes\n";
+    } else {
+      cout << "no\n";
+    }
+  }
+  return 0;
+}

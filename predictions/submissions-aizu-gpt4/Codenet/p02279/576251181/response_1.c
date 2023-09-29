@@ -1,0 +1,76 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+struct Node {
+    int id;
+    Node* parent;
+    std::vector<Node*> children;
+};
+
+Node* makeNode(int id) {
+    Node* newNode = new Node;
+    newNode->id = id;
+    newNode->parent = nullptr;
+    return newNode;
+}
+
+void printNode(Node* node) {
+    std::cout << "node " << node->id << ": ";
+    if (node->parent != nullptr)
+        std::cout << "parent = " << node->parent->id << ", ";
+    else
+        std::cout << "parent = -1, ";
+    std::cout << "depth = " << getDepth(node) << ", ";
+
+    if (node->parent == nullptr)
+        std::cout << "root";
+    else if (node->children.empty())
+        std::cout << "leaf";
+    else
+        std::cout << "internal node";
+
+    std::cout << ", [";
+    for (auto it = node->children.begin(); it != node->children.end(); ++it) {
+        if (it != node->children.begin())
+            std::cout << ", ";
+        std::cout << (*it)->id;
+    }
+    std::cout << "]\n";
+}
+
+int getDepth(Node* node) {
+    int depth = 0;
+    while (node->parent != nullptr) {
+        node = node->parent;
+        ++depth;
+    }
+    return depth;
+}
+
+int main() {
+    int n;
+    std::cin >> n;
+    std::vector<Node*> nodes(n);
+    for (int i = 0; i < n; ++i)
+        nodes[i] = makeNode(i);
+
+    for (int i = 0; i < n; ++i) {
+        int id, k;
+        std::cin >> id >> k;
+        for (int j = 0; j < k; ++j) {
+            int c;
+            std::cin >> c;
+            nodes[c]->parent = nodes[id];
+            nodes[id]->children.push_back(nodes[c]);
+        }
+    }
+
+    for (auto node : nodes)
+        printNode(node);
+
+    for (auto node : nodes)
+        delete node;
+
+    return 0;
+}

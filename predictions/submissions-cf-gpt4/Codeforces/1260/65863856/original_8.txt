@@ -1,0 +1,150 @@
+```c++
+#include <vector>
+#include <algorithm>
+#include <iostream>
+using namespace std;
+
+struct Trap {
+    int l, r, d;
+};
+
+struct Sum {
+    int val;
+    Sum() : val(0) {}
+    Sum(int val) : val(val) {}
+    Sum(const Sum& left, const Sum& right) : val(left.val + right.val) {}
+    void apply(int, const Sum& changes) { val = changes.val; }
+    bool has_change() const { return val; }
+    void reset_change() { val = 0; }
+};
+
+template <typename T, bool maximum_mode = false>
+class LazySegmentTree {
+    int n;
+    vector<T> tree, lazy;
+    void build(int x, int l, int r) {
+        lazy[x].reset_change();
+        if (l == r) return;
+        int y = (l + r) >> 1;
+        build(x + x + 1, l, y);
+        build(x + x + 2, y + 1, r);
+        pull(x);
+    }
+    void apply(int x, int l, int r, const T& v) {
+        tree[x].apply(l, v);
+        if (r > l) {
+            lazy[x].apply(l, v);
+        }
+    }
+    void push(int x, int l, int r) {
+        if (!lazy[x].has_change()) return;
+        int y = (l + r) >> 1;
+        apply(x + x + 1, l, y, lazy[x]);
+        apply(x + x + 2, y + 1, r, lazy[x]);
+        lazy[x].reset_change();
+    }
+    template <typename M>
+    void build(int x, int l, int r, const M& v) {
+        lazy[x].reset_change();
+        if (l == r) {
+            tree[x].apply(l, v[l]);
+            return;
+        }
+        int y = (l + r) >> 1;
+        build(x + x + 1, l, y, v);
+        build(x + x + 2, y + 1, r, v);
+        pull(x);
+    }
+    T query(int x, int l, int r, int ql, int qr) {
+        if (ql <= l && qr >= r) return tree[x];
+        int y = (l + r) >> 1;
+        push(x, l, r);
+        T res_left = (maximum_mode && ql <= y)? query(x + x + 1, l, y, ql, qr) : T{};
+        T res_right = (maximum_mode && qr > y)? query(x + x + 2, y + 1, r, ql, qr) : T{};
+        pull(x);
+        return operate(res_left, res_right);
+    }
+    template <typename... M>
+    void modify(int x, int l, int r, int ql, int qr, const M&... v) {
+        if (ql <= l && qr >= r) {
+            tree[x].apply(l, v...);
+            if (r > l) {
+                lazy[x].apply(l, v...);
+            }
+            return;
+        }
+        int y = (l + r) >> 1;
+        push(x, l, r);
+        if (maximum_mode && ql <= y) modify(x + x + 1, l, y, ql, qr, v...);
+        if (maximum_mode && qr > y) modify(x + x + 2, y + 1, r, ql, qr, v...);
+        pull(x);
+    }
+    void pull(int x) {
+        tree[x] = operate(tree[x + x + 1], tree[x + x + 2]);
+    }
+    T operate(const T& lhs, const T& rhs) const {
+        if (maximum_mode) return max(lhs, rhs);
+        return lhs + rhs;
+    }
+public:
+    template <typename M> LazySegmentTree(const M& v) {
+        n = v.size();
+        tree.resize(n * 4 + 5);
+        lazy.resize(n * 4 + 5);
+        build(0, 0, n - 1, v);
+    }
+    T query(int ql, int qr) {
+        if (ql <= qr)
+            return query(0, 0, n - 1, ql, qr);
+        else
+            return T{};
+    }
+    template <typename... M>
+    void modify(int ql, int qr, const M&... v) {
+        if (ql <= qr)
+            modify(0, 0, n - 1, ql, qr, v...);
+    }
+};
+
+int m, n, k, t;
+int a[200000];
+Trap trap[200000];
+
+bool is_possible(int mid) {
+    vector<Sum> init(n+2, Sum(0));
+    LazySegmentTree<Sum> stree(init);
+    int min_agility = a[mid];
+    for (int i = 0; i < k; i++) {
+        if (trap[i].d > min_agility) {
+            stree.modify(trap[i].l, trap[i].r, Sum(1));
+        }
+    }
+    int req_time = n + 1 + 2 * stree.query(0, n + 1).val;
+    return req_time <= t;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cin >> m >> n >> k >> t;
+    for (int i = 0; i < m; i++) {
+        cin >> a[i];
+    }
+    for (int i = 0; i < k; i++) {
+        cin >> trap[i].l >> trap[i].r >> trap[i].d;
+    }
+    sort(a, a + m, greater<int>());
+    --t;
+    int left = 0;
+    int right = m - 1;
+    while (left < right) {
+        int mid = (left + right + 1) / 2;
+        if (is_possible(mid)) {
+            left = mid;
+        } else {
+            right = mid - 1;
+        }
+    }
+    cout << left+1 << "\n";
+}
+```

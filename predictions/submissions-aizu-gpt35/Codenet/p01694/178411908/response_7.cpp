@@ -1,0 +1,21 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  int n;
+  while (cin >> n, n) {
+    int ans = 0;
+    string now, next;
+    cin >> now;
+    for (int i = 1; i < n; ++i) {
+      cin >> next;
+      if (now[1] == 'u' && next[1] == 'd' && now[0] == next[0])
+        ++ans;
+      if (now[1] == 'd' && next[1] == 'u' && now[0] == next[0])
+        ++ans;
+      now = next;
+    }
+    cout << ans << endl;
+  }
+  return 0;
+}

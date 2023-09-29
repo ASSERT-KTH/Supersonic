@@ -1,0 +1,54 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+#define N 100000
+#define INF 1e9
+typedef std::pair<int, int> P;
+typedef long long ll;
+
+int main() {
+  std::ios::sync_with_stdio(false);
+  std::cin.tie(nullptr);
+
+  int n, m, hp[101], dp[2][N + 10] = {}, cost, dam;
+  std::string name, type;
+  
+  while (std::cin >> n, n) {
+    for (int i = 0; i < n; i++)
+      std::cin >> hp[i];
+
+    std::vector<P> mg[2];
+    
+    std::cin >> m;
+    for (int i = 0; i < m; i++) {
+      std::cin >> name >> cost >> type >> dam;
+      if (dam)
+        mg[type == "All"].push_back(P(dam, cost));
+    }
+
+    for (int i = 0; i < 2; i++)
+      std::fill(dp[i] + 1, dp[i] + N + 10, INF);
+
+    for (int k = 0; k < 2; k++)
+      for (int i = 0; i < mg[k].size(); i++)
+        for (int j = mg[k][i].first; j <= N; j++)
+          dp[k][j] = std::min(dp[k][j], dp[k][j - mg[k][i].first] + mg[k][i].second);
+
+    for (int i = 0; i < 2; i++)
+      for (int j = N - 1; j >= 0; j--)
+        dp[i][j] = std::min(dp[i][j], dp[i][j + 1]);
+
+    ll ans = INF;
+    for (int i = 0; i <= N; i++) {
+      ll cost = dp[1][i];
+      for (int j = 0; j < n; j++)
+        cost += dp[0][std::max(0, hp[j] - i)];
+      ans = std::min(ans, cost);
+    }
+
+    std::cout << ans << "\n";
+  }
+
+  return 0;
+}
