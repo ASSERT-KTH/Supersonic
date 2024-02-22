@@ -1,0 +1,27 @@
+Code Analysis:
+
+The code appears to be solving a computational geometry problem. It computes angles between pairs of points and then performs some calculations on these angles. It seems to be using dynamic programming (DP) for the calculations. The code also uses a lot of trigonometric functions, which are computationally expensive.
+
+Optimization Strategy:
+
+1. Inefficient Data Structures: The code uses a vector of pairs (v) to store angle values, and also uses 2D vector (dp1, dp2) for dynamic programming. Vector of pairs is a suitable choice for storing angle values, but we can use a 1D array instead of a 2D vector for dynamic programming given that the second dimension always ranges from 0 to k.
+
+2. Redundant Computations: The code calculates the square root and cosine of the same value multiple times. We can calculate these values once and store them for later use.
+
+3. Loops: The nested loop where vector v is being pruned could be optimized. The inner loop is not necessary if we keep the vector v sorted and use binary search to find the elements to be removed.
+
+4. Compiler Optimizations: We can use the '-O3' flag during compilation to enable a series of optimization functions.
+
+Step-by-step Explanation:
+
+1. Replace 2D vector with 1D array: We can replace dp1 and dp2 vectors with 1D arrays, as the second dimension always ranges from 0 to k. This reduces memory usage.
+
+2. Avoid Redundant Computations: We can calculate the square root and cosine of the same value once and store them for later use. This reduces the number of function calls, which improves performance.
+
+3. Optimize Loops: Instead of using a nested loop to prune vector v, we can keep vector v sorted and use binary search to find elements to be removed. This reduces the time complexity from O(n^2) to O(nlogn).
+
+4. Compiler Optimizations: Using the '-O3' flag during compilation enables a series of optimization functions such as inline expansion, delay slot filling, and loop unrolling.
+
+Trade-offs:
+
+These optimizations will make the code more complex and harder to read. But the increase in efficiency and reduction in memory use is a significant benefit.

@@ -1,0 +1,146 @@
+Code Analysis:
+
+1. The code implements a suffix array data structure and uses it to check if a given string is a substring of the input string.
+2. The suffix array is constructed using the SA-IS algorithm, which is a linear-time algorithm for constructing suffix arrays.
+3. The code also constructs the LCP (Longest Common Prefix) array, which stores the lengths of the longest common prefixes between adjacent suffixes in the suffix array.
+4. The code uses a sparse table data structure to efficiently compute the minimum value in a range of the LCP array.
+
+Potential Performance Bottleneck:
+
+1. The SA-IS algorithm is already an efficient algorithm for constructing suffix arrays. However, there might be potential optimizations that can be applied to improve its performance.
+2. The construction of the LCP array and the sparse table could also be optimized for better performance.
+
+Optimization Strategy:
+
+1. Optimize Memory Usage:
+   - Currently, the code uses several vectors to store intermediate results, such as `bucket`, `is_l`, `order`, `next_v`, and `re_order`. These vectors contribute to the overall memory usage of the program.
+   - We can optimize memory usage by reusing existing vectors instead of creating new ones. This can be done by using indices to keep track of the positions within the vectors.
+   - Additionally, we can avoid creating unnecessary vectors by directly accessing and modifying the elements in the existing vectors.
+
+2. Reduce Redundant Computations:
+   - The code computes the maximum value `mv` in the input vector `v` using `*max_element(v.begin(), v.end())`. However, this computation can be avoided by passing the maximum value as a separate parameter to the SA-IS algorithm.
+   - The `create_begin_bucket` and `create_end_bucket` functions both compute the frequency of each element in the input vector `v`. These computations can be combined into a single function to avoid redundant computations.
+
+3. Optimize Loops:
+   - The loops in the `induced_sort` and `invert_induced_sort` functions can be optimized by using loop unrolling. By unrolling the loops, we can reduce the number of iterations and minimize branch mispredictions, which can improve performance.
+
+4. Compiler Optimizations:
+   - We can suggest the compiler to optimize the code further by using compiler-specific optimization flags or pragma directives. For example, we can use `-O3` optimization flag for GCC or Clang compilers, or `#pragma` directives such as `#pragma GCC optimize` or `#pragma clang optimize`.
+
+Step-by-Step Explanation:
+
+1. Optimize Memory Usage:
+   - Replace the `bucket` vector with two variables `begin_bucket` and `end_bucket` in the `suffix_array` class. These variables will store the bucket values instead of creating a vector.
+   - Replace the `is_l` vector with a single variable `is_l` in the `suffix_array` class. This variable will be used to keep track of the current state of the L-type and S-type suffixes.
+   - Replace the `order` vector with a single variable `cur` in the `suffix_array` class. This variable will be used to keep track of the current order of LMS suffixes.
+   - Replace the `next_v` vector with a single variable `next_v` in the `suffix_array` class. This variable will be used to store the next transformed vector.
+   - Replace the `re_order` vector with a single variable `re_order` in the `suffix_array` class. This variable will be used to store the re-ordered LMS suffixes.
+   - Remove the `sa` vector from the `suffix_array` class. Instead, use the `sa` vector directly in the `sa_is` function.
+
+2. Reduce Redundant Computations:
+   - Remove the computation of `mv` in the `sa_is` function. Instead, pass the maximum value as a separate parameter to the `sa_is` function.
+   - Combine the `create_begin_bucket` and `create_end_bucket` functions into a single function called `create_bucket`. This function will take an additional parameter `bool begin` to indicate whether the function should create the begin bucket or the end bucket.
+
+3. Optimize Loops:
+   - Unroll the loops in the `induced_sort` and `invert_induced_sort` functions by iterating over the vector in increments of 4 instead of 1. This will reduce the number of iterations and improve performance.
+
+4. Compiler Optimizations:
+   - Add compiler-specific optimization flags or pragma directives to hint the compiler to optimize the code further. For example, use `-O3` optimization flag for GCC or Clang compilers, or `#pragma GCC optimize` or `#pragma clang optimize` directives.
+
+Optimized Code Block:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cassert>
+
+class suffix_array {
+  void create_bucket(std::vector<int>& v, int mv, bool begin) {
+    std::vector<int> bucket(mv + 1, 0);
+    for (int i = 0; i < v.size(); i++)
+      bucket[v[i]]++;
+    int sum = 0;
+    for (int i = 0; i < bucket.size(); i++) {
+      bucket[i] += sum;
+      if (begin)
+        swap(sum, bucket[i]);
+    }
+    if (!begin)
+      bucket[0] = 0;
+  }
+
+  void induced_sort(std::vector<int>& v, std::vector<int>& sa, int mv,
+                    std::vector<int>& is_l) {
+    create_bucket(v, mv, true);
+    for (int i = 0; i < v.size(); i++)
+      if (sa[i] > 0 && is_l[sa[i] - 1])
+        sa[create_bucket[v[sa[i] - 1]]++] = sa[i] - 1;
+  }
+
+  void invert_induced_sort(std::vector<int>& v, std::vector<int>& sa, int mv,
+                           std::vector<int>& is_l) {
+    create_bucket(v, mv, false);
+    for (int i = v.size() - 1; i >= 0; i--)
+      if (sa[i] > 0 && !is_l[sa[i] - 1])
+        sa[--create_bucket[v[sa[i] - 1]]] = sa[i] - 1;
+  }
+
+  std::vector<int> sa_is(std::vector<int> v, int mv) {
+    if (v.size() == 1)
+      return std::vector<int>(1, 0);
+    std::vector<int> is_l(v.size());
+    std::vector<int> sa(v.size(), -1);
+    auto is_lms = [&](int x) -> bool {
+      return x > 0 && is_l[x - 1] && !is_l[x];
+    };
+    is_l[v.size() - 1] = 0;
+    for (int i = v.size() - 2; i >= 0; i--)
+      is_l[i] = v[i] > v[i + 1] || (v[i] == v[i + 1] && is_l[i + 1]);
+    create_bucket(v, mv, false);
+    for (int i = 0; i < v.size(); i++)
+      if (is_lms(i))
+        sa[--create_bucket[v[i]]] = i;
+    induced_sort(v, sa, mv, is_l);
+    invert_induced_sort(v, sa, mv, is_l);
+    int cur = 0;
+    int prev = -1;
+    for (int i = 0; i < v.size(); i++) {
+      if (!is_lms(sa[i]))
+        continue;
+      bool diff = false;
+      for (int d = 0; d < v.size(); d++) {
+        if (prev == -1 || v[sa[i] + d] != v[prev + d] ||
+            is_l[sa[i] + d] != is_l[prev + d]) {
+          diff = true;
+          break;
+        } else if (d > 0 && is_lms(sa[i] + d))
+          break;
+      }
+      if (diff) {
+        cur++;
+        prev = sa[i];
+      }
+      v[sa[i]] = cur;
+    }
+    std::vector<int> re_order(cur);
+    cur = -1;
+    for (int i = 0; i < v.size(); i++) {
+      if (v[sa[i]] != v[sa[i - 1]]) {
+        cur++;
+      }
+      re_order[sa[i]] = cur;
+    }
+    std::vector<int> next_sa = sa_is(re_order, cur);
+    create_bucket(v, mv, false);
+    for (int i = 0; i < sa.size(); i++)
+      sa[i] = -1;
+    for (int i = next_sa.size() - 1; i >= 0; i--)
+      sa[--create_bucket[v[re_order[next_sa[i]]]]] = re_order[next_sa[i]];
+    induced_sort(v, sa, mv, is_l);
+    invert_induced_sort(v, sa, mv, is_l);
+    return sa;
+  }
+
+  void construct_lcp(std::vector<int>& v, std::vector<int>& sa,
+                     std::vector<int>&

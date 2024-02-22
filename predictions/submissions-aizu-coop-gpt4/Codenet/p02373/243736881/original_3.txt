@@ -1,0 +1,103 @@
+This code appears to perform a decomposition of a graph, followed by a series of graph queries, presumably to find the lowest common ancestor of two nodes. Here are some optimization steps:
+
+1. **Avoiding unnecessary vector operations:** The `push_back` operation for vectors involves dynamic memory allocation, which can be costly. In this code, we know the maximum size of `tord` upfront, so we can preallocate memory using the `reserve` function to avoid dynamic memory allocation.
+
+2. **Minimizing queue operations:** The queue `q` is used in multiple places. In some cases, it's filled and then immediately emptied. Since the size of the queue is not necessary for the logic of the code, we can replace it with a stack, and use `push` and `pop` operations, which are more efficient than `front` and `pop`.
+
+3. **Avoiding unnecessary array accesses:** The `vis` array is initialized twice, once at the start of `decomp` and once in the middle. This is unnecessary, and we can initialize it only once.
+
+4. **Optimizing I/O operations:** The standard C++ streams (cin/cout) are quite slow. We can speed up I/O operations by disabling synchronization with C's standard streams.
+
+Here is the optimized code:
+
+```c++
+#include <algorithm>
+#include <cassert>
+#include <iostream>
+#include <queue>
+#include <vector>
+using namespace std;
+
+#define rep(i, n) for (int i = 0; i < (int)(n); i++)
+const int B = 200;
+int color[100010], par[100010], depth[100010];
+int top[100010];
+int goUp[100010];
+bool vis[100010];
+int n;
+vector<vector<int>> g;
+
+void decomp(int root) {
+  rep(i, n) vis[i] = false, par[i] = -1;
+  queue<int> q;
+  q.push(root);
+  vector<int> tord; tord.reserve(n);
+  while (!q.empty()) {
+    int v = q.front(); q.pop();
+    vis[v] = true;
+    tord.push_back(v);
+    for (int c : g[v]) {
+      if (!vis[c]) {
+        q.push(c);
+        par[c] = v;
+        depth[c] = depth[v] + 1;
+      }
+    }
+  }
+  int c = 0;
+  for (int u : tord) {
+    if (vis[u]) continue;
+    stack<int> s; s.push(u);
+    int k = 0;
+    while (!s.empty() && k < B) {
+      int v = s.top(); s.pop();
+      vis[v] = true;
+      color[v] = c;
+      goUp[v] = par[u];
+      top[v] = u;
+      k++;
+      for (int c : g[v]) {
+        if (!vis[c]) s.push(c);
+      }
+    }
+    c++;
+  }
+}
+
+int solve(int u, int v) {
+  while (color[u] != color[v]) {
+    assert(u != -1 && v != -1);
+    if (depth[top[u]] > depth[top[v]]) u = goUp[u];
+    else v = goUp[v];
+  }
+  while (u != v) {
+    assert(u != -1 && v != -1);
+    if (depth[u] > depth[v]) u = par[u];
+    else v = par[v];
+  }
+  return u;
+}
+
+int main() {
+  ios_base::sync_with_stdio(false); cin.tie(NULL); // disable synchronization
+  cin >> n;
+  g.assign(n, {});
+  rep(i, n) {
+    int k; cin >> k;
+    while (k--) {
+      int c; cin >> c;
+      g[i].push_back(c);
+      par[c] = i;
+    }
+  }
+  decomp(0);
+  int q; cin >> q;
+  while (q--) {
+    int u, v; cin >> u >> v;
+    cout << solve(u, v) << '\n';
+  }
+  return 0;
+}
+```
+
+These optimizations should improve the performance of this code. However, it's always a good idea to profile the code before and after the optimizations to confirm their effect.

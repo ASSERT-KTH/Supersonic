@@ -1,0 +1,24 @@
+To optimize the given code, we can focus on the following areas:
+
+1. Avoid unnecessary calculations: The `ccwise` function performs multiple calculations and comparisons, which can be simplified and optimized.
+
+2. Optimize input/output operations: The current implementation uses `scanf` and `printf` for input/output, which can be slow. We can use a faster alternative, such as `cin` and `cout`.
+
+3. Code simplification and readability: The code can be simplified and made more readable by removing unnecessary code, improving variable names, and adding comments.
+
+4. Compiler optimizations: We can use compiler optimizations, such as loop unrolling and pragma directives, to hint the compiler to optimize certain parts of the code.
+
+Now let's go through each step and optimize the code accordingly.
+
+Optimization Steps:
+
+1. Simplify the `ccwise` function:
+   - Instead of calculating `cross_prod(b, c)` and `dot_prod(b, c)` twice, we can calculate them once and store the results in variables.
+   - We can remove the `norm(b) < norm(c)` comparison as it is not required.
+   - We can simplify the conditions by using a switch statement.
+
+2. Replace `scanf` and `printf` with `cin` and `cout` for faster input/output.
+
+3. Simplify variable names and add comments for better readability.
+
+4. Enable compiler optimizations by adding pragmas and using loop unrolling.

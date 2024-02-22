@@ -1,0 +1,67 @@
+#include <algorithm>
+#include <cstdlib>
+#include <iostream>
+#include <map>
+#include <queue>
+#include <random>
+#include <tuple>
+#include <utility>
+#include <vector>
+using namespace std;
+constexpr int N = 5e4, M = 1e5, LOGN = 16;
+int &mini(int &lhs, int rhs) { return lhs = min(lhs, rhs); }
+map<int, int> intervals;
+deque<pair<int, int>> rent;
+array<int, N + 1> ans;
+void add(int t) {
+  for (int i = N - rent[t].first - 1; i < N; i |= i + 1) {
+    intervals[rent[t].second] = max(intervals[rent[t].second], t);
+  }
+}
+int query(int l, int r) {
+  int res = M;
+  for (int i = N - l; i > N - r; i &= i - 1) {
+    auto it = intervals.upper_bound(r);
+    if (it != intervals.begin()) {
+      --it;
+      res = min(res, it->second);
+    }
+  }
+  return res;
+}
+int main() {
+  cin.tie(0), ios_base::sync_with_stdio(0);
+  int n, m;
+  cin >> n >> m;
+  for (int i = 0; i < m; ++i) {
+    int a, b;
+    cin >> a >> b;
+    rent.emplace_back(a - 1, b);
+  }
+  sort(rent.begin(), rent.end(), [](const auto& a, const auto& b) {
+    return b.second - b.first < a.second - a.first;
+  });
+  for (int epoch = n; epoch; --epoch) {
+    for (const auto& interval : rent) {
+      if (interval.second - interval.first == epoch) {
+        add(&interval - &rent[0]);
+      }
+    }
+    queue<pair<int, int>> for_rent;
+    for_rent.emplace(0, n);
+    while (!for_rent.empty()) {
+      auto [l, r] = for_rent.front();
+      for_rent.pop();
+      int t = query(l, r);
+      if (t != M) {
+        ans[epoch] += rent[t].second - rent[t].first;
+        for_rent.emplace(l, rent[t].first);
+        for_rent.emplace(rent[t].second, r);
+      }
+    }
+  }
+  for (int rented = 1; rented <= n; ++rented) {
+    cout << ans[rented] << '\n';
+  }
+  return 0;
+}

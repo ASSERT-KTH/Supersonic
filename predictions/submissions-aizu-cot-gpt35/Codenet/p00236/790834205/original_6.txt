@@ -1,0 +1,135 @@
+The given program is a C++ program that solves a graph traversal problem. It takes a grid as input and determines if there is a path that visits all non-blocked cells exactly once, starting and ending at the same cell.
+
+To optimize the program for running time and memory usage, we can make the following modifications:
+
+1. Remove unnecessary includes: The program includes several unnecessary headers such as `<algorithm>`, `<set>`, and `<bitset>`. Since these headers are not used in the program, we can remove them to reduce compilation time and memory usage.
+
+2. Pass large variables by reference: The `make_graph()` and `reachability()` functions take large vectors as parameters. To avoid the overhead of copying these vectors, we can pass them by reference instead.
+
+3. Use a stack-based depth-first search (DFS): The current implementation of the `dfs()` function uses recursion for DFS traversal. Recursion can be inefficient and may lead to stack overflow errors for large inputs. We can modify the `dfs()` function to use a stack-based approach instead.
+
+4. Use a bitset for visited nodes: The program uses a vector of bools to keep track of visited nodes. However, a bitset can be more memory-efficient for storing binary flags. We can modify the program to use `std::bitset` for the `visited` variable.
+
+5. Use a set for memoization: The program uses a `std::set` to store previously visited states for memoization. However, a `std::unordered_set` can provide faster lookup times. We can modify the program to use `std::unordered_set` for the `memo` variable.
+
+Here is the optimized version of the program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <unordered_set>
+
+const int N = 49;
+int w, h;
+std::vector<std::vector<int>> field;
+int size;
+std::vector<std::vector<int>> vertex;
+std::vector<std::vector<int>> edge;
+std::bitset<N> visited;
+std::unordered_set<unsigned long long> memo;
+
+void make_graph(std::vector<std::vector<int>>& vertex, std::vector<std::vector<int>>& edge) {
+  enum { Y, X };
+  const int NEXT[4][2] = { {0, 1}, {1, 0}, {-1, 0}, {0, -1} };
+  const int NIL = -1;
+  size = 0;
+  vertex = std::vector<std::vector<int>>(h, std::vector<int>(w, NIL));
+  for (int y = 0; y < h; ++y)
+    for (int x = 0; x < w; ++x)
+      if (!field[y][x])
+        vertex[y][x] = size++;
+  edge = std::vector<std::vector<int>>(h * w, std::vector<int>());
+  for (int y = 0; y < h; ++y)
+    for (int x = 0; x < w; ++x) {
+      if (vertex[y][x] == NIL)
+        continue;
+      for (const auto& d : NEXT) {
+        int ny = y + d[Y];
+        int nx = x + d[X];
+        if (ny < 0 || h <= ny || nx < 0 || w <= nx)
+          continue;
+        if (vertex[ny][nx] == NIL)
+          continue;
+        edge[vertex[y][x]].push_back(vertex[ny][nx]);
+      }
+    }
+}
+
+void reachability(const int& from, std::bitset<N>& visited) {
+  visited.set(from);
+  for (const auto& to : edge[from])
+    if (!visited[to])
+      reachability(to, visited);
+}
+
+bool cut_vertex(const int& from) {
+  auto dup = visited;
+  dup.set(from);
+  for (const auto& to : edge[from]) {
+    if (dup[to])
+      continue;
+    reachability(to, dup);
+    return dup.count() != size;
+  }
+  return dup.count() != size;
+}
+
+bool dfs(const int& start, int from) {
+  unsigned long long m = visited.to_ullong() * N + from;
+  if (memo.count(m))
+    return false;
+  memo.insert(m);
+  if (cut_vertex(from))
+    return false;
+
+  std::vector<int> stack;
+  stack.push_back(from);
+
+  while (!stack.empty()) {
+    int current = stack.back();
+    stack.pop_back();
+
+    if (visited[current])
+      continue;
+    visited.set(current);
+
+    bool hasUnvisitedNeighbor = false;
+    for (const auto& to : edge[current]) {
+      if (to == start && visited.count() == size)
+        return true;
+      if (!visited[to]) {
+        stack.push_back(to);
+        hasUnvisitedNeighbor = true;
+      }
+    }
+
+    if (!hasUnvisitedNeighbor)
+      visited.reset(current);
+  }
+
+  return false;
+}
+
+bool solve() {
+  visited.reset();
+  make_graph(vertex, edge);
+  memo.clear();
+  for (int y = 0; y < h; ++y)
+    for (int x = 0; x < w; ++x)
+      if (!field[y][x])
+        return dfs(vertex[y][x], vertex[y][x]);
+  return false;
+}
+
+int main() {
+  while (std::cin >> w >> h, w | h) {
+    field = std::vector<std::vector<int>>(h, std::vector<int>(w));
+    for (auto& line : field)
+      for (auto& v : line)
+        std::cin >> v;
+    std::cout << (solve() ? "Yes" : "No") << std::endl;
+  }
+}
+```
+
+These optimizations should improve the running time and memory usage of the program.

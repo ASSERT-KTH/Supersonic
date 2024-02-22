@@ -1,0 +1,75 @@
+#pragma GCC optimize("Ofast")
+#pragma GCC optimize("unroll-loops")
+#pragma GCC target("sse,sse2,sse3,ssse3,sse4,popcnt,abm,mmx,avx,tune=native")
+#include <algorithm>
+#include <iostream>
+#include <vector>
+#include <cmath>
+#define int long long
+#define endl '\n'
+#define fast ios_base::sync_with_stdio(false); cin.tie(NULL);
+#define mod 1000000007
+#define MAXN 301
+#define ll unsigned long long
+using namespace std;
+vector<int> dp, lazy;
+void push(int id, int l, int r) {
+  dp[id] = min(dp[id], lazy[id]);
+  if (l != r) {
+    lazy[id << 1] = min(lazy[id << 1], lazy[id]);
+    lazy[id << 1 | 1] = min(lazy[id << 1 | 1], lazy[id]);
+  }
+  lazy[id] = 1e18;
+}
+void upd(int id, int l, int r, int lq, int rq, int val) {
+  push(id, l, r);
+  if (l > r || l > rq || r < lq)
+    return;
+  if (lq <= l and r <= rq) {
+    lazy[id] = min(lazy[id], val);
+    push(id, l, r);
+    return;
+  }
+  int mid = (l + r) >> 1;
+  upd(id << 1, l, mid, lq, rq, val);
+  upd(id << 1 | 1, mid + 1, r, lq, rq, val);
+  dp[id] = min(dp[id << 1], dp[id << 1 | 1]);
+}
+int get(int id, int l, int r, int lq, int rq) {
+  push(id, l, r);
+  if (l > r || l > rq || r < lq)
+    return 1e18;
+  if (lq <= l and r <= rq)
+    return dp[id];
+  int mid = (l + r) >> 1;
+  return min(get(id << 1, l, mid, lq, rq),
+             get(id << 1 | 1, mid + 1, r, lq, rq));
+}
+void solve() {
+  int n, k;
+  cin >> n >> k;
+  string s;
+  cin >> s;
+  int m = 2 * n;
+  dp.resize(m+1, 1e18);
+  lazy.resize(m+1, 1e18);
+  for (int i = 1; i <= n; i++) {
+    if (i == 1)
+      upd(1, 1, m, i, i, i);
+    else
+      upd(1, 1, m, i, i, get(1, 1, m, i - 1, i - 1) + i);
+    if (i <= k + 1 && s[i - 1] == '1')
+      upd(1, 1, m, i + 1, i + k, i);
+    else if (s[i - 1] == '1' && i >= k + 2) {
+      int gg = get(1, 1, m, i - k - 1, i);
+      upd(1, 1, m, i - k, i + k, gg + i);
+    }
+  }
+  cout << get(1, 1, m, n, n) << endl;
+}
+signed main() {
+  fast int test = 1;
+  while (test--) {
+    solve();
+  }
+}

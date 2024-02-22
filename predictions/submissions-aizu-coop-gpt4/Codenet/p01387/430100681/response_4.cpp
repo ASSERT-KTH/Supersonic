@@ -1,0 +1,24 @@
+After analyzing the code, I noticed several areas that could be optimized. Here's how I would approach this code to improve its performance and memory usage:
+
+1. **Code Analysis:**
+
+   - The usage of `#include <bits/stdc++.h>` is not recommended because it includes all standard libraries, which increase the compilation time.
+   - The functions `xor128()`, `insert_key()`, `erase_key()`, `count()`, `lower_bound()`, and `upper_bound()` are frequently called, and they are good candidates for optimization.
+   - There is unnecessary copying of objects when we pass them as parameters to functions.
+   - A lot of space is being used for the `pool` vector in the `RandomizedBinarySearchTree` template class.
+
+2. **Optimization Strategy:**
+
+   - Replace `#include <bits/stdc++.h>` by including only necessary headers.
+   - Use `inline` keyword with the frequently used functions to hint the compiler to replace those function calls with the actual function code, reducing the function call overhead.
+   - Replace pass-by-value with pass-by-reference where possible to avoid unnecessary copying of objects.
+   - Use `reserve()` method for vectors if the size is known beforehand, which can avoid reallocations.
+   - Use `emplace_back()` instead of `push_back()` when adding elements to vectors, which constructs the object in-place and eliminates unnecessary copy or move operations.
+
+3. **Step-by-Step Explanation:**
+   
+   - Replace `#include <bits/stdc++.h>` with only necessary headers like `#include <vector>` and `#include <string>`. It reduces the compilation time and makes the code cleaner.
+   - Use `inline` keyword with functions like `xor128()`, `insert_key()`, `erase_key()`, `count()`, `lower_bound()`, and `upper_bound()`. It removes function call overhead and can improve performance.
+   - Replace pass-by-value with pass-by-reference in functions like `insert_key()`, `erase_key()`, and `split()`. It avoids unnecessary copying of objects, reducing memory usage and CPU cycles.
+   - Use `reserve()` for vectors like `Centroids` in `CentroidPathDecomposition` and `pool` in `RandomizedBinarySearchTree`. It avoids reallocations when elements are added to the vector.
+   - Use `emplace_back()` instead of `push_back()` when adding elements to vectors in functions like `AddEdge()` and `BuildPath()`. It constructs the object in-place and avoids unnecessary copy or move operations.

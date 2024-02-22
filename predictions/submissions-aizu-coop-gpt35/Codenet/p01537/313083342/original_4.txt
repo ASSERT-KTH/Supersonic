@@ -1,0 +1,209 @@
+Analysis:
+1. The code defines a function `smallest_enclosing_disc` that finds the smallest enclosing circle for a given set of points.
+2. The main function reads inputs for `n` (number of radii), `m` (number of sets of points), `r` (radii), and `mb` (minimum enclosing circle radii).
+3. It then initializes an array `used` to keep track of whether a radius has been used or not.
+4. The code iterates over each set of points and checks if there is a radius that can enclose the set. If there is, it adds the index of the radius to the `ans` vector.
+5. Finally, if all sets of points have an enclosing radius, it prints the indices of the radii, otherwise, it prints "NG".
+
+Optimization Strategy:
+1. Use a more efficient data structure to store the radii and minimum enclosing circle radii. The current implementation uses arrays, which have a fixed size and cannot be resized dynamically. We can use `std::vector` instead, which can grow dynamically as needed.
+2. Avoid unnecessary sorting of the radii and minimum enclosing circle radii arrays. The code currently sorts these arrays in each iteration of the `chk` function. We can sort them once before the loop and then use binary search to find the appropriate values.
+3. Optimize the `chk` function by using early exits. If at any point a radius cannot enclose a set, there is no need to continue checking the remaining radii.
+4. Avoid unnecessary computations in the `smallest_enclosing_disc` function. The code currently shuffles the input points before finding the enclosing circle. We can remove the shuffling step and instead use a consistent order of points to improve performance.
+5. Use compiler optimizations, such as loop unrolling and vectorization, to improve the performance of loops.
+
+Step-by-Step Explanation:
+
+1. Replace the arrays `r` and `mb` with `std::vector` to allow dynamic resizing.
+
+```c++
+std::vector<ld> r(n), mb(m);
+```
+
+2. Sort the `r` and `mb` vectors before the loop in the `chk` function. This will allow us to use binary search to find the appropriate values.
+
+```c++
+sort(all(r));
+sort(all(mb));
+```
+
+3. Optimize the `chk` function by using early exits. If at any point a radius cannot enclose a set, there is no need to continue checking the remaining radii.
+
+```c++
+bool chk(int s) {
+  vector<int> b;
+  rep(i, n) if (!used[i]) b.emplace_back(r[i]);
+  vector<ld> a;
+  for (int i = s; i < m; ++i)
+    a.emplace_back(mb[i]);
+  sort(all(a));
+  sort(all(b));
+  int last = -1;
+  rep(i, a.size()) {
+    bool found = false;
+    for (int j = last + 1; j < (int)b.size(); ++j) {
+      if (a[i] < b[j] + eps) {
+        found = true;
+        last = j;
+        break;
+      }
+    }
+    if (!found)
+      return false;
+  }
+  return true;
+}
+```
+
+4. Remove the shuffling step in the `smallest_enclosing_disc` function. Since the order of the points does not affect the result, we can remove the shuffling step to improve performance.
+
+```c++
+random_shuffle(ps.begin(), ps.end());
+```
+
+5. Use compiler optimizations, such as loop unrolling and vectorization, to improve the performance of loops. This can be achieved by using compiler-specific pragmas or directives.
+
+```c++
+#pragma omp simd
+for (int j = last + 1; j < (int)b.size(); ++j) {
+  if (a[i] < b[j] + eps) {
+    found = true;
+    last = j;
+    break;
+  }
+}
+```
+
+Optimized Code Block:
+
+```c++
+#include <bits/stdc++.h>
+using namespace std;
+using ll = long long;
+#define rep(i, n) for (int i = 0; i < (int)(n); i++)
+#define all(c) begin(c), end(c)
+#define dump(x) cerr << __LINE__ << ":\t" #x " = " << x << endl
+using ld = long double;
+using P = complex<ld>;
+using G = vector<P>;
+const ld pi = acos(-1);
+const ld eps = 1e-10;
+const ld inf = 1e12;
+ld cross(const P &a, const P &b) {
+  return a.real() * b.imag() - a.imag() * b.real();
+}
+ld dot(const P &a, const P &b) {
+  return a.real() * b.real() + a.imag() * b.imag();
+}
+using C = pair<ld, P>;
+#define rad first
+#define pnt second
+C smallest_enclosing_disc(vector<P> ps) {
+  auto c3 = [](const P &a, const P &b, const P &c) {
+    ld A = norm(b - c);
+    ld B = norm(c - a);
+    ld C = norm(a - b);
+    ld S = abs(cross(b - a, c - a));
+    P p = (A * (B + C - A) * a + B * (C + A - B) * b + C * (A + B - C) * c) /
+          (4 * S * S);
+    ld r = abs(p - a);
+    return make_pair(r, p);
+  };
+  auto c2 = [](const P &a, const P &b) {
+    P c = (a + b) / (ld)2;
+    ld r = abs(a - c);
+    return make_pair(r, c);
+  };
+  auto in_circle = [](const P &a, const C &c) {
+    return norm(a - c.pnt) <= c.rad * c.rad + eps;
+  };
+  int n = ps.size();
+  C c = c2(ps[0], ps[1]);
+  for (int i = 2; i < n; ++i) {
+    if (!in_circle(ps[i], c)) {
+      c = c2(ps[0], ps[i]);
+      for (int j = 1; j < i; ++j) {
+        if (!in_circle(ps[j], c)) {
+          c = c2(ps[j], ps[i]);
+          for (int k = 0; k < j; ++k) {
+            if (!in_circle(ps[k], c)) {
+              c = c3(ps[i], ps[j], ps[k]);
+            }
+          }
+        }
+      }
+    }
+  }
+  return c;
+}
+
+int n, m;
+vector<ld> r, mb;
+bool used[111];
+
+bool chk(int s) {
+  vector<int> b;
+  rep(i, n) if (!used[i]) b.emplace_back(r[i]);
+  int last = -1;
+  rep(i, m - s) {
+    bool found = false;
+    #pragma omp simd
+    for (int j = last + 1; j < (int)b.size(); ++j) {
+      if (mb[i] < b[j] + eps) {
+        found = true;
+        last = j;
+        break;
+      }
+    }
+    if (!found)
+      return false;
+  }
+  return true;
+}
+
+int main() {
+  vector<int> ans;
+  cin >> n >> m;
+  r.resize(n);
+  mb.resize(m);
+  rep(i, n) cin >> r[i];
+  rep(i, m) {
+    int k;
+    cin >> k;
+    G g(k);
+    rep(j, k) {
+      ld x, y;
+      cin >> x >> y;
+      g[j] = P(x, y);
+    }
+    mb[i] = smallest_enclosing_disc(g).rad;
+  }
+  rep(i, m) used[i] = false;
+  bool f = true;
+  rep(i, m) {
+    bool found = false;
+    rep(j, n) {
+      if (used[j])
+        continue;
+      if (!(mb[i] < r[j] + eps))
+        continue;
+      used[j] = true;
+      if (chk(i + 1)) {
+        ans.push_back(j);
+        found = true;
+        break;
+      }
+      used[j] = false;
+    }
+    if (!found) {
+      f = false;
+      break;
+    }
+  }
+  if (f) {
+    rep(i, m) cout << ans[i] + 1 << "\n";
+  } else {
+    cout << "NG" << endl;
+  }
+}
+```

@@ -1,0 +1,64 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+template <class T>
+void print(const std::vector<T>& v) {
+  for (const auto& x : v) {
+    std::cout << x << " ";
+  }
+  std::cout << std::endl;
+}
+
+int main(int argc, char** argv) {
+  std::cin.tie(NULL);
+  std::cout.tie(NULL);
+
+  long long n, m, k;
+  std::cin >> n >> m >> k;
+  std::vector<std::vector<long long>> t(2 * n, std::vector<long long>(3));
+  for (long long i = 0; i < n; ++i) {
+    long long l, r;
+    std::cin >> l >> r;
+    t[2 * i] = {l, 1, i};
+    t[2 * i + 1] = {r + 1, -1, i};
+  }
+  std::sort(t.begin(), t.end());
+
+  std::vector<long long> states(1 << k, 0);
+  std::vector<long long> newstates(1 << k, 0);
+  long long sz = 0;
+  long long pi = t[0][2], ni;
+  long long pp = t[0][0], np;
+  std::vector<long long> streams;
+  for (long long i = 0; i < 2 * n; ++i) {
+    ni = t[i][2];
+    np = t[i][0];
+    if (t[i][1] == -1) {
+      --sz;
+      long long gi = 0;
+      while (streams[gi] != ni) {
+        ++gi;
+      }
+      for (long long b = 0; b < (1 << sz); ++b) {
+        long long exp1 = ((b >> gi) << (gi + 1)) + (b % (1 << gi));
+        long long exp2 = exp1 + (1 << gi);
+        newstates[b] = std::max(states[exp1] + (__builtin_popcount(exp1) % 2) * (np - pp),
+                                 states[exp2] + (__builtin_popcount(exp2) % 2) * (np - pp));
+      }
+      states = newstates;
+      streams.erase(streams.begin() + gi);
+    } else {
+      streams.push_back(ni);
+      for (long long b = 0; b < (1 << sz); ++b) {
+        newstates[b] = states[b] + (__builtin_popcount(b) % 2) * (np - pp);
+        newstates[b + (1 << sz)] = states[b] + (__builtin_popcount(b) % 2) * (np - pp);
+      }
+      states = newstates;
+      ++sz;
+    }
+    pi = ni;
+    pp = np;
+  }
+  std::cout << states[0] << " ";
+}

@@ -1,0 +1,103 @@
+The given program is using a segment tree to solve a range query problem. It first reads the input values, sorts them based on a specific criterion, and then performs a series of range queries on the segment tree.
+
+To optimize the program, we can make the following modifications:
+
+1. Remove unnecessary header inclusion: The program includes the `<bits/stdc++.h>` header, which is not a standard header and includes a large number of other headers. We can remove this and include only the necessary headers, such as `<iostream>`, `<vector>`, and `<algorithm>`.
+
+2. Use `constexpr` instead of `const` for the constant variables: The program defines `N` as a constant variable, but it can be further optimized by using `constexpr` instead of `const`. This allows the compiler to evaluate the value of `N` at compile-time instead of runtime.
+
+3. Use prefix increment instead of postfix increment: The program uses postfix increment (`++ptr`) inside the `while` loop. Switching to prefix increment (`++ptr`) can be more efficient as it avoids unnecessary copying of the original value.
+
+4. Change the loop condition in the `while` loop: The `while` loop condition checks whether `ptr + 1 < n && t[1] == 0`. We can optimize this condition by rearranging the terms to `t[1] == 0 && ptr + 1 < n`. This ensures that the `ptr + 1` check is performed only when `t[1]` is equal to zero, reducing unnecessary iterations.
+
+5. Change the loop condition in the `for` loop: The `for` loop condition checks whether `i < n` for each iteration. We can optimize this condition by storing `n` in a separate variable and checking against that variable instead of accessing `s.size()`.
+
+6. Minimize function calls and array accesses: The program makes multiple function calls and array accesses inside the loops. We can optimize this by minimizing the number of function calls and array accesses, especially in the `add` function.
+
+Here's the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+typedef long long ll;
+
+constexpr int N = 2e6 + 5;
+
+int t[4 * N];
+int push[4 * N];
+
+void makepush(int v, int tl, int tr) {
+  if (!push[v])
+    return;
+  if (tl != tr) {
+    int v2 = v * 2;
+    int v2p1 = v2 + 1;
+    push[v2] += push[v];
+    push[v2p1] += push[v];
+    t[v2] += push[v];
+    t[v2p1] += push[v];
+  }
+  push[v] = 0;
+}
+
+void add(int v, int tl, int tr, int l, int r, int x) {
+  if (l > r)
+    return;
+  makepush(v, tl, tr);
+  if (tl == l && tr == r) {
+    t[v] += x;
+    push[v] += x;
+    return;
+  }
+  int tm = (tl + tr) / 2;
+  int v2 = v * 2;
+  int v2p1 = v2 + 1;
+  add(v2, tl, tm, l, min(r, tm), x);
+  add(v2p1, tm + 1, tr, max(l, tm + 1), r, x);
+  t[v] = min(t[v2], t[v2p1]);
+}
+
+int main() {
+  ios_base::sync_with_stdio(0);
+  cin.tie(0);
+  cout.tie(0);
+
+  int n, m;
+  cin >> n >> m;
+
+  vector<pair<int, pair<int, int>>> s;
+  s.reserve(n);
+
+  for (int i = 0; i < n; i++) {
+    int l, r, w;
+    cin >> l >> r >> w;
+    s.push_back({w, {l, r - 1}});
+  }
+
+  sort(s.begin(), s.end(), [&](const pair<int, pair<int, int>> &x, const pair<int, pair<int, int>> &y) {
+    return x.first < y.first;
+  });
+
+  int ptr = -1, ans = INT_MAX;
+  int nSize = s.size();
+
+  for (int i = 0; i < nSize; i++) {
+    if (i > 0)
+      add(1, 1, m - 1, s[i - 1].second.first, s[i - 1].second.second, -1);
+
+    while (t[1] == 0 && ++ptr < nSize) {
+      add(1, 1, m - 1, s[ptr].second.first, s[ptr].second.second, +1);
+    }
+
+    if (t[1])
+      ans = min(ans, s[ptr].first - s[i].first);
+  }
+
+  cout << ans;
+
+  return 0;
+}
+```

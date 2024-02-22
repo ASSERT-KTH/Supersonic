@@ -1,0 +1,92 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <random>
+#include <chrono>
+#include <map>
+#include <set>
+#include <array>
+#include <deque>
+#include <climits>
+
+int sz(const auto& x) { return x.size(); }
+
+template <typename T> void ckmin(T &a, const T &b) { a = std::min(a, b); }
+template <typename T> void ckmax(T &a, const T &b) { a = std::max(a, b); }
+
+std::mt19937_64 rng(std::chrono::steady_clock::now().time_since_epoch().count());
+
+void dedup(std::vector<int> &v) {
+  std::sort(v.begin(), v.end());
+  v.erase(std::unique(v.begin(), v.end()), v.end());
+}
+
+template <typename T>
+std::vector<T>::iterator find(std::vector<T> &v, const T &x) {
+  auto it = std::lower_bound(v.begin(), v.end(), x);
+  return it != v.end() && *it == x ? it : v.end();
+}
+
+int main() {
+  std::ios_base::sync_with_stdio(0);
+  std::cin.tie(0);
+  std::cout << std::fixed << std::setprecision(15);
+  
+  const int MAXV = 61;
+  int N;
+  std::cin >> N;
+  std::vector<int> a(N);
+  for (auto& ai : a) {
+    std::cin >> ai;
+  }
+  
+  std::vector<int> pri;
+  for (int v = 2; v < MAXV; v++) {
+    bool ok = true;
+    for (const auto& p : pri) {
+      if (v % p == 0) {
+        ok = false;
+      }
+    }
+    if (ok) {
+      pri.push_back(v);
+    }
+  }
+  
+  std::vector<int> mask(MAXV);
+  for (int v = 1; v < MAXV; v++) {
+    for (int i = 0; i < sz(pri); i++) {
+      if (v % pri[i] == 0) {
+        mask[v] |= 1 << i;
+      }
+    }
+  }
+  
+  std::vector<std::vector<std::pair<int, int>>> dp(N + 1, std::vector<std::pair<int, int>>(1 << sz(pri), {INT_MAX, -1}));
+  dp[0][0].first = -1;
+  for (int i = 0; i < N; i++) {
+    for (int m = 0; m < (1 << sz(pri)); m++) {
+      if (dp[i][m].first < INT_MAX) {
+        for (int v = 1; v < MAXV; v++) {
+          if (!(mask[v] & m)) {
+            ckmin(dp[i + 1][m ^ mask[v]], std::make_pair(dp[i][m].first + abs(v - a[i]), v));
+          }
+        }
+      }
+    }
+  }
+  
+  std::vector<int> b(N);
+  int m = std::min_element(dp.back().begin(), dp.back().end()) - dp.back().begin();
+  for (int i = N - 1; i >= 0; i--) {
+    b[i] = dp[i + 1][m].second;
+    m ^= mask[b[i]];
+  }
+  
+  for (const auto& bi : b) {
+    std::cout << bi << " ";
+  }
+  std::cout << "\n";
+  
+  return 0;
+}

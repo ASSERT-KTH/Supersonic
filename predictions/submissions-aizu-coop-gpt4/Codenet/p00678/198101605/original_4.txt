@@ -1,0 +1,110 @@
+This code seems to be doing some kind of iterative gradient descent to find a point that minimizes the maximum distance to a set of points, each with a different speed. Let's walk through the code and identify potential areas for optimization:
+
+1. **Code Analysis:**
+
+   - The `dist()` function is called multiple times with the same arguments. This is a redundant computation that can be avoided.
+   - The `dist()` function uses `pow()`, which is computationally expensive. A cheaper alternative can be used.
+   - The `vector::push_back()` function is used repeatedly. This may lead to unnecessary reallocations.
+
+2. **Optimization Strategy:**
+   
+   1. Use a cache to store already computed distances.
+   2. Replace `pow()` with simple multiplication.
+   3. Use `vector::reserve()` to prevent unnecessary reallocations.
+   4. Use compiler optimization flags.
+
+3. **Step-by-Step Explanation:**
+
+   1. **Caching Distances:**
+      - Rationale: The `dist()` function is called multiple times with the same arguments. Caching the result of the first calculation and reusing it for subsequent calls will eliminate redundant computations.
+      - Trade-off: This will increase memory usage slightly, but the performance gain should outweigh this drawback.
+
+   2. **Replacing `pow()`:**
+      - Rationale: The `pow()` function is computationally expensive. Since we're raising to the power of 2, we can simply multiply the value by itself, which is much cheaper.
+      - Trade-off: None. This is a straightforward optimization.
+
+   3. **Preventing Reallocation:**
+      - Rationale: The `vector::push_back()` function may cause the vector to reallocate its underlying storage, which is an expensive operation. By using `vector::reserve()`, we can allocate all the memory we need upfront.
+      - Trade-off: This will increase memory usage slightly at the beginning, but it's generally better to slightly over-allocate than to reallocate multiple times.
+
+   4. **Compiler Optimization Flags:**
+      - Rationale: Compiler optimization flags such as `-O3` instruct the compiler to optimize the code as much as possible, which may improve performance.
+      - Trade-off: The `-O3` flag may increase compile time and the size of the generated binary.
+
+4. **Optimized Code Block:**
+
+```cpp
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+using namespace std;
+
+double EPS = 1e-6;
+
+double add(double a, double b) {
+  if (abs(a + b) < EPS * (abs(a) + abs(b)))
+    return 0;
+  return a + b;
+}
+
+struct point {
+  double x, y;
+  point() {}
+  point(double x, double y) : x(x), y(y) {}
+  point operator+(point p) { return point(add(x, p.x), add(y, p.y)); }
+  point operator-(point p) { return point(add(x, -p.x), add(y, -p.y)); }
+  point operator*(double d) { return point(x * d, y * d); }
+  point operator/(double d) { return point(x / d, y / d); }
+};
+
+unordered_map<pair<point, point>, double> distCache;
+
+double dist(point a, point b) {
+  if (distCache.find({a, b}) != distCache.end()) {
+    return distCache[{a, b}];
+  }
+  double d = sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
+  distCache[{a, b}] = d;
+  return d;
+}
+
+int main(void) {
+  int n, x, y, v;
+  vector<point> P;
+  vector<double> V;
+  while (cin >> n, n) {
+    P.clear();
+    V.clear();
+    distCache.clear();
+    P.reserve(n);
+    V.reserve(n);
+    for (int i = 0; i < n; i++) {
+      cin >> x >> y >> v;
+      P.push_back(point(x, y));
+      V.push_back(v);
+    }
+    double r = 0.98;
+    point now(0, 0);
+    for (double d = 10; d > EPS; d *= r) {
+      int mx = 0;
+      double mxd = 0;
+      for (int j = 0; j < P.size(); j++) {
+        double currentDist = dist(now, P[j]) / V[j];
+        if (currentDist > mxd)
+          mx = j, mxd = currentDist;
+      }
+      now = now + ((P[mx] - now) / dist(P[mx], now) * d);
+    }
+    double ans = 0;
+    for (int i = 0; i < P.size(); i++) {
+      ans = max(ans, dist(now, P[i]) / V[i]);
+    }
+    printf("%.8f\n", ans);
+  }
+  return 0;
+}
+```
+You can compile this program with the `-O3` flag to enable compiler optimizations.

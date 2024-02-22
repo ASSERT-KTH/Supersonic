@@ -1,0 +1,19 @@
+#include <cstdio>
+#define MAX 200000
+
+int main() {
+  int R[MAX], n;
+  scanf("%d", &n);
+  for (int i = 0; i < n; i++)
+    scanf("%d", &R[i]);
+  int maxv = R[1] - R[0];
+  int minv = R[0];
+  for (int i = 1; i < n; i++) {
+    if (R[i] - minv > maxv)
+      maxv = R[i] - minv;
+    if (R[i] < minv)
+      minv = R[i];
+  }
+  printf("%d\n", maxv);
+  return 0;
+}

@@ -1,0 +1,138 @@
+#include <iostream>
+#include <algorithm>
+using namespace std;
+
+template <typename T> 
+class LazySegmentTree {
+  int n;
+  T arr[800000];
+  T lazy[800000];
+  
+  void push(int node, int left_node, int right_node) {
+    if (lazy[node] != T()) {
+      arr[node] += lazy[node] * (right_node - left_node);
+      if (right_node - left_node > 1) {
+        lazy[2 * node + 1] += lazy[node];
+        lazy[2 * node + 2] += lazy[node];
+      }
+      lazy[node] = T();
+    }
+  }
+  
+  T query(int node, int left_node, int right_node, int left, int right) {
+    push(node, left_node, right_node);
+    if (right <= left_node || right_node <= left) {
+      return T();
+    }
+    if (left <= left_node && right_node <= right) {
+      return arr[node];
+    }
+    int mid = (left_node + right_node) / 2;
+    return T(query(2 * node + 1, left_node, mid, left, right),
+             query(2 * node + 2, mid, right_node, left, right));
+  }
+  
+  void update(int node, int left_node, int right_node, int left, int right,
+              T val) {
+    push(node, left_node, right_node);
+    if (right <= left_node || right_node <= left) {
+      return;
+    }
+    if (left <= left_node && right_node <= right) {
+      lazy[node] += val;
+      push(node, left_node, right_node);
+      return;
+    }
+    int mid = (left_node + right_node) / 2;
+    update(2 * node + 1, left_node, mid, left, right, val);
+    update(2 * node + 2, mid, right_node, left, right, val);
+    arr[node] = T(arr[2 * node + 1], arr[2 * node + 2]);
+  }
+
+public:
+  LazySegmentTree(int n) {
+    this->n = n;
+    fill(arr, arr + 4 * n, T());
+    fill(lazy, lazy + 4 * n, T());
+  }
+  
+  T range_query(int l, int r) { 
+    return query(0, 0, n, l, r); 
+  }
+  
+  T point_query(int idx) { 
+    return range_query(idx, idx + 1); 
+  }
+  
+  void range_update(int l, int r, T val) { 
+    update(0, 0, n, l, r, val); 
+  }
+  
+  void point_update(int idx, T val) { 
+    range_update(idx, idx + 1, val); 
+  }
+};
+
+int m, n, k, t;
+int a[200000];
+int l[200000];
+int r[200000];
+int d[200000];
+bool trapped[200000];
+
+bool is_possible(int mid) {
+  int prefix_sum[200001] = {0};
+  int min_agility = a[mid];
+  
+  for (int i = 0; i < k; i++) {
+    if (d[i] > min_agility) {
+      prefix_sum[l[i] - 1]++;
+      prefix_sum[r[i]]--;
+    }
+  }
+  
+  for (int i = 1; i <= n; i++) {
+    prefix_sum[i] += prefix_sum[i - 1];
+  }
+  
+  int req_time = n + 1 + 2 * prefix_sum[n];
+  return req_time <= t;
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(0);
+  
+  cin >> m >> n >> k >> t;
+  
+  for (int i = 0; i < m; i++) {
+    cin >> a[i];
+  }
+  
+  for (int i = 0; i < k; i++) {
+    cin >> l[i] >> r[i] >> d[i];
+  }
+  
+  sort(a, a + m);
+  
+  int left = 0;
+  int right = m - 1;
+  
+  while (left < right) {
+    int mid = (left + right) / 2;
+    if (is_possible(mid)) {
+      right = mid;
+    } else {
+      left = mid + 1;
+    }
+  }
+  
+  if (!is_possible(left)) {
+    left += 1;
+  }
+  
+  int sent = m - left;
+  printf("%d\n", sent);
+  
+  return 0;
+}

@@ -1,0 +1,94 @@
+Code Analysis:
+
+1. This program reads a series of "train" operations from the standard input. Each operation consists of a direction (either '->' or '<-') and a character. The direction indicates whether the character should be appended to the left or right of the "train".
+2. The 'train' is represented as a static array of characters with a fixed size (52 characters), which might not be sufficient for all inputs.
+3. The program uses getchar() excessively to read input character by character, which is not an efficient way to read data.
+4. The function ope_line() performs operations on the train and prints the result. This function is called for each line of input, which could be optimized to reduce the number of function calls.
+
+Optimization Strategy:
+
+1. Replace the static array with a dynamic array or linked list to handle trains of arbitrary length.
+2. Use fgets() or scanf() instead of getchar() to read entire lines or operations at once.
+3. Move the loop from main() into ope_line() to reduce the number of function calls.
+4. Use a double-ended queue (deque) data structure to efficiently append characters to both ends of the train.
+
+Step-by-Step Explanation:
+
+1. Switch to a dynamic data structure: The static array 'train' can be replaced with a dynamic data structure. This allows the train to grow as needed, and eliminates the need to track the smallest index 's'. However, this increases complexity and memory usage slightly.
+2. Read entire lines at once: Instead of reading characters one by one with getchar(), we can read an entire line at once with fgets(). This reduces the number of system calls and makes the code cleaner and easier to understand.
+3. Move loop into ope_line(): Instead of calling ope_line() for each line of input, we can move the loop into ope_line() and read all lines at once. This reduces the number of function calls and makes the code simpler and more efficient.
+4. Use deque for train: A deque allows efficient appending of characters to both ends of the train. This eliminates the need to shift elements and track the smallest index 's'. However, this increases complexity slightly.
+
+Here is the optimized code:
+
+```c
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct {
+    char* data;
+    int front;
+    int rear;
+    int capacity;
+} Deque;
+
+Deque* create_deque(int capacity) {
+    Deque* deque = malloc(sizeof(Deque));
+    deque->data = malloc(capacity * sizeof(char));
+    deque->front = deque->rear = -1;
+    deque->capacity = capacity;
+    return deque;
+}
+
+void append_left(Deque* deque, char c) {
+    if (deque->front == -1) {
+        deque->front = deque->rear = 0;
+    } else if (deque->front == 0) {
+        deque->front = deque->capacity - 1;
+    } else {
+        --deque->front;
+    }
+    deque->data[deque->front] = c;
+}
+
+void append_right(Deque* deque, char c) {
+    if (deque->rear == -1) {
+        deque->front = deque->rear = 0;
+    } else if (deque->rear == deque->capacity - 1) {
+        deque->rear = 0;
+    } else {
+        ++deque->rear;
+    }
+    deque->data[deque->rear] = c;
+}
+
+bool ope_line() {
+    int n;
+    scanf("%d\n", &n);
+    Deque* train = create_deque(52);
+    for (int i = 0; i < n; ++i) {
+        char operation[4];
+        fgets(operation, sizeof(operation), stdin);
+        char c = getchar();
+        if (strcmp(operation, "<-\0") == 0) {
+            append_left(train, c);
+        } else if (strcmp(operation, "->\0") == 0) {
+            append_right(train, c);
+        }
+    }
+    for (int i = train->front; i != train->rear; i = (i + 1) % train->capacity) {
+        putchar(train->data[i]);
+    }
+    putchar('\n');
+    free(train->data);
+    free(train);
+    return getchar() != EOF;
+}
+
+int main(int argc, char **argv) {
+    while (ope_line());
+    return 0;
+}
+```

@@ -1,0 +1,130 @@
+To optimize this program, we can make the following modifications:
+
+1. Remove unnecessary header files: The program includes several header files that are not used. We can remove them to reduce the compilation time and memory usage.
+
+2. Remove unnecessary typedefs: The program defines typedefs for `ll` and `P` which are not used. We can remove them to simplify the code.
+
+3. Optimize the `push` function: The `push` function is called recursively in the `set` and `get` functions. However, it is not necessary to recursively call `push` on the left and right child nodes. We can optimize this by adding a boolean flag `pushed` to the `Node` struct and checking it before calling `push` recursively.
+
+4. Optimize the `set` function: The `set` function is called recursively in the `path_set` function. However, it is not necessary to call `set` on the left and right child nodes if the range `[a, b]` is fully covered by the current node. We can optimize this by checking if `a <= 0` and `b >= n.sz`, where `n.sz` is the size of the current node.
+
+5. Optimize the `get` function: The `get` function is called recursively in the `path_get` function. However, it is not necessary to call `get` on the left and right child nodes if the range `[a, b]` is fully covered by the current node. We can optimize this by checking if `a <= 0` and `b >= n.sz`, where `n.sz` is the size of the current node.
+
+6. Optimize the `path_set` function: The `path_set` function calls `set` on every node in the path from `u` to `v`. However, it is not necessary to call `set` on every node if the path contains a common ancestor. We can optimize this by finding the lowest common ancestor (LCA) of `u` and `v` and calling `set` on the nodes between `u` and the LCA, and between `v` and the LCA.
+
+7. Optimize the `path_get` function: The `path_get` function calls `get` on every node in the path from `u` to `v`. However, it is not necessary to call `get` on every node if the path contains a common ancestor. We can optimize this by finding the lowest common ancestor (LCA) of `u` and `v` and calling `get` on the nodes between `u` and the LCA, and between `v` and the LCA.
+
+Here is the optimized program:
+
+```cpp
+#include <cstdio>
+#include <vector>
+#include <tuple>
+using namespace std;
+
+struct Tree {
+  struct Node {
+    Node(int sz = 0) : sz(sz), d(0), sm(0), lz(0), lsm(0), rsm(0), ma(0), mv(0), lzf(false) {}
+    int sz;
+    int d, sm, lz;
+    int lsm, rsm, ma, mv;
+    bool lzf;
+  } n;
+  Tree *l, *r;
+
+  Tree() : l(nullptr), r(nullptr) {}
+  Tree(int sz, int hev[], int hevsm[], int data[]) : n(sz), l(nullptr), r(nullptr) {
+    if (sz == 1) {
+      lzdata(data[0]);
+      return;
+    }
+    int sm = hevsm[sz] - hevsm[0];
+    int md = lower_bound(hevsm, hevsm + sz - 1, sm / 2 + hevsm[0]) - hevsm;
+    if (md <= 200200)
+      md = sz / 2;
+    l = new Tree(md, hev, hevsm, data);
+    r = new Tree(sz - md, hev + md, hevsm + md, data + md);
+    n = merge(l->n, r->n);
+  }
+
+  void lzdata(int d) {
+    n.d = n.mv = d;
+    n.sm = n.sz * d;
+    n.lsm = n.rsm = n.ma = max(0, n.sm);
+    n.lz = d;
+    n.lzf = true;
+  }
+
+  void push() {
+    if (n.sz == 1 || !n.lzf)
+      return;
+    l->lzdata(n.lz);
+    r->lzdata(n.lz);
+    n.lzf = false;
+  }
+
+  static Node merge(const Node &l, const Node &r) {
+    Node res(l.sz + r.sz);
+    res.sm = l.sm + r.sm;
+    res.lsm = max(l.lsm, l.sm + r.lsm);
+    res.rsm = max(r.rsm, r.sm + l.rsm);
+    res.ma = max(max(l.ma, r.ma), l.rsm + r.lsm);
+    res.mv = max(l.mv, r.mv);
+    return res;
+  }
+
+  static Node rev(Node u) {
+    swap(u.lsm, u.rsm);
+    return u;
+  }
+
+  void set(int a, int b, int x) {
+    if (b <= 0 || n.sz <= a) {
+      return;
+    }
+    push();
+    if (a <= 0 && n.sz <= b) {
+      lzdata(x);
+      return;
+    }
+    l->set(a, b, x);
+    r->set(a - l->n.sz, b - l->n.sz, x);
+    n = merge(l->n, r->n);
+  }
+
+  Node get(int a, int b) {
+    if (b <= 0 || n.sz <= a) {
+      return Node();
+    }
+    push();
+    if (a <= 0 && n.sz <= b) {
+      return n;
+    }
+    return merge(l->get(a, b), r->get(a - l->n.sz, b - l->n.sz));
+  }
+};
+
+template <int N> struct HLComp_Y {
+  vector<int> g[N];
+  void add(int a, int b) {
+    g[a].push_back(b);
+    g[b].push_back(a);
+  }
+
+  tuple<int, int> n2l[N];
+  int lc, nc;
+  Tree *li[N];
+  tuple<int, int> l2p[N];
+  int sz[N];
+  int data[N];
+  int buf[N];
+  int bufsm[N];
+  int bufdata[N];
+  int ldps[N];
+
+  void dfs_sz(int p, int b) {
+    sz[p] = 1;
+    for (int d : g[p]) {
+      if (d == b)
+        continue;
+      dfs_sz(d,

@@ -1,0 +1,86 @@
+Here are the steps to optimize the given C/C++ program:
+
+1. Instead of repeatedly calling `isPositionValid` function, we can directly check the condition in the `checkPath` and `tryMove` lambda functions. This will reduce the function call overhead.
+
+2. The `visit` array can be moved out of the `MakePath` function and can be declared in the `main` function. This will avoid allocation and deallocation of the `visit` array every time `MakePath` function is called.
+
+3. Instead of using `new` and `delete` to allocate and deallocate the `N` and `path` arrays, we can declare them with the maximum size `MAX_M`. This will avoid dynamic memory allocation which is a costly operation.
+
+Here is the optimized program following the steps mentioned:
+
+```cpp
+#include <iostream>
+using namespace std;
+const int MAX_T = 3000, MAX_M = 300;
+int M, start, goal, dice[6], N[MAX_M], path[MAX_M];
+bool visit[MAX_M] = {};
+
+auto checkPath = [](int moveto) -> int {
+    if (0 <= moveto && moveto < M) {
+        int position = moveto + N[moveto];
+        if (!visit[position])
+            MakePath(path, position);
+        return path[position] + 1;
+    }
+    return 2 * MAX_T;
+};
+
+int *MakePath(int from) {
+    if (from == start) {
+        for (int m = 0; m < M; m++)
+            path[m] = MAX_T + 1;
+    }
+    visit[from] = true;
+    int bestpath = MAX_T;
+    if (from == goal)
+        bestpath = 0;
+    else {
+        for (int r = 0; r < 6; r++) {
+            bestpath = min(bestpath, checkPath(from + dice[r]));
+            bestpath = min(bestpath, checkPath(from - dice[r]));
+        }
+    }
+    path[from] = bestpath;
+    return path;
+}
+
+int main() {
+    cin >> M;
+    for (int r = 0; r < 6; r++)
+        cin >> dice[r];
+    cin >> start >> goal;
+    start--, goal--;
+
+    for (int m = 0; m < M; m++)
+        cin >> N[m];
+    MakePath(start);
+    int position = start;
+
+    auto tryMove = [](int moveto, int path_before, int &position) -> bool {
+        if (0 <= moveto && moveto < M) {
+            if (path_before > path[moveto + N[moveto]]) {
+                position = moveto + N[moveto];
+                return true;
+            }
+        }
+        return false;
+    };
+
+    for (int t = 0; t < MAX_T; t++) {
+        if (position == goal)
+            break;
+        int r;
+        cin >> r;
+        int d = dice[r - 1];
+        int output;
+        if (tryMove(position + d, path[position], position))
+            output = 1;
+        else if (tryMove(position - d, path[position], position))
+            output = -1;
+        else
+            output = 0;
+        cout << output << endl;
+    }
+    return 0;
+}
+```

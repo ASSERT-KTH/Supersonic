@@ -1,0 +1,199 @@
+#include <iostream>
+#include <vector>
+
+const int N = 250 * 1000 + 555;
+const int M = 30 * 1000 * 1000 + 555;
+
+struct node {
+  int sum, sval;
+  node* l;
+  node* r;
+  node() : sum(0), sval(-1), l(nullptr), r(nullptr) {}
+  node(int sum, int sval, node* l, node* r)
+      : sum(sum), sval(sval), l(l), r(r) {}
+};
+
+typedef node* tree;
+
+int n;
+std::vector<std::pair<int, std::pair<int, tree>>> ps;
+std::vector<int> dead;
+
+int maxLen = -1;
+
+void upd(tree t, int l1, int l2) {
+  t->sum = (t->l ? t->l->sum : 0) + (t->r ? t->r->sum : 0);
+}
+
+tree setVal(tree t, int l, int r, int lf, int rg, int val, int pushed = -1) {
+  if (!t) {
+    return nullptr;
+  }
+
+  if (pushed != -1) {
+    t->sval = pushed;
+  }
+
+  if (l == lf && r == rg) {
+    t->sval = val;
+    return t;
+  }
+
+  int mid = (l + r) >> 1;
+  pushed = t->sval;
+
+  if (lf < mid) {
+    if (!t->l) {
+      t->l = new node(0, pushed, nullptr, nullptr);
+    }
+
+    t->l = setVal(t->l, l, mid, lf, std::min(mid, rg), val, pushed);
+  } else if (pushed != -1) {
+    t->l = (t->l ? new node(t->r->sum, pushed, t->r->l, t->r->r) : new node(0, pushed, nullptr, nullptr));
+  }
+
+  if (rg > mid) {
+    if (!t->r) {
+      t->r = new node(0, pushed, nullptr, nullptr);
+    }
+
+    t->r = setVal(t->r, mid, r, std::max(lf, mid), rg, val, pushed);
+  } else if (pushed != -1) {
+    t->r = (t->r ? new node(t->l->sum, pushed, t->l->l, t->l->r) : new node(0, pushed, nullptr, nullptr));
+  }
+
+  upd(t, mid - l, r - mid);
+
+  return t;
+}
+
+int getPos(tree t, int l, int r, int lf, int rg) {
+  if (!t) {
+    return -1;
+  }
+
+  if (l == lf && r == rg) {
+    if (l + 1 == r) {
+      return t->sum ? l : -1;
+    }
+
+    if (t->sum == 0) {
+      return -1;
+    }
+  }
+
+  if (t->sval != -1) {
+    return (t->sval > 0) ? (rg - 1) : -1;
+  }
+
+  int mid = (l + r) >> 1;
+  int ans = -1;
+
+  if (rg > mid && ans == -1) {
+    ans = std::max(ans, getPos(t->r, mid, r, std::max(lf, mid), rg));
+  }
+
+  if (lf < mid && ans == -1) {
+    ans = std::max(ans, getPos(t->l, l, mid, lf, std::min(mid, rg)));
+  }
+
+  return ans;
+}
+
+bool sub(std::pair<int, tree>& p, int pw) {
+  if (pw >= p.first) {
+    return true;
+  }
+
+  pw = p.first - pw - 1;
+  int pos = getPos(p.second, 0, maxLen, 0, pw + 1);
+
+  if (pos < 0) {
+    return true;
+  }
+
+  tree nt = setVal(p.second, 0, maxLen, pos, pos + 1, 0);
+
+  if (pos < pw) {
+    nt = setVal(nt, 0, maxLen, pos + 1, pw + 1, 1);
+  }
+
+  p = std::make_pair(p.first, nt);
+
+  return (nt->sum == 0);
+}
+
+void solve() {
+  int cnt = 0;
+  maxLen = n + 3;
+  for (int i = 0; i < n; ++i) {
+    int tp = ps[i].first;
+    int a = ps[i].second.first, b = ps[i].second.second;
+    a--, b--;
+
+    if (tp == 1) {
+      int id = cnt++;
+      dead[id] = -2;
+      ps[id] = {0, {1, new node(0, -1, nullptr, nullptr)}};
+      ps[id].second.second = setVal(ps[id].second.second, 0, maxLen, 0, 1, 1);
+    } else if (tp == 2) {
+      if (dead[a] < 0) {
+        ps[a].first++;
+      }
+    } else if (tp == 3) {
+      if (dead[a] < 0) {
+        ps[a].second.second = setVal(ps[a].second.second, 0, maxLen, ps[a].second.first, ps[a].second.first + 1, 0);
+        ps[a].second.first++;
+      }
+    } else if (tp == 4) {
+      int id = cnt++;
+      dead[id] = -2;
+      ps[id] = ps[a];
+      if (dead[a] >= 0) {
+        dead[id] = i;
+      }
+    } else {
+      if (dead[a] < 0 && dead[b] < 0) {
+        if (sub(ps[a].second, ps[b].first)) {
+          dead[a] = i;
+        }
+        if (sub(ps[b].second, ps[a].first)) {
+          dead[b] = i;
+        }
+      }
+    }
+  }
+  
+  std::cout << cnt << std::endl;
+  for (int i = 0; i < cnt; ++i) {
+    std::cout << dead[i] + 1 << " ";
+  }
+  std::cout << std::endl;
+}
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(0), std::cout.tie(0);
+  std::cout << std::fixed << std::setprecision(15);
+
+  if (!(std::cin >> n)) {
+    return 0;
+  }
+
+  ps.resize(n);
+  dead.resize(n);
+
+  for (int i = 0; i < n; ++i) {
+    std::cin >> ps[i].first;
+    if (ps[i].first > 1) {
+      std::cin >> ps[i].second.first;
+    }
+    if (ps[i].first == 5) {
+      std::cin >> ps[i].second.second;
+    }
+  }
+
+  solve();
+
+  return 0;
+}

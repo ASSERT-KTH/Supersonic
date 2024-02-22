@@ -1,0 +1,54 @@
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <vector>
+#define MAX 150
+using namespace std;
+
+bool dp[MAX][2];
+
+int main() {
+  int T;
+  while (cin >> T) {
+    while (T--) {
+      int N;
+      cin >> N;
+      int input[N];
+      for (int i = 0; i < N; i++) {
+        cin >> input[i];
+      }
+      if (N <= 2) {
+        cout << input[N - 1] << endl;
+        continue;
+      }
+      int ans = input[N - 1];
+      for (int cur = 1; cur < N - 1; cur++) {
+        dp[input[cur - 1]][cur & 1] = true;
+        int R = input[cur + 1];
+        for (int L = 0; L < MAX; L++) {
+          for (int M = 0; M < MAX; M++) {
+            if (!dp[L][cur & 1]) {
+              continue;
+            }
+            if (M == 0) {
+              if (cur + 2 < N) {
+                dp[R][(cur + 1) & 1] = true;
+              } else {
+                ans = max(ans, R);
+              }
+            } else {
+              if (cur + 2 < N) {
+                dp[R][(cur + 1) & 1] = true;
+                dp[R + L][(cur + 1) & 1] = true;
+              } else {
+                ans = max(ans, R + L);
+              }
+            }
+          }
+        }
+      }
+      cout << ans << endl;
+    }
+  }
+  return 0;
+}

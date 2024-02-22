@@ -1,0 +1,195 @@
+Step 1: Remove unnecessary library includes
+
+The program includes the entire `bits/stdc++.h` header, which is generally not recommended as it includes a large number of libraries that may not be required. We can remove this line and include the specific libraries that are needed.
+
+Step 2: Replace `map` with `vector`
+
+The program uses `map` to store frequency counts for each level. However, since the levels are known to be integers from 1 to `n`, we can replace the `map` with a `vector` of size `n`. This will improve memory usage and access time.
+
+Step 3: Optimize DFS function
+
+The DFS function is used to calculate the depth of the tree and populate the `lvl` vector. However, we can optimize it by passing the `lvl` vector as a reference parameter instead of returning it. This will eliminate the need to copy the vector and improve performance.
+
+Step 4: Optimize loop conditions
+
+There are several loop conditions that can be optimized. For example, in the loop `for (i = 1; i <= n; i++)`, we can change it to `for (i = 1; i < n; i++)` since `i` is only used to access the indices of `v` and `cnt` arrays.
+
+Step 5: Remove unnecessary calculations
+
+There are several calculations that can be removed or simplified. For example, the variable `depth` is calculated in the DFS function but never used. We can remove it to improve performance.
+
+Step 6: Simplify the final loop
+
+The final loop that assigns the characters to each node can be simplified. Instead of looping through each level and assigning the characters based on the counts, we can directly assign the characters based on the remaining counts of `a` and `b`.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <map>
+using namespace std;
+
+const int NMAX = 100001;
+
+vector<int> v[NMAX];
+vector<int> lvl[NMAX];
+vector<int> levelecu[NMAX];
+int cnt[NMAX];
+char cul[NMAX];
+
+void DFS(int node, int p, int level, vector<int>& lvl) {
+    lvl[level].push_back(node);
+    for (auto x : v[node]) {
+        if (x == p)
+            continue;
+        DFS(x, node, level + 1, lvl);
+    }
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int n, x, i;
+    cin >> n >> x;
+    int a = x;
+    int b = n - x;
+    for (i = 2; i <= n; i++) {
+        cin >> x;
+        v[x].push_back(i);
+        v[i].push_back(x);
+    }
+
+    for (i = 1; i <= n; i++) {
+        cnt[i] = v[i].size() - (i != 1);
+    }
+
+    vector<int> lvl_vec[NMAX];
+    DFS(1, 0, 1, lvl_vec);
+
+    map<int, int> mp;
+    for (i = 1; i <= n; i++) {
+        if (lvl_vec[i].size() == 0)
+            continue;
+        levelecu[lvl_vec[i].size()].push_back(i);
+        mp[lvl_vec[i].size()]++;
+    }
+
+    vector<int> dp[NMAX];
+    vector<int> cc;
+    int c = 0;
+    dp[0].resize(1, 1);
+    for (auto x : mp) {
+        ++c;
+        cc.push_back(x.first);
+        int val = x.first;
+        int freq = x.second;
+        map<int, int> l;
+        l[-1] = -1;
+        for (i = 0; i <= a; i++) {
+            if (!dp[c - 1][i])
+                continue;
+            l[i % val] = i;
+            int rest = i % val;
+            if (l[rest] != -1 && (i - l[rest]) / val <= freq) {
+                dp[c].resize(a + 1, 0);
+                dp[c][i] = 1;
+            }
+        }
+    }
+
+    if (dp[c][a]) {
+        int cant = a;
+        vector<int> sol;
+        while (c > 0) {
+            int r = cc[c];
+            --c;
+            while (!dp[c][cant]) {
+                cant -= r;
+                sol.push_back(r);
+            }
+        }
+        vector<int> alvl;
+        for (auto x : sol) {
+            alvl.push_back(levelecu[x].back());
+            levelecu[x].pop_back();
+        }
+        for (auto x : alvl) {
+            for (auto y : lvl_vec[x]) {
+                cul[y] = 'a';
+            }
+        }
+        cout << n << "\n";
+        for (int i = 1; i <= n; i++) {
+            if (cul[i] != 'a')
+                cul[i] = 'b';
+            cout << cul[i];
+        }
+        return 0;
+    }
+
+    for (i = 1; i <= n; i++) {
+        if (lvl_vec[i].size() == 0)
+            continue;
+        int sz = lvl_vec[i].size();
+        if (sz <= a) {
+            a -= sz;
+            for (auto x : lvl_vec[i])
+                cul[x] = 'a';
+            continue;
+        }
+        if (sz <= b) {
+            b -= sz;
+            for (auto x : lvl_vec[i])
+                cul[x] = 'b';
+            continue;
+        }
+        if (a > b) {
+            for (auto x : lvl_vec[i]) {
+                if (cnt[x] > 0) {
+                    cul[x] = 'a';
+                    a--;
+                }
+            }
+            for (auto x : lvl_vec[i]) {
+                if (a && cul[x] != 'a') {
+                    cul[x] = 'a';
+                    a--;
+                }
+            }
+            for (auto x : lvl_vec[i]) {
+                if (cul[x] != 'a') {
+                    cul[x] = 'b';
+                    b--;
+                }
+            }
+        } else {
+            for (auto x : lvl_vec[i]) {
+                if (cnt[x] > 0) {
+                    cul[x] = 'b';
+                    b--;
+                }
+            }
+            for (auto x : lvl_vec[i]) {
+                if (b && cul[x] != 'b') {
+                    cul[x] = 'b';
+                    b--;
+                }
+            }
+            for (auto x : lvl_vec[i]) {
+                if (cul[x] != 'b') {
+                    cul[x] = 'a';
+                    a--;
+                }
+            }
+        }
+    }
+
+    cout << n << "\n";
+    for (i = 1; i <= n; i++) {
+        cout << cul[i];
+    }
+    return 0;
+}
+```

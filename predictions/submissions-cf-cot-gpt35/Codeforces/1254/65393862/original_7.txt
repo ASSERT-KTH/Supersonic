@@ -1,0 +1,141 @@
+To optimize the given program, we can make the following changes:
+
+1. Remove unnecessary headers: The program includes unnecessary headers `<algorithm>` and `<cmath>`. Since these headers are not used in the program, we can remove them.
+
+2. Remove unused variables: The program defines the variable `Q` but does not use it. We can remove the definition of `Q` since it is not needed.
+
+3. Change the calculation of `APPLY`: The program calculates `APPLY` as `1.0 * sqrt(N) + 1`, which results in a floating-point value. However, the intention seems to be to calculate the square root of `N` and add 1. We can change the calculation to `sqrt(N) + 1` to avoid unnecessary floating-point operations.
+
+4. Remove unnecessary cerr statement: The program includes a `cerr` statement to print the value of `APPLY`, but this statement can be removed as it is not required for the program's functionality.
+
+5. Change the calculation of `inv_N`: The program calculates `inv_N` as `mod_int(1) / N`, which involves a division operation. However, we can optimize this by calculating the modular inverse of `N` directly using the `mod_inv` function. We can modify the calculation to `inv_N = mod_int::mod_inv(N)`.
+
+Here is the optimized program:
+
+```cpp
+#include <cassert>
+#include <iostream>
+#include <vector>
+using namespace std;
+const int MOD = 998244353;
+struct mod_int {
+  int val;
+  mod_int(long long v = 0) {
+    if (v < 0)
+      v = v % MOD + MOD;
+    if (v >= MOD)
+      v %= MOD;
+    val = v;
+  }
+  static int mod_inv(int a, int m = MOD) {
+    int g = m, r = a, x = 0, y = 1;
+    while (r != 0) {
+      int q = g / r;
+      g %= r;
+      swap(g, r);
+      x -= q * y;
+      swap(x, y);
+    }
+    return x < 0 ? x + m : x;
+  }
+  explicit operator int() const { return val; }
+  mod_int &operator+=(const mod_int &other) {
+    val += other.val;
+    if (val >= MOD)
+      val -= MOD;
+    return *this;
+  }
+  mod_int &operator-=(const mod_int &other) {
+    val -= other.val;
+    if (val < 0)
+      val += MOD;
+    return *this;
+  }
+  static unsigned fast_mod(uint64_t x, unsigned m = MOD) {
+#if !defined(_WIN32) || defined(_WIN64)
+    return x % m;
+#endif
+    unsigned x_high = x >> 32, x_low = (unsigned)x;
+    unsigned quot, rem;
+    asm("divl %4\n" : "=a"(quot), "=d"(rem) : "d"(x_high), "a"(x_low), "r"(m));
+    return rem;
+  }
+  mod_int &operator*=(const mod_int &other) {
+    val = fast_mod((uint64_t)val * other.val);
+    return *this;
+  }
+  mod_int &operator/=(const mod_int &other) { return *this *= other.inv(); }
+  friend mod_int operator+(const mod_int &a, const mod_int &b) {
+    return mod_int(a) += b;
+  }
+  friend mod_int operator-(const mod_int &a, const mod_int &b) {
+    return mod_int(a) -= b;
+  }
+  friend mod_int operator*(const mod_int &a, const mod_int &b) {
+    return mod_int(a) *= b;
+  }
+  friend mod_int operator/(const mod_int &a, const mod_int &b) {
+    return mod_int(a) /= b;
+  }
+  mod_int &operator++() {
+    val = val == MOD - 1 ? 0 : val + 1;
+    return *this;
+  }
+  mod_int &operator--() {
+    val = val == 0 ? MOD - 1 : val - 1;
+    return *this;
+  }
+  mod_int operator++(int) {
+    mod_int before = *this;
+    ++*this;
+    return before;
+  }
+  mod_int operator--(int) {
+    mod_int before = *this;
+    --*this;
+    return before;
+  }
+  mod_int operator-() const { return val == 0 ? 0 : MOD - val; }
+  bool operator==(const mod_int &other) const { return val == other.val; }
+  bool operator!=(const mod_int &other) const { return val != other.val; }
+  mod_int inv() const { return mod_inv(val); }
+  mod_int pow(long long p) const {
+    assert(p >= 0);
+    mod_int a = *this, result = 1;
+    while (p > 0) {
+      if (p & 1)
+        result *= a;
+      a *= a;
+      p >>= 1;
+    }
+    return result;
+  }
+  friend ostream &operator<<(ostream &stream, const mod_int &m) {
+    return stream << m.val;
+  }
+};
+template <typename T, bool maximum_mode = false> struct RMQ {
+  int n = 0, levels = 0;
+  vector<T> values;
+  vector<vector<int>> range_low;
+  RMQ(const vector<T> &_values = {}) {
+    if (!_values.empty())
+      build(_values);
+  }
+  static int largest_bit(int x) { return 31 - __builtin_clz(x); }
+  int better_index(int a, int b) const {
+    return (values[a] < values[b]) ^ maximum_mode ? a : b;
+  }
+  void build(const vector<T> &_values) {
+    values = _values;
+    n = values.size();
+    levels = largest_bit(n) + 1;
+    range_low.resize(levels);
+    for (int k = 0; k < levels; k++)
+      range_low[k].resize(n - (1 << k) + 1);
+    for (int i = 0; i < n; i++)
+      range_low[0][i] = i;
+    for (int k = 1; k < levels; k++)
+      for (int i = 0; i <= n - (1 << k); i++)
+        range_low[k][i] = better_index(range_low[k - 1][i],
+                                       range_low[k - 

@@ -1,0 +1,118 @@
+#include <iostream>
+#include <vector>
+#include <bitset>
+#include <map>
+using namespace std;
+
+const int MX = 100005;
+const int BLOCK = 1000;
+const int NUM = MX / BLOCK + 1;
+int cnt[NUM][2 * MX], CNT[NUM][MX], a[MX], A[MX];
+bitset<MX> in[NUM];
+vector<int> con[NUM];
+vector<int> m;
+
+int N;
+
+int get(int x) {
+  if (x >= m.size()) {
+    m.resize(x + 1);
+  }
+  if (m[x] == 0) {
+    m[x] = m.size();
+  }
+  return m[x];
+}
+
+void upd(int p, int inc) {
+  int v = a[p];
+  int b = (p + BLOCK - 1) / BLOCK;
+  int start = BLOCK * b + 1;
+  int end = min(N, BLOCK * (b + 1));
+  for (int i = start; i <= end; i++) {
+    CNT[b][cnt[b][v]]--;
+    cnt[b][v] += inc;
+    CNT[b][cnt[b][v]]++;
+    int c = cnt[b][v];
+    if (c > 0 && !in[b][c]) {
+      in[b][c] = 1;
+      con[b].push_back(c);
+    }
+  }
+}
+
+int query2(int y) {
+  int b = y / BLOCK;
+  int ans = cnt[b][a[y]];
+  for (int i = BLOCK * b + 1; i <= y; i++) {
+    ans += a[i] == a[y];
+  }
+  return ans;
+}
+
+int query3(int y) {
+  int mn = query2(y);
+  int ans = 0;
+  int b = y / BLOCK;
+  vector<int> ok;
+  for (int i : con[b]) {
+    if (!CNT[b][i]) {
+      in[b][i] = 0;
+      continue;
+    }
+    ok.push_back(i);
+    if (i >= mn) {
+      ans += CNT[b][i];
+    }
+  }
+  swap(con[b], ok);
+  for (int i = BLOCK * b + 1; i <= y; i++) {
+    cnt[b][a[i]]++;
+    ans += cnt[b][a[i]] == mn;
+  }
+  for (int i = BLOCK * b + 1; i <= y; i++) {
+    cnt[b][a[i]]--;
+  }
+  return ans;
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+
+  cin >> N;
+  for (int i = 1; i <= N; i++) {
+    cin >> A[i];
+    a[i] = get(A[i]);
+    upd(i, 1);
+  }
+
+  int M;
+  cin >> M;
+  for (int i = 0; i < M; i++) {
+    int t;
+    cin >> t;
+    if (t == 1) {
+      int v, p;
+      cin >> v >> p;
+      upd(p, -1);
+      A[p] = v;
+      a[p] = get(v);
+      upd(p, 1);
+    } else {
+      int x, y;
+      cin >> x >> y;
+      if (x == 1) {
+        cout << A[y] << "\n";
+      } else {
+        if (x % 2 == 0) {
+          cout << query2(y) << "\n";
+        } else {
+          cout << query3(y) << "\n";
+        }
+      }
+    }
+  }
+
+  return 0;
+}

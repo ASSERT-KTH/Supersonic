@@ -1,0 +1,125 @@
+#include <algorithm>
+#include <cassert>
+#include <cstdio>
+#include <unordered_set>
+#include <vector>
+
+using namespace std;
+
+const int M = 100000 + 10;
+
+inline void dn(int &x, int y) {
+  if (y < x)
+    x = y;
+}
+
+char gc() {
+  char c = getchar();
+  if (c != '0' && c != '1')
+    c = getchar();
+  return c;
+}
+
+int n, m, d;
+bool **open;
+int id(int u, int t) { return (u - 1) * d + t; }
+vector<int> *e, *escc;
+int nscc, dfn_cnt;
+int *dfn, *lowlink, *stk, *instk, *ops, *dp;
+bool *vis;
+
+void dfscc(int k) {
+  dfn[k] = lowlink[k] = ++dfn_cnt;
+  instk[stk[++stk[0]] = k] = 1;
+  for (int &p : e[k]) {
+    if (!dfn[p])
+      dfscc(p), dn(lowlink[k], lowlink[p]);
+    else if (instk[p])
+      dn(lowlink[k], dfn[p]);
+  }
+  if (lowlink[k] == dfn[k]) {
+    ++nscc;
+    while (stk[0] && stk[stk[0]] != k) {
+      instk[stk[stk[0]--]] = 0;
+      escc[stk[stk[0]]] = nscc;
+    }
+  }
+}
+
+void getSCC(int n) {
+  for (int k = 1; k <= n; ++k)
+    if (!dfn[k])
+      dfscc(k);
+  for (int k = 1; k <= n; ++k) {
+    for (int &p : e[k]) {
+      if (escc[k] != escc[p])
+        escc[escc[k]].push_back(escc[p]);
+    }
+  }
+}
+
+int dfsdp(int k) {
+  if (vis[k])
+    return dp[k];
+  for (auto p : escc[k])
+    dp[k] = max(dp[k], dfsdp(p));
+  dp[k] += ops[k];
+  vis[k] = 1;
+  return dp[k];
+}
+
+int main() {
+  scanf("%d%d%d", &n, &m, &d);
+
+  // Dynamically allocate memory for the open array
+  open = new bool *[n + 1];
+  for (int i = 1; i <= n; ++i)
+    open[i] = new bool[d + 1];
+
+  // Allocate memory for other arrays
+  e = new vector<int>[n * d + 1];
+  escc = new vector<int>[n * d + 1];
+  dfn = new int[n * d + 1]();
+  lowlink = new int[n * d + 1];
+  stk = new int[n * d + 1];
+  instk = new int[n * d + 1];
+  ops = new int[n * d + 1]();
+  dp = new int[n * d + 1]();
+  vis = new bool[n * d + 1]();
+
+  for (int i = 1; i <= m; ++i) {
+    int u, v;
+    scanf("%d%d", &u, &v);
+    for (int j = 1; j <= d; ++j)
+      e[id(u, j)].push_back(id(v, j % d + 1));
+  }
+  for (int i = 1; i <= n; ++i)
+    for (int j = 1; j <= d; ++j)
+      open[i][j] = gc() - '0';
+  getSCC(n * d);
+  for (int i = 1; i <= n; ++i) {
+    unordered_set<int> tmp;
+    for (int j = 1; j <= d; ++j)
+      if (open[i][j])
+        tmp.insert(escc[id(i, j)]);
+    for (auto j : tmp)
+      ++ops[j];
+  }
+  printf("%d", dfsdp(escc[id(1, 1)]));
+
+  // Deallocate memory
+  for (int i = 1; i <= n; ++i)
+    delete[] open[i];
+  delete[] open;
+  delete[] e;
+  delete[] escc;
+  delete[] dfn;
+  delete[] lowlink;
+  delete[] stk;
+  delete[] instk;
+  delete[] ops;
+  delete[] dp;
+  delete[] vis;
+
+  return 0;
+}

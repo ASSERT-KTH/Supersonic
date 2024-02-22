@@ -1,0 +1,71 @@
+#include <algorithm>
+#include <vector>
+#include <iostream>
+using namespace std;
+typedef long long ll;
+typedef pair<int, int> pii;
+typedef vector<pii> vpii;
+
+const int inf = 1e9;
+
+struct SegTree {
+  int n;
+  vector<pii> Tree;
+  void init(int n_) {
+    n = 1;
+    while (n < n_)
+      n *= 2;
+    Tree.resize(2 * n, make_pair(-inf, inf));
+  }
+  void update(int idx, int val) {
+    idx += n - 1;
+    Tree[idx] = make_pair(val, val);
+    while (idx > 0) {
+      idx = (idx - 1) / 2;
+      Tree[idx].first = max(Tree[idx * 2 + 1].first, Tree[idx * 2 + 2].first);
+      Tree[idx].second = min(Tree[idx * 2 + 1].second, Tree[idx * 2 + 2].second);
+    }
+  }
+  pii get(int a, int b, int k = 0, int l = 0, int r = -1) {
+    if (r == -1)
+      r = n;
+    if (r <= a || b <= l)
+      return make_pair(-inf, inf);
+    if (a <= l && r <= b)
+      return Tree[k];
+    pii vl = get(a, b, k * 2 + 1, l, (l + r) / 2);
+    pii vr = get(a, b, k * 2 + 2, (l + r) / 2, r);
+    return make_pair(max(vl.first, vr.first), min(vl.second, vr.second));
+  }
+};
+
+int X[200020], Y[200020];
+signed main() {
+  ios::sync_with_stdio(false);                                                 
+  cin.tie(0);
+  int N, d;
+  cin >> N >> d;
+  SegTree x_seg, y_seg;
+  x_seg.init(N), y_seg.init(N);
+  vpii hoge;
+  for (int i = 0; i < N; i++) {
+    int x, y, b;
+    cin >> x >> y >> b;
+    X[i] = x, Y[i] = y;
+    hoge.push_back(pii(b, i));
+  }
+  sort(hoge.begin(), hoge.end());
+  for (int i = 0; i < N; i++) {
+    x_seg.update(i, X[hoge[i].second]);
+    y_seg.update(i, Y[hoge[i].second]);
+  }
+  ll ans = -inf;
+  for (int i = 0; i < N; i++) {
+    int b = hoge[i].first;
+    auto idx = upper_bound(hoge.begin(), hoge.end(), pii(b + d, inf)) - hoge.begin();
+    pii x = x_seg.get(i, idx);
+    pii y = y_seg.get(i, idx);
+    ans = max(ans, 1ll * (x.first - x.second) * (y.first - y.second));
+  }
+  cout << ans << endl;
+}

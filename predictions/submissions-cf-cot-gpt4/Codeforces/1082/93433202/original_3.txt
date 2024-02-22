@@ -1,0 +1,85 @@
+Optimization Steps:
+
+1. Use of `ios::sync_with_stdio(0);` in combination with `cin.tie(0);` and `cout.tie(0);` can speed up I/O operations, but it's not required here as we are not doing any interleaved operations between `cin` and `cout`. So, this can be removed.
+
+2. The array `t` is being accessed using the variable `i` in a loop. Instead, we can use a pointer to traverse the array which will be faster.
+
+3. Using `vector::push_back` frequently can be slow, since each call may cause a reallocation of the entire vector if the current capacity is not enough. We can use `vector::reserve` to allocate enough memory once at the beginning.
+
+4. Instead of using `sz(x)` function to get the size of the vector, we can use `vector::size` directly. This will avoid the overhead of the function call.
+
+5. The `priority_queue` is being used to find the maximum element. An alternative approach would be to keep the `two` vector sorted and use it as a queue.
+
+After applying these optimizations, the code looks like this:
+
+```
+#include <bits/stdc++.h>
+#pragma GCC optimize("O2")
+#define S second
+#define F first
+#define PB push_back
+#define L(x) 2 * x
+#define R(x) 2 * x + 1
+#define M(x, y) (x + y) / 2
+using namespace std;
+typedef long long ll;
+const int md = 1e9 + 7;
+int main() {
+  int n;
+  cin >> n;
+  int t[n];
+  int *t_ptr = t;
+  int sum = 0;
+  for (int i = 0; i < n; i++, t_ptr++) {
+    cin >> *t_ptr;
+    sum += *t_ptr;
+  }
+  if (sum > 2 * n * (n - 1) || sum < 2 * n - 2) {
+    cout << "NO";
+    return 0;
+  }
+  vector<int> one;
+  one.reserve(n);
+  vector<int> two;
+  two.reserve(n);
+  t_ptr = t;
+  for (int i = 0; i < n; i++, t_ptr++) {
+    if (*t_ptr == 1)
+      one.PB(i);
+    else
+      two.PB(i);
+  }
+  vector<pair<int, int>> ans;
+  ans.reserve(n);
+  for (int i = 1; i < two.size(); i++) {
+    ans.PB({two[i - 1], two[i]});
+    t[two[i - 1]]--, t[two[i]]--;
+  }
+  int f2 = min(2, (int)one.size());
+  for (int i = 0; i < f2; i++) {
+    if (i == 0)
+      ans.PB({one[i], two[0]}), t[two[0]]--;
+    else
+      ans.PB({one[i], two[two.size() - 1]}), t[two[two.size() - 1]]--;
+  }
+  sort(two.begin(), two.end(), [&](int a, int b) { return t[a] > t[b]; });
+  for (int i = f2; i < one.size(); i++) {
+    int x = two.back();
+    two.pop_back();
+    if (t[x] == 0) {
+      cout << "NO";
+      return 0;
+    }
+    ans.PB({one[i], x});
+    t[x]--;
+    if (t[x] != 0)
+      two.push_back(x);
+  }
+  cout << "YES"
+       << " " << two.size() + f2 - 1 << endl;
+  cout << ans.size() << endl;
+  for (auto x : ans)
+    cout << x.F + 1 << " " << x.S + 1 << " " << endl;
+}
+```
+Please note that the code above assumes that the compiler supports Variable Length Arrays (VLA), which are not part of the C++ standard. If your compiler does not support VLA, you should consider replacing the VLA `t` with a `std::vector<int>`.

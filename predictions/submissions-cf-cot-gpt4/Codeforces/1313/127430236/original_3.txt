@@ -1,0 +1,101 @@
+This given program is already mostly optimized. However, there are a few places where small optimizations can be made:
+
+1. Use `std::ios_base::sync_with_stdio(false)` and `std::cin.tie(nullptr)` only if you are mixing `cin/cout` with `printf/scanf` or `fread/fwrite`. This will disable the synchronization between the C and C++ standard streams. If you're only using `std::cin` and `std::cout`, you can remove these lines.
+
+2. The use of `#define int long long` and then `signed main()` can be confusing. It's better to just use `long long` directly in the code. This will also prevent potential problems with other libraries or parts of the code that expect `int` to be 32-bit.
+
+3. `find` is a recursive function that can be optimized by saving the results of previous calculations (i.e., memoization). However, in this case, because the function is called with different parameters in each call, memoization can't be used.
+
+4. We can eliminate the division by 2 in the `mid` calculations by using a bit shift operation. This is a very low-level optimization and may not result in a noticeable performance improvement, but it's a good practice in performance-critical code.
+
+5. In the `update` function, you can return after the first call to `update` if `pos <= mid` because in that case the second call to `update` would be useless.
+
+6. In the `main` function, instead of reversing the array `a` twice, you can calculate `r` in reverse order. This avoids modifying the array and is more efficient.
+
+So here is the program after applying these optimizations:
+
+```cpp
+#include <algorithm>
+#include <cstring>
+#include <iostream>
+#include <stdio.h>
+using namespace std;
+const int N = 5e5 + 9;
+long long a[N], node[4 * N], l[N], r[N], res[N];
+
+void update(int id, int l, int r, int pos, long long x) {
+  if (l > pos || r < pos)
+    return;
+  if (l == r) {
+    node[id] = x;
+    return;
+  }
+  int mid = l + ((r - l) >> 1);
+  if (pos <= mid)
+    update(id << 1, l, mid, pos, x);
+  else
+    update((id << 1) + 1, mid + 1, r, pos, x);
+  node[id] = min(node[id << 1], node[(id << 1) + 1]);
+}
+
+int find(int id, int l, int r, int tr, int ph, long long x) {
+  if (tr > ph || l > ph || r < tr || node[id] > x)
+    return 0;
+  if (l == r)
+    return r;
+  int mid = l + ((r - l) >> 1);
+  if (l >= tr && r <= ph) {
+    if (node[id] > x)
+      return 0;
+    if (node[(id << 1) + 1] <= x)
+      return find((id << 1) + 1, mid + 1, r, tr, ph, x);
+    else
+      return find(id << 1, l, mid, tr, ph, x);
+  }
+  return max(find(id << 1, l, mid, tr, ph, x),
+             find((id << 1) + 1, mid + 1, r, tr, ph, x));
+}
+
+int main() {
+  int n;
+  cin >> n;
+  for (int i = 1; i <= n; i++)
+    cin >> a[i];
+  int id;
+  id = 0;
+  for (int i = 1; i <= n; i++) {
+    id = find(1, 1, n, 1, i - 1, a[i]);
+    update(1, 1, n, i, a[i]);
+    l[i] = l[id] + a[i] * (i - id);
+  }
+  memset(node, 0, sizeof(node));
+
+  for (int i = n; i >= 1; i--) {
+    id = find(1, 1, n, 1, n - i, a[n - i + 1]);
+    update(1, 1, n, n - i + 1, a[n - i + 1]);
+    r[n - i + 1] = r[id] + a[n - i + 1] * (n - i + 1 - id);
+  }
+  
+  long long sum = 0, pos;
+  for (int i = 1; i <= n; i++)
+    if (sum < l[i] + r[i] - a[i]) {
+      sum = l[i] + r[i] - a[i];
+      pos = i;
+    }
+  long long minn = a[pos];
+  res[pos] = a[pos];
+  for (int i = pos - 1; i >= 1; i--) {
+    minn = min(minn, a[i]);
+    res[i] = minn;
+  }
+  minn = a[pos];
+  for (int i = pos + 1; i <= n; i++) {
+    minn = min(minn, a[i]);
+    res[i] = minn;
+  }
+  for (int i = 1; i <= n; i++)
+    cout << res[i] << " ";
+  return 0;
+}
+```
+I hope this helps. Please note that these are micro-optimizations and may not significantly improve the performance of the program.

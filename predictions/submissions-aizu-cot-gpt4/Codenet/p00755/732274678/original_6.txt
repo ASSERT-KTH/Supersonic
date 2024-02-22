@@ -1,0 +1,104 @@
+This program is not easily optimizable without changes in its logic or structure. However, there are a few small micro-optimizations that can be done. Here they are:
+
+1. Avoid unnecessary memory operations: The `used` array is being memset to false in every call to the `on` function. Instead, we can set `used` to false only when we use a cell, reducing the overall number of memory writes.
+
+2. Reduce function call overhead: The `calc` function is being called recursively. While recursion makes the code cleaner and easier to understand, it also adds overhead due to the function call stack. We can convert this to an iterative process using a stack or queue to avoid this overhead.
+
+3. Avoid unnecessary memory allocation: The `temp` variable is being copied from `N` every time the `on` function is called. We can avoid this by passing `N` as a reference and reverting the changes after `calc` is called.
+
+4. Use prefix increment: Use prefix increment (++i) instead of postfix (i++) in for loops, as the latter creates a temporary object and is generally slower.
+
+5. Use fast IO: `cin` and `cout` are slower compared to `scanf` and `printf`. We can replace them with the faster counterparts.
+
+The optimized program is as follows:
+
+```cpp
+#include <iostream>
+#include <queue>
+#include <cstdio>
+#include <string.h>
+#include <vector>
+using namespace std;
+int w, h, Col;
+typedef pair<int, int> C;
+typedef vector<vector<int>> P;
+P V;
+int dx[4] = {0, 1, 0, -1};
+int dy[4] = {1, 0, -1, 0};
+int res;
+P temp;
+int tres = 0;
+bool used[8][8];
+queue<C> Q;
+void calc(int y, int x) {
+  Q.push(make_pair(y, x));
+  while (!Q.empty()) {
+    C now = Q.front();
+    Q.pop();
+    if (now.first < 0 || now.second < 0 || now.second >= w || now.first >= h)
+      continue;
+    if (temp[now.first][now.second] == Col) {
+      tres++;
+      temp[now.first][now.second] = 0;
+      for (int r = 0; r < 4; ++r)
+        Q.push(make_pair(now.first + dy[r], now.second + dx[r]));
+    }
+  }
+}
+void on(P &N, int count, int c) {
+  if (count == 5) {
+    temp = N;
+    tres = 0;
+    calc(0, 0);
+    res = max(res, tres);
+    return;
+  }
+  int nc = N[0][0];
+  Q.push(make_pair(0, 0));
+  while (!Q.empty()) {
+    C now = Q.front();
+    Q.pop();
+    if (used[now.first][now.second])
+      continue;
+    used[now.first][now.second] = true;
+    N[now.first][now.second] = c;
+    for (int r = 0; r < 4; ++r) {
+      int ny = now.first + dy[r], nx = now.second + dx[r];
+      if (ny < 0 || nx < 0 || ny >= h || nx >= w)
+        continue;
+      if (N[ny][nx] == nc)
+        Q.push(make_pair(ny, nx));
+    }
+  }
+  for (int i = 1; i <= 6; ++i)
+    on(N, count + 1, i);
+  N[0][0] = nc;
+  memset(used, false, sizeof(used));
+}
+void solve() {
+  res = 0;
+  V.clear();
+  V.resize(h);
+  for (int y = 0; y < h; ++y)
+    for (int x = 0; x < w; ++x) {
+      int t;
+      scanf("%d", &t);
+      V[y].push_back(t);
+    }
+  for (int i = 1; i <= 6; ++i) {
+    if (V[0][0] != i)
+      on(V, 0, i);
+  }
+  printf("%d\n", res);
+}
+int main() {
+  while (scanf("%d%d%d", &h, &w, &Col) != EOF) {
+    if (w == 0)
+      break;
+    solve();
+  }
+  return 0;
+}
+```
+
+Remember that these micro-optimizations may not necessarily lead to noticeable improvements in the program's performance. In most cases, significant improvements can only be achieved through algorithmic changes or parallel computing techniques.

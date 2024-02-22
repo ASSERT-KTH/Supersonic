@@ -1,0 +1,198 @@
+Code Analysis:
+- The code implements Dijkstra's algorithm to find the shortest path in a graph.
+- The graph is represented using an adjacency list.
+- The code reads the input vertices, edges, and source vertex from the standard input.
+- It then initializes the distance array `d` with an initial value of `INF` (infinity) for all vertices except the source vertex, which is initialized with a distance of 0.
+- The code uses a priority queue to select the vertex with the minimum distance in each iteration.
+- It updates the distances of the neighboring vertices if a shorter path is found.
+- Finally, it prints the shortest distance from the source vertex to each vertex.
+
+Potential optimizations:
+1. Avoid memory allocation and deallocation inside the main loop.
+2. Use a better data structure for the priority queue.
+3. Replace the `fill` function with a loop to initialize the distance array.
+4. Remove unnecessary includes.
+5. Use `printf` and `scanf` instead of `iostream` for improved performance.
+6. Consider using compiler optimizations.
+
+Optimization Strategy:
+1. Replace the vector of edges with a more efficient data structure, such as a dynamically allocated array.
+2. Use a custom implementation of a priority queue that supports efficient decrease-key operation.
+3. Initialize the distance array using a loop instead of the `fill` function.
+4. Remove unnecessary includes to reduce compilation time and memory usage.
+5. Replace `iostream` with `stdio` functions for improved input/output performance.
+6. Apply compiler optimizations, such as loop unrolling and function inlining, to improve code execution.
+
+Step-by-Step Explanation:
+1. Replace the vector of edges with a dynamically allocated array:
+   - Instead of using `vector<edge> G[100000]`, we can use `edge* G[100000]` to represent the adjacency list.
+   - This change reduces memory usage by avoiding the overhead of the vector data structure and improves cache locality.
+   - We need to allocate memory for each entry in the array and free it after we are done using it.
+
+2. Implement a custom priority queue that supports efficient decrease-key operation:
+   - The standard `priority_queue` in the code does not support efficient decrease-key operation required in Dijkstra's algorithm.
+   - We can implement a custom priority queue data structure using a binary heap and an auxiliary array to track the indices of the elements.
+   - This change improves the time complexity of the algorithm by reducing the time spent on updating the priority queue.
+
+3. Initialize the distance array using a loop:
+   - Instead of using the `fill` function to initialize the distance array, we can use a simple loop.
+   - This change reduces the number of function calls and improves performance slightly.
+
+4. Remove unnecessary includes:
+   - We can remove the unnecessary includes of `<algorithm>` and `<queue>` as they are not used in the code.
+   - This change reduces compilation time and memory usage.
+
+5. Replace `iostream` with `stdio` functions:
+   - We can replace the `iostream` input/output functions with `stdio` functions (`printf` and `scanf`) for improved performance.
+   - This change reduces the overhead associated with the `iostream` library and improves input/output performance.
+
+6. Apply compiler optimizations:
+   - We can enable compiler optimizations by using appropriate compiler flags or pragmas.
+   - This change allows the compiler to optimize the code further by applying techniques like loop unrolling and function inlining.
+   - The specific optimizations depend on the compiler being used.
+
+Optimized Code Block:
+
+```cpp
+#include <cstdio>
+#include <cstdlib>
+using namespace std;
+
+const int INF = 1000000000;
+struct edge {
+  int to, cost;
+};
+
+edge* G[100000];
+int v, e, r;
+int* d;
+bool* visited;
+
+struct PriorityQueue {
+  int* heap;
+  int* indices;
+  int size;
+
+  PriorityQueue(int n) {
+    heap = new int[n];
+    indices = new int[n];
+    size = 0;
+  }
+
+  ~PriorityQueue() {
+    delete[] heap;
+    delete[] indices;
+  }
+
+  bool empty() {
+    return size == 0;
+  }
+
+  void push(int v, int dist) {
+    int i = indices[v];
+    if (i == 0) {
+      size++;
+      i = size;
+    }
+    while (i != 1 && d[v] < d[heap[i / 2]]) {
+      int parent = heap[i / 2];
+      heap[i] = parent;
+      indices[parent] = i;
+      i /= 2;
+    }
+    heap[i] = v;
+    indices[v] = i;
+  }
+
+  int top() {
+    return heap[1];
+  }
+
+  void pop() {
+    int v = heap[size];
+    size--;
+    int i = 1;
+    while (i * 2 <= size) {
+      int child = i * 2;
+      if (child + 1 <= size && d[heap[child + 1]] < d[heap[child]]) {
+        child++;
+      }
+      if (d[v] <= d[heap[child]]) {
+        break;
+      }
+      heap[i] = heap[child];
+      indices[heap[i]] = i;
+      i = child;
+    }
+    heap[i] = v;
+    indices[v] = i;
+  }
+};
+
+void dijkstra() {
+  PriorityQueue q(v);
+  d[r] = 0;
+  q.push(r, 0);
+  while (!q.empty()) {
+    int nv = q.top();
+    q.pop();
+    if (visited[nv]) {
+      continue;
+    }
+    visited[nv] = true;
+    for (int i = 0; i < e; i++) {
+      int to = G[nv][i].to;
+      int cost = G[nv][i].cost;
+      if (visited[to]) {
+        continue;
+      }
+      if (d[nv] + cost < d[to]) {
+        d[to] = d[nv] + cost;
+        q.push(to, d[to]);
+      }
+    }
+  }
+}
+
+int main() {
+  scanf("%d %d %d", &v, &e, &r);
+  d = new int[v];
+  visited = new bool[v];
+  for (int i = 0; i < v; i++) {
+    G[i] = new edge[e];
+    d[i] = INF;
+    visited[i] = false;
+  }
+  for (int i = 0; i < e; i++) {
+    int s, t, d;
+    scanf("%d %d %d", &s, &t, &d);
+    G[s][i].to = t;
+    G[s][i].cost = d;
+  }
+  dijkstra();
+  for (int i = 0; i < v; i++) {
+    if (d[i] == INF)
+      printf("INF\n");
+    else
+      printf("%d\n", d[i]);
+  }
+  for (int i = 0; i < v; i++) {
+    delete[] G[i];
+  }
+  delete[] d;
+  delete[] visited;
+  return 0;
+}
+```
+
+This optimized code improves the performance by:
+- Using a dynamically allocated array instead of a vector for the adjacency list.
+- Implementing a custom priority queue that supports efficient decrease-key operation.
+- Initializing the distance array using a loop instead of the `fill` function.
+- Removing unnecessary includes to reduce compilation time and memory usage.
+- Replacing `iostream` with `stdio` functions for improved input/output performance.
+
+The trade-offs of these optimizations include:
+- Increased code complexity due to the custom priority queue implementation.
+- Additional memory usage for the custom priority queue array and indices array.
+- The code becomes less flexible and harder to modify, as it relies on fixed-size arrays for the adjacency list and priority queue.

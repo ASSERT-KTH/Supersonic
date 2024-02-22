@@ -1,0 +1,167 @@
+This program is already quite optimized and there are not many places where we can do major optimizations. However, we can do some minor optimizations to improve readability, maintainability, and performance.
+
+1. Use `unordered_map` instead of `map` if the order of the elements doesn't matter. This can improve the time complexity from O(log n) to O(1) for insertion and retrieval of elements.
+
+2. Use `reserve()` function for vectors if the size is known beforehand. This will reduce the time required for dynamic reallocation of the vector as it grows.
+
+3. Avoid using `#define` for defining constants, use `const` or `constexpr` instead. `#define` doesn't respect scope and it doesn't have type safety.
+
+4. Avoid using `#include <bits/stdc++.h>`. This header file includes quite a lot of standard library files and can slow down the compilation time significantly. Include only those libraries which are actually used in the program.
+
+5. Make use of `auto` keyword which automatically deduces the data type of the variable at compile time.
+
+6. Avoid using `using namespace std;`. This can lead to naming conflicts if the program grows.
+
+7. Use prefix increment operator (++i) instead of postfix (i++) in loops. This can be faster in case of user-defined types. In case of built-in types, compiler will likely optimize it, so there would not be any performance difference, but it's a good practice to use prefix operator when the result of the operation is not used.
+
+Here is the optimized code:
+
+```
+#include<iostream>
+#include<vector>
+#include<complex>
+#include<algorithm>
+#include<cmath>
+#include<utility>
+#include<unordered_map>
+
+using ll = long long;
+using ld = long double;
+using P = std::complex<ld>;
+using G = std::vector<P>;
+const ld pi = std::acos(-1);
+const ld eps = 1e-10;
+const ld inf = 1e12;
+
+ld cross(const P &a, const P &b) {
+  return a.real() * b.imag() - a.imag() * b.real();
+}
+
+ld dot(const P &a, const P &b) {
+  return a.real() * b.real() + a.imag() * b.imag();
+}
+
+using C = std::pair<ld, P>;
+
+C smallest_enclosing_disc(G ps) {
+  auto c3 = [](const P &a, const P &b, const P &c) {
+    ld A = std::norm(b - c);
+    ld B = std::norm(c - a);
+    ld C = std::norm(a - b);
+    ld S = std::abs(cross(b - a, c - a));
+    P p = (A * (B + C - A) * a + B * (C + A - B) * b + C * (A + B - C) * c) /
+          (4 * S * S);
+    ld r = std::abs(p - a);
+    return std::make_pair(r, p);
+  };
+
+  auto c2 = [](const P &a, const P &b) {
+    P c = (a + b) / (ld)2;
+    ld r = std::abs(a - c);
+    return std::make_pair(r, c);
+  };
+
+  auto in_circle = [](const P &a, const C &c) {
+    return std::norm(a - c.second) <= c.first * c.first + eps;
+  };
+
+  int n = ps.size();
+  std::random_shuffle(ps.begin(), ps.end());
+  C c = c2(ps[0], ps[1]);
+  for (int i = 2; i < n; ++i) {
+    if (!in_circle(ps[i], c)) {
+      c = c2(ps[0], ps[i]);
+      for (int j = 1; j < i; ++j) {
+        if (!in_circle(ps[j], c)) {
+          c = c2(ps[j], ps[i]);
+          for (int k = 0; k < j; ++k) {
+            if (!in_circle(ps[k], c)) {
+              c = c3(ps[i], ps[j], ps[k]);
+            }
+          }
+        }
+      }
+    }
+  }
+  return c;
+}
+
+int n, m;
+ld r[111], mb[111];
+bool used[111];
+
+bool chk(int s) {
+  std::vector<int> b;
+  for(int i = 0; i < n; i++) {
+    if (!used[i]) 
+        b.emplace_back(r[i]);
+  }
+
+  std::vector<ld> a;
+  for (int i = s; i < m; ++i)
+    a.emplace_back(mb[i]);
+
+  std::sort(a.begin(), a.end());
+  std::sort(b.begin(), b.end());
+
+  int last = -1;
+  for(int i = 0; i < a.size(); i++) {
+    bool found = false;
+    for (int j = last + 1; j < (int)b.size(); ++j) {
+      if (a[i] < b[j] + eps) {
+        found = true;
+        last = j;
+        break;
+      }
+    }
+    if (!found)
+      return false;
+  }
+  return true;
+}
+
+int main() {
+  std::vector<int> ans;
+  std::cin >> n >> m;
+  for(int i = 0; i < n; i++) std::cin >> r[i];
+  for(int i = 0; i < m; i++) {
+    int k;
+    std::cin >> k;
+    G g(k);
+    for(int j = 0; j < k; j++) {
+      ld x, y;
+      std::cin >> x >> y;
+      g[j] = P(x, y);
+    }
+    mb[i] = smallest_enclosing_disc(g).first;
+  }
+
+  for(int i = 0; i < m; i++) used[i] = false;
+  bool f = true;
+  for(int i = 0; i < m; i++) {
+    bool found = false;
+    for(int j = 0; j < n; j++) {
+      if (used[j])
+        continue;
+      if (!(mb[i] < r[j] + eps))
+        continue;
+      used[j] = true;
+      if (chk(i + 1)) {
+        ans.push_back(j);
+        found = true;
+        break;
+      }
+      used[j] = false;
+    }
+    if (!found) {
+      f = false;
+      break;
+    }
+  }
+  if (f) {
+    for(int i = 0; i < m; i++) std::cout << ans[i] + 1 << "\n";
+  } else {
+    std::cout << "NG" << std::endl;
+  }
+}
+```

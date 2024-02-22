@@ -1,0 +1,1 @@
+double norm(Vector a) { return a.x * a.x + a.y * a.y; }

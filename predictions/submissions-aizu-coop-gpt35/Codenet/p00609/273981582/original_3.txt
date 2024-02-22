@@ -1,0 +1,116 @@
+Code Analysis:
+1. The code uses the `set` data structure to store points and perform operations like insertion and deletion. This can be inefficient for large sets of points as it has a time complexity of O(log n) for insertion and deletion operations.
+2. The code calculates the square of a number using the `square` function. This function can be replaced with a simple multiplication operation for better performance.
+3. The code calculates the distance between two points using the `dist2` function. This function can be optimized to avoid unnecessary square root calculations.
+
+Optimization Strategy:
+1. Replace the `set` data structure with a more efficient data structure like `unordered_set` to store points. This will reduce the time complexity of insertion and deletion operations to O(1).
+2. Replace the `square` function with a simple multiplication operation.
+3. Optimize the `dist2` function to avoid unnecessary square root calculations. Instead of calculating the square root, compare the squares of the distances directly.
+
+Step-by-Step Explanation:
+1. Replace `set<Point> open[2]` with `unordered_set<Point> open[2]` to improve the efficiency of insertion and deletion operations on the sets.
+2. Replace `inline int square(int x) { return x * x; }` with `#define square(x) ((x) * (x))` to avoid the function call overhead.
+3. Modify the `dist2` function to directly compare the squares of the distances. Replace `return square(a.x - b.x) + square(a.y - b.y);` with `return square(a.x - b.x) + square(a.y - b.y) <= 16 * r * r;` to compare the squares of the distances directly.
+
+Optimized Code:
+```cpp
+#include <algorithm>
+#include <assert.h>
+#include <iostream>
+#include <math.h>
+#include <unordered_set>
+#include <stdio.h>
+#include <string.h>
+#include <vector>
+using namespace std;
+typedef long long ll;
+static const double EPS = 1e-9;
+static const double PI = acos(-1.0);
+#define REP(i, n) for (int i = 0; i < (int)(n); i++)
+#define FOR(i, s, n) for (int i = (s); i < (int)(n); i++)
+#define FOREQ(i, s, n) for (int i = (s); i <= (int)(n); i++)
+#define FORIT(it, c)                                                           \
+  for (__typeof((c).begin()) it = (c).begin(); it != (c).end(); it++)
+#define MEMSET(v, h) memset((v), h, sizeof(v))
+struct Point {
+  int x;
+  int y;
+  char type;
+  Point() { ; }
+  Point(double x, double y, int type) : x(x), y(y), type(type) { ; }
+  bool operator<(const Point &rhs) const {
+    if (y != rhs.y) {
+      return y < rhs.y;
+    }
+    return x < rhs.x;
+  }
+};
+struct Event {
+  int x;
+  Point p;
+  char in;
+  Event() { ; }
+  Event(int x, Point p, int in) : x(x), p(p), in(in) { ; }
+  bool operator<(const Event &rhs) const {
+    if (x != rhs.x) {
+      return x < rhs.x;
+    }
+    return in > rhs.in;
+  }
+};
+#define square(x) ((x) * (x))
+inline bool dist2(const Point &a, const Point &b, int r) {
+  return square(a.x - b.x) + square(a.y - b.y) <= 16 * r * r;
+}
+int an, bn, n;
+int r;
+Event event[500000];
+int PlaneSweep() {
+  int ans = 0;
+  unordered_set<Point> open[2];
+  REP(iter, n) {
+    Event &e = event[iter];
+    Point &p = e.p;
+    if (e.in) {
+      auto lower =
+          open[(int)p.type ^ 1].lower_bound(Point(0, p.y - 4 * r - 1, 0));
+      auto upper =
+          open[(int)p.type ^ 1].upper_bound(Point(0, p.y + 4 * r + 1, 0));
+      for (auto it = lower; it != upper; it++) {
+        if (dist2(*it, p, r)) {
+          ans++;
+        }
+      }
+      open[(int)p.type].insert(p);
+    } else {
+      open[(int)p.type].erase(open[(int)p.type].find(p));
+    }
+  }
+  return ans;
+}
+int main() {
+  while (scanf("%d %d %d", &an, &bn, &r), an | bn) {
+    n = (an + bn) * 2;
+    REP(i, an) {
+      int x, y;
+      scanf("%d %d", &x, &y);
+      event[2 * i + 0] = Event(x - 2 * r, Point(x, y, 0), 1);
+      event[2 * i + 1] = Event(x + 2 * r, Point(x, y, 0), 0);
+    }
+    REP(i, bn) {
+      int x, y;
+      scanf("%d %d", &x, &y);
+      event[2 * an + 2 * i + 0] = Event(x - 2 * r, Point(x, y, 1), 1);
+      event[2 * an + 2 * i + 1] = Event(x + 2 * r, Point(x, y, 1), 0);
+    }
+    sort(event, event + n);
+    int ans = PlaneSweep();
+    printf("%d\n", ans);
+  }
+}
+```
+
+Trade-offs:
+1. The use of `unordered_set` instead of `set` improves the efficiency of insertion and deletion operations but may introduce a small amount of memory overhead.
+2. The use of preprocessor macros instead of functions like `square` can lead to less readable code. However, in this case, the improvement in performance justifies the use of macros.

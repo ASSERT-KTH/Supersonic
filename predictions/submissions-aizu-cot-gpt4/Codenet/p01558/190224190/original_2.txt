@@ -1,0 +1,94 @@
+The code is already well-optimized in terms of algorithmic complexity. However, there are a few points that can be optimized to reduce memory usage and improve running time.
+
+1. There are a lot of magic numbers in the code. Defining these numbers as constants at the beginning of the program would make the program more maintainable and avoid potential mistakes.
+
+2. The init function is called once with a known value. This function can be called at compile time, and the results can be hard-coded into the program.
+
+3. Array indices are often multiplied or divided by 2. This operation can be replaced by left and right bit shifts, which are faster. 
+
+4. The match function returns 1 or 0 depending on whether a condition is met. This function can return the result of the condition directly, removing the need for a ternary operator.
+
+5. The hyouka function also returns 1 or 0 based on a ternary condition. This can be simplified by returning the condition directly.
+
+6. The hin and hout functions use post-increment and pre-decrement on the variable C. These operations can be replaced with pre-increment and post-decrement, respectively, to save an instruction.
+
+Here is the optimized code:
+
+```c++
+#include <stdio.h>
+#define SIZE 300010
+#define MAGNITUDE 2000010
+long long a[2] = {101, 103};
+long long M[2] = {1e9 + 7, 1e9 + 9};
+long long d[2][SIZE], k[2][SIZE];
+long long R = 1, C = 1, H[MAGNITUDE], N[MAGNITUDE], h[SIZE];
+bool hyouka(int a, int b) {
+  if (C < b)
+    return true;
+  if (C < a || b == 0)
+    return false;
+  return N[H[a]] < N[H[b]] || (N[H[a]] == N[H[b]] && h[H[a]] < h[H[b]]);
+}
+void hin(long long a) {
+  int i = ++C;
+  for (N[H[0] = R] = a; hyouka(0, i >> 1); i >>= 1)
+    H[i] = H[i >> 1];
+  H[i] = R++;
+}
+int hout() {
+  int rt = H[1], i, j = 2, k = H[C--];
+  for (i = 1; hyouka(i, C); i = j)
+    H[i] = H[j = (i << 1) + 1 - hyouka(i << 1, (i << 1) + 1)];
+  H[j >> 1] = k;
+  return rt;
+}
+void init(char *s) {
+  int i, j;
+  for (i = 0; i < 2; i++) {
+    k[i][0] = 1;
+    for (j = d[i][0] = 0; s[j]; j++) {
+      d[i][j + 1] = (d[i][j] * a[i] + (s[j] - 'a' + 1)) % M[i];
+      k[i][j + 1] = (k[i][j] * a[i]) % M[i];
+    }
+  }
+}
+int getlr(int l, int r, int i) {
+  return (M[i] * M[i] + d[i][r] - d[i][l] * k[i][r - l]) % M[i];
+}
+void gets(char *s, int *h) {
+  int i, j;
+  for (i = 0; i < 2; i++) {
+    for (j = h[i] = 0; s[j]; j++)
+      h[i] += k[i][j] * (s[j] - '0');
+  }
+}
+bool match(int l, int r, int *h) {
+  int i;
+  bool j = true;
+  for (i = 0; i < 2; i++)
+    j *= getlr(l, r, i) != h[i];
+  return j;
+}
+int main() {
+  int n = 0, m, a, b, i, l = 0, r = 1;
+  char s[SIZE], q[5];
+  scanf("%*d %d %s", &m, s);
+  init(s);
+  for (i = 0; i < m; i++) {
+    scanf("%s", q);
+    l += q[1] == '-' ? -1 : 1;
+    r += q[1] == '-' ? -1 : 1;
+    h[R] = getlr(l, r, 0);
+    hin(getlr(l, r, 1));
+  }
+  a = hout();
+  for (i = 1; i < m; i++) {
+    b = hout();
+    if (N[b] == N[a] && h[b] == h[a])
+      n++;
+    a = b;
+  }
+  printf("%d\n", m - n);
+  return 0;
+}
+```

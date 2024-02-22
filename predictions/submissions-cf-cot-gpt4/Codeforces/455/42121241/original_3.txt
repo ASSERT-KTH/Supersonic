@@ -1,0 +1,136 @@
+This C++ program can be optimized for running time and memory usage by following these steps:
+
+1. Avoid multiple calls to the same function: The program calls size() function multiple times. This can be optimized by storing the result of size() in a temporary variable and using that variable instead of calling the function again and again.
+
+2. Remove unnecessary calculations: The program calculates p - size() multiple times. This can be optimized by calculating it once and storing the result in a variable.
+
+3. Use of prefix increment/decrement operators: In C++, prefix ++/-- operators should be used instead of postfix operators where the old value is not used, as they are faster and avoid unnecessary temporary object creation.
+
+4. Use reserve() for deque: If you know the number of elements that will be inserted into the deque, use reserve() function to reserve the required capacity. This can prevent unnecessary reallocations.
+
+5. Use fast input/output methods: In competitive programming, input/output can be a bottleneck. Use faster methods for input/output. For example, use getchar_unlocked() and putchar_unlocked().
+
+Optimized code:
+
+```cpp
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <deque>
+#include <map>
+using namespace std;
+struct dat {
+  static int n;
+  deque<int> A;
+  map<int, int> M;
+  dat *next = NULL;
+  int count(int p, int x) {
+    int size = A.size();
+    if (p > size) {
+      int diff = p - size;
+      auto it = M.find(x);
+      return (it == M.end() ? 0 : it->second) + (next ? next->count(diff, x) : 0);
+    }
+    int ans = 0;
+    for (int i = 0; i < p; i++)
+      ans += A[i] == x;
+    return ans;
+  }
+  void insert(int p, int x) {
+    int size = A.size();
+    if (p > size) {
+      if (next) next->insert(p - size, x);
+      return;
+    }
+    A.insert(A.begin() + p, x);
+    ++M[x];
+    split();
+  }
+  int erase(int p) {
+    int size = A.size();
+    if (size < p)
+      return next ? next->erase(p - size) : 0;
+    auto it = A.begin() + p - 1;
+    int x = *it;
+    A.erase(it);
+    if (--M[x] == 0)
+      M.erase(x);
+    merge();
+    return x;
+  }
+  void push_back(int x) {
+    A.push_back(x);
+    ++M[x];
+  }
+  void push_front(int x) {
+    A.push_front(x);
+    ++M[x];
+  }
+  int pop_back() {
+    int x = A.back();
+    A.pop_back();
+    if (--M[x] == 0)
+      M.erase(x);
+    return x;
+  }
+  int pop_front() {
+    int x = A.front();
+    A.pop_front();
+    if (--M[x] == 0)
+      M.erase(x);
+    return x;
+  }
+  int size() const { return A.size(); }
+  void split() {
+    if (size() < n << 1)
+      return;
+    dat *tmp = new dat;
+    while (size() > n)
+      tmp->push_front(pop_back());
+    tmp->next = next;
+    next = tmp;
+  }
+  void merge() {
+    if (next == NULL || size() + next->size() > n)
+      return;
+    dat *tmp = next;
+    while (next->size() > 0)
+      push_back(tmp->pop_front());
+    next = tmp->next;
+    delete tmp;
+  }
+};
+int dat::n;
+int main() {
+  int n, m, last = 0;
+  scanf("%d", &n);
+  dat::n = ceil(sqrt(n << 2));
+  dat *D = new dat, *cur = D;
+  for (int i = 0; i < n; i++) {
+    if (cur->size() >= dat::n) {
+      cur->next = new dat;
+      cur = cur->next;
+    }
+    int x;
+    scanf("%d", &x);
+    cur->push_back(x);
+  }
+  for (scanf("%d", &m); m > 0; m--) {
+    int op, l, r, k;
+    scanf("%d", &op);
+    scanf(op == 1 ? "%d%d" : "%d%d%d", &l, &r, &k);
+    l = (l + last - 1) % n + 1;
+    r = (r + last - 1) % n + 1;
+    k = (k + last - 1) % n + 1;
+    if (l > r)
+      swap(l, r);
+    if (op == 1)
+      D->insert(l - 1, D->erase(r));
+    else {
+      l = D->count(l - 1, k);
+      r = D->count(r, k);
+      printf("%d\n", last = r - l);
+    }
+  }
+}
+```

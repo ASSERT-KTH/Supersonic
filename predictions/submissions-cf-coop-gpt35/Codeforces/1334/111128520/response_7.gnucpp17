@@ -1,0 +1,70 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cmath>
+
+using namespace std;
+
+struct custom_hash {
+    static uint64_t splitmix64(uint64_t x) {
+        x += 0x9e3779b97f4a7c15;
+        x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
+        x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
+        return x ^ (x >> 31);
+    }
+    size_t operator()(uint64_t x) const {
+        static const uint64_t FIXED_RANDOM = chrono::steady_clock::now().time_since_epoch().count();
+        return splitmix64(x + FIXED_RANDOM);
+    }
+};
+
+int power(int x, int n, const int P) {
+    if (x == 0) return 0;
+    if (n == 0 || x == 1) return 1;
+    x %= P;
+    int res = 1;
+    while (n > 0) {
+        if (n & 1)
+            res = (res * x) % P;
+        x = (x * x) % P;
+        n /= 2;
+    }
+    return res;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+
+    int n;
+    cin >> n;
+    vector<pair<int, int>> v(n);
+    for (int i = 0; i < n; i++) {
+        cin >> v[i].first >> v[i].second;
+    }
+
+    if (n == 2) {
+        cout << min(v[0].first + max(0, v[1].first - v[0].second),
+                    v[1].first + max(0, v[0].first - v[1].second)) << "\n";
+        return 0;
+    }
+    
+    int cnt = 0;
+    int curr = v[0].first;
+    for (int i = 0; i < n; i++) {
+        cnt += curr;
+        curr = max(0, v[(i + 1) % n].first - v[i].second);
+    }
+    int ans = cnt;
+    for (int i = 1; i < n; i++) {
+        cnt += v[i].first - max(0, v[i].first - v[(i - 1 + n) % n].second);
+        cnt += max(0, v[(i - 1 + n) % n].first - v[(i - 2 + n) % n].second);
+        cnt -= v[(i - 1 + n) % n].first;
+        ans = min(ans, cnt);
+    }
+
+    cout << ans << "\n";
+
+    return 0;
+}

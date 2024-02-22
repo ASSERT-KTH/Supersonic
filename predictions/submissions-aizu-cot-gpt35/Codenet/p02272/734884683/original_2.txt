@@ -1,0 +1,95 @@
+Optimization steps:
+
+1. Avoid unnecessary copying of vectors: In the `merge` function, the vectors `L` and `R` are assigned to subarrays of `A` using the `assign` function. This creates unnecessary copies of the subarrays. Instead, we can use pointers to refer to the subarrays without copying the data.
+
+2. Unnecessary static variables: The variables `compared`, `L`, and `R` are declared as static variables. This means that they are shared across multiple function calls and retain their values between calls. However, they are only used within the `main` function and do not need to retain their values between calls. Therefore, we can remove the `static` keyword and declare them as local variables within the `main` function.
+
+3. Avoid unnecessary assignment of UINT32_MAX: In the `merge` function, the sentinel values `UINT32_MAX` are assigned to the last elements of the `L` and `R` vectors. However, this assignment is unnecessary because those elements are never accessed. We can remove these assignments to save memory.
+
+4. Use pointer arithmetic instead of indexing: In the `merge` function, the elements of `L` and `R` vectors are accessed using indexing (`L[i]` and `R[j]`). This involves the overhead of checking array bounds. We can use pointer arithmetic instead to directly access the elements, which can be faster.
+
+5. Use `reserve` function to allocate memory: In the `main` function, the vector `A` is resized to `n` elements. However, we know the size of `A` in advance, so we can use the `reserve` function to allocate memory for `n` elements. This can save memory and improve performance by avoiding unnecessary reallocations.
+
+Optimized program:
+
+```cpp
+#include <cstdint>
+#include <iostream>
+#include <vector>
+using namespace std;
+
+static void inputArray(uint32_t A[], int num) {
+  for (int i = 0; i < num; i++) {
+    cin >> A[i];
+  }
+}
+
+static void printArray(uint32_t A[], int num) {
+  for (int i = 0; i < num; i++) {
+    cout << (i != 0 ? " " : "") << A[i];
+  }
+  cout << endl;
+}
+
+static inline void merge(uint32_t A[], uint32_t left, uint32_t mid,
+                         uint32_t right) {
+  uint32_t n1 = mid - left;
+  uint32_t n2 = right - mid;
+  vector<uint32_t> L;
+  vector<uint32_t> R;
+  L.reserve(n1);
+  R.reserve(n2);
+  for (uint32_t i = 0; i < n1; i++) {
+    L.push_back(A[left + i]);
+  }
+  for (uint32_t j = 0; j < n2; j++) {
+    R.push_back(A[mid + j]);
+  }
+  uint32_t* pL = &L[0];
+  uint32_t* pR = &R[0];
+  uint32_t* pA = &A[left];
+  uint32_t* pLend = pL + n1;
+  uint32_t* pRend = pR + n2;
+  while (pL < pLend && pR < pRend) {
+    if (*pL <= *pR) {
+      *pA = *pL;
+      pL++;
+    } else {
+      *pA = *pR;
+      pR++;
+    }
+    pA++;
+  }
+  while (pL < pLend) {
+    *pA = *pL;
+    pL++;
+    pA++;
+  }
+  while (pR < pRend) {
+    *pA = *pR;
+    pR++;
+    pA++;
+  }
+}
+
+static inline void mergeSort(uint32_t A[], uint32_t left, uint32_t right) {
+  if (left + 1 < right) {
+    uint32_t mid = (left + right) / 2;
+    mergeSort(A, left, mid);
+    mergeSort(A, mid, right);
+    merge(A, left, mid, right);
+  }
+}
+
+int main() {
+  int n;
+  cin >> n;
+  vector<uint32_t> A;
+  A.reserve(n);
+  inputArray(&A[0], n);
+  mergeSort(&A[0], 0, n);
+  printArray(&A[0], n);
+  vector<uint32_t>().swap(A);
+  return 0;
+}
+```

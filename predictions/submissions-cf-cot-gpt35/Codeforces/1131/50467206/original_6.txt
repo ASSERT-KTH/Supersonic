@@ -1,0 +1,90 @@
+Step 1: Remove unnecessary includes and macros
+- The `#include <bits/stdc++.h>` includes a large number of standard C++ library headers, which may not be necessary for this program. It is better to include only the necessary headers.
+- The `#if 1` and `#else` blocks are not needed and can be removed.
+- The `#ifdef INFOARENA` and `#else` blocks can be replaced with `ifstream in("bellmanford.in"); ofstream out("bellmanford.out");` to directly open the input and output files.
+- The `pv` and `pn` macros are used for debugging purposes and can be removed.
+
+Step 2: Optimize memory usage
+- The `heightsOfBlock` and `costsOfBlock` vectors are used to store the heights and costs of blocks. These vectors can be replaced with a single vector of pairs to store both height and cost.
+- The `height` and `cost` arrays can be replaced with a single vector of pairs to store both height and cost.
+- The `stackPushLeft` and `stackPushRight` vectors can be replaced with a single vector of pairs to store both index and value.
+
+Step 3: Optimize runtime
+- The `heightsOfBlock.clear()` and `costsOfBlock.clear()` calls are unnecessary and can be removed.
+
+Step 4: Other optimizations
+- The `stackPushRight.size()` check in the `while` loop condition is always true. It can be removed.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+using ll = long long;
+
+const int NMax = 1e7 + 5;
+
+int main() {
+  ifstream in("bellmanford.in");
+  ofstream out("bellmanford.out");
+
+  int N, M;
+  in >> N >> M;
+  vector<vector<pair<int, ll>>> blockData(N + 1);
+  for (int i = 1; i <= N; ++i) {
+    int K;
+    in >> K;
+    for (int j = 1; j <= K; ++j) {
+      int height, cost;
+      in >> height >> cost;
+      blockData[i].push_back({height, 1LL * cost});
+    }
+  }
+  int Q, curr = 0;
+  in >> Q;
+  for (int i = 1; i <= Q; ++i) {
+    int id, mult;
+    in >> id >> mult;
+    for (const auto& block : blockData[id]) {
+      int h = block.first;
+      ll c = block.second;
+      ++curr;
+      height[curr] = h;
+      cost[curr] = 1LL * mult * c;
+    }
+  }
+
+  vector<pair<int, ll>> stackPushLeft, stackPushRight;
+  for (int i = 1; i <= M; ++i) {
+    ll minLeft = dp[i - 1];
+    while (!stackPushLeft.empty() && i - height[i] + 1 <= stackPushLeft.back().first) {
+      minLeft = min(minLeft, stackPushLeft.back().second);
+      stackPushLeft.pop_back();
+    }
+    dp[i] = minLeft + cost[i];
+    ll valHere = dp[i - 1];
+    minLeft = min(minLeft, valHere);
+    stackPushLeft.push_back({i, minLeft});
+    int idx = -1;
+    while (!stackPushRight.empty() && (idx = stackPushRight.back().first) && idx + height[idx] - 1 < i) {
+      stackPushRight.pop_back();
+    }
+    if (!stackPushRight.empty()) {
+      ll dpPlusCost = stackPushRight.back().second;
+      dp[i] = min(dp[i], dpPlusCost);
+    }
+    ll dpPlusCost = dp[i - 1] + cost[i];
+    if (!stackPushRight.empty()) {
+      dpPlusCost = min(dpPlusCost, stackPushRight.back().second);
+    }
+    stackPushRight.push_back({i, dpPlusCost});
+  }
+
+  out << dp[M] << '\n';
+  return 0;
+}
+```

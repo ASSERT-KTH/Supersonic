@@ -1,0 +1,90 @@
+Step 1: Remove unnecessary includes and pragmas:
+
+- Remove `#pragma GCC optimize("Ofast")` as it may not be necessary for this specific program.
+- Remove `#pragma GCC target("avx,avx2,fma")` as it may not be necessary for this specific program.
+- Remove `#pragma GCC target("sse,sse2,sse3,ssse3,sse4,popcnt,abm,mmx,avx,tune=native")` as it may not be necessary for this specific program.
+- Remove `#pragma comment(linker, "/stack:200000000")` as it may not be necessary for this specific program.
+- Remove `#include <bits/stdc++.h>` as it is not a standard C/C++ library and may not be necessary for this specific program.
+
+Step 2: Optimize the `SparseTable` struct:
+
+- Remove the `logtwo` vector and the calculation of `logtwo` values in the constructor. Instead, use the `log2` function from the `<cmath>` library to calculate the logarithm.
+- Remove the `f` function as it is not necessary. Instead, use `max` directly in the `query` function.
+
+Step 3: Optimize the `solve` function:
+
+- Remove the `R` variable and use `n` directly for the size of the `a` vector.
+- Initialize the `a` vector with a size of `n` instead of `R + 5` to save memory.
+- Instead of storing `x` directly in `a[x]`, store `i` in `a[x - 1]` to avoid accessing out-of-bounds elements.
+- Remove the `maxi` variable and use a local variable `temp_max` to store the maximum value temporarily.
+
+Step 4: Optimize the main function:
+
+- Remove the `test` variable and the `while` loop, as it is not necessary for this specific program.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <cmath>
+using namespace std;
+
+struct SparseTable {
+  int N, K;
+  vector<vector<int>> table;
+
+  SparseTable(vector<int>& a) {
+    N = a.size();
+    K = log2(N) + 2;
+    table = vector<vector<int>>(N, vector<int>(K));
+
+    for (int i = N - 1; i >= 0; i--) {
+      table[i][0] = a[i];
+      for (int j = 1; i + (1 << j) - 1 < N; j++) {
+        table[i][j] = max(table[i][j - 1], table[i + (1 << (j - 1))][j - 1]);
+      }
+    }
+  }
+
+  int query(int l, int r) {
+    int temp = log2(r - l + 1);
+    int ans = max(table[l][temp], table[r - (1 << temp) + 1][temp]);
+    return ans;
+  }
+};
+
+void solve() {
+  int n;
+  cin >> n;
+
+  vector<int> a(n, 0);
+  for (int i = 0; i < n; i++) {
+    int x;
+    cin >> x;
+    a[x - 1] = i;
+  }
+
+  SparseTable tab(a);
+  int temp_max = 0;
+  for (int i = 1; i <= n; i++) {
+    if (!a[i - 1])
+      continue;
+    for (int j = i; j <= n; j += i) {
+      int temp = tab.query(j - 1, min(j + i - 2, n - 1)) - (j - 1);
+      temp_max = max(temp_max, temp);
+    }
+  }
+
+  cout << temp_max << endl;
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+
+  solve();
+
+  return 0;
+}
+```

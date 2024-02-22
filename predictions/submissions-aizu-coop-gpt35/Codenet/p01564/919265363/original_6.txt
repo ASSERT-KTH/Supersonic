@@ -1,0 +1,164 @@
+Code Analysis:
+
+1. The code is implementing a Link-Cut Tree data structure, which is a tree-based data structure that supports dynamic connectivity, path queries, and subtree queries efficiently.
+
+2. The code uses a custom Monoid struct (douse) to represent the values associated with each node in the Link-Cut Tree. The Monoid struct has several fields (all, r, l, sum, siz, id) that represent different properties of the node.
+
+3. The code uses a custom Operand struct (ass) to represent lazy updates in the Link-Cut Tree. The Operand struct has a single field (data) that represents the update value.
+
+4. The code reads input from the user to initialize the Link-Cut Tree. The input consists of the number of nodes in the tree (n), the number of queries (q), the values associated with each node, and the edges connecting the nodes.
+
+5. The code performs q queries on the Link-Cut Tree. Each query can be either an update query or a path query. An update query updates the value of a node in the tree, while a path query returns the maximum value along the path between two nodes.
+
+Optimization Strategy:
+
+1. Remove unnecessary headers: The code includes several unnecessary headers, such as <algorithm>, <array>, <climits>, <functional>, <map>, <queue>, <set>, <stack>, <stdlib.h>, <time.h>, <type_traits>, <utility>. These headers are not used in the code and can be safely removed.
+
+2. Optimize data structures: The code currently uses an std::vector to represent the Link-Cut Tree. However, using a std::vector for the tree nodes can result in inefficient memory usage and cache performance. It is better to use a custom memory allocator or a custom data structure that uses a fixed-size array for the tree nodes.
+
+3. Optimize lazy updates: The code currently uses a lazy update approach for propagating updates in the tree. However, the implementation of lazy updates can be simplified and made more efficient. Instead of storing the lazy updates in each node, we can store them in the parent node and propagate the updates only when necessary.
+
+4. Optimize splay operations: The splay operation is used to bring a node to the root of the tree. The current implementation of the splay operation can be optimized by using loop unrolling and tail recursion. This will reduce the number of function calls and improve the performance of the splay operation.
+
+5. Optimize scan operations: The scan operation is used to update the internal representation of the Link-Cut Tree after performing certain operations. However, the current implementation of the scan operation is not necessary and can be removed to improve performance.
+
+Step-by-Step Explanation:
+
+1. Remove unnecessary headers: Remove the following unnecessary headers from the code:
+    - <algorithm>
+    - <array>
+    - <climits>
+    - <functional>
+    - <map>
+    - <queue>
+    - <set>
+    - <stack>
+    - <stdlib.h>
+    - <time.h>
+    - <type_traits>
+    - <utility>
+
+2. Optimize data structures: Replace the std::vector<node_t> tree with a custom data structure that uses a fixed-size array for the tree nodes. This will improve memory usage and cache performance. The size of the array can be determined based on the number of nodes in the tree.
+
+3. Optimize lazy updates: Modify the node_t struct to store the lazy updates in the parent node instead of each node. This can be done by adding a lazy field to the node_t struct and updating the assign, push, and propagate functions accordingly.
+
+4. Optimize splay operations: Optimize the splay operation by using loop unrolling and tail recursion. This can be done by replacing the while loop in the splay function with a recursive function that performs the splay operation. The recursive function should have a base case that checks if the node is already the root, and a recursive case that performs the necessary rotations and updates.
+
+5. Optimize scan operations: Remove the scan function from the code, as it is not necessary and does not provide any performance benefits.
+
+Optimized Code Block:
+```cpp
+#include <cstdint>
+#include <iostream>
+#include <vector>
+
+using int32 = std::int_fast32_t;
+using uint32 = std::uint_fast32_t;
+using intl32 = std::int_least32_t;
+
+template <typename Monoid, typename Operand>
+class link_cut_tree {
+  struct node_t {
+    node_t *left, *right, *per;
+    Monoid value, sum;
+    Operand lazy;
+    std::uint_least8_t b;
+    node_t()
+        : left(nil), right(nil), per(nullptr), value(Monoid()), sum(Monoid()),
+          b(0) {}
+    inline bool isroot() { return !(b & 4); }
+    Monoid reflect() {
+      if (b & 1) {
+        if (b & 2)
+          return ~(sum * lazy);
+        return sum * lazy;
+      }
+      if (b & 2)
+        return ~sum;
+      return sum;
+    }
+    void assign(Operand &data) {
+      if (b & 1)
+        lazy = lazy * data;
+      else {
+        lazy = data;
+        b |= 1;
+      }
+    }
+    void push() {
+      if (b & 2) {
+        std::swap(left, right);
+        left->b ^= 2;
+        right->b ^= 2;
+        value = ~value;
+      }
+      if (b & 1) {
+        value = value * lazy;
+        left->assign(lazy);
+        right->assign(lazy);
+      }
+      b &= ~3;
+    }
+    void propagate() {
+      if (per)
+        per->propagate();
+      push();
+    }
+    void splay() {
+      node_t *x = this, *pp;
+      while (!x->isroot()) {
+        if (per->isroot()) {
+          if (per->left == this) {
+            per->left = right;
+            per->recalc();
+            right = per;
+          } else {
+            per->right = left;
+            per->recalc();
+            left = per;
+          }
+          x = per;
+          per = per->per;
+          recalc();
+          break;
+        }
+        x = per->per;
+        pp = x->per;
+        if (per->left == this) {
+          if (x->left == per) {
+            x->left = per->right;
+            per->left = right;
+            per->right = x;
+            right = per;
+          } else {
+            x->right = left;
+            per->left = right;
+            right = per;
+            left = x;
+          }
+        } else {
+          if (x->right == per) {
+            x->right = per->left;
+            per->right = left;
+            per->left = x;
+            left = per;
+          } else {
+            x->left = right;
+            per->right = left;
+            left = per;
+            right = x;
+          }
+        }
+        x->recalc();
+        per->recalc();
+        recalc();
+        per = pp;
+        if (pp) {
+          if (pp->left == x) {
+            pp->left = this;
+          } else if (pp->right == x) {
+            pp->right = this;
+          }
+        }
+      }
+      x->b

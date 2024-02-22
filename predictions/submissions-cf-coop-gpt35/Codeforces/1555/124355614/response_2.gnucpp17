@@ -1,0 +1,94 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <climits>
+
+struct Interval {
+  int l, r, w;
+};
+
+class SegmentTree {
+private:
+  std::vector<int> t;
+  std::vector<int> push;
+  int n;
+
+public:
+  SegmentTree(int size) {
+    n = size;
+    t.resize(4 * n);
+    push.resize(4 * n);
+  }
+
+  void makepush(int v, int tl, int tr) {
+    if (!push[v])
+      return;
+    if (tl != tr) {
+      push[v * 2] += push[v];
+      push[v * 2 + 1] += push[v];
+      t[v * 2] += push[v];
+      t[v * 2 + 1] += push[v];
+    }
+    push[v] = 0;
+  }
+
+  void add(int l, int r, int x) {
+    add(1, 0, n - 1, l, r, x);
+  }
+
+  void add(int v, int tl, int tr, int l, int r, int x) {
+    makepush(v, tl, tr);
+    if (l > r)
+      return;
+    if (tl == l && tr == r) {
+      t[v] += x;
+      push[v] += x;
+      return;
+    }
+    int tm = (tl + tr) / 2;
+    add(v * 2, tl, tm, l, std::min(r, tm), x);
+    add(v * 2 + 1, tm + 1, tr, std::max(l, tm + 1), r, x);
+    t[v] = std::min(t[v * 2], t[v * 2 + 1]);
+  }
+
+  int query() {
+    return t[1];
+  }
+};
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(NULL);
+  std::cout.tie(NULL);
+
+  int n, m;
+  std::cin >> n >> m;
+  std::vector<Interval> intervals(n);
+  for (int i = 0; i < n; i++) {
+    std::cin >> intervals[i].l >> intervals[i].r >> intervals[i].w;
+    intervals[i].r -= 1;
+  }
+
+  std::sort(intervals.begin(), intervals.end(),
+            [](const Interval &x, const Interval &y) { return x.w < y.w; });
+
+  SegmentTree st(m);
+  int ptr = -1, ans = INT_MAX;
+
+  for (int i = 0; i < n; i++) {
+    if (i > 0)
+      st.add(intervals[i - 1].l, intervals[i - 1].r, -1);
+
+    while (ptr + 1 < n && st.query() == 0) {
+      ++ptr;
+      st.add(intervals[ptr].l, intervals[ptr].r, 1);
+    }
+
+    if (st.query())
+      ans = std::min(ans, intervals[ptr].w - intervals[i].w);
+  }
+
+  std::cout << ans;
+
+  return 0;
+}

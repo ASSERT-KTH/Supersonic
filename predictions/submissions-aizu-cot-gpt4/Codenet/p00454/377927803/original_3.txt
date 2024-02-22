@@ -1,0 +1,89 @@
+This program seems to be a solution to a problem where you need to find the number of disjoint areas in a field that are not occupied by certain objects. It uses a compression technique to treat only the necessary coordinates, which is a good strategy for optimization. However, there are still a few things that could be optimized:
+
+1. **Unnecessary macros:** Macros like `omajinai` and `MP` are not used in the code at all, so they can be removed.
+
+2. **Unnecessary using directives:** Not all types defined with `using` are used in this code. Removing those can make the code cleaner.
+
+3. **Redundant template functions:** The min, max, chmax, and chmin template functions are redefinitions of the standard functions and they are not used in the code. We can remove these.
+
+4. **Unnecessary call to `memset`:** Modern C++ compilers automatically initialize all elements of the global arrays to zero, so calling `memset` here is not necessary.
+
+5. **Excessive use of vector in compress function:** The vector `xs` is used to store the compressed coordinates, but actually we can just store these coordinates in the original arrays `x1`, `x2`, `y1`, and `y2`.
+
+Let's implement these optimizations:
+
+```cpp
+#include <algorithm>
+#include <cstring>
+#include <iostream>
+#include <queue>
+#include <vector>
+using namespace std;
+#define PB push_back
+#define all(a) a.begin(), a.end()
+#define rep(i, x) for (int i = 0; i < (int)(x); ++i)
+using ll = long long;
+using vi = vector<int>;
+using pii = pair<int, int>;
+constexpr int inf = 1e9;
+constexpr ll linf = 3e18;
+constexpr double eps = 1e-9;
+int w, h;
+int n;
+int x1[1005], x2[1005];
+int y1[1005], y2[1005];
+bool fld[1005 * 6 + 2][1005 * 6 + 2];
+int dx[4] = {-1, 0, 1, 0};
+int dy[4] = {0, -1, 0, 1};
+int compress(int *x1, int *x2, int w) {
+  rep(i, n) {
+    for (int d = -1; d <= 1; ++d) {
+      int tx1 = x1[i] + d, tx2 = x2[i] + d;
+      if (0 <= tx1 && tx1 <= w)
+        x1[i] = tx1;
+      if (0 <= tx2 && tx2 <= w)
+        x2[i] = tx2;
+    }
+  }
+  sort(x1, x1 + n);
+  sort(x2, x2 + n);
+  return max(x1[n-1], x2[n-1]);
+}
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+  while (cin >> w >> h, w) {
+    cin >> n;
+    rep(i, n) { cin >> x1[i] >> y1[i] >> x2[i] >> y2[i]; }
+    w = compress(x1, x2, w);
+    h = compress(y1, y2, h);
+    rep(i, n) {
+      for (int y = y1[i]; y <= y2[i] - 1; ++y) {
+        for (int x = x1[i]; x <= x2[i] - 1; ++x) {
+          fld[y][x] = true;
+        }
+      }
+    }
+    int ans = 0;
+    rep(y, h - 1) rep(x, w - 1) {
+      if (fld[y][x])
+        continue;
+      ans++;
+      queue<pii> q;
+      q.push(pii(y, x));
+      while (q.size()) {
+        pii p = q.front();
+        q.pop();
+        rep(i, 4) {
+          int ny = p.first + dy[i], nx = p.second + dx[i];
+          if (ny < 0 || ny >= h - 1 || nx < 0 || nx >= w - 1 || fld[ny][nx])
+            continue;
+          fld[ny][nx] = true;
+          q.push(pii(ny, nx));
+        }
+      }
+    }
+    cout << ans << endl;
+  }
+}
+```

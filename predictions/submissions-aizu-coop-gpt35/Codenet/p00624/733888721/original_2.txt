@@ -1,0 +1,196 @@
+To optimize this code, we can focus on the following areas:
+
+1. Eliminate unnecessary includes: The code includes several unnecessary header files. We can remove the includes that are not used in the code to improve compilation time and reduce memory usage.
+
+2. Replace macros with inline functions: The code uses macros for loop iterations (`REP` and `rep`). We can replace these macros with inline functions to improve code readability and potentially allow the compiler to optimize the loop iterations.
+
+3. Optimize data structures: The code uses a 3-dimensional array (`DP`) to store intermediate results. However, most of the entries in this array are not used. We can use a more efficient data structure, such as a hash map, to store only the necessary entries and reduce memory usage.
+
+4. Avoid redundant computations: The code performs several redundant computations. For example, it repeatedly checks if a cell is a container or a wall. We can optimize these computations by storing the results in a separate data structure.
+
+5. Optimize BFS algorithm: The BFS algorithm in the code can be optimized by avoiding unnecessary iterations and early termination when the destination is reached. Additionally, we can use a more efficient data structure, such as a deque, to store the frontier of the BFS.
+
+Now let's go through each optimization step in detail.
+
+### Step 1: Eliminate unnecessary includes
+
+The code includes several unnecessary header files. We can remove the includes that are not used in the code to improve compilation time and reduce memory usage.
+
+```cpp
+#include <cstdio>
+#include <cstring>
+#include <queue>
+using namespace std;
+```
+
+### Step 2: Replace macros with inline functions
+
+The code uses macros for loop iterations (`REP` and `rep`). We can replace these macros with inline functions to improve code readability and potentially allow the compiler to optimize the loop iterations.
+
+```cpp
+inline void REP(int& i, int a, int n) {
+    for (i = a; i < n; i++);
+}
+
+inline void rep(int& i, int n) {
+    REP(i, 0, n);
+}
+```
+
+### Step 3: Optimize data structures
+
+The code uses a 3-dimensional array (`DP`) to store intermediate results. However, most of the entries in this array are not used. We can use a more efficient data structure, such as a hash map, to store only the necessary entries and reduce memory usage.
+
+```cpp
+#include <unordered_map>
+
+unordered_map<char, int> DP;
+```
+
+### Step 4: Avoid redundant computations
+
+The code performs several redundant computations. For example, it repeatedly checks if a cell is a container or a wall. We can optimize these computations by storing the results in a separate data structure.
+
+```cpp
+bool isContainer[16][16];
+
+// Inside input() function
+rep(i, H) {
+    scanf("%s", field[i]);
+    rep(j, W) {
+        if (field[i][j] == '@') {
+            sx = j, sy = i;
+        }
+        if (field[i][j] == 'E') {
+            gx = j, gy = i;
+        }
+        if (field[i][j] == 'w') {
+            wx[wsize] = j, wy[wsize] = i;
+            wsize++;
+        }
+        if (field[i][j] == 'c') {
+            cx[csize] = j, cy[csize] = i;
+            csize++;
+        }
+        isContainer[i][j] = (field[i][j] == 'c');
+    }
+}
+
+// Replace calls to isdel() and iscontena() with isContainer[][] checks
+```
+
+### Step 5: Optimize BFS algorithm
+
+The BFS algorithm in the code can be optimized by avoiding unnecessary iterations and early termination when the destination is reached. Additionally, we can use a more efficient data structure, such as a deque, to store the frontier of the BFS.
+
+```cpp
+#include <deque>
+
+deque<pair<int, int>> q;
+q.push_back(make_pair(nx, ny));
+while (!q.empty()) {
+    int x = q.front().first, y = q.front().second;
+    int cost = bfscost[y][x];
+    q.pop_front();
+    rep(k, 4) {
+        int tx = x + dx[k];
+        int ty = y + dy[k];
+        if (field[ty][tx] == '#' || bfscost[ty][tx] != -1 ||
+            iscontena(tx, ty, ncx, ncy, Sc))
+            continue;
+        if (field[ty][tx] == 'w' && !isdel(tx, ty, ncx, ncy))
+            continue;
+        bfscost[ty][tx] = cost + 1;
+        q.push_back(make_pair(tx, ty));
+    }
+}
+```
+
+### Step 6: Compiler optimizations
+
+We can enable compiler optimizations to allow the compiler to further optimize the code. We can use the `-O2` compiler flag to enable level 2 optimizations.
+
+```cpp
+// Add the following line at the beginning of the file
+#pragma GCC optimize("O2")
+```
+
+Here's the complete optimized code:
+
+```cpp
+#include <cstdio>
+#include <cstring>
+#include <queue>
+#include <unordered_map>
+#include <deque>
+using namespace std;
+
+inline void REP(int& i, int a, int n) {
+    for (i = a; i < n; i++);
+}
+
+inline void rep(int& i, int n) {
+    REP(i, 0, n);
+}
+
+unordered_map<char, int> DP;
+bool isContainer[16][16];
+deque<pair<int, int>> q;
+
+const int dx[] = {0, 1, 0, -1};
+const int dy[] = {-1, 0, 1, 0};
+int W, H, sx, sy, gx, gy;
+int bfscost[10][10];
+char csize, wsize, wx[3], wy[3], cx[3], cy[3];
+char field[16][16];
+
+bool isdel(char tx, char ty, char ncx[], char ncy[]) {
+    int i;
+    if (field[ty][tx] != 'w')
+        return true;
+    rep(i, csize) if (ncx[i] == tx && ncy[i] == ty) return true;
+    return false;
+}
+
+bool iscontena(char tx, char ty, char ncx[], char ncy[], char Sc) {
+    int i;
+    rep(i, csize) if (ncx[i] == tx && ncy[i] == ty && !(Sc & (1 << i))) return true;
+    return false;
+}
+
+void BFS(char nx, char ny, char ncx[], char ncy[], char Sc) {
+    int i, j, k;
+    memset(bfscost, -1, sizeof(bfscost));
+    bfscost[ny][nx] = 0;
+    q.push_back(make_pair(nx, ny));
+    while (!q.empty()) {
+        int x = q.front().first, y = q.front().second;
+        int cost = bfscost[y][x];
+        q.pop_front();
+        rep(k, 4) {
+            int tx = x + dx[k];
+            int ty = y + dy[k];
+            if (field[ty][tx] == '#' || bfscost[ty][tx] != -1 ||
+                iscontena(tx, ty, ncx, ncy, Sc))
+                continue;
+            if (field[ty][tx] == 'w' && !isdel(tx, ty, ncx, ncy))
+                continue;
+            bfscost[ty][tx] = cost + 1;
+            q.push_back(make_pair(tx, ty));
+        }
+    }
+}
+
+void input() {
+    int i, j;
+    rep(i, H) {
+        scanf("%s", field[i]);
+        rep(j, W) {
+            if (field[i][j] == '@') {
+                sx = j, sy = i;
+            }
+            if (field[i][j] == 'E') {
+                gx = j, gy = i;
+            }
+            if (field[i][j] == 'w') {
+                wx[wsize] = j, wy[wsize] =

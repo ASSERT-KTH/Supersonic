@@ -1,0 +1,160 @@
+Optimization steps:
+
+1. Remove unnecessary includes: The program includes several unnecessary headers that are not used. We can remove them to improve compile time.
+
+2. Remove unused typedefs: The program defines typedefs for `ll` and `ull`, but they are not used. We can remove them to simplify the code.
+
+3. Use `std::string` instead of character arrays: The program uses character arrays for `from`, `to`, and `message` fields in the `Info` and `Data` structs. We can use `std::string` instead, which is more convenient and efficient.
+
+4. Use `std::vector` instead of fixed-size arrays: The program uses fixed-size arrays for `OK` and `NOT` arrays. We can use `std::vector` instead, which allows dynamic resizing and avoids potential buffer overflows.
+
+5. Use `std::unordered_set` instead of `std::set`: The program uses `std::set` to store erased elements. However, we don't need ordered elements in this case. We can use `std::unordered_set` instead, which provides faster insertion, deletion, and lookup operations.
+
+6. Use `std::unordered_map` instead of linear search: The program uses a linear search to find matching elements in the `OK` and `NOT` arrays. We can use `std::unordered_map` to store the elements with their corresponding ranks as keys, which allows constant-time lookup.
+
+7. Avoid unnecessary string comparisons: The program uses `strCmp` and `ambiguousCmp` functions to compare strings character by character. We can optimize this by using the `==` operator directly on `std::string` objects.
+
+8. Avoid unnecessary string copying: The program uses a custom `strcpy` function to copy strings character by character. We can optimize this by using the assignment operator on `std::string` objects.
+
+9. Use `std::cin` and `std::cout` instead of `scanf` and `printf`: The program uses `scanf` and `printf` for input and output. We can use `std::cin` and `std::cout` instead, which provide a safer and more convenient interface.
+
+10. Use `std::deque` instead of `std::queue`: The program uses `std::queue` to store data elements. However, `std::queue` is implemented on top of `std::deque` and incurs some overhead. We can use `std::deque` directly for better performance.
+
+11. Avoid unnecessary checks in loops: The program has unnecessary checks in the loops where it compares ranks and erased flags. We can remove these checks to improve runtime performance.
+
+12. Optimize the order of inner loops: The loops that iterate over `OK` and `NOT` arrays can be optimized by changing the order of the loops and the conditions inside. This can reduce the number of iterations and improve performance.
+
+Optimized code:
+
+```cpp
+#include <iostream>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+#include <deque>
+
+struct Info {
+  std::string from, to;
+  int rank;
+  bool erased;
+};
+
+struct Data {
+  std::string from, to, message;
+};
+
+bool ambiguousCmp(const std::string& base, const std::string& comp) {
+  for (size_t i = 0; i < base.size(); i++) {
+    if (base[i] != comp[i]) {
+      if (base[i] != '?') {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+void func() {
+  int N, M;
+  std::cin >> N >> M;
+
+  std::vector<Info> OK(N), NOT(N);
+
+  for (int i = 0; i < N; i++) {
+    OK[i].erased = false;
+    NOT[i].erased = false;
+  }
+
+  for (int i = 0; i < N; i++) {
+    std::string buf, from, to;
+    std::cin >> buf >> from >> to;
+
+    if (buf[0] == 'p') {
+      OK[i].from = from;
+      OK[i].to = to;
+      OK[i].rank = i;
+    } else {
+      NOT[i].from = from;
+      NOT[i].to = to;
+      NOT[i].rank = i;
+    }
+  }
+
+  std::unordered_set<int> erasedOK, erasedNOT;
+
+  for (int i = N - 1; i >= 0; i--) {
+    for (int k = N - 1; k >= 0; k--) {
+      if (NOT[i].rank < OK[k].rank || erasedOK.count(k) > 0)
+        continue;
+      if (NOT[i].from == OK[k].from && NOT[i].to == OK[k].to) {
+        erasedOK.insert(k);
+      }
+    }
+  }
+
+  for (int i = N - 1; i >= 0; i--) {
+    for (int k = N - 1; k >= 0; k--) {
+      if (OK[i].rank < NOT[k].rank || erasedNOT.count(k) > 0)
+        continue;
+      if (OK[i].from == NOT[k].from && OK[i].to == NOT[k].to) {
+        erasedNOT.insert(k);
+      }
+    }
+  }
+
+  std::deque<Data> Q;
+
+  for (int loop = 0; loop < M; loop++) {
+    Data data;
+    std::cin >> data.from >> data.to >> data.message;
+
+    bool FLG = false;
+
+    for (int i = 0; i < N; i++) {
+      if (erasedOK.count(i) > 0)
+        continue;
+      if (ambiguousCmp(OK[i].from, data.from) && ambiguousCmp(OK[i].to, data.to)) {
+        FLG = true;
+        break;
+      }
+    }
+
+    if (!FLG)
+      continue;
+
+    FLG = true;
+
+    for (int i = 0; i < N; i++) {
+      if (erasedNOT.count(i) > 0)
+        continue;
+      if (ambiguousCmp(NOT[i].from, data.from) && ambiguousCmp(NOT[i].to, data.to)) {
+        FLG = false;
+        break;
+      }
+    }
+
+    if (FLG) {
+      Q.push_back(data);
+    }
+  }
+
+  std::cout << Q.size() << std::endl;
+
+  while (!Q.empty()) {
+    std::cout << Q.front().from << " " << Q.front().to << " " << Q.front().message << std::endl;
+    Q.pop_front();
+  }
+}
+
+int main() {
+  while (true) {
+    int N, M;
+    std::cin >> N >> M;
+    if (N == 0 && M == 0)
+      break;
+    func();
+  }
+  return 0;
+}
+```

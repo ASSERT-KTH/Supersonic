@@ -1,0 +1,1 @@
+int dp[55][3030] = {0}; // Initialize the dp array with zeros only once

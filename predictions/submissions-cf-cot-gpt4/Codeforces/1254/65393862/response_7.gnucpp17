@@ -1,0 +1,54 @@
+
+//... rest of the code
+
+  for (int q = 0; q < Q; q++) {
+    query qry;
+    cin >> qry.type >> qry.v;
+    qry.v--;
+    if (qry.type == 1) {
+      int d;
+      cin >> d;
+      qry.d = d;
+      pending_queries.push_back(qry);
+    } else if (qry.type == 2) {
+      mod_int answer = values[qry.v];
+      for (query &prev : pending_queries)
+        if (prev.type == 1) {
+          if (prev.v == qry.v) {
+            answer += prev.d;
+          } else if (lca.is_ancestor(prev.v, qry.v)) {
+            int ca = lca.child_ancestor(prev.v, qry.v);
+            mod_int probability = (N - lca.subtree_size[ca]) * inv_N;
+            answer += probability * prev.d;
+          } else {
+            mod_int probability = lca.subtree_size[prev.v] * inv_N;
+            answer += probability * prev.d;
+          }
+        }
+      cout << answer << '\n';
+    } else {
+      assert(false);
+    }
+    if ((int)pending_queries.size() >= APPLY) {
+      updates.assign(N, 0);
+      query_d.assign(N, 0);
+      for (query &prev : pending_queries)
+        query_d[prev.v] += prev.d;
+      for (int node = 0; node < N; node++)
+        if (query_d[node] != 0) {
+          mod_int base_probability = lca.subtree_size[node] * inv_N;
+          updates[0] += base_probability * query_d[node];
+          updates[node] += (1 - base_probability) * query_d[node];
+          for (int child : lca.adj[node])
+            updates[child] -= lca.subtree_size[child] * inv_N * query_d[node];
+        }
+      for (int node : lca.tour_list) {
+        const auto &node_adj = lca.adj[node];  // store in local variable to optimize cache usage
+        values[node] += updates[node];
+        for (int child : node_adj)
+          updates[child] += updates[node];
+      }
+      pending_queries.clear();
+    }
+  }
+}

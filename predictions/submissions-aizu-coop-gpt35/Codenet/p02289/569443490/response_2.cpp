@@ -1,0 +1,75 @@
+#include <algorithm>
+#include <iostream>
+#include <stdio.h>
+using namespace std;
+class Heap {
+public:
+  Heap() {
+    array = nullptr;
+    n = 0;
+  }
+  ~Heap() {
+    delete[] array;
+  }
+  void insert(int data) {
+    array[n] = data;
+    int tmp = n;
+    while (tmp != 0 && array[tmp] > array[(tmp - 1) / 2]) {
+      array[tmp] = array[(tmp - 1) / 2];
+      tmp = (tmp - 1) / 2;
+    }
+    array[tmp] = data;
+    n++;
+  }
+  void max_heapify(int start, int end) {
+    int dad = start;
+    int son = dad * 2 + 1;
+    while (son <= end) {
+      if (son + 1 <= end && array[son] < array[son + 1]) {
+        son++;
+      }
+      if (array[dad] > array[son]) {
+        return;
+      } else {
+        swap(array[dad], array[son]);
+        dad = son;
+        son = dad * 2 + 1;
+      }
+    }
+  }
+  int heap_sort(int len) {
+    int i;
+    swap(array[0], array[len - 1]);
+    max_heapify(0, len - 2);
+    return array[len - 1];
+  }
+  int extract() {
+    int ret = heap_sort(n);
+    n--;
+    return ret;
+  }
+
+private:
+  int *array;
+  int n;
+};
+int main() {
+  int insert_data;
+  char buf[22];
+  Heap heap;
+  while (true) {
+    if (scanf("%s", buf) == EOF || buf[2] == 'd')
+      break;
+    if (buf[0] == 'i') {
+      insert_data = 0;
+      for (int i = 0; buf[i] != '\0'; i++) {
+        if (buf[i] >= '0' && buf[i] <= '9') {
+          insert_data = 10 * insert_data + (buf[i] - '0');
+        }
+      }
+      heap.insert(insert_data);
+    } else {
+      printf("%d\n", heap.extract());
+    }
+  }
+}

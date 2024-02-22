@@ -1,0 +1,113 @@
+The given program is already well-written and optimized. 
+
+However, there are a few micro-optimizations or changes that can be done to enhance the efficiency:
+
+1. **Avoiding Multiple Calibrations and Redundant Operations**: The expression `d[v[i]] - d[u[i]]` is used multiple times in the program. This can be stored in a variable to avoid recalculating it. This will enhance the computational speed. 
+
+2. **Efficient use of `std::vector::emplace_back()`:** Instead of using `push_back()` use `emplace_back()`. `emplace_back()` is used to insert elements into the vector and it is more efficient than `push_back()` because it avoids the extra copy that happens in `push_back()`.
+
+3. **Minimize the usage of Global Variables**: Global variables consume memory for the entire life of the program. So, if they are massive (like the arrays in this program), it is not the best practice to keep them global. However, in this case, it might be a bit difficult to do that without changing the structure of the program heavily.
+
+4. **Using Fast Input/Output Methods**: Using `getchar_unlocked()` and `printf()` is a wise choice for faster I/O operations. However, it's not safe to use `getchar_unlocked()` in a multi-threading environment, so it's safer to use `getchar()` instead if you're planning on making your program multi-threaded.
+
+Here is the optimized version of your program:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+#define rep(i, n) for (int i = 0; i < n; i++)
+void reader(int *x) {
+    int k = getchar_unlocked();
+    *x = k - '0';
+    while (1) {
+        k = getchar_unlocked();
+        if (k < '0' || k > '9') break;
+        *x = ((*x) << 1) + ((*x) << 3) + k - '0';
+    }
+}
+
+vector<int> E[100000];
+int u[200000], v[200000], r[200000], ans[200000], d[100000], cnt = 1;
+bool b[200000], ok[100000];
+queue<int> que;
+
+void bfs(int u, int t) {
+    que.push(u);
+    while (!que.empty()) {
+        int p = que.front();
+        que.pop();
+        for (int v : E[p]) {
+            if (t) {
+                if (d[v] > d[p] && !ok[v]) {
+                    ok[v] = 1;
+                    cnt++;
+                    que.push(v);
+                }
+            } else if (d[v] == -1) {
+                d[v] = d[p] + 1;
+                que.push(v);
+            }
+        }
+    }
+}
+
+int main() {
+    int n, m, q;
+    reader(&n);
+    reader(&m);
+    reader(&q);
+
+    rep(i, m) {
+        reader(&u[i]);
+        reader(&v[i]);
+        u[i]--;
+        v[i]--;
+        E[u[i]].emplace_back(v[i]);
+        E[v[i]].emplace_back(u[i]);
+    }
+
+    memset(d, -1, sizeof(d));
+    d[0] = 0;
+    bfs(0, 0);
+    
+    rep(i, m) {
+        if (d[u[i]] > d[v[i]]) swap(u[i], v[i]);
+    }
+
+    rep(i, n) E[i].clear();
+
+    rep(i, q) {
+        reader(&r[i]);
+        r[i]--;
+        b[r[i]] = true;
+    }
+
+    ok[0] = true;
+
+    rep(i, m) {
+        int diff = d[v[i]] - d[u[i]];
+        if (!b[i] && diff == 1) {
+            E[u[i]].emplace_back(v[i]);
+        }
+    }
+
+    bfs(0, 1);
+
+    for (int i = q - 1; i >= 0; i--) {
+        ans[i] = n - cnt;
+        int diff = d[v[r[i]]] - d[u[r[i]];
+        if (diff == 1 && !ok[v[r[i]]]) {
+            E[u[r[i]]].emplace_back(v[r[i]]);
+            if (ok[u[r[i]]]) {
+                cnt++;
+                ok[v[r[i]]] = true;
+                bfs(v[r[i]], 1);
+            }
+        }
+    }
+
+    rep(i, q) printf("%d\n", ans[i]);
+    return 0;
+}
+```

@@ -1,0 +1,107 @@
+The given program is a C++ program that finds the minimum difference between two elements in an array by performing range updates and queries on a segment tree.
+
+To optimize the program for running time and memory usage, we can make the following modifications:
+
+1. Remove unnecessary includes: The program includes the `<bits/stdc++.h>` header which includes all the standard library headers. This can lead to longer compilation times and unnecessary memory usage. We can remove this include and only include the necessary headers.
+
+2. Replace `vector<pair<int, pair<int, int>>>` with `vector<tuple<int, int, int>>`: The program uses a vector of pairs to store the input values. We can replace this with a vector of tuples, which provides a more concise and efficient representation.
+
+3. Replace `sort` with `std::sort`: The program uses the `sort` function to sort the input values. We can replace this with the `std::sort` function for better performance.
+
+4. Use a constant reference in the lambda function: The lambda function used in the `sort` function takes its arguments by value. We can modify it to take the arguments by constant reference to avoid unnecessary copying.
+
+5. Use prefix increment instead of postfix increment: The program uses postfix increment (`ptr++`) in the `while` loop. We can replace it with prefix increment (`++ptr`) for better performance.
+
+6. Use `emplace_back` instead of `push_back`: The program uses `push_back` to add elements to the vector. We can replace it with `emplace_back` for better performance and memory usage.
+
+7. Replace `INT_MAX` with `numeric_limits<int>::max()`: The program uses `INT_MAX` to initialize the `ans` variable. We can replace it with `numeric_limits<int>::max()` for better readability and portability.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <limits>
+#include <tuple>
+
+using namespace std;
+
+typedef long long ll;
+const int N = 2e6 + 5;
+
+int t[4 * N], push[4 * N];
+
+void makepush(int v, int tl, int tr) {
+  if (!push[v])
+    return;
+
+  if (tl != tr) {
+    push[v * 2] += push[v];
+    push[v * 2 + 1] += push[v];
+    t[v * 2] += push[v];
+    t[v * 2 + 1] += push[v];
+  }
+
+  push[v] = 0;
+}
+
+void add(int v, int tl, int tr, int l, int r, int x) {
+  if (l > r)
+    return;
+
+  makepush(v, tl, tr);
+
+  if (tl == l && tr == r) {
+    t[v] += x;
+    push[v] += x;
+    return;
+  }
+
+  int tm = (tl + tr) / 2;
+  add(v * 2, tl, tm, l, min(r, tm), x);
+  add(v * 2 + 1, tm + 1, tr, max(l, tm + 1), r, x);
+  t[v] = min(t[v * 2], t[v * 2 + 1]);
+}
+
+int main() {
+  ios_base::sync_with_stdio(0);
+  cin.tie(0);
+  cout.tie(0);
+
+  int n, m;
+  cin >> n >> m;
+
+  vector<tuple<int, int, int>> s;
+  for (int i = 0; i < n; i++) {
+    int l, r, w;
+    cin >> l >> r >> w;
+    s.emplace_back(w, l, r - 1);
+  }
+
+  sort(s.begin(), s.end(),
+       [&](const tuple<int, int, int>& x, const tuple<int, int, int>& y) {
+         return get<0>(x) < get<0>(y);
+       });
+
+  int ptr = -1, ans = numeric_limits<int>::max();
+
+  for (int i = 0; i < n; i++) {
+    if (i > 0)
+      add(1, 1, m - 1, get<1>(s[i - 1]), get<2>(s[i - 1]), -1);
+
+    while (++ptr < n && t[1] == 0) {
+      add(1, 1, m - 1, get<1>(s[ptr]), get<2>(s[ptr]), +1);
+    }
+
+    if (t[1])
+      ans = min(ans, get<0>(s[ptr]) - get<0>(s[i]));
+  }
+
+  cout << ans;
+
+  return 0;
+}
+```
+
+These modifications should improve the performance and memory usage of the program.

@@ -1,0 +1,92 @@
+The provided code is a C++ implementation of the 2-SAT (two-satisfiability) problem. The 2-SAT problem is a special case of a boolean satisfiability problem, which is the computational problem of determining if there exists an interpretation that satisfies a given boolean formula. 
+
+In this code, the author is using Tarjan's algorithm for strongly connected components to solve the 2-SAT problem. The algorithm is already quite efficient, but there are some small improvements that can be made:
+
+1. Preallocate memory for arrays and vectors before using them. The push_back operation can be expensive in terms of time complexity, especially when the vector needs to be resized. Preallocating memory can prevent unnecessary resizing.
+
+2. In the dfs and dfst functions, we can pass the adjacency list by reference to avoid making a copy of the list.
+
+3. The run2sat function contains two loops that are almost exactly the same. We can combine these two loops into one to reduce code redundancy.
+
+4. The main function contains a loop where it checks if st[i] is not equal to zero. We can eliminate this check by using a ternary operator.
+
+Here's the optimized code:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+const int N = 1e5 + 5;
+int n, vis[2 * N], ord[2 * N], ordn, cnt, cmp[2 * N], val[N];
+vector<int> adj[2 * N], adjt[2 * N];
+int m, st[N], sw[N][2];
+vector<int> stk;
+
+int v(int x) { return 2 * x; }
+int nv(int x) { return 2 * x + 1; }
+
+void add(int a, int b) {
+  adj[a ^ 1].reserve(2*N);
+  adj[b ^ 1].reserve(2*N);
+  adjt[b].reserve(2*N);
+  adjt[a].reserve(2*N);
+  adj[a ^ 1].push_back(b);
+  adj[b ^ 1].push_back(a);
+  adjt[b].push_back(a ^ 1);
+  adjt[a].push_back(b ^ 1);
+}
+
+void dfs(int x, const vector<int>& adj) {
+  vis[x] = 1;
+  for (auto &v : adj)
+    if (!vis[v])
+      dfs(v, adj);
+  ord[ordn++] = x;
+}
+
+void dfst(int x, const vector<int>& adjt) {
+  cmp[x] = cnt, vis[x] = 0;
+  for (auto &v : adjt)
+    if (vis[v])
+      dfst(v, adjt);
+}
+
+bool run2sat() {
+  for (int i = 1; i <= m; i++) {
+    if (!vis[v(i)])
+      dfs(v(i), adj[v(i)]);
+    if (!vis[nv(i)])
+      dfs(nv(i), adj[nv(i)]);
+  }
+  for (int i = 2*m - 1; i >= 0; i--)
+    if (vis[ord[i]])
+      cnt++, dfst(ord[i], adjt[ord[i]]);
+  for (int i = 1; i <= m; i++) {
+    if (cmp[v(i)] == cmp[nv(i)])
+      return false;
+    val[i] = cmp[v(i)] > cmp[nv(i)];
+  }
+  return true;
+}
+
+int main() {
+  ios_base::sync_with_stdio(0), cin.tie(0);
+  cin >> n >> m;
+  for (int i = 1; i <= n; i++)
+    cin >> st[i];
+  int q, a;
+  for (int i = 1; i <= m; i++) {
+    cin >> q;
+    while (q--) {
+      cin >> a;
+      sw[a][0] ? sw[a][1] = i : sw[a][0] = i;
+    }
+  }
+  for (int i = 1; i <= n; i++) {
+    int p = sw[i][0];
+    int q = sw[i][1];
+    st[i] ? (add(nv(p), v(q)), add(v(p), nv(q))) : (add(v(p), v(q)), add(nv(p), nv(q)));
+  }
+  cout << (run2sat() ? "YES\n" : "NO\n");
+}
+```

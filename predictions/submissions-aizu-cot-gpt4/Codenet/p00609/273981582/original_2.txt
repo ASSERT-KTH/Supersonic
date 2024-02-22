@@ -1,0 +1,90 @@
+Here are some optimization steps:
+
+1. Avoid using std::endl: std::endl is significantly slower than '\n' because it causes a flush operation, which can be quite expensive. Therefore, wherever possible, you should use '\n' instead of std::endl.
+
+2. Use fast I/O operations for reading and writing: The std::cin and std::cout operations are slower than scanf and printf. In competitive programming, where execution time is critical, it's common to use scanf and printf instead.
+
+3. Avoid using std::set: In this program, std::set is used for insert and erase operations. However, if you know the maximum possible size of the set in advance, you could use a std::vector and keep it sorted manually, which would be faster.
+
+4. Minimize the use of constructors and destructors: The Point and Event structs have default constructors that do nothing. This is unnecessary overhead. Instead, you can just define the struct and set the values directly.
+
+5. Use pre-increment instead of post-increment: In C++, pre-increment (++i) is generally faster than post-increment (i++). This is because post-increment involves copying the value before incrementing it, whereas pre-increment doesn't.
+
+6. Avoid unnecessary type casting: In the PlaneSweep() function, there is type casting of p.type to int which is not necessary as it is already of type char which is automatically promoted to int in arithmetic and logical expressions.
+
+Here's the optimized version of the program:
+
+```cpp
+#include <algorithm>
+#include <assert.h>
+#include <iostream>
+#include <math.h>
+#include <vector>
+using namespace std;
+typedef long long ll;
+static const double EPS = 1e-9;
+static const double PI = acos(-1.0);
+#define REP(i, n) for (int i = 0; i < n; ++i)
+#define FOR(i, s, n) for (int i = s; i < n; ++i)
+#define FOREQ(i, s, n) for (int i = s; i <= n; ++i)
+#define FORIT(it, c) for (auto it = c.begin(); it != c.end(); ++it)
+struct Point {
+  int x, y;
+  char type;
+};
+struct Event {
+  int x;
+  Point p;
+  char in;
+};
+inline int square(int x) { return x * x; }
+inline int dist2(const Point &a, const Point &b) {
+  return square(a.x - b.x) + square(a.y - b.y);
+}
+int an, bn, n;
+int r;
+Event event[500000];
+int PlaneSweep() {
+  int ans = 0;
+  vector<Point> open[2];
+  REP(iter, n) {
+    Event &e = event[iter];
+    Point &p = e.p;
+    if (e.in) {
+      auto lower = lower_bound(open[p.type ^ 1].begin(), open[p.type ^ 1].end(), Point{0, p.y - 4 * r - 1, 0});
+      auto upper = upper_bound(open[p.type ^ 1].begin(), open[p.type ^ 1].end(), Point{0, p.y + 4 * r + 1, 0});
+      for (auto it = lower; it != upper; ++it) {
+        if (dist2(*it, p) <= 16 * r * r) {
+          ans++;
+        }
+      }
+      open[p.type].push_back(p);
+      sort(open[p.type].begin(), open[p.type].end());
+    } else {
+      auto it = find(open[p.type].begin(), open[p.type].end(), p);
+      if (it != open[p.type].end()) open[p.type].erase(it);
+    }
+  }
+  return ans;
+}
+int main() {
+  while (scanf("%d %d %d", &an, &bn, &r), an | bn) {
+    n = (an + bn) * 2;
+    REP(i, an) {
+      int x, y;
+      scanf("%d %d", &x, &y);
+      event[2 * i] = {x - 2 * r, {x, y, 0}, 1};
+      event[2 * i + 1] = {x + 2 * r, {x, y, 0}, 0};
+    }
+    REP(i, bn) {
+      int x, y;
+      scanf("%d %d", &x, &y);
+      event[2 * an + 2 * i] = {x - 2 * r, {x, y, 1}, 1};
+      event[2 * an + 2 * i + 1] = {x + 2 * r, {x, y, 1}, 0};
+    }
+    sort(event, event + n);
+    int ans = PlaneSweep();
+    printf("%d\n", ans);
+  }
+}
+```

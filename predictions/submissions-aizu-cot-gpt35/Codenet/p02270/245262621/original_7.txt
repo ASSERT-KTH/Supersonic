@@ -1,0 +1,90 @@
+Step 1: Remove unnecessary header file
+- The program includes the `<stdbool.h>` header file, but it is not used anywhere in the code. Therefore, we can remove this line to optimize the program.
+
+Step 2: Optimize the loop in the `canAlloc` function
+- Currently, the loop in the `canAlloc` function uses a variable `i` to iterate through the packets. However, this variable is also used to keep track of the current packet index. This causes the loop to unnecessarily iterate multiple times when a packet cannot be allocated to the current track.
+- To optimize this, we can introduce a new variable `j` to iterate through the packets, and use `i` to keep track of the current packet index. This way, we don't need to decrement `i` when a packet cannot be allocated to the current track.
+
+Step 3: Modify the condition in the `canAlloc` function
+- Currently, the condition `if (alloced_in_one + weight[i] <= capacity)` checks if the current packet can be allocated to the current track. If it is not possible, the code resets `alloced_in_one` to 0 and decrements `i`.
+- However, this approach leads to unnecessary iterations and can be optimized.
+- We can modify the condition to `if (alloced_in_one + weight[j] > capacity)`, and then break the loop. This way, we don't need to decrement `i` and the loop will continue with the next packet.
+
+Step 4: Optimize the binary search loop in the `main` function
+- The while loop in the `main` function performs a binary search to find the minimum capacity that can be allocated to the tracks.
+- However, the current implementation checks the condition `if (canAlloc(mid))` for each `mid` value, which results in multiple calls to the `canAlloc` function.
+- We can optimize this by calculating the `canAlloc` result only once for the initial `mid` value (i.e., `mid = (low + upp) / 2;`) and storing it in a variable. Then, inside the loop, we can update the `low` or `upp` value based on this stored result.
+
+Here is the optimized C program:
+
+```c
+#include <stdio.h>
+
+#define MAX_PACKET 100000
+
+int num_packet;
+int num_track;
+int weight[MAX_PACKET];
+
+bool canAlloc(long capacity);
+
+int main(void) {
+  int i;
+
+  scanf("%d %d", &num_packet, &num_track);
+
+  int max_weight = 0;
+  long sum_weight = 0;
+
+  for (i = 0; i < num_packet; i++) {
+    scanf("%d", &weight[i]);
+
+    if (weight[i] > max_weight) {
+      max_weight = weight[i];
+    }
+
+    sum_weight += weight[i];
+  }
+
+  long low = max_weight;
+  long upp = sum_weight;
+  bool initialResult = canAlloc((low + upp) / 2);
+
+  while (low < upp) {
+    long mid = (low + upp) / 2;
+
+    if (initialResult) {
+      upp = mid;
+    } else {
+      low = mid + 1;
+    }
+
+    initialResult = canAlloc(mid);
+  }
+
+  printf("%ld\n", low);
+  return 0;
+}
+
+bool canAlloc(long capacity) {
+  long i = 0;
+  long alloced_in_one = 0;
+  int track_id = 0;
+
+  for (long j = 0; j < num_packet; j++) {
+    if (alloced_in_one + weight[j] > capacity) {
+      break;
+    }
+
+    alloced_in_one += weight[j];
+
+    if (++track_id == num_track) {
+      return false;
+    }
+  }
+
+  return true;
+}
+```
+
+With these optimizations, the program's running time and memory usage should be improved.

@@ -1,0 +1,167 @@
+The given C/C++ program seems to be an implementation of the Max-Flow problem using Splay Trees and Dinic's algorithm. The code seems to be already optimized to a good extent. But there are a few things that can be optimized.
+
+1. Reducing the scope of variable declarations: If you declare a variable in the smallest possible scope, it will help to release the memory for that variable when it is not needed.
+
+2. Reduce overhead by removing unnecessary push() and update() function calls: The push() and update() functions are called multiple times in splay() function even if the node is root. We can move the push() and update() calls to else block where rotations are performed.
+
+3. Using C++ STL queue::emplace() instead of queue::push() when adding elements to the queue: The emplace() function extends the container by inserting a new element, this new element is constructed in place using the given args as the arguments for its constructor. This can potentially optimize the code by eliminating the extra copy of the objects.
+
+4. Using C++ STL vector::emplace_back() instead of vector::push_back() when adding elements to the vector: Similar to the point above, emplace_back() constructs and inserts the element in place, eliminating the need for a temporary object.
+
+Here is the optimized version of your code:
+
+```cpp
+#include <bits/stdc++.h>
+#define INF (1 << 29)
+#define max_n 10000
+using namespace std;
+struct edge {
+  int to, cap, rev;
+};
+struct node_t {
+  node_t *pp, *lp, *rp;
+  int id, val, mini, minId, lazy;
+  edge *e;
+  node_t(int id, int v) : id(id), val(v) {
+    pp = lp = rp = NULL;
+    lazy = 0;
+    update();
+  }
+  inline void update() {
+    mini = val, minId = id;
+    if (lp && mini > lp->mini)
+      mini = lp->mini, minId = lp->minId;
+    if (rp && mini > rp->mini)
+      mini = rp->mini, minId = rp->minId;
+  }
+  inline void apply(int v) { lazy += v, val += v, mini += v; }
+  inline void push() {
+    if (lp)
+      lp->apply(lazy);
+    if (rp)
+      rp->apply(lazy);
+    lazy = 0;
+  }
+  bool is_root() { return !pp || (pp->lp != this && pp->rp != this); }
+  void rotr() {
+    node_t *q = pp, *r = q->pp;
+    q->push(), push();
+    if ((q->lp = rp))
+      rp->pp = q;
+    rp = q;
+    q->pp = this;
+    if ((pp = r)) {
+      if (r->lp == q)
+        r->lp = this;
+      if (r->rp == q)
+        r->rp = this;
+    }
+    q->update();
+  }
+  void rotl() {
+    node_t *q = pp, *r = q->pp;
+    q->push(), push();
+    if ((q->rp = lp))
+      lp->pp = q;
+    lp = q;
+    q->pp = this;
+    if ((pp = r)) {
+      if (r->lp == q)
+        r->lp = this;
+      if (r->rp == q)
+        r->rp = this;
+    }
+    q->update();
+  }
+  void splay() {
+    if (is_root()) {
+      push();
+      update();
+    } else {
+      node_t *q = pp;
+      if (q->is_root()) {
+        if (q->lp == this)
+          rotr();
+        else
+          rotl();
+      } else {
+        node_t *r = q->pp;
+        if (r->lp == q) {
+          if (q->lp == this) {
+            q->rotr();
+            rotr();
+          } else {
+            rotl();
+            rotr();
+          }
+        } else {
+          if (q->rp == this) {
+            q->rotl();
+            rotl();
+          } else {
+            rotr();
+            rotl();
+          }
+        }
+      }
+      push();
+      update();
+    }
+  }
+  // ...
+  // Rest of the code remains the same
+  // ...
+  int max_flow(int S, int T) {
+    int flow = 0;
+    while (bfs(S, T)) {
+      fill(ptr, ptr + max_n, 0);
+      for (int i = 0; i < n; i++)
+        nodes[i] = new node_t(i, INF);
+      node_t *s = nodes[S], *t = nodes[T];
+      while (true) {
+        node_t *v = find_root(s);
+        if (v == t) {
+          // ...
+          // Rest of the code remains the same
+          // ...
+          while (true) {
+            expose(v = nodes[minId(s)]);
+            if (v->val > 0)
+              break;
+            g[v->e->to][v->e->rev].cap += v->e->cap;
+            v->e->cap = 0;
+            cut(v);
+          }
+          continue;
+        }
+        if (ptr[v->id] < g[v->id].size()) {
+          edge &e = g[v->id][ptr[v->id]++];
+          if (dist[e.to] == dist[v->id] + 1 && e.cap > 0) {
+            link(v, nodes[e.to], e.cap, &e);
+            lists[e.to].emplace_back(v->id);
+          }
+        } else {
+          if (v == s)
+            break;
+          for (auto &i : lists[v->id]) {
+            if (!pour(v->id, i))
+              cut(nodes[i]);
+          }
+          lists[v->id].clear();
+        }
+      }
+    }
+    return flow;
+  }
+  int main(void) {
+    ios::sync_with_stdio(false);
+    int e, a, b, c;
+    cin >> n >> e;
+    for (int i = 0; i < e; i++) {
+      cin >> a >> b >> c;
+      add_edge(a, b, c);
+    }
+    cout << max_flow(0, n - 1) << "\n";
+    return 0;
+  }
+```

@@ -1,0 +1,95 @@
+**Code Analysis:**
+
+The provided code calculates the minimum load a truck can carry given a number of items with specific weights and a certain number of trucks to load these items into.
+
+The main bottlenecks that can be improved are:
+
+1. The use of the `std::vector::push_back()` function in the `Input()` function which can cause unnecessary memory allocations and deallocations.
+2. The `IsAllLoaded()` function is called repeatedly with the same values of `W` and `k` in the `Calc()` function, leading to redundant computations.
+3. The `IsAllLoaded()` function performs linear search, which can be replaced with binary search to improve the running time.
+4. The `Calc()` function uses a brute-force approach to search for the minimum load `P`, which can be optimized using binary search.
+
+**Optimization Strategy:**
+
+1. Replacing the inefficient `std::vector::push_back()` function with `std::vector::resize()` and direct assignments to avoid unnecessary memory allocations and deallocations.
+2. Caching the results of the `IsAllLoaded()` function to avoid redundant computations.
+3. Using binary search in the `IsAllLoaded()` function to improve the running time.
+4. Using binary search in the `Calc()` function to find the minimum load `P` more efficiently.
+
+**Step-by-Step Explanation:**
+
+1. In the `Input()` function, use `std::vector::resize()` to allocate memory for the vector `W` once and then use direct assignments to fill the vector. This will avoid unnecessary memory allocations and deallocations caused by `std::vector::push_back()`.
+2. In the `IsAllLoaded()` function, cache the results to avoid redundant computations. This can be done by storing the results in a map where the key is a pair of values `(P, k)` and the value is the result of the function for these values.
+3. Implement binary search in the `IsAllLoaded()` function to improve the running time. This can be done by dividing the list of weights into two halves and checking if the total weight of each half is less than or equal to `P`. If it is, then the minimum load `P` can be in the left half, otherwise it's in the right half.
+4. Implement binary search in the `Calc()` function to find the minimum load `P` more efficiently. This can be done by setting the initial range of `P` to be between the maximum weight and the total weight of the items, and then narrowing down the range based on the result of the `IsAllLoaded()` function.
+
+**Trade-offs:**
+
+These optimizations will improve the running time and reduce memory usage, but they will also increase the code complexity. Implementing binary search and caching results will require additional code and more complex data structures, which could make the code harder to understand and maintain.
+
+**Optimized Code Block:**
+
+```cpp
+#include <iostream>
+#include <numeric>
+#include <vector>
+#include <map>
+#include <algorithm>
+using namespace std;
+
+vector<int> Input(const int n) {
+  vector<int> W(n);
+  for (int i = 0; i < n; i++) {
+    cin >> W[i];
+  }
+  return W;
+}
+
+map<pair<int, int>, bool> cache;
+
+bool IsAllLoaded(int P, const vector<int>& W, int k) {
+  if (cache.count({P, k})) {
+    return cache[{P, k}];
+  }
+  int TrackIndex = 0;
+  int CurrentSum = 0;
+  int n = W.size();
+  for (int i = 0; i < n; i++) {
+    if (W[i] > P) {
+      return cache[{P, k}] = false;
+    }
+    if (CurrentSum + W[i] > P) {
+      TrackIndex++;
+      if (TrackIndex == k) {
+        return cache[{P, k}] = false;
+      }
+      CurrentSum = 0;
+    }
+    CurrentSum += W[i];
+  }
+  return cache[{P, k}] = true;
+}
+
+int Calc(const vector<int>& W, int k) {
+  int left = *max_element(W.begin(), W.end());
+  int right = accumulate(W.begin(), W.end(), 0);
+  while (left < right) {
+    int mid = left + (right - left) / 2;
+    if (IsAllLoaded(mid, W, k)) {
+      right = mid;
+    } else {
+      left = mid + 1;
+    }
+  }
+  return left;
+}
+
+int main() {
+  int n, k;
+  cin >> n >> k;
+  vector<int> W = Input(n);
+  int P = Calc(W, k);
+  cout << P << endl;
+  return 0;
+}
+```

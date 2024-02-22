@@ -1,0 +1,156 @@
+The given program is already quite optimized in terms of memory usage. However, there are a few optimizations that can be made to improve the running time:
+
+1. Remove unnecessary bitwise operations: In the `push` function, the condition `lazy[id] == 0` can be simplified to `!lazy[id]`, as `lazy[id]` is an integer and will evaluate to false if it is zero.
+
+2. Avoid redundant calculations: In the `update` function, the calculation `ir = id + 2 * (mid - l)` can be simplified to `ir = il + (mid - l)`, as `ir` is always one more than `il`.
+
+3. Avoid redundant bitwise operations: In the `update` function, the bitwise OR operations `sand[id] |= v` and `sor[id] |= v` can be removed, as the subsequent `upd` function already performs these operations.
+
+4. Avoid unnecessary function calls: In the `update` function, the `upd` function can be called directly instead of using the `update` function recursively, as the same parameters are being passed.
+
+5. Avoid unnecessary calculations: In the `get` function, the condition `x >= r || l >= y` can be simplified to `x >= r`, as `l` is always equal to `x` in this case.
+
+Here is the optimized program:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+struct SegTree {
+  vector<int> sand, sor, lazy;
+  int n;
+
+  SegTree(int n_) {
+    n = n_;
+    sand.assign(n * 2, 0);
+    sor.assign(n * 2, 0);
+    lazy.assign(n * 2, 0);
+  }
+
+  void upd(int id, int v) {
+    sand[id] |= v;
+    sor[id] |= v;
+    lazy[id] |= v;
+  }
+
+  void push(int id, int il, int ir) {
+    if (!lazy[id])
+      return;
+    upd(il, lazy[id]);
+    upd(ir, lazy[id]);
+    lazy[id] = 0;
+  }
+
+  void update(int x, int y, int v, int id, int l, int r) {
+    if (x <= l && r <= y) {
+      upd(id, v);
+      return;
+    }
+    if (x >= r)
+      return;
+    int mid = (l + r) >> 1, il = id + 1, ir = il + (mid - l);
+    push(id, il, ir);
+    if (y > mid)
+      update(x, y, v, ir, mid, r);
+    if (x < mid)
+      update(x, y, v, il, l, mid);
+    sand[id] = sand[il] & sand[ir];
+    sor[id] = sor[il] | sor[ir];
+  }
+
+  void update(int x, int y, int v) { 
+    update(x, y, v, 0, 0, n);
+  }
+
+  pair<int, int> get(int x, int y, int id, int l, int r) {
+    if (x >= r)
+      return {(1 << 16) - 1, 0};
+    if (x <= l && r <= y) {
+      return {sand[id], sor[id]};
+    }
+    int mid = (l + r) >> 1, il = id + 1, ir = il + (mid - l);
+    push(id, il, ir);
+    auto retl = get(x, y, il, l, mid);
+    auto retr = get(x, y, ir, mid, r);
+    return {retl.first & retr.first, retl.second | retr.second};
+  }
+
+  pair<int, int> get(int x, int y) { 
+    return get(x, y, 0, 0, n); 
+  }
+
+  void print(int id, int l, int r) {
+    if (r - l < 2) {
+      printf("%d\n", sand[id]);
+      return;
+    }
+    int mid = (l + r) >> 1, il = id + 1, ir = il + (mid - l);
+    push(id, il, ir);
+    print(il, l, mid);
+    print(ir, mid, r);
+  }
+
+  void print() { 
+    print(0, 0, n); 
+  }
+};
+
+int main() {
+  int k, q;
+  scanf("%d %d", &k, &q);
+  int n = 1 << k, mask = (1 << k) - 1;
+  SegTree low(n), hig(n);
+  vector<tuple<long long, long long, int>> cons;
+  for (int i = 0; i < q; ++i) {
+    long long l, r;
+    int v;
+    scanf("%lld %lld %d", &l, &r, &v);
+    int la = l & mask, lb = (l >> k) & mask;
+    int ra = r & mask, rb = (r >> k) & mask;
+    if (lb + 1 < rb) {
+      low.update(0, n, v);
+    } else if (lb < rb) {
+      low.update(la, n, v);
+      low.update(0, ra + 1, v);
+    } else {
+      low.update(la, ra + 1, v);
+    }
+    hig.update(lb, rb + 1, v);
+    cons.emplace_back(l, r, v);
+  }
+  auto cek = [&](int la, int ra, int lb, int rb, int v) {
+    bool ok = true;
+    auto resh = hig.get(lb, rb + 1);
+    auto resl = low.get(la, ra + 1);
+    ok &= (resl.second & resh.second) == v;
+    return ok;
+  };
+  bool ok = true;
+  for (auto &c : cons) {
+    long long l, r;
+    int v;
+    tie(l, r, v) = c;
+    int la = l & mask, lb = (l >> k) & mask;
+    int ra = r & mask, rb = (r >> k) & mask;
+    if (lb == rb) {
+      ok &= cek(la, ra, lb, rb, v);
+    } else {
+      ok &= cek(la, n - 1, lb, lb, v);
+      ok &= cek(0, ra, rb, rb, v);
+      if (lb + 1 < rb) {
+        ok &= cek(0, n - 1, lb + 1, rb - 1, v);
+      }
+    }
+    if (!ok)
+      break;
+  }
+  if (!ok) {
+    puts("impossible");
+    return 0;
+  }
+  puts("possible");
+  low.print();
+  hig.print();
+  return 0;
+}
+```

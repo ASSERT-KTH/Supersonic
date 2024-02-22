@@ -1,0 +1,99 @@
+The given C/C++ program can be optimized by reducing redundant computations and unnecessary memory usage. Here are some steps to optimize the program:
+
+1. Instead of using "rep(i, n)" which is a macro for a for loop, use the actual for loop. It is more understandable and less error-prone.
+2. Use "ios_base::sync_with_stdio(false)" to decouple C++'s standard streams with their C counterparts. This can provide a significant speedup.
+3. Avoid using the "std::endl" because it causes a flush operation which can slow down the program. Use "\n" instead.
+4. Use array instead of vector where fixed size is known. This can reduce memory usage.
+5. Use "reserve" function for vector when the actual size is known. This can help in reducing reallocation of memory.
+6. Use "emplace_back" instead of "push_back" for vector. This avoids creating a temporary object and thus saves time.
+7. Use "auto" to avoid writing long data types.
+8. Avoid using "std::bits/stdc++.h" as it includes all of the standard libraries which increases compile time. Include only necessary libraries.
+
+Here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <complex>
+#include <algorithm>
+#include <iomanip>
+#include <cmath>
+#define fs first
+#define sc second
+using namespace std;
+typedef double D;
+typedef pair<D, D> pdd;
+typedef vector<D> vd;
+const D EPS = 1e-8;
+const D PI = acos(-1);
+
+inline void modify(D &seta) {
+  if (seta > PI)
+    seta -= 2 * PI;
+  if (seta < -PI)
+    seta += 2 * PI;
+}
+inline bool in_upper(const D &seta) { return (EPS < seta && seta < PI - EPS); }
+inline bool comp(const pdd &a, const pdd &b) {
+  return abs(a.fs - b.fs) < EPS ? a.sc + EPS < b.sc : a.fs < b.fs;
+}
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(0);
+  int n, k;
+  cin >> n >> k;
+  pdd p[n];
+  vector<pdd> v;
+  v.reserve(n);
+  int max_r[n], max_l[n];
+  for(int i = 0; i < n; i++) {
+    D x, y, r;
+    cin >> x >> y >> r;
+    complex<D> c(x, y);
+    D d = abs(c), s = arg(c), a = sqrt(d * d - r * r);
+    D ds = acos((d * d + a * a - r * r) / (2 * d * a));
+    D start = s - ds, end = s + ds;
+    modify(start);
+    modify(end);
+    pdd tmp = pdd(in_upper(start) ? start : 0, in_upper(end) ? end : PI);
+    if (tmp.fs < EPS && PI - EPS < tmp.sc)
+      continue;
+    v.emplace_back(tmp);
+  }
+  sort(v.begin(), v.end(), comp);
+  for(int i = 0; i < v.size(); i++) {
+    for(int j = 0; j < v.size(); j++) {
+      if (i == j)
+        continue;
+      if (v[j].fs - EPS < v[i].fs && v[i].sc < v[j].sc + EPS) {
+        v.erase(v.begin() + i);
+        i--;
+        break;
+      }
+    }
+  }
+  int m = v.size();
+  for(int i = 0; i < m; i++) {
+    pdd dummy(v[i].sc, 0);
+    max_l[i] = upper_bound(v.begin(), v.end(), dummy, comp) - v.begin();
+    max_r[i] = max_l[i] - 1;
+  }
+  vector<vd> dp1(m + 1, vd(k + 1, 0)), dp2 = dp1;
+  for(int i = 0; i < m; i++) {
+    for(int j = 0; j < k + 1; j++) {
+      dp1[i + 1][j] = max(dp1[i + 1][j], dp1[i][j]);
+      if (j + 1 <= k) {
+        D use = max(dp1[i][j], dp2[i][j]);
+        dp1[max_l[i]][j + 1] = max(dp1[max_l[i]][j + 1], use + v[i].sc - v[i].fs);
+        if (max_r[i] != i) {
+          dp2[max_r[i]][j + 1] =
+              max(dp2[max_r[i]][j + 1], use + v[max_r[i]].fs - v[i].fs);
+        }
+      }
+    }
+  }
+  D ans = 0;
+  for(int i = 0; i < k + 1; i++) ans = max(ans, dp1[m][i]);
+  cout << fixed << setprecision(10) << ans / PI << "\n";
+}
+```

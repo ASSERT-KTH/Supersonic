@@ -1,0 +1,114 @@
+This is a complex C++ program that uses a segment tree to solve the problem. There are a few areas where we can optimize this code to reduce running time and memory usage:
+
+1. Avoid excessive calls to `std::vector::push_back()`: Each call to `std::vector::push_back()` might lead to a dynamic array resizing which takes significant time. To avoid this, if we know the number of elements that will be added to the vector in advance, we can use `std::vector::reserve()` to allocate enough memory at once.
+
+2. Avoid unnecessary array accesses: In the `dfs()` function, the `slow` array is accessed multiple times unnecessarily. This can be optimized by using a local variable to store the value of `slow[node]` and then using this local variable.
+
+3. Avoid unnecessary function calls: The functions `del()`, `add()`, and `check()` are called inside the loop in the `solve()` function. By replacing these function calls with their actual implementation, we can save the overhead of function calls.
+
+4. Remove unnecessary code: In the `dfs()` function, there is a line `slow[node] += 0;`. This line does not have any effect on the program and can be removed.
+
+Here is the optimized code with the above modifications:
+
+```cpp
+#include <bits/stdc++.h>
+#define ff first
+#define ss second
+#define pb push_back
+#define ld long double
+#define f(i, x, n) for (int i = x; i < n; i++)
+using namespace std;
+const int mod = 1e9 + 7;
+int sgtree[8000000];
+int slow[8000000];
+int n, m;
+vector<array<int, 3>> ve;
+
+void solve() {
+  cin >> n >> m;
+  if (m == 2) {
+    cout << "0\n";
+    return;
+  }
+  ve.reserve(n);
+  f(i, 0, n) {
+    int l, r, w;
+    cin >> l >> r >> w;
+    if (l == 1 && r == m) {
+      cout << "0\n";
+      return;
+    }
+    ve.push_back({w, l, r - 1});
+  }
+  sort(ve.begin(), ve.end());
+  int i = 0, j = -1, ans = 1000000;
+  while (j < ((int)ve.size() - 1)) {
+    if (sgtree[1] + slow[1] > 0) {
+      int value = -1;
+      int l = 1, r = m - 1, node = 1;
+      int st = ve[i][1], en = ve[i][2];
+      int slow_node = slow[node];
+      sgtree[node] += slow_node;
+      slow[2 * node] += slow_node;
+      slow[2 * node + 1] += slow_node;
+      slow[node] = 0;
+      if (!(r < st || l > en)) {
+        int mid = (l + r) / 2;
+        slow_node = slow[2 * node] += value;
+        sgtree[2 * node] += slow_node;
+        slow[2 * node + 1] += slow_node;
+        sgtree[node] = min(sgtree[2 * node] + slow[2 * node],
+                           sgtree[2 * node + 1] + slow[2 * node + 1]);
+      }
+      ans = min(ans, ve[j][0] - ve[i][0]);
+      i++;
+    } else {
+      j++;
+      int value = 1;
+      int l = 1, r = m - 1, node = 1;
+      int st = ve[j][1], en = ve[j][2];
+      int slow_node = slow[node];
+      sgtree[node] += slow_node;
+      slow[2 * node] += slow_node;
+      slow[2 * node + 1] += slow_node;
+      slow[node] = 0;
+      if (!(r < st || l > en)) {
+        int mid = (l + r) / 2;
+        slow_node = slow[2 * node] += value;
+        sgtree[2 * node] += slow_node;
+        slow[2 * node + 1] += slow_node;
+        sgtree[node] = min(sgtree[2 * node] + slow[2 * node],
+                           sgtree[2 * node + 1] + slow[2 * node + 1]);
+      }
+    }
+  }
+  while (sgtree[1] + slow[1] > 0) {
+    int value = -1;
+    int l = 1, r = m - 1, node = 1;
+    int st = ve[i][1], en = ve[i][2];
+    int slow_node = slow[node];
+    sgtree[node] += slow_node;
+    slow[2 * node] += slow_node;
+    slow[2 * node + 1] += slow_node;
+    slow[node] = 0;
+    if (!(r < st || l > en)) {
+      int mid = (l + r) / 2;
+      slow_node = slow[2 * node] += value;
+      sgtree[2 * node] += slow_node;
+      slow[2 * node + 1] += slow_node;
+      sgtree[node] = min(sgtree[2 * node] + slow[2 * node],
+                         sgtree[2 * node + 1] + slow[2 * node + 1]);
+    }
+    ans = min(ans, ve[j][0] - ve[i][0]);
+    i++;
+  }
+  cout << ans << '\n';
+}
+int32_t main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  int t = 1;
+  f(tc, 1, t + 1) { solve(); }
+  return 0;
+}
+```

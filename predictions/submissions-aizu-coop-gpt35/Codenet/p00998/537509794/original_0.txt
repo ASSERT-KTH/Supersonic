@@ -1,0 +1,286 @@
+The given code implements an AVL tree data structure and performs various operations on it. The avl_tree class template uses the RMQ struct to define the type and operations for the AVL tree.
+
+Upon analyzing the code, the following potential areas of optimization can be identified:
+
+1. Unnecessary Header Inclusion: The code includes the `<bits/stdc++.h>` header, which is not recommended and can slow down the compilation process. It is better to include only the necessary headers.
+
+2. Redundant Function Calls: The update() function is called multiple times during tree operations. We can optimize this by updating the node's depth, size, and all values within the rotate() and fix() functions, instead of calling update() separately.
+
+3. Redundant Function Parameters: The find() function is called with two parameters (l and r) even when we only need to find a single element. We can overload the function to have a single parameter version for finding a single element, which will eliminate unnecessary checks.
+
+4. Avoiding Recursion: The insert() and erase() functions use recursion, which can be expensive in terms of memory usage and function call overhead. We can optimize these functions by converting them to iterative versions.
+
+5. Efficient Memory Usage: The AVL tree node structure currently uses two pointers for left and right children. We can optimize the memory usage by using a single pointer and a bitmask to store the child information.
+
+6. Compiler Optimizations: We can utilize compiler optimizations and pragma directives to hint the compiler to optimize certain parts of the code.
+
+Now, let's optimize the code step by step:
+
+Step 1: Remove unnecessary header inclusion and include only the necessary headers.
+
+```cpp
+#include <iostream>
+#include <limits>
+```
+
+Step 2: Replace the update() function calls in rotate() and fix() functions with the respective code.
+
+```cpp
+node *rotate(node *t, int b) {
+    node *s = t->ch[1 - b];
+    t->ch[1 - b] = s->ch[b];
+    s->ch[b] = t;
+
+    // Update t
+    t->dep = max(depth(t->ch[0]), depth(t->ch[1])) + 1;
+    t->size = count(t->ch[0]) + 1 + count(t->ch[1]);
+    t->all = M::op(que(t->ch[0]), M::op(t->val, que(t->ch[1])));
+
+    // Update s
+    s->dep = max(depth(s->ch[0]), depth(s->ch[1])) + 1;
+    s->size = count(s->ch[0]) + 1 + count(s->ch[1]);
+    s->all = M::op(que(s->ch[0]), M::op(s->val, que(s->ch[1])));
+
+    return s;
+}
+
+node *fix(node *t) {
+    if (!t)
+        return t;
+    if (depth(t->ch[0]) - depth(t->ch[1]) == 2) {
+        if (depth(t->ch[0]->ch[1]) > depth(t->ch[0]->ch[0])) {
+            t->ch[0] = rotate(t->ch[0], 0);
+        }
+        t = rotate(t, 1);
+    } else if (depth(t->ch[0]) - depth(t->ch[1]) == -2) {
+        if (depth(t->ch[1]->ch[0]) > depth(t->ch[1]->ch[1])) {
+            t->ch[1] = rotate(t->ch[1], 1);
+        }
+        t = rotate(t, 0);
+    }
+    return t;
+}
+```
+
+Step 3: Overload the find() function to have a single parameter version for finding a single element.
+
+```cpp
+node *find(node *t, int k) const {
+    if (!t)
+        return t;
+    int c = count(t->ch[0]);
+    return k < c ? find(t->ch[0], k) : k == c ? t : find(t->ch[1], k - (c + 1));
+}
+
+T find(int k) const { return find(root, k)->val; }
+```
+
+Step 4: Optimize the insert() and erase() functions by converting them to iterative versions.
+
+```cpp
+node *insert(node *t, int k, T v) {
+    if (!t)
+        return new node(v);
+
+    node *cur = t;
+    node *prev = nullptr;
+    int c = count(cur->ch[0]);
+
+    while (cur) {
+        prev = cur;
+        if (k <= c) {
+            cur = cur->ch[0];
+            c = count(cur->ch[0]);
+        } else {
+            k -= (c + 1);
+            cur = cur->ch[1];
+            c = count(cur->ch[0]);
+        }
+    }
+
+    node *newNode = new node(v);
+    if (k <= c)
+        prev->ch[0] = newNode;
+    else
+        prev->ch[1] = newNode;
+
+    return fix(update(t));
+}
+
+node *erase(node *t, int k) {
+    if (!t)
+        return t;
+
+    node *cur = t;
+    node *prev = nullptr;
+    int c = count(cur->ch[0]);
+
+    while (cur) {
+        prev = cur;
+        if (k < c) {
+            cur = cur->ch[0];
+            c = count(cur->ch[0]);
+        } else if (k > c) {
+            k -= (c + 1);
+            cur = cur->ch[1];
+            c = count(cur->ch[0]);
+        } else {
+            break;
+        }
+    }
+
+    if (!cur)
+        return t;
+
+    node *left = cur->ch[0];
+    node *right = cur->ch[1];
+
+    if (!left && !right)
+        return nullptr;
+    if (!left || !right)
+        return (left == nullptr) ? right : left;
+
+    node *minNode = find(right, 0);
+    T minVal = minNode->val;
+    t = erase(t, minVal);
+    cur->val = minVal;
+
+    return fix(update(t));
+}
+```
+
+Step 5: Optimize memory usage by using a single pointer and a bitmask to store the child information.
+
+```cpp
+struct node {
+    T val, all;
+    node *ch;
+    int dep, size;
+    unsigned char childMask;
+    node(T v, node *l = nullptr, node *r = nullptr)
+        : val(v), all(v), ch(nullptr), dep(1), size(1), childMask(0) {
+        if (l) {
+            ch = l;
+            childMask |= 1 << 0;
+        }
+        if (r) {
+            if (ch)
+                childMask |= 1 << 1;
+            else
+                childMask |= 1 << 0;
+            ch = r;
+        }
+    }
+};
+```
+
+Step 6: Utilize compiler optimizations by enabling compiler optimizations and using pragma directives to hint the compiler.
+
+```cpp
+#pragma GCC optimize("Ofast")
+#pragma GCC target("avx,avx2,fma")
+
+...
+
+int main() {
+    ios::sync_with_stdio(false), cin.tie(0);
+    int n, q;
+    cin >> n >> q;
+    avl_tree<RMQ> tree;
+    for (int i = 0; i < n; i++) {
+        int a;
+        cin >> a;
+        tree.insert(i, a);
+    }
+    while (q--) {
+        int x, y, z;
+        cin >> x >> y >> z;
+        if (x == 0) {
+            int val = tree.find(z);
+            tree.erase(z);
+            tree.insert(y, val);
+        } else if (x == 1) {
+            printf("%d\n", tree.find(y, z + 1));
+        } else {
+            tree.erase(y);
+            tree.insert(y, z);
+        }
+    }
+    return 0;
+}
+```
+
+Here's the complete optimized code:
+
+```cpp
+#include <iostream>
+#include <limits>
+#pragma GCC optimize("Ofast")
+#pragma GCC target("avx,avx2,fma")
+
+struct RMQ {
+    using type = int;
+    static type id() { return std::numeric_limits<int>::max(); }
+    static type op(type l, type r) { return std::min(l, r); }
+};
+
+template <typename M>
+class avl_tree {
+    using T = typename M::type;
+    struct node {
+        T val, all;
+        node *ch;
+        int dep, size;
+        unsigned char childMask;
+        node(T v, node *l = nullptr, node *r = nullptr)
+            : val(v), all(v), ch(nullptr), dep(1), size(1), childMask(0) {
+            if (l) {
+                ch = l;
+                childMask |= 1 << 0;
+            }
+            if (r) {
+                if (ch)
+                    childMask |= 1 << 1;
+                else
+                    childMask |= 1 << 0;
+                ch = r;
+            }
+        }
+    };
+
+    int depth(node *t) const { return t ? t->dep : 0; }
+    int count(node *t) const { return t ? t->size : 0; }
+    T que(node *t) const { return t ? t->all : M::id(); }
+
+    node *update(node *t) {
+        t->dep = std::max(depth(t->ch), depth(t->ch + 1)) + 1;
+        t->size = count(t->ch) + 1 + count(t->ch + 1);
+        t->all = M::op(que(t->ch), M::op(t->val, que(t->ch + 1)));
+        return t;
+    }
+
+    node *rotate(node *t, int b) {
+        node *s = t->ch + 1 - b;
+        t->ch[1 - b] = s->ch[b];
+        s->ch[b] = t;
+
+        t->dep = std::max(depth(t->ch), depth(t->ch + 1)) + 1;
+        t->size = count(t->ch) + 1 + count(t->ch + 1);
+        t->all = M::op(que(t->ch), M::op(t->val, que(t->ch + 1)));
+
+        s->dep = std::max(depth(s->ch), depth(s->ch + 1)) + 1;
+        s->size = count(s->ch) + 1 + count(s->ch + 1);
+        s->all = M::op(que(s->ch), M::op(s->val, que(s->ch + 1)));
+
+        return s;
+    }
+
+    node *fix(node *t) {
+        if (!t)
+            return t;
+
+        if (depth(t->ch) - depth(t->ch + 1) == 2) {
+            if (depth((t->ch)->ch + 1) > depth((t->ch)->ch)) {
+                t->ch = rotate(t->ch, 0);
+            }
+            t =

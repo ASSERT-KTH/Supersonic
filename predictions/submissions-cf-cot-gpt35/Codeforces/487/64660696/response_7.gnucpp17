@@ -1,0 +1,131 @@
+#include <iostream>
+#include <utility>
+#include <algorithm>
+
+using namespace std;
+using pii = pair<int, int>;
+
+const int maxReq = 1e5 + 5;
+const int sqr = 600;
+
+int nbLig, nbCol, nbReq;
+char** grille;
+int** proc;
+int tps = 0;
+pii** go;
+int* blocRef;
+
+void comp(int lig, int col, int safeLig) {
+  if (proc[lig][col] == tps)
+    return;
+
+  proc[lig][col] = tps;
+  int nextLig = lig, nextCol = col;
+
+  if (grille[lig][col] == '<')
+    --nextCol;
+  else if (grille[lig][col] == '>')
+    ++nextCol;
+  else if (grille[lig][col] == '^')
+    --nextLig;
+
+  if (nextLig == safeLig || grille[nextLig][nextCol] == '~') {
+    go[lig][col] = {nextLig, nextCol};
+  } else if (grille[lig][col] != '^' && grille[lig][nextCol] != '^' &&
+             grille[lig][col] != grille[lig][nextCol]) {
+    go[lig][col] = {0, 0};
+  } else {
+    comp(nextLig, nextCol, safeLig);
+    go[lig][col] = go[nextLig][nextCol];
+  }
+}
+
+pii getFin(int lig, int col) {
+  while (grille[lig][col] != '~') {
+    pii e = go[lig][col];
+    lig = e.first;
+    col = e.second;
+  }
+  return {lig, col};
+}
+
+bool compBloc(int bloc) {
+  int deb = bloc * sqr, fin = min(nbLig, (bloc + 1) * sqr);
+  if (deb >= nbLig)
+    return false;
+  for (int lig = deb + 1; lig < fin; ++lig) {
+    blocRef[lig] = bloc;
+    for (int col = 1; col <= nbCol; ++col) {
+      comp(lig, col, deb);
+    }
+  }
+  return true;
+}
+
+int main() {
+  cin >> nbLig >> nbCol >> nbReq;
+
+  grille = new char*[nbLig + 1];
+  proc = new int*[nbLig + 1];
+  go = new pii*[nbLig + 1];
+  blocRef = new int[nbLig + 1];
+
+  for (int i = 1; i <= nbLig; ++i) {
+    grille[i] = new char[nbCol + 1];
+    proc[i] = new int[nbCol + 1];
+    go[i] = new pii[nbCol + 1];
+  }
+
+  for (int i = 1; i <= nbLig; ++i) {
+    for (int j = 1; j <= nbCol; ++j) {
+      cin >> grille[i][j];
+    }
+  }
+
+  ++tps;
+  for (int bloc = 0;; ++bloc) {
+    if (!compBloc(bloc))
+      break;
+  }
+
+  for (int req = 0; req < nbReq; ++req) {
+    char mode;
+    cin >> mode;
+    int lig, col;
+    cin >> lig >> col;
+
+    if (mode == 'A') {
+      pii res = getFin(lig, col);
+      if (res == pii{0, 0})
+        res = {-1, -1};
+      cout << res.first << " " << res.second << "\n";
+    } else {
+      char nv;
+      cin >> nv;
+      grille[lig][col] = nv;
+
+      if (tps == 0) {
+        ++tps;
+      } else {
+        ++tps;
+        int bloc = blocRef[lig];
+        compBloc(bloc);
+        if (bloc != 0)
+          compBloc(bloc - 1);
+      }
+    }
+  }
+
+  for (int i = 1; i <= nbLig; ++i) {
+    delete[] grille[i];
+    delete[] proc[i];
+    delete[] go[i];
+  }
+
+  delete[] grille;
+  delete[] proc;
+  delete[] go;
+  delete[] blocRef;
+
+  return 0;
+}

@@ -1,0 +1,198 @@
+Code Analysis:
+
+1. The code defines a lot of global variables, including arrays and vectors, which can lead to inefficient memory usage.
+2. The code uses a lot of nested loops and conditional statements, which can result in performance bottlenecks.
+3. The code uses recursion to calculate the power of a number, which can be optimized using an iterative approach.
+4. The code uses a brute-force approach to calculate binomial coefficients, which can be optimized using a precomputed table.
+5. The code uses a lot of unnecessary memset calls to initialize arrays, which can be avoided.
+
+Optimization Strategy:
+
+1. Replace the global variables with local variables to avoid unnecessary memory usage.
+2. Optimize the power calculation function by replacing the recursive approach with an iterative approach.
+3. Precompute the binomial coefficients and store them in a lookup table for faster calculations.
+4. Remove unnecessary memset calls by initializing arrays during declaration.
+5. Simplify the logic for calculating the dp table by removing unnecessary conditional statements and loops.
+
+Step-by-Step Explanation:
+
+1. Replace the global variables with local variables to avoid unnecessary memory usage:
+
+Instead of declaring global variables, declare them as local variables within the main function. This will reduce the memory footprint of the program and make it more efficient.
+
+2. Optimize the power calculation function by replacing the recursive approach with an iterative approach:
+
+The function `bpow` currently uses recursion to calculate the power of a number. This can be optimized by using an iterative approach. Replace the existing function with the following code:
+
+```cpp
+int bpow(int a, int n) {
+  int result = 1;
+  while (n > 0) {
+    if (n % 2 == 1) {
+      result = (result * a) % M;
+    }
+    a = (a * a) % M;
+    n /= 2;
+  }
+  return result;
+}
+```
+
+This iterative approach avoids the overhead of function calls and improves the performance of the power calculation.
+
+3. Precompute the binomial coefficients and store them in a lookup table for faster calculations:
+
+The function `get_cnk` currently calculates binomial coefficients using a brute-force approach. This can be optimized by precomputing the binomial coefficients and storing them in a lookup table. Replace the existing `init` function with the following code:
+
+```cpp
+void init() {
+  memset(cnk, 0, sizeof(cnk));
+  for (int n = 0; n < X; n++) {
+    cnk[n][0] = 1;
+    for (int k = 1; k <= n; k++) {
+      cnk[n][k] = (cnk[n - 1][k] + cnk[n - 1][k - 1]) % M;
+    }
+  }
+}
+```
+
+This new `init` function initializes the lookup table `cnk` with precomputed binomial coefficients. This will improve the performance of the `get_cnk` function.
+
+4. Remove unnecessary memset calls by initializing arrays during declaration:
+
+The code currently uses memset calls to initialize arrays. This can be avoided by initializing the arrays during declaration. Replace the existing array declarations with the following code:
+
+```cpp
+int dp[1 << K][X] = {0};
+int sz[1 << K] = {0};
+bool has[N] = {false};
+bool f[N] = {false};
+bool f2[N] = {false};
+```
+
+This will initialize the arrays with default values of 0 for `dp` and `sz`, and `false` for `has`, `f`, and `f2`. This avoids the need for memset calls and improves code readability.
+
+5. Simplify the logic for calculating the dp table by removing unnecessary conditional statements and loops:
+
+The code currently contains nested loops and conditional statements to calculate the dp table. This can be simplified by removing the unnecessary loops and conditional statements. Replace the existing loop for calculating the dp table with the following code:
+
+```cpp
+dp[0][0] = 1;
+sz[0] = 0;
+for (int mask = 1; mask < (1 << m); mask++) {
+  int pos = __builtin_ctz(mask);
+  int x = bad[pos].first;
+  int nmask = mask ^ (1 << pos);
+  int alone = 0, alone2 = 0;
+  unordered_set<int> lol;
+  vector<int> kek, kek2;
+  for (int i = 0; i < m; i++) {
+    if (mask & (1 << i)) {
+      if (bad[i].first != x && bad[i].second != x) {
+        nmask |= (1 << i);
+      }
+      lol.insert(bad[i].first);
+      lol.insert(bad[i].second);
+      if (bad[i].first == x && !f[bad[i].second]) {
+        f[bad[i].second] = true;
+        kek.push_back(bad[i].second);
+      }
+      if (bad[i].second == x && !f[bad[i].first]) {
+        f[bad[i].first] = true;
+        kek.push_back(bad[i].first);
+      }
+    }
+  }
+  for (int i = 0; i < m; i++) {
+    if (mask & (1 << i)) {
+      if (nmask & (1 << i)) {
+        if (!f[bad[i].first] && !f[bad[i].second])
+          nmask2 |= (1 << i);
+      }
+      if (f[bad[i].first] && bad[i].second != x && !f[bad[i].second] &&
+          !f2[bad[i].second]) {
+        f2[bad[i].second] = true;
+        kek2.push_back(bad[i].second);
+      }
+      if (f[bad[i].second] && bad[i].first != x && !f[bad[i].first] &&
+          !f2[bad[i].first]) {
+        f2[bad[i].first] = true;
+        kek2.push_back(bad[i].first);
+      }
+    }
+  }
+  for (int elem : kek) {
+    bool flag = false;
+    for (int i = 0; i < m; i++) {
+      if (nmask & (1 << i)) {
+        if (bad[i].first == elem || bad[i].second == elem) {
+          flag = true;
+          break;
+        }
+      }
+    }
+    if (!flag)
+      alone++;
+  }
+  for (auto elem : kek2) {
+    bool flag = false;
+    for (int i = 0; i < m; i++) {
+      if (nmask2 & (1 << i)) {
+        if (bad[i].first == elem || bad[i].second == elem) {
+          flag = true;
+          break;
+        }
+      }
+    }
+    if (!flag)
+      alone2++;
+  }
+  dp[mask][0] = 1;
+  sz[mask] = lol.size();
+  for (int i = 1; i < X; i++) {
+    if (i > sz[mask])
+      break;
+    for (int t = 0; t <= min(i, alone); t++) {
+      dp[mask][i] = (dp[mask][i] + dp[nmask][i - t] * get_cnk(alone, t)) % M;
+    }
+    for (int t = 0; t <= min(i - 1, alone2); t++) {
+      dp[mask][i] = (dp[mask][i] + dp[nmask2][i - t - 1] * get_cnk(alone2, t)) % M;
+    }
+  }
+  for (int elem : kek)
+    f[elem] = false;
+  for (int elem : kek2)
+    f2[elem] = false;
+}
+```
+
+This new code uses the `__builtin_ctz` function to find the position of the least significant bit in the mask. It also removes the unnecessary loops and uses boolean flags instead of integer counters to track the number of elements.
+
+Optimized Code:
+
+```cpp
+#include <bits/stdc++.h>
+#define int long long
+using namespace std;
+const int N = 3e5 + 7, K = 20, X = 42, M = 998244353;
+int cnk[X][X];
+int fact[N], defact[N];
+
+int bpow(int a, int n) {
+  int result = 1;
+  while (n > 0) {
+    if (n % 2 == 1) {
+      result = (result * a) % M;
+    }
+    a = (a * a) % M;
+    n /= 2;
+  }
+  return result;
+}
+
+void init() {
+  memset(cnk, 0, sizeof(cnk));
+  for (int n = 0; n < X; n++) {
+    cnk[n][0] = 1;
+    for (int k = 1; k <= n; k++) {
+      cnk[n][k] = (cnk[n - 1][k] + cnk[n - 1][k - 1]) % M;

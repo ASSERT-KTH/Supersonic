@@ -1,0 +1,76 @@
+This program is optimized as much as it can be in terms of algorithmic complexity. However, there are a few things we could do to make small improvements.
+
+1. Avoid using '#include <bits/stdc++.h>': This header file includes quite literally the entire standard library. It's not efficient and it's not portable. It's better to include only those libraries that you actually use.
+
+2. Use 'constexpr' for constant expressions: You can replace the '1 << 8' with a constexpr variable. It's a clearer and more efficient way to create compile-time constants.
+
+3. Avoid using global variables: Global variables can make the code harder to understand and debug, and they can lead to unintended side-effects. In this case, the variables 'S', 'p', and 'ch' could be moved inside the main function.
+
+4. Avoid magic numbers: The number -100 in the call to the 'calc' function is a magic number, which is a numeric literal that is not defined as a constant or variable and that appears directly in source code. 
+
+Here's the optimized version of your code:
+
+```cpp
+#include <iostream>
+#include <string>
+constexpr int SIZE = 1 << 8;
+
+long long getNum(int &p, const std::string &S) {
+  long long res = 0;
+  while (isdigit(S[p]))
+    res = res * 10 + S[p++] - '0';
+  return res;
+}
+
+long long get(long long &a, long long b, char c) {
+  if (c == '+')
+    a += b;
+  if (c == '-')
+    a -= b;
+  if (c == '*')
+    a *= b;
+  return a;
+}
+
+long long calc(int &p, const std::string &S, int ch[SIZE], int c);
+
+long long bnf(int &p, const std::string &S, int ch[SIZE]) {
+  long long res = calc(p, S, ch, -1);
+  while (p < S.size() && S[p] != ')')
+    get(res, calc(p, S, ch, ch[S[p++]]), S[p-1]);
+  return res;
+}
+
+long long calc(int &p, const std::string &S, int ch[SIZE], int c) {
+  long long res;
+  if (S[p] == '(')
+    p++, res = bnf(p, S, ch), p++;
+  else
+    res = getNum(p, S);
+  while (p < S.size() && S[p] != ')' && ch[S[p]] > c)
+    get(res, calc(p, S, ch, ch[S[p++]]), S[p-1]);
+  return res;
+}
+
+int main() {
+  std::string S;
+  std::cin >> S;
+
+  int p = 0;
+  int ch[SIZE] = {0};
+
+  long long res = bnf(p, S, ch);
+  constexpr int MAX_PRIORITY = 3;
+  constexpr int MIN_PRIORITY = -100;
+  for (int i = 0; i < MAX_PRIORITY; i++)
+    for (int j = 0; j < MAX_PRIORITY; j++)
+      for (int k = 0; k < MAX_PRIORITY; k++) {
+        ch['+'] = i, ch['-'] = j, ch['*'] = k;
+        p = 0;
+        res = std::max(res, calc(p, S, ch, MIN_PRIORITY));
+      }
+  std::cout << res << std::endl;
+  return 0;
+}
+```
+Please note that optimizing a program is usually a trade-off between readability and performance. It's often more important to write clear, understandable code than to squeeze out every last bit of performance.

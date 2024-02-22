@@ -1,0 +1,198 @@
+Code Analysis:
+- The code defines a struct `POINT` to represent 2D points with x and y coordinates.
+- It defines several overloaded operators for the `POINT` struct, including addition, subtraction, and negation.
+- The code also defines three inline functions `dot`, `cross`, and `cross` with three arguments, which calculate the dot product and cross product of two vectors.
+- There are two inline functions `halfPlane` and `angSortCmp` that are used for sorting the points based on their polar angle.
+- The main function reads the input, sorts the points, creates a vector of direction structures, and performs a binary search to find a valid triplet of points that satisfy a given condition.
+
+Optimization Strategy:
+1. Replace `#include <bits/stdc++.h>` with the specific headers needed for the program. This will reduce unnecessary includes and improve compilation time.
+2. Avoid using `using namespace std;` as it can lead to naming conflicts. Instead, explicitly specify the namespace for each standard library function or object.
+3. Change the type of `S` from `long long` to `int` since it is multiplied by 2 and used in comparisons with `long long` values.
+4. Replace the use of `vector` with a fixed-size array for `stab` and `poz`, as their sizes are known at compile-time. This will reduce memory allocations and deallocations.
+5. Use `const` references instead of passing arguments by value in the overloaded operators for `POINT`. This will avoid unnecessary object copies.
+6. Replace the lambda function used in the `sort` function with a named comparison function. This will improve code readability and potentially help the compiler optimize the sorting operation.
+7. Use a more efficient sorting algorithm, such as `std::sort`, instead of the default sorting algorithm used in the code. This can improve the performance of the sorting operation.
+8. Optimize the binary search by using a more efficient algorithm, such as the iterative binary search instead of the recursive binary search used in the code.
+
+Step-by-Step Explanation:
+1. Replace `#include <bits/stdc++.h>` with the specific headers needed for the program:
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+```
+2. Avoid using `using namespace std;` and explicitly specify the namespace for each standard library function or object:
+```cpp
+using std::cout;
+using std::cin;
+using std::endl;
+using std::sort;
+```
+3. Change the type of `S` from `long long` to `int`:
+```cpp
+int S;
+```
+4. Replace the use of `vector` with a fixed-size array for `stab` and `poz`:
+```cpp
+const int N = 2000;
+POINT stab[N + 7];
+int poz[N + 7];
+```
+5. Use `const` references instead of passing arguments by value in the overloaded operators for `POINT`:
+```cpp
+POINT operator+(const POINT& t) const { return POINT(x + t.x, y + t.y); }
+POINT operator-(const POINT& t) const { return POINT(x - t.x, y - t.y); }
+POINT operator!() const { return POINT(-y, x); }
+```
+6. Replace the lambda function used in the `sort` function with a named comparison function:
+```cpp
+bool comp(const POINT& a, const POINT& b) {
+    if (a.x == b.x)
+        return a.y > b.y;
+    return a.x < b.x;
+}
+```
+7. Use `std::sort` instead of the default sorting algorithm used in the code:
+```cpp
+sort(tab + 1, tab + n + 1, comp);
+```
+8. Optimize the binary search by using an iterative binary search instead of the recursive binary search used in the code:
+```cpp
+int binarySearch(const POINT& p, const POINT& q, const POINT* tab, int l, int r, int S) {
+    while (l <= r) {
+        int s = (l + r) / 2;
+        long long ww = cross(q, tab[s], p);
+        if (ww == S) {
+            cout << "Yes" << endl;
+            cout << p.x << ' ' << p.y << endl;
+            cout << q.x << ' ' << q.y << endl;
+            cout << tab[s].x << ' ' << tab[s].y << endl;
+            exit(0);
+        }
+        if (ww > S)
+            r = s - 1;
+        else
+            l = s + 1;
+    }
+    return l;
+}
+```
+
+Optimized Code:
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+struct POINT {
+    int x, y;
+    POINT() : x(0), y(0) {}
+    POINT(int x, int y) : x(x), y(y) {}
+    POINT operator+(const POINT& t) const { return POINT(x + t.x, y + t.y); }
+    POINT operator-(const POINT& t) const { return POINT(x - t.x, y - t.y); }
+    POINT operator!() const { return POINT(-y, x); }
+};
+
+inline long long dot(const POINT& a, const POINT& b) {
+    return (long long)a.x * b.x + (long long)a.y * b.y;
+}
+
+inline long long cross(const POINT& a, const POINT& b) {
+    return (long long)a.x * b.y - (long long)a.y * b.x;
+}
+
+inline long long cross(const POINT& a, const POINT& b, const POINT& c) {
+    return cross(a - c, b - c);
+}
+
+inline bool halfPlane(const POINT& p) {
+    if (p.y == 0)
+        return p.x < 0;
+    return p.y < 0;
+}
+
+bool comp(const POINT& a, const POINT& b) {
+    if (a.x == b.x)
+        return a.y > b.y;
+    return a.x < b.x;
+}
+
+const int N = 2000;
+
+int main() {
+    int n;
+    int S;
+    std::cin >> n >> S;
+    S *= 2;
+
+    POINT tab[N + 7];
+    for (int i = 1; i <= n; ++i)
+        std::cin >> tab[i].x >> tab[i].y;
+
+    std::sort(tab + 1, tab + n + 1, comp);
+
+    POINT stab[N + 7];
+    int poz[N + 7];
+    for (int i = 1; i <= n; ++i) {
+        poz[i] = i;
+        stab[i] = tab[i];
+    }
+
+    struct kierunek {
+        POINT wek;
+        int p, q;
+    };
+
+    std::vector<kierunek> kol((n * (n - 1)) / 2);
+    int it = 0;
+    for (int i = 1; i <= n; ++i) {
+        for (int j = i + 1; j <= n; ++j) {
+            kol[it].wek = !(tab[j] - tab[i]);
+            kol[it].p = i;
+            kol[it].q = j;
+            it++;
+        }
+    }
+
+    std::sort(kol.begin(), kol.end(), [](const kierunek& a, const kierunek& b) -> bool {
+        return angSortCmp(a.wek, b.wek);
+    });
+
+    for (kierunek u : kol) {
+        int p = u.p;
+        int q = u.q;
+        std::swap(stab[poz[p]], stab[poz[q]]);
+        std::swap(poz[p], poz[q]);
+
+        int l = 1;
+        int r = n;
+        int s = binarySearch(tab[q], tab[p], stab, l, r, S);
+
+        long long ww = cross(tab[q], stab[s], tab[p]);
+        if (ww == S) {
+            std::cout << "Yes" << std::endl;
+            std::cout << tab[p].x << ' ' << tab[p].y << std::endl;
+            std::cout << tab[q].x << ' ' << tab[q].y << std::endl;
+            std::cout << stab[s].x << ' ' << stab[s].y << std::endl;
+            return 0;
+        }
+
+        l = 1;
+        r = n;
+        s = binarySearch(tab[q], tab[p], stab, l, r, -S);
+
+        ww = cross(tab[q], stab[s], tab[p]);
+        if (ww == -S) {
+            std::cout << "Yes" << std::endl;
+            std::cout << tab[p].x << ' ' << tab[p].y << std::endl;
+            std::cout << tab[q].x << ' ' << tab[q].y << std::endl;
+            std::cout << stab[s].x << ' ' << stab[s].y << std::endl;
+            return 0;
+        }
+    }
+
+    std::cout << "No" << std::endl;
+    return 0;
+}
+```

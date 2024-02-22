@@ -1,0 +1,70 @@
+The given code is an implementation of Dijkstra's algorithm for shortest paths in a graph. It reads a graph from input, performs Dijkstra's algorithm, and then prints the shortest distances to all vertices from a source vertex. 
+
+Here are some possible optimization strategies:
+
+1. **Use `std::vector` instead of C-style array for distances**: C-style arrays such as `int d[v]` don't provide the same level of abstraction and safety as a `std::vector`. Also, the size of C-style arrays needs to be known at compile time, which is not the case here. Using `std::vector<int> d(v, INF);` would be better, and we can initialize all distances to `INF` at the same time.
+
+2. **Avoid unnecessary pair creations**: In the main loop, there are unnecessary pair creations which can be avoided by directly using the data.
+
+3. **Use `emplace` instead of `push`**: When adding a pair to the priority queue, instead of creating a pair and then pushing it, we can directly construct the pair in-place using `emplace`.
+
+4. **Reduce the number of lookups in the adjacency list**: The adjacency list `G[nv][i]` is looked up multiple times in the while loop. We can store a reference to it to reduce the number of lookups.
+
+Here is the optimized code with these changes:
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <queue>
+#include <vector>
+using namespace std;
+
+const int INF = 1000000000;
+
+struct edge {
+  int to, cost;
+};
+
+vector<edge> G[100000];
+int v, e, r;
+typedef pair<int, int> P;
+priority_queue<P, vector<P>, greater<P>> q;
+
+int main() {
+  scanf("%d %d %d", &v, &e, &r);
+  for (int i = 0; i < e; i++) {
+    int s, t, d;
+    scanf("%d %d %d", &s, &t, &d);
+    G[s].push_back({t,d}); // push_back can take arguments for constructor
+  }
+  
+  vector<int> d(v, INF); // change from C array to vector
+  d[r] = 0;
+  q.emplace(0, r); // use emplace instead of push
+  
+  while (!q.empty()) {
+    P p = q.top();
+    q.pop();
+    int nv = p.second;
+    if (p.first > d[nv])
+      continue;
+      
+    for (const edge &e : G[nv]) { // use range-based for loop and reference to reduce lookups
+      if (d[nv] + e.cost < d[e.to]) {
+        d[e.to] = d[nv] + e.cost;
+        q.emplace(d[e.to], e.to); // use emplace instead of push
+      }
+    }
+  }
+  
+  for (int i = 0; i < v; i++) {
+    if (d[i] == INF)
+      printf("INF\n");
+    else
+      printf("%d\n", d[i]);
+  }
+  
+  return 0;
+}
+```
+These optimizations mainly improve the readability of the code and reduce the number of unnecessary operations, which can lead to a slight performance improvement. However, the complexity of Dijkstra's algorithm itself remains unchanged.

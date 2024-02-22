@@ -1,0 +1,111 @@
+#include <iostream>
+#include <vector>
+#include <sstream>
+#include <deque>
+#include <bitset>
+#include <unordered_map>
+
+using namespace std;
+
+vector<string> split(const string &s, char c) {
+  vector<string> v;
+  istringstream ss(s);
+  string x;
+  while (getline(ss, x, c))
+    v.emplace_back(x);
+  return move(v);
+}
+
+class graphNode {
+public:
+  unordered_map<int, int> adj; // adjacency list
+  int a;
+  graphNode() { a = 0; }
+};
+
+class graph {
+public:
+  int n;
+  vector<graphNode> nodes;
+  graph(int nodeNumber) {
+    n = nodeNumber;
+    nodes.resize(n + 1);
+  }
+  void addEdge(int a, int b, bool weighted = false, int weight = 0) {
+    nodes[a].adj[b] = weight;
+    nodes[b].adj[a] = weight;
+  }
+  long long findans() {
+    bitset<MAX + 1> visited;
+    vector<int> col(n + 1);
+    vector<int> grcol(3);
+    grcol[1] = 1;
+    long long res = 1;
+    for (int c = 1; c < n + 1; c++) {
+      if (!visited[c]) {
+        col[c] = 1;
+        if (!bfs(c, col, visited, grcol)) {
+          return 0;
+        } else {
+          res = (res * (powr[grcol[1]] + powr[grcol[2]])) % 998244353;
+        }
+        grcol[2] = 0;
+        grcol[1] = 1;
+      }
+    }
+    return res;
+  }
+  bool bfs(int p, vector<int> &col, bitset<MAX + 1> &visited, vector<int> &grcol) {
+    deque<int> q;
+    visited[p] = true;
+    q.push_back(p);
+    while (!q.empty()) {
+      int itr = q.front();
+      q.pop_front();
+      int chcol = (col[itr] == 2) ? 1 : 2;
+      for (auto& [k, _] : nodes[itr].adj) {
+        if (col[k] == 0 || col[k] == chcol) {
+          if (col[k] == 0) {
+            col[k] = chcol;
+            grcol[chcol]++;
+          }
+        } else
+          return false;
+        if (!visited[k]) {
+          visited[k] = true;
+          q.push_back(k);
+        }
+      }
+    }
+    return true;
+  }
+};
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  cout.tie(NULL);
+
+  vector<int> powr(3 * 100000);
+  long long k = 1;
+  for (int c = 0; c < 3 * 100000; c++) {
+    powr[c] = k;
+    k = (k * 2) % 998244353;
+  }
+
+  int t;
+  cin >> t;
+  while (t--) {
+    int n, m;
+    cin >> n >> m;
+    graph mygraph(n);
+    for (int c = 0; c < m; c++) {
+      int a, b;
+      cin >> a >> b;
+      mygraph.addEdge(a, b);
+    }
+    cout << mygraph.findans() << endl;
+  }
+
+  return 0;
+}

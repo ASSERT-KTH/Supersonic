@@ -1,0 +1,120 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+const int N = 6e5 + 5;
+
+vector<pair<pair<long long, long long>, int>> v;
+vector<int> segtree(4 * N, 0), lazy(4 * N, 0);
+
+void spread(int node, int l, int r) {
+  if (lazy[node] != 0) {
+    segtree[node] += lazy[node];
+    if (l != r) {
+      lazy[2 * node + 1] += lazy[node];
+      lazy[2 * node + 2] += lazy[node];
+    }
+  }
+  lazy[node] = 0;
+}
+
+void update(int x, int y, int val, int node = 0, int l = 0, int r = N - 1) {
+  spread(node, l, r);
+  if (l > y || r < x || x > y)
+    return;
+  if (l >= x && r <= y) {
+    lazy[node] += val;
+    spread(node, l, r);
+    return;
+  }
+  int mid = (l + r) >> 1;
+  update(x, y, val, 2 * node + 1, l, mid);
+  update(x, y, val, 2 * node + 2, mid + 1, r);
+  segtree[node] = min(segtree[2 * node + 1], segtree[2 * node + 2]);
+}
+
+int query(int x, int y, int node = 0, int l = 0, int r = N - 1) {
+  spread(node, l, r);
+  if (l > y || r < x)
+    return INT_MAX - 1;
+  if (l >= x && r <= y) {
+    return segtree[node];
+  }
+  int mid = (l + r) >> 1;
+  return min(query(x, y, 2 * node + 1, l, mid),
+             query(x, y, 2 * node + 2, mid + 1, r));
+}
+
+void solve() {
+  sort(v.begin(), v.end());
+  int c = 0;
+  for (auto &i : v) {
+    i.F.F = c;
+    c++;
+    i.F.S = c;
+    c++;
+  }
+  long long mx = 0, idx = -1;
+  for (int i = 0; i < v.size(); i++) {
+    update(v[i].F.F, v[i].F.S, 1);
+    int tt = -1;
+    int s = v[i].F.F, e = c;
+    while (s <= e) {
+      int mid = (s + e) >> 1;
+      int val = query(v[i].F.F, mid);
+      if (val >= k) {
+        tt = mid;
+        s = mid + 1;
+      } else
+        e = mid - 1;
+    }
+    if (tt == -1)
+      continue;
+    long long temp = tt - v[i].F.F + 1;
+    if (temp > mx) {
+      mx = temp;
+      idx = i;
+    }
+  }
+  if (idx == -1) {
+    cout << 0 << '\n';
+    for (int i = 1; i <= k; i++)
+      cout << i << ' ';
+    cout << '\n';
+    return;
+  }
+  long long l = v[idx].F.F, r = l + mx - 1;
+  vector<int> ans;
+  for (auto &i : v) {
+    if (k == 0)
+      break;
+    if (i.F.F <= l && r <= i.F.S) {
+      ans.emplace_back(i.S);
+      k--;
+    }
+  }
+  cout << mx << '\n';
+  for (int i : ans)
+    cout << i << " ";
+  cout << '\n';
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  cout.tie(NULL);
+
+  int n, k;
+  cin >> n >> k;
+  v.reserve(n);
+  for (int i = 0; i < n; i++) {
+    long long a, b;
+    cin >> a >> b;
+    v.emplace_back(make_pair(a, b), i + 1);
+  }
+  solve();
+
+  return 0;
+}

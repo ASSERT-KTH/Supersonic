@@ -1,0 +1,18 @@
+#include <iostream>
+
+int main() {
+  int h, w;
+  for (;;) {
+    std::cin >> h >> w;
+    for (int y = 0; y < h; ++y) {
+      for (int x = 0; x < w; ++x) {
+        std::cout << '#';
+      }
+      std::cout << '\n';
+    }
+    if (h == 0 && w == 0) {
+      break;
+    }
+  }
+  return 0;
+}

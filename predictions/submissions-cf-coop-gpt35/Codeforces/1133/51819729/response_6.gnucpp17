@@ -1,0 +1,146 @@
+#pragma comment(linker, "/stack:200000000")
+#pragma GCC optimize("Ofast,no-stack-protector")
+#pragma GCC target("avx")
+#include <algorithm>
+#include <iostream>
+#include <vector>
+using namespace std;
+
+const int MAXN = 2e5 + 100;
+
+struct DisjointSet {
+    vector<int> parent;
+    vector<int> rank;
+
+    DisjointSet(int n) {
+        parent.resize(n);
+        rank.resize(n);
+        for (int i = 0; i < n; ++i) {
+            make(i);
+        }
+    }
+
+    void make(int u) {
+        parent[u] = u;
+        rank[u] = 0;
+    }
+
+    int find(int u) {
+        if (parent[u] == u) return u;
+        return parent[u] = find(parent[u]);
+    }
+
+    void merge(int u, int v) {
+        u = find(u);
+        v = find(v);
+        if (u == v) return;
+        if (rank[u] < rank[v]) {
+            parent[u] = v;
+        } else if (rank[u] > rank[v]) {
+            parent[v] = u;
+        } else {
+            parent[v] = u;
+            ++rank[u];
+        }
+    }
+};
+
+int main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+
+    int n, m, k;
+    cin >> n >> m >> k;
+
+    vector<int> deg(n + 1);
+    vector<bool> chose(n + 1, false);
+    vector<int> par(n + 1, -1);
+    vector<vector<int>> g(n + 1), g_MST(n + 1);
+    vector<pair<int, int>> edge;
+
+    while (m--) {
+        int u, v;
+        cin >> u >> v;
+        g[u].push_back(v);
+        g[v].push_back(u);
+        ++deg[u];
+        ++deg[v];
+        edge.emplace_back(u, v);
+    }
+
+    if (deg[1] < k) {
+        cout << "NO";
+        return 0;
+    }
+
+    int cnt = 0;
+    for (auto v : g[1]) {
+        if (deg[v] == 1) {
+            ++cnt;
+        }
+    }
+
+    if (cnt > k) {
+        cout << "NO";
+        return 0;
+    }
+
+    DisjointSet dsu(n + 1);
+
+    for (auto v : g[1]) {
+        if (deg[v] == 1) {
+            dsu.merge(1, v);
+            g_MST[1].push_back(v);
+            chose[v] = true;
+        }
+    }
+
+    for (auto v : g[1]) {
+        if (deg[v] == 1) {
+            continue;
+        }
+        if (dsu.find(1) != dsu.find(v)) {
+            dsu.merge(1, v);
+            g_MST[1].push_back(v);
+            chose[v] = true;
+            ++cnt;
+            if (cnt == k) {
+                break;
+            }
+        }
+    }
+
+    for (auto E : edge) {
+        int u = E.first;
+        int v = E.second;
+        if (u == 1 || v == 1) {
+            continue;
+        }
+        if (dsu.find(u) != dsu.find(v)) {
+            dsu.merge(u, v);
+            g_MST[u].push_back(v);
+            g_MST[v].push_back(u);
+        }
+    }
+
+    if (cnt > k || g_MST[1].size() < n - 1) {
+        cout << "NO";
+        return 0;
+    }
+
+    if (cnt == k) {
+        cout << "YES" << endl;
+        for (int u = 1; u <= n; ++u) {
+            for (auto v : g_MST[u]) {
+                if (u < v) {
+                    cout << u << " " << v << endl;
+                }
+            }
+        }
+        return 0;
+    }
+
+    int root = 1;
+    par[root] = root;
+
+    for (auto v : g[1]) {

@@ -1,0 +1,163 @@
+The given code seems to be solving a pathfinding problem on a grid. It uses the Breadth-First Search (BFS) algorithm to find the shortest path from the starting point to the goal point while avoiding obstacles and collecting certain objects.
+
+Upon analysis, the following potential performance bottlenecks and areas for optimization can be identified:
+
+1. Memory Usage: The code uses multi-dimensional arrays to store various information, such as `bfscost`, `field`, and `DP`. These arrays are declared with fixed sizes, which can potentially lead to wasted memory if the actual input size is smaller. Additionally, the `DP` array is used to store the minimum cost for each state, but it is not clear why it needs to be a multi-dimensional array with all possible values. There might be an opportunity to reduce the memory usage by using a more efficient data structure.
+
+2. Redundant Computation: The `BFS` function is called multiple times in the main loop, even when the state has not changed. This can lead to redundant computations and unnecessary use of resources. It would be more efficient to only call `BFS` when the state changes.
+
+3. Inefficient State Comparison: The `operator<` and `operator==` functions in the `state` struct are used for comparison and equality checks. However, the current implementation compares each field individually, which can be inefficient. There might be an opportunity to optimize the state comparison.
+
+4. Inefficient Field Checks: The `isdel` and `iscontena` functions are used to check if a given position on the field contains an obstacle or an object. These functions iterate over the objects to perform the check, which can be inefficient if there are many objects. There might be an opportunity to optimize these checks.
+
+5. Unnecessary Sorting: The priority queue `q` is used to store the states, and it is sorted based on the cost. However, the sorting might not be necessary for this problem since the BFS algorithm guarantees that the states will be visited in non-decreasing order of cost. Removing the sorting step can potentially improve performance.
+
+6. Unnecessary Copying of State: The state struct is passed by value in some places, resulting in unnecessary copying of the state data. This can be avoided by passing the state by reference or using pointers.
+
+Based on these observations, the following optimization strategy can be proposed:
+
+1. Use more efficient data structures: Replace fixed-size multi-dimensional arrays with more efficient data structures, such as vectors or dynamically allocated arrays. This will help reduce memory usage and avoid wasted memory.
+
+2. Optimize state comparison: Improve the efficiency of state comparison by using a more efficient comparison algorithm, such as hashing or comparing the state as a single block of memory.
+
+3. Optimize field checks: Improve the efficiency of field checks by using a more efficient data structure, such as a hash set or a bitmap, to store the positions of obstacles and objects.
+
+4. Avoid redundant computations: Call the `BFS` function only when the state changes, avoiding redundant computations.
+
+5. Remove unnecessary sorting: Remove the sorting step from the priority queue, as the states are already visited in non-decreasing order of cost.
+
+Now, let's implement these optimizations step by step:
+
+Step 1: Use more efficient data structures
+- Instead of fixed-size multi-dimensional arrays, use vectors or dynamically allocated arrays to store `bfscost`, `field`, and `DP`. This will help reduce memory usage and avoid wasted memory.
+
+```cpp
+vector<vector<int>> bfscost(10, vector<int>(10, -1));
+vector<vector<char>> field(16, vector<char>(16));
+vector<vector<vector<vector<vector<vector<vector<vector<char>>>>>>>> DP(
+    9, vector<vector<vector<vector<vector<vector<vector<char>>>>>>>(
+           9, vector<vector<vector<vector<vector<vector<char>>>>>>>(
+                  9, vector<vector<vector<vector<vector<char>>>>>(
+                         9, vector<vector<vector<vector<char>>>>(
+                                9, vector<vector<vector<char>>>>(
+                                       9, vector<vector<char>>>(
+                                              9, vector<char>(9, -1))))));
+```
+
+Step 2: Optimize state comparison
+- Modify the `state` struct to use a single integer to represent the state instead of individual fields. This will allow for more efficient comparison and equality checks.
+
+```cpp
+struct state {
+  char x, y;
+  int stateCode;
+  state(char _x, char _y, int _stateCode) {
+    x = _x;
+    y = _y;
+    stateCode = _stateCode;
+  }
+  bool operator<(const state &a) const {
+    if (x != a.x)
+      return x < a.x;
+    if (y != a.y)
+      return y < a.y;
+    return stateCode < a.stateCode;
+  }
+  bool operator==(const state &a) const {
+    return (x == a.x && y == a.y && stateCode == a.stateCode);
+  }
+};
+```
+
+Step 3: Optimize field checks
+- Use a hash set to store the positions of obstacles and objects, allowing for efficient lookup and membership checks.
+
+```cpp
+unordered_set<int> obstacles;
+unordered_set<int> objects;
+// Store obstacle positions in the obstacles set
+// Store object positions in the objects set
+```
+
+Step 4: Avoid redundant computations
+- Modify the main loop to call the `BFS` function only when the state changes, avoiding redundant computations.
+
+```cpp
+int prev_sc = -1;
+while (!q.empty()) {
+  // ...
+  char tSc = q.top().second.Sc;
+  if (prev_sc != tSc) {
+    BFS(nx, ny, ncx, ncy, tSc);
+    prev_sc = tSc;
+  }
+  // ...
+}
+```
+
+Step 5: Remove unnecessary sorting
+- Replace the priority queue `q` with a regular queue since the states are already visited in non-decreasing order of cost.
+
+```cpp
+queue<pair<int, state>> q;
+q.push(make_pair(0, state(sx, sy, 0)));
+```
+
+Step 6: Pass state by reference or use pointers
+- Modify the function signatures to pass the state by reference or use pointers instead of passing by value.
+
+```cpp
+void BFS(char nx, char ny, vector<char> &ncx, vector<char> &ncy, char Sc)
+```
+
+With these optimizations applied, the final optimized code is presented below:
+
+```cpp
+#include <algorithm>
+#include <climits>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <functional>
+#include <iostream>
+#include <list>
+#include <map>
+#include <numeric>
+#include <queue>
+#include <set>
+#include <sstream>
+#include <stack>
+#include <string>
+#include <unordered_set>
+#include <vector>
+using namespace std;
+#define REP(i, a, n) for (i = a; i < n; i++)
+#define rep(i, n) REP(i, 0, n)
+#define all(x) x.begin(), x.end()
+#define rall(x) x.rbegin(), x.rend()
+#define foreach(it, x)                                                         \
+  for (typeof(x.begin()) it = x.begin(); it != x.end(); it++)
+const int dx[] = {0, 1, 0, -1};
+const int dy[] = {-1, 0, 1, 0};
+int W, H, sx, sy, gx, gy;
+vector<vector<int>> bfscost(10, vector<int>(10, -1));
+vector<vector<char>> field(16, vector<char>(16));
+vector<vector<vector<vector<vector<vector<vector<vector<char>>>>>>>> DP(
+    9, vector<vector<vector<vector<vector<vector<vector<char>>>>>>>(
+           9, vector<vector<vector<vector<vector<vector<char>>>>>>>(
+                  9, vector<vector<vector<vector<vector<char>>>>>(
+                         9, vector<vector<vector<vector<char>>>>(
+                                9, vector<vector<vector<char>>>>(
+                                       9, vector<vector<char>>>(
+                                              9, vector<char>(9, -1))))));
+struct state {
+  char x, y;
+  int stateCode;
+  state(char _x, char _y, int _stateCode) {
+    x = _x;
+    y = _y;
+    stateCode = _stateCode;
+  }
+  bool operator<(const state &a) const {
+   

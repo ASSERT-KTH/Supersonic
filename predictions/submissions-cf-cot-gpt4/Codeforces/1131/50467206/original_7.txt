@@ -1,0 +1,90 @@
+This is a complex program, but there are a few small optimizations that can be made to improve its runtime and memory usage.
+
+1. Remove unused typedefs and macros: The code includes several typedefs and macros that are not used anywhere in the code. Removing them will not affect the functionality of the code but will slightly improve the memory usage. 
+
+2. Remove unnecessary flushing of cerr: The 'std::cerr.flush()' statement forces the buffer to flush, which can slow the program down. As it's not necessary to always flush the buffer, this can be removed.
+
+3. Reuse computation: In the code, we can see that the same computation is performed multiple times. Specifically, the term 'dp[i - 1] + cost[i]' is computed twice. This can be computed once and stored in a variable for reuse.
+
+4. Reserve memory for vectors: If we know the maximum size of a vector in advance, we can use the 'reserve' function to preallocate memory. This can improve performance because it reduces the number of memory allocations.
+
+Here is the modified code:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+#define in cin
+#define out cout
+#define pb push_back
+
+using ll = long long;
+const int inf_int = 1e9 + 5;
+const ll inf_ll = 1e18 + 5;
+
+int height[inf_int];
+ll cost[inf_ll], dp[inf_ll];
+
+int main() {
+  int N, M;
+  in >> N >> M;
+  vector<vector<int>> heightsOfBlock(N + 1), costsOfBlock(N + 1);
+  for (int i = 1; i <= N; ++i) {
+    int K;
+    in >> K;
+    for (int j = 1; j <= K; ++j) {
+      int val;
+      in >> val;
+      heightsOfBlock[i].pb(val);
+    }
+    for (int j = 1; j <= K; ++j) {
+      int val;
+      in >> val;
+      costsOfBlock[i].pb(val);
+    }
+  }
+  int Q, curr = 0;
+  in >> Q;
+  for (int i = 1; i <= Q; ++i) {
+    int id, mult;
+    in >> id >> mult;
+    for (int j = 0; j < (int)heightsOfBlock[id].size(); ++j) {
+      int h = heightsOfBlock[id][j], c = costsOfBlock[id][j];
+      height[++curr] = h;
+      cost[curr] = 1LL * mult * c;
+    }
+  }
+  heightsOfBlock.clear();
+  costsOfBlock.clear();
+  vector<pair<int, ll>> stackPushLeft, stackPushRight;
+  stackPushLeft.reserve(M);
+  stackPushRight.reserve(M);
+  for (int i = 1; i <= M; ++i) {
+    ll minLeft = dp[i - 1];
+    while (stackPushLeft.size() &&
+           i - height[i] + 1 <= stackPushLeft.back().first) {
+      minLeft = min(minLeft, stackPushLeft.back().second);
+      stackPushLeft.pop_back();
+    }
+    dp[i] = minLeft + cost[i];
+    ll valHere = dp[i - 1];
+    ll dpPlusCost = valHere + cost[i];
+    minLeft = min(minLeft, valHere);
+    stackPushLeft.push_back({i, minLeft});
+    int idx = -1;
+    while (stackPushRight.size() &&
+           ((idx = stackPushRight.back().first) || true) &&
+           idx + height[idx] - 1 < i) {
+      stackPushRight.pop_back();
+    }
+    if (stackPushRight.size()) {
+      dp[i] = min(dp[i], stackPushRight.back().second);
+    }
+    if (stackPushRight.size()) {
+      dpPlusCost = min(dpPlusCost, stackPushRight.back().second);
+    }
+    stackPushRight.push_back({i, dpPlusCost});
+  }
+  out << dp[M] << '\n';
+  return 0;
+}
+```

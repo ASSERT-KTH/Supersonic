@@ -1,0 +1,11 @@
+The provided code calculates the factorial of a given number `n`. However, there are several areas where the code can be optimized for efficiency. 
+
+1. Inefficient data types: 
+   - The variable `a` is declared as a `long long` data type, which is unnecessary for calculating the factorial of `n`. Since the factorial of `n` is always an integer, we can use an `int` data type instead.
+   - The variable `i` is declared as an `int`, which is also unnecessary. We can use a `long long` data type for `i` to handle larger input values of `n`.
+
+2. Redundant computation:
+   - The code initializes `a` with the value of `1` at the beginning of the loop. However, this is unnecessary since `a` is multiplied by `i` in each iteration of the loop. We can initialize `a` with the value of `i` outside the loop instead.
+
+3. Compiler optimizations:
+   - We can use compiler optimizations to improve the efficiency of the code. For example, we can enable compiler optimizations using `-O2` flag while compiling the code.

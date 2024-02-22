@@ -1,0 +1,147 @@
+To optimize the given C/C++ program, we can make the following modifications:
+
+1. Remove unnecessary includes: The program includes the `<bits/stdc++.h>` header, which is not a standard C++ header and includes a large number of other headers. We can remove this include and include only the necessary headers.
+
+2. Replace `std::endl` with `'\n'`: The program uses `std::endl` to output newline characters, but it also flushes the output buffer, which can be a performance overhead. We can replace `std::endl` with `'\n'` to only output the newline character.
+
+3. Use a more efficient algorithm for sorting: The program uses `std::sort()` to sort the `tab` array. We can replace this with a more efficient sorting algorithm, such as `std::stable_sort()`.
+
+4. Use a more efficient data structure: The program uses an array of `POINT` structures to store the `stab` array. We can replace this with a `std::vector<POINT>` to improve memory usage and avoid unnecessary copying.
+
+5. Use a binary search instead of linear search: The program uses a linear search to find the target point in the `stab` array. We can replace this with a binary search to improve the search time complexity.
+
+Here's the optimized C/C++ program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+struct POINT {
+  int x, y;
+  POINT() : x(0), y(0) {}
+  POINT(int x, int y) : x(x), y(y) {}
+  POINT operator+(const POINT &t) const { return POINT(x + t.x, y + t.y); }
+  POINT operator-(const POINT &t) const { return POINT(x - t.x, y - t.y); }
+  POINT operator!() const { return POINT(-y, x); }
+};
+
+inline long long dot(const POINT &a, const POINT &b) {
+  return (long long)a.x * b.x + (long long)a.y * b.y;
+}
+
+inline long long cross(const POINT &a, const POINT &b) {
+  return (long long)a.x * b.y - (long long)a.y * b.x;
+}
+
+inline long long cross(const POINT &a, const POINT &b, const POINT &c) {
+  return cross(a - c, b - c);
+}
+
+inline bool halfPlane(const POINT &p) {
+  if (p.y == 0)
+    return p.x < 0;
+  return p.y < 0;
+}
+
+inline bool angSortCmp(const POINT &a, const POINT &b) {
+  bool ha = halfPlane(a);
+  bool hb = halfPlane(b);
+  if (ha != hb)
+    return ha < hb;
+  return cross(a, b) > 0;
+}
+
+const int N = 2000;
+
+int main() {
+  std::ios_base::sync_with_stdio(0);
+  int n;
+  long long S;
+  std::cin >> n >> S;
+  S *= 2;
+
+  std::vector<POINT> tab(n + 1);
+  for (int i = 1; i <= n; ++i)
+    std::cin >> tab[i].x >> tab[i].y;
+
+  std::stable_sort(tab.begin() + 1, tab.end(), [](const POINT &a, const POINT &b) -> bool {
+    if (a.x == b.x)
+      return a.y > b.y;
+    return a.x < b.x;
+  });
+
+  std::vector<int> poz(n + 1);
+  std::vector<POINT> stab(n + 1);
+  for (int i = 1; i <= n; ++i) {
+    poz[i] = i;
+    stab[i] = tab[i];
+  }
+
+  struct kierunek {
+    POINT wek;
+    int p, q;
+  };
+  std::vector<kierunek> kol((n * (n - 1)) / 2);
+  int it = 0;
+  for (int i = 1; i <= n; ++i) {
+    for (int j = i + 1; j <= n; ++j) {
+      kol[it].wek = !(tab[j] - tab[i]);
+      kol[it].p = i;
+      kol[it].q = j;
+      it++;
+    }
+  }
+
+  std::sort(kol.begin(), kol.end(),
+       [](const kierunek &a, const kierunek &b) -> bool {
+         return angSortCmp(a.wek, b.wek);
+       });
+
+  for (kierunek u : kol) {
+    int p = u.p;
+    int q = u.q;
+    std::swap(stab[poz[p]], stab[poz[q]]);
+    std::swap(poz[p], poz[q]);
+
+    int l = 1;
+    int r = n;
+    while (l <= r) {
+      int s = (l + r) / 2;
+      long long ww = cross(tab[q], stab[s], tab[p]);
+      if (ww == S) {
+        std::cout << "Yes\n";
+        std::cout << tab[p].x << ' ' << tab[p].y << '\n';
+        std::cout << tab[q].x << ' ' << tab[q].y << '\n';
+        std::cout << stab[s].x << ' ' << stab[s].y << '\n';
+        return 0;
+      }
+      if (ww > S)
+        r = s - 1;
+      else
+        l = s + 1;
+    }
+
+    l = 1;
+    r = n;
+    while (l <= r) {
+      int s = (l + r) / 2;
+      long long ww = cross(tab[q], stab[s], tab[p]);
+      if (ww == -S) {
+        std::cout << "Yes\n";
+        std::cout << tab[p].x << ' ' << tab[p].y << '\n';
+        std::cout << tab[q].x << ' ' << tab[q].y << '\n';
+        std::cout << stab[s].x << ' ' << stab[s].y << '\n';
+        return 0;
+      }
+      if (ww > -S)
+        r = s - 1;
+      else
+        l = s + 1;
+    }
+  }
+
+  std::cout << "No\n";
+  return 0;
+}
+```

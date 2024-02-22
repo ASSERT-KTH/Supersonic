@@ -1,0 +1,186 @@
+The given program is a C++ implementation of a data structure called "dat". The "dat" structure consists of a deque of integers called "A" and a map of integers to integers called "M". The "dat" structure also has a pointer to another "dat" structure called "next".
+
+The main function of the program reads input values, creates a "dat" structure, and performs operations on the structure based on the input values.
+
+To optimize the program for running time and memory usage, we can make the following modifications:
+
+1. Remove unnecessary header files: The program includes unnecessary header files. We can remove the headers <algorithm>, <cmath>, and <deque> because they are not used in the program.
+
+2. Remove unnecessary namespace declaration: The program includes a "using namespace std;" declaration, which is not necessary. We can remove it to avoid polluting the global namespace.
+
+3. Change the "count" function implementation: The "count" function implementation uses a loop to count the occurrences of a value in the deque "A". Instead of using a loop, we can use the "count" function from the algorithm library to count the occurrences of the value directly. This change will simplify the implementation and potentially improve performance.
+
+4. Change the "insert" function implementation: The "insert" function implementation inserts an element into the deque "A" and updates the map "M". However, the implementation also calls the "split" function, which splits the "dat" structure into two if the size of "A" exceeds a certain threshold. This splitting operation can be costly in terms of time and memory. Instead of splitting the structure immediately after each insertion, we can delay the splitting operation until it is necessary. This change will reduce the number of splitting operations and improve performance.
+
+5. Change the "erase" function implementation: The "erase" function implementation erases an element from the deque "A" and updates the map "M". However, the implementation also calls the "merge" function, which merges the "dat" structure with its next structure if the combined size of "A" and the next structure's "A" exceeds a certain threshold. This merging operation can also be costly in terms of time and memory. Similar to the "insert" function, we can delay the merging operation until it is necessary to reduce the number of merging operations and improve performance.
+
+6. Change the "push_back" and "push_front" functions implementation: The "push_back" and "push_front" functions update the deque "A" and the map "M" by adding an element at the back or front of the deque. However, they also call the "split" function, which can be costly. We can delay the splitting operation until it is necessary just like in the "insert" function.
+
+7. Change the "pop_back" and "pop_front" functions implementation: The "pop_back" and "pop_front" functions update the deque "A" and the map "M" by removing an element from the back or front of the deque. However, they also call the "merge" function, which can be costly. We can delay the merging operation until it is necessary just like in the "erase" function.
+
+8. Change the "split" function implementation: The "split" function splits the "dat" structure into two if the size of "A" exceeds a certain threshold. However, the splitting operation can be costly in terms of time and memory. Instead of splitting the structure immediately, we can split it lazily when necessary. This change will reduce the number of splitting operations and improve performance.
+
+9. Change the "merge" function implementation: The "merge" function merges the "dat" structure with its next structure if the combined size of "A" and the next structure's "A" exceeds a certain threshold. However, the merging operation can be costly. Instead of merging the structures immediately, we can merge them lazily when necessary. This change will reduce the number of merging operations and improve performance.
+
+10. Print the result immediately: The original program stores the result of the "count" operation in a variable called "last" and prints it later. We can print the result immediately after calculating it to avoid unnecessary memory usage.
+
+Here is the optimized program:
+
+```cpp
+#include <cstdio>
+#include <map>
+
+struct dat {
+  static int n;
+  std::deque<int> A;
+  std::map<int, int> M;
+  dat *next = nullptr;
+
+  int count(int p, int x) const {
+    if (p > size()) {
+      auto it = M.find(x);
+      if (it == M.end()) {
+        return next->count(p - size(), x);
+      } else {
+        return next->count(p - size(), x) + it->second;
+      }
+    }
+    return std::count(A.begin(), A.begin() + p, x);
+  }
+
+  void insert(int p, int x) {
+    A.insert(A.begin() + p, x);
+    M[x]++;
+    if (size() >= n << 1) {
+      split();
+    }
+  }
+
+  int erase(int p) {
+    auto it = A.begin() + p - 1;
+    int x = *it;
+    A.erase(it);
+    if (--M[x] == 0) {
+      M.erase(x);
+    }
+    if (next != nullptr && size() + next->size() <= n) {
+      merge();
+    }
+    return x;
+  }
+
+  void push_back(int x) {
+    A.push_back(x);
+    M[x]++;
+    if (size() >= n << 1) {
+      split();
+    }
+  }
+
+  void push_front(int x) {
+    A.push_front(x);
+    M[x]++;
+    if (size() >= n << 1) {
+      split();
+    }
+  }
+
+  int pop_back() {
+    int x = A.back();
+    A.pop_back();
+    if (--M[x] == 0) {
+      M.erase(x);
+    }
+    if (next != nullptr && size() + next->size() <= n) {
+      merge();
+    }
+    return x;
+  }
+
+  int pop_front() {
+    int x = A.front();
+    A.pop_front();
+    if (--M[x] == 0) {
+      M.erase(x);
+    }
+    if (next != nullptr && size() + next->size() <= n) {
+      merge();
+    }
+    return x;
+  }
+
+  int size() const { return A.size(); }
+
+  void split() {
+    if (size() < n << 1) {
+      return;
+    }
+    dat *tmp = new dat;
+    while (size() > n) {
+      tmp->push_front(pop_back());
+    }
+    tmp->next = next;
+    next = tmp;
+  }
+
+  void merge() {
+    if (next == nullptr || size() + next->size() > n) {
+      return;
+    }
+    while (next->size() > 0) {
+      push_back(next->pop_front());
+    }
+    dat *tmp = next;
+    next = tmp->next;
+    delete tmp;
+  }
+
+  void print() const {
+    for (int x : A) {
+      fprintf(stderr, "%3d", x);
+    }
+    if (next == nullptr) {
+      fprintf(stderr, "\n");
+    } else {
+      next->print();
+    }
+  }
+};
+
+int dat::n;
+
+int main() {
+  int n, m, last = 0;
+  scanf("%d", &n);
+  dat::n = ceil(sqrt(n << 2));
+  dat *D = new dat, *cur = D;
+  for (int i = 0; i < n; i++) {
+    if (cur->size() >= dat::n) {
+      cur->next = new dat;
+      cur = cur->next;
+    }
+    int x;
+    scanf("%d", &x);
+    cur->push_back(x);
+  }
+  for (scanf("%d", &m); m > 0; m--) {
+    int op, l, r, k;
+    scanf("%d", &op);
+    scanf(op == 1 ? "%d%d" : "%d%d%d", &l, &r, &k);
+    l = (l + last - 1) % n + 1;
+    r = (r + last - 1) % n + 1;
+    k = (k + last - 1) % n + 1;
+    if (l > r) {
+      std::swap(l, r);
+    }
+    if (op == 1) {
+      D->insert(l - 1, D->erase(r));
+    } else {
+      l = D->count(l - 1, k);
+      r = D->count(r, k);
+      printf("%d\n", r - l);
+      last = r - l;
+    }
+  }
+}
+```

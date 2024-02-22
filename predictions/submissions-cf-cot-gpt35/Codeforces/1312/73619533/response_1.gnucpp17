@@ -1,0 +1,134 @@
+#include <iostream>
+#include <vector>
+#include <cstring>
+using namespace std;
+
+const int maxn = 1e6 + 5;
+const int N = 1e6;
+const int nax = 26;
+const int inf = 1000000007;
+
+int segtree[4 * maxn];
+int lazy[4 * maxn];
+int value[maxn];
+int adj[nax][maxn];
+vector<int> good(maxn, 0), seta, tmp, dp(maxn, inf);
+
+int combine(int x, int y) {
+  return min(x, y);
+}
+
+void build() {
+  for (int i = N; i >= 1; i--) {
+    segtree[i] = combine(segtree[i << 1], segtree[i << 1 | 1]);
+  }
+}
+
+void assign(int idx, int val) {
+  idx += N;
+  segtree[idx] = val;
+  while (idx > 1) {
+    idx >>= 1;
+    segtree[idx] = combine(segtree[idx << 1], segtree[idx << 1 | 1]);
+  }
+}
+
+void updateRange(int a, int b, int val) {
+  a += N;
+  b += N;
+  int l = a, r = b;
+  int add = 0;
+  while (l <= r) {
+    if (l & 1) {
+      segtree[l] += val + add;
+      if (l < N) {
+        lazy[l] += val;
+        lazy[l + 1] += val;
+      }
+      l++;
+    }
+    if (!(r & 1)) {
+      segtree[r] += val + add;
+      if (r < N) {
+        lazy[r + 1] += val;
+        lazy[r + 2] += val;
+      }
+      r--;
+    }
+    l >>= 1;
+    r >>= 1;
+    add += val;
+  }
+}
+
+int query(int a, int b) {
+  a += N;
+  b += N;
+  int res = inf;
+  int add = 0;
+  while (a <= b) {
+    if (a & 1) {
+      res = combine(res, segtree[a] + add);
+      a++;
+    }
+    if (!(b & 1)) {
+      res = combine(res, segtree[b] + add);
+      b--;
+    }
+    a >>= 1;
+    b >>= 1;
+    add += lazy[a - 1] + lazy[b + 1];
+  }
+  return res;
+}
+
+void dfs(int node, int par) {
+  if (par != -1)
+    dp[node] = min(dp[node], dp[par] + 1);
+  if (good[node]) {
+    updateRange(1, sz(tmp), 1);
+    dp[node] = min(dp[node], query(1, sz(tmp)));
+  }
+  tmp.push_back(dp[node]);
+  assign(sz(tmp), dp[node] + good[node]);
+  for (int i = 0; i < nax; i++) {
+    if (adj[i][node] != -1) {
+      dfs(adj[i][node], node);
+    }
+  }
+  assign(sz(tmp), inf);
+  tmp.pop_back();
+}
+
+void solve() {
+  memset(adj, -1, sizeof adj);
+  int n, x, k;
+  scanf("%d", &n);
+  char c;
+  for (int i = 1; i <= N; i++) value[i] = inf;
+  build();
+  for (int i = 1; i <= n; i++) {
+    scanf("%d %c", &x, &c);
+    adj[c - 'a'][x] = i;
+  }
+  scanf("%d", &k);
+  for (int i = 0; i < k; i++) {
+    scanf("%d", &x);
+    good[x] = 1;
+    seta.push_back(x);
+  }
+  dp[0] = 0;
+  dfs(0, -1);
+  for (int i = 0; i < k; i++) {
+    printf("%d ", dp[seta[i]]);
+  }
+  printf("\n");
+}
+
+int main() {
+  int t = 1;
+  while (t--) {
+    solve();
+  }
+  return 0;
+}

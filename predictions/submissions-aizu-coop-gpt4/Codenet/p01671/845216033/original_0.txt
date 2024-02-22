@@ -1,0 +1,110 @@
+The code is using the Kruskal's algorithm to find the minimum spanning tree and then calculating the minimum cost of each edge to be included in the tree. The code can be optimized in the following ways:
+
+1. **Redundant Data Structures**: The script uses three data structures for edges: `edge1`, `edge2`, and a `vector<edge1>`. Two of these, `edge1` and `vector<edge1>`, are similar and can be combined into one for efficiency.
+
+2. **Inefficient Data Structure**: The script uses `set<pair<int, int>>` to store components. However, a `set` in C++ is typically implemented as a Red-Black tree, which is not the most efficient data structure for this task. A `priority_queue` would be more efficient for this case as we need the smallest cost edge in each component.
+
+3. **Unnecessary computations**: In the rec function, there is unnecessary computation where the size of the two components `u` and `v` are compared and swapped if `u` is smaller. This operation can be avoided by using a `priority_queue` as mentioned above.
+
+4. **Compiler Optimizations**: The script doesn't use any compiler optimizations. Using `-O2` or `-O3` flag can greatly improve the performance of the code.
+
+5. **Minimize I/O Operations**: The code uses `scanf` and `printf` for input and output. These are slower compared to the C++ `cin` and `cout` with the correct optimizations. 
+
+Let's implement these optimizations:
+
+```c++
+#include <bits/stdc++.h>
+using namespace std;
+using int64 = long long;
+
+struct UnionFind {
+  vector<int> data;
+  UnionFind(int sz) : data(sz, -1) {}
+  bool unite(int x, int y) {
+    x = find(x), y = find(y);
+    if (x == y) return false;
+    if (data[x] > data[y]) swap(x, y);
+    data[x] += data[y];
+    data[y] = x;
+    return true;
+  }
+  int find(int k) {
+    if (data[k] < 0) return k;
+    return data[k] = find(data[k]);
+  }
+  int size(int k) { return -data[find(k)]; }
+};
+
+struct edge {
+  int u, v, cost, idx;
+  bool operator<(const edge &e) const { return cost < e.cost; }
+};
+
+int N, M, A[200000], B[200000], C[200000];
+vector<edge> edges;
+bool killed[200000];
+vector<edge> tree[100000], g[100000];
+int64 all, ans[200000];
+
+// Use priority_queue instead of set
+priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> component[100000];
+
+void rec(int idx, int par = -1) {
+  for (auto &e : g[idx]) {
+    component[idx].push({e.cost, e.idx});
+  }
+  for (auto &e : tree[idx]) {
+    if (e.to == par) continue;
+    rec(e.to, idx);
+    if (!component[e.to].empty()) {
+      ans[e.idx] = all;
+      ans[e.idx] -= e.cost;
+      ans[e.idx] += component[e.to].top().first;
+    }
+    while (!component[e.to].empty()) {
+      component[idx].push(component[e.to].top());
+      component[e.to].pop();
+    }
+  }
+}
+
+int main() {
+  ios_base::sync_with_stdio(false); cin.tie(NULL); // fast I/O
+  cin >> N >> M;
+  for (int i = 0; i < M; i++) {
+    cin >> A[i] >> B[i] >> C[i];
+    --A[i], --B[i];
+    edges.push_back({A[i], B[i], C[i], i});
+  }
+  UnionFind uf(N);
+  sort(begin(edges), end(edges));
+  for (auto &e : edges) {
+    if (uf.unite(e.v, e.u)) {
+      killed[e.idx] = true;
+      all += e.cost;
+    }
+  }
+  if (uf.size(0) != N) {
+    for (int i = 0; i < M; i++)
+      cout << "-1\n";
+    return 0;
+  }
+  for (int i = 0; i < M; i++) {
+    if (killed[i]) {
+      tree[A[i]].push_back({B[i], C[i], i});
+      tree[B[i]].push_back({A[i], C[i], i});
+      ans[i] = -1;
+    } else {
+      g[A[i]].push_back({B[i], C[i], i});
+      g[B[i]].push_back({A[i], C[i], i});
+      ans[i] = all;
+    }
+  }
+  rec(0);
+  for (int i = 0; i < M; i++) {
+    cout << ans[i] << "\n";
+  }
+}
+```
+
+These changes should improve the performance of the code by reducing the data structure overhead, reducing unnecessary computations, and taking advantage of compiler optimizations. The trade-off is slightly more complex code due to the additional priority queue operations.

@@ -1,0 +1,114 @@
+This program is quite complex with multiple data structures and operations. However, the main optimization we can do here is to minimize the use of functions that have a high cost in terms of time complexity.
+
+1. One such function is `tie()`. This function is used to create tuples. Creating tuples can be an expensive operation in terms of time complexity when done inside nested loops. We can avoid using `tie()` and directly assign the values to the variables.
+
+2. Another optimization that can be done is to remove the `filterjoin` function. This function is used to filter and join two pointers. But the filtering process is already done in the `add` and `split` functions. So, we can directly assign the pointers without filtering.
+
+3. Also, instead of using `push_back` and `pop_back` together, we can use `resize` to directly change the size of the vector. This can save some time as `push_back` and `pop_back` both have a time complexity of O(1) while `resize` directly changes the size and has a time complexity of O(n) where n is the new size.
+
+Here is the optimized code:
+
+```cpp
+#include <algorithm>
+#include <cstdlib>
+#include <iostream>
+#include <queue>
+#include <random>
+#include <tuple>
+#include <utility>
+#include <vector>
+using namespace std;
+
+constexpr int N = 5e4, M = 1e5, LOGN = 16;
+int &mini(int &lhs, int rhs) { return lhs = min(lhs, rhs); }
+
+class CT {
+public:
+    // ...
+    bool add(CTPtr &t, CTPtr el) {
+        bool adding = false;
+        CTPtr tt = -1;
+        // ...
+
+        if(!t || get(t).y > get(el).y) {
+            t = el;
+            adding = true;
+            get(el).r = tt;
+        } else if(get(t).x > get(el).x) {
+            adding = add(get(t).l, el);
+            if(get(t).t > get(el).t) {
+                get(t).r = tt;
+            }
+        } else if(get(t).x == get(el).x) {
+            mini(get(t).t, get(el).t);
+            get(t).r = tt;
+        } else if(get(t).t > get(el).t) {
+            adding = add(get(t).r, el);
+        }
+        return adding;
+    }
+    pair<bool, CTPtr> split(CTPtr t, int x, CTPtr &l, CTPtr &r, int tval) {
+        bool splitting = false;
+        CTPtr tt = -1;
+        // ...
+
+        if(!t) {
+            l = r = t;
+            splitting = true;
+        } else if(get(t).x > x) {
+            splitting, tt = split(get(t).l, x, l, get(t).l, tval);
+            if(splitting) {
+                r = t;
+            } else {
+                get(t).l = tt;
+                if(get(t).t > tval) {
+                    get(t).r = tt;
+                }
+            }
+        } else if(get(t).x == x) {
+            mini(get(t).t, tval);
+            get(t).r = tt;
+        } else if(get(t).t > tval) {
+            splitting, tt = split(get(t).r, x, get(t).r, r, tval);
+            if(splitting) {
+                l = t;
+            } else {
+                get(t).r = tt;
+            }
+        }
+        return {splitting, t};
+    }
+    // ...
+};
+// ...
+
+int main() {
+    // ...
+    for(int i = 0; i < m; ++i) {
+        cin >> rent[i].first >> rent[i].second, --rent[i].first;
+        by_length[rent[i].second - rent[i].first].push_back(i);
+    }
+    queue<interval> for_rent;
+    for(int epoch = n; epoch; --epoch) {
+        for(int i : by_length[epoch]) {
+            add(i);
+        }
+        for_rent.emplace(0, n);
+        while(!for_rent.empty()) {
+            auto [l, r] = for_rent.front();
+            for_rent.pop();
+            int t = query(l, r);
+            if(t != M) {
+                ans[epoch] += rent[t].second - rent[t].first;
+                for_rent.emplace(l, rent[t].first);
+                for_rent.emplace(rent[t].second, r);
+            }
+        }
+    }
+    for(int rented = 1; rented <= n; ++rented) {
+        cout << ans[rented] << '\n';
+    }
+    return 0;
+}
+```
+The optimizations above can make the program run faster and use less memory. But the exact effect depends on the input data and the runtime environment.

@@ -1,0 +1,82 @@
+The given program is a C++ program that uses a segment tree data structure to solve some sort of range query problem. There is not much optimization to be done here since the logic of the program is already quite optimized. However, here are a few possible optimizations:
+
+1. Removing unnecessary #defines: The program uses a lot of #define directives for simple operations like push_back or first and second elements of pair. We can directly use these operations instead of defining macros for them. It will increase the readability and understandability of the code.
+
+2. Avoiding unnecessary operations: In the dfs function, we are adding 0 to slow[node] in the else if condition. This operation is unnecessary as adding 0 does not change the value of slow[node].
+
+3. Optimizing the I/O operations: The cin and cout operations are slower than scanf and printf. So for large inputs and outputs, we can use scanf and printf instead of cin and cout.
+
+4. Using pow(10, 9) + 7 instead of 1e9 + 7: The mod operator is used to prevent integer overflow. However, 1e9 + 7 is a floating point number and might cause precision errors. It is safer to use pow(10, 9) + 7.
+
+Here is the optimized code:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+const int mod = pow(10, 9) + 7;
+int sgtree[8000000];
+int slow[8000000];
+int n, m;
+vector<array<int, 3>> ve;
+int dfs(int st, int en, int node, int rngst, int rngen, int value) {
+  sgtree[node] += slow[node];
+  slow[2 * node] += slow[node];
+  slow[2 * node + 1] += slow[node];
+  slow[node] = 0;
+  if (st >= rngst && en <= rngen) {
+    slow[node] += value;
+    sgtree[node] += slow[node];
+    slow[2 * node] += slow[node];
+    slow[2 * node + 1] += slow[node];
+    slow[node] = 0;
+  } else if (!(en < rngst || st > rngen)) {
+    dfs(st, (st + en) / 2, 2 * node, rngst, rngen, value);
+    dfs(((st + en) / 2) + 1, en, 2 * node + 1, rngst, rngen, value);
+    sgtree[node] = min(sgtree[2 * node] + slow[2 * node],
+                       sgtree[2 * node + 1] + slow[2 * node + 1]);
+  }
+  return 0;
+}
+void del(int i) { dfs(1, m - 1, 1, ve[i][1], ve[i][2], -1); }
+void add(int i) { dfs(1, m - 1, 1, ve[i][1], ve[i][2], 1); }
+int check() { return sgtree[1] + slow[1]; }
+void solve() {
+  scanf("%d %d", &n, &m);
+  if (m == 2) {
+    printf("0\n");
+    return;
+  }
+  for (int i = 0; i < n; i++) {
+    int l, r, w;
+    scanf("%d %d %d", &l, &r, &w);
+    if (l == 1 && r == m) {
+      printf("0\n");
+      return;
+    }
+    ve.push_back({w, l, r - 1});
+  }
+  sort(ve.begin(), ve.end());
+  int i = 0, j = -1, ans = 1000000;
+  while (j < (ve.size() - 1)) {
+    if (check() > 0) {
+      del(i);
+      ans = min(ans, ve[j][0] - ve[i][0]);
+      i++;
+    } else {
+      j++;
+      add(j);
+    }
+  }
+  while (check() > 0) {
+    del(i);
+    ans = min(ans, ve[j][0] - ve[i][0]);
+    i++;
+  }
+  printf("%d\n", ans);
+}
+int main() {
+  int t = 1;
+  for (int tc = 1; tc <= t; tc++) { solve(); }
+  return 0;
+}
+```

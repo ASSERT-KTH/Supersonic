@@ -1,0 +1,14 @@
+Upon analyzing the given code, we can identify a few potential areas for optimization:
+
+1. The `nr` function:
+   - The `nr` function is used to find the largest cubic number less than or equal to a given number. However, it uses a linear search through the `tb` array, which is unnecessary. We can improve this by using binary search instead.
+   - Additionally, the `tb` array is populated with cubic numbers up to 1111, even though the maximum value of `z` in the `calc` function is 1111. We can reduce the size of the `tb` array to improve memory usage.
+
+2. The `calc` function:
+   - The `calc` function calculates the minimum value of `z^3 - i^3 - j^3` for each `i` from 1 to `z-1`. However, the loop can be optimized to only calculate `j^3` once and reuse the value instead of calling the `nr` function repeatedly.
+
+3. The `main` function:
+   - The `main` function populates the `ans` array by calling the `calc` function for each value from 1 to 1111. However, the `calc` function only needs to be called for values up to `N`, where `N` is the input from the user. We can optimize this by changing the loop condition to `i <= N`.
+
+4. Compiler optimizations:
+   - We can suggest using compiler optimizations, such as enabling loop unrolling, to improve the performance of the code. This can be achieved by using compiler-specific pragmas or flags.

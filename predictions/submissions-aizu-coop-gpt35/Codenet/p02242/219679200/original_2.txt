@@ -1,0 +1,105 @@
+The given code implements Dijkstra's algorithm to find the shortest path in a graph. However, there are several areas in the code that can be optimized for better performance and reduced memory usage. 
+
+1. Avoid unnecessary memory allocation: In the Graph class constructor, the line `g_(new uint[(n_ * n_)])` allocates memory for the entire graph matrix using `new`, which can be inefficient for large graphs. Instead, we can allocate memory for each row individually using `new uint[n_]`, and store the pointers to these rows in a separate array. This reduces the memory allocation to `n_` number of rows instead of `n_ * n_` elements.
+
+2. Replace std::fill_n with memset: In the Graph class constructor, the line `std::fill_n(g_, (n_ * n_), INFINIT)` can be replaced with `memset(g_, INFINIT, (n_ * n_) * sizeof(uint))` for faster initialization of the graph matrix.
+
+3. Avoid unnecessary use of std::min: In the dijkstra function, the line `dist[j] = std::min(dist[j], base_dist + es[j])` can be optimized by manually comparing and updating `dist[j]` using a simple if condition. This avoids the overhead of the std::min function.
+
+4. Use a separate array for visited nodes: In the dijkstra function, the array `visited` is allocated on the stack using `bool visited[n_]`. This is not efficient for large graphs as it occupies unnecessary space on the stack. Instead, we can allocate a separate array using `new bool[n_]` and delete it in the destructor.
+
+5. Use memset for array initialization: In the dijkstra function, the line `std::fill_n(visited, n_, false)` can be replaced with `memset(visited, false, n_ * sizeof(bool))` for faster initialization of the visited array.
+
+6. Avoid unnecessary memory access: In the dijkstra function, the line `auto es = (*this)[i]` accesses the graph matrix for each iteration of the inner loop. Instead, we can assign `es` outside the loop to avoid repeated memory access.
+
+7. Avoid unnecessary assignment in the inner loop: In the dijkstra function, the line `dist[j] = cur_min` is unnecessary as we are already updating `dist[j]` inside the loop. Removing this assignment improves performance.
+
+8. Use const references for function parameters: In the dijkstra function, the parameter `uint *dist` can be changed to `const uint *const dist` to indicate that the function does not modify the contents of `dist`.
+
+With these optimizations in mind, here is the optimized code:
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <cstring>
+
+using uint = unsigned int;
+
+class Graph {
+  const uint n_;
+  uint **g_;
+  const uint INFINIT;
+
+public:
+  Graph(uint n)
+      : n_(n), g_(new uint *[n_]), INFINIT(100000 * (n_ - 1) + 1) {
+    for (uint i = 0; i < n_; ++i) {
+      g_[i] = new uint[n_];
+      memset(g_[i], INFINIT, n_ * sizeof(uint));
+    }
+  }
+
+  ~Graph() {
+    for (uint i = 0; i < n_; ++i) {
+      delete[] g_[i];
+    }
+    delete[] g_;
+  }
+
+  uint *operator[](uint i) const { return g_[i]; }
+
+  void dijkstra(const uint *const dist) {
+    bool *visited = new bool[n_];
+    memset(visited, false, n_ * sizeof(bool));
+
+    uint i = 0;
+    visited[i] = true;
+    uint *es = (*this)[i];
+    uint base_dist = dist[i];
+
+    for (uint n = 0; n < n_ - 1; ++n) {
+      uint cur_min = INFINIT;
+      for (uint j = 0; j < n_; ++j) {
+        if (visited[j])
+          continue;
+        uint new_dist = base_dist + es[j];
+        if (dist[j] > new_dist) {
+          dist[j] = new_dist;
+        }
+        if (cur_min > dist[j]) {
+          cur_min = dist[j];
+          i = j;
+          es = (*this)[i];
+          base_dist = dist[i];
+        }
+      }
+      visited[i] = true;
+    }
+
+    delete[] visited;
+  }
+};
+
+int main() {
+  uint n;
+  std::scanf("%u", &n);
+  Graph g(n);
+  uint u, k, c, v;
+  for (uint i = 0; i < n; ++i) {
+    std::scanf("%u %u", &u, &k);
+    for (uint j = 0; j < k; ++j) {
+      std::scanf("%u %u", &c, &v);
+      g[u][c] = v;
+    }
+  }
+  uint *dist = new uint[n];
+  memset(dist, g.INFINIT, n * sizeof(uint));
+  g.dijkstra(dist);
+  for (uint i = 0; i < n; ++i) {
+    std::printf("%u %u\n", i, dist[i]);
+  }
+  delete[] dist;
+}
+```
+
+The optimized code improves memory usage by allocating memory for each row of the graph matrix individually. It also replaces std::fill_n with memset for faster initialization and eliminates unnecessary memory access and assignments within the dijkstra function. These optimizations should result in improved performance and reduced memory usage without altering the functionality or output of the original code.

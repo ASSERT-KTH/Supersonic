@@ -1,0 +1,130 @@
+The given program is implementing a solution for a problem that involves finding the minimum number of changes required in an array to make the maximum value less than or equal to a given threshold.
+
+To optimize this program, we can make the following modifications:
+
+1. Remove unnecessary headers: The program includes the `<bits/stdc++.h>` header, which includes all the standard headers. This can increase the compile time. We can remove this line and include only the necessary headers.
+
+2. Use `constexpr` instead of `const`: The constant `INF` is declared using `const`. We can use `constexpr` instead, which allows the compiler to evaluate the value at compile time.
+
+3. Use a fixed-size array instead of a dynamic-sized array: The arrays `d` and `h` are declared with a size of 100000. We can use a fixed-size array instead of a dynamic-sized array.
+
+4. Use a power of 2 for the size of the segment tree: The size of the segment tree is declared as `size * 2 - 1`, where `size` is 1 << 20. We can use a power of 2 for the size to simplify the calculations.
+
+5. Remove unnecessary checks in `seg_add` and `seg_getMax`: The conditions `b <= l || r <= a` and `l <= a && b <= r` can be removed from the functions `seg_add` and `seg_getMax` respectively. These conditions are already checked in the recursive calls.
+
+6. Use prefix increment instead of postfix increment: In the for loop in the `solve` function, the variable `i` is incremented using postfix increment (`i++`). We can use prefix increment (`++i`) instead, which can be more efficient.
+
+7. Use a more efficient loop termination condition: In the nested while loop in the `solve` function, the condition `seg_getMax(fl, fl + 1) > 0` is checked at the end of the loop. We can change the condition to `seg_getMax(fl, fl + 1) <= 0` and use a do-while loop instead. This way, we can avoid checking the condition twice.
+
+8. Use `std::cout` instead of `printf`: The program uses `printf` to print the result. We can use `std::cout` instead, which is type-safe and provides better integration with C++.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <utility>
+
+constexpr int INF = 1 << 28;
+typedef std::pair<int, int> Pr;
+
+const int N_MAX = 100000;
+int N, H;
+int d[N_MAX], h[N_MAX];
+const int size = 1 << 18;
+int seg_v[size * 2 - 1];
+int seg_a[size * 2 - 1];
+Pr rmq[size * 2 - 1];
+
+void seg_add(int l, int r, int x, int k = 0, int a = 0, int b = size) {
+  if (l <= a && b <= r) {
+    seg_a[k] += x;
+    while (k) {
+      k = (k - 1) / 2;
+      seg_v[k] = std::max(seg_v[k * 2 + 1] + seg_a[k * 2 + 1],
+                          seg_v[k * 2 + 2] + seg_a[k * 2 + 2]);
+    }
+    return;
+  }
+  int m = (a + b) / 2;
+  if (l < m)
+    seg_add(l, r, x, k * 2 + 1, a, m);
+  if (r > m)
+    seg_add(l, r, x, k * 2 + 2, m, b);
+}
+
+int seg_getMax(int l, int r, int k = 0, int a = 0, int b = size) {
+  if (l <= a && b <= r)
+    return seg_a[k] + seg_v[k];
+  int m = (a + b) / 2;
+  int vl = (l < m) ? seg_getMax(l, r, k * 2 + 1, a, m) : -INF;
+  int vr = (r > m) ? seg_getMax(l, r, k * 2 + 2, m, b) : -INF;
+  return seg_a[k] + std::max(vl, vr);
+}
+
+void rmq_update(int k, int x) {
+  int i = k;
+  k += size - 1;
+  rmq[k] = Pr(x, i);
+  while (k) {
+    k = (k - 1) / 2;
+    rmq[k] = std::max(rmq[k * 2 + 1], rmq[k * 2 + 2]);
+  }
+}
+
+Pr _rmq_getMax(int l, int r, int k = 0, int a = 0, int b = size) {
+  if (l <= a && b <= r)
+    return rmq[k];
+  int m = (a + b) / 2;
+  Pr vl = (l < m) ? _rmq_getMax(l, r, k * 2 + 1, a, m) : Pr(-INF, -1);
+  Pr vr = (r > m) ? _rmq_getMax(l, r, k * 2 + 2, m, b) : Pr(-INF, -1);
+  return std::max(vl, vr);
+}
+
+int rmq_getMax(int l, int r) { return _rmq_getMax(l, r).first; }
+
+int rmq_getMaxIdx(int l, int r) { return _rmq_getMax(l, r).second; }
+
+void solve() {
+  long long int res = 0;
+  for (int i = 0; i < N; ++i) {
+    rmq_update(i, h[i]);
+  }
+  seg_add(0, N, H);
+  for (int fl = 0; fl < N; ++fl) {
+    if (seg_getMax(fl, fl + 1) > H) {
+      seg_add(fl, N, H - seg_getMax(fl, fl + 1));
+    }
+    seg_add(fl, N, -d[fl]);
+    if (seg_getMax(fl, fl + 1) > 0)
+      continue;
+    do {
+      int idx = rmq_getMaxIdx(0, fl);
+      if (h[idx] > H - seg_getMax(idx, fl)) {
+        h[idx] = H - seg_getMax(idx, fl);
+        rmq_update(idx, h[idx]);
+        continue;
+      }
+      int s = (H - seg_getMax(idx, fl)) / h[idx];
+      int hp = seg_getMax(fl, fl + 1);
+      int need = -hp + 1;
+      int t = (need / h[idx]) + !!(need % h[idx]);
+      int num = std::min(s, t);
+      seg_add(idx, N, h[idx] * num);
+      res += num;
+    } while (seg_getMax(fl, fl + 1) <= 0);
+  }
+  std::cout << res << "\n";
+}
+
+int main() {
+  std::cin >> N >> H;
+  for (int i = 0; i < N - 1; ++i) {
+    std::cin >> d[i + 1] >> h[i];
+  }
+  solve();
+}
+```
+
+In the optimized program, we have made several modifications to improve the efficiency of the code. These modifications include using `constexpr`, using a fixed-size array, using a power of 2 for the size of the segment tree, removing unnecessary checks, using prefix increment, using a more efficient loop termination condition, and using `std::cout` instead of `printf`.
+
+These optimizations should help improve the running time and memory usage of the program.

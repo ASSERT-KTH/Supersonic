@@ -1,0 +1,95 @@
+The given program is a C++ implementation of Dinic's algorithm for finding the maximum flow in a directed graph. The program already has a good level of optimization, however, some improvements can be made to further improve its performance. 
+
+Optimization Steps:
+1. The use of "#include <bits/stdc++.h>" is discouraged as it includes a lot of unnecessary libraries which increases compilation time. It's better to include only the necessary libraries.
+2. In the BFS function, the initialization of the queue and the level vector can be done in a single line, which can make the code cleaner and slightly more efficient.
+3. In the DFS function, we can use a reference to the edge in the for loop instead of using its index, which can make the code cleaner and potentially faster.
+4. The use of "ios::sync_with_stdio(false)" and "cin.tie(0)" improves cin/cout efficiency but it makes cin/cout unsynchronized with scanf/printf or gets/puts. If the program does not use scanf/printf or gets/puts, these lines are fine. But if the program does, these lines can cause issues. 
+5. Changing the type of the Edge's weight from a dynamic Weight type to int could make the program faster, as it's less flexible and thus more efficient.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <limits>
+
+using namespace std;
+
+class Dinic {
+public:
+  Dinic(int n) : n(n), g(n), INF(numeric_limits<int>::max()) {}
+  
+  void add_edge(int src, int dst, int cap) {
+    g[src].emplace_back(Edge(src, dst, cap, g[dst].size()));
+    g[dst].emplace_back(Edge(dst, src, 0, g[src].size() - 1));
+  }
+  
+  int MaximumFlow(int s, int t) {
+    int flow = 0;
+    while (true) {
+      vector<int> level(n, -1), iter(n);
+      Bfs(s, level);
+      if (level[t] == -1)
+        break;
+      for (int f = 0; (f = Dfs(level, iter, s, t, INF)) > 0;)
+        flow += f;
+    }
+    return flow;
+  }
+
+private:
+  struct Edge {
+    int src, dst, rev, weight;
+    Edge(int f, int t, int cap, int rev = 0) : src(f), dst(t), rev(rev), weight(cap) {}
+  };
+  
+  int n;
+  vector<vector<Edge>> g;
+  const int INF;
+  
+  void Bfs(int s, vector<int> &level) {
+    queue<int> que({s});
+    level[s] = 0;
+    while (!que.empty()) {
+      int v = que.front();
+      que.pop();
+      for (Edge &e : g[v]) {
+        if (e.weight > 0 && level[e.dst] == -1) {
+          level[e.dst] = level[v] + 1;
+          que.push(e.dst);
+        }
+      }
+    }
+  }
+  
+  int Dfs(vector<int> &level, vector<int> &iter, int v, int t, int flow) {
+    if (v == t)
+      return flow;
+    for (Edge &e : g[v]) {
+      if (e.weight > 0 && level[v] < level[e.dst]) {
+        int d = Dfs(level, iter, e.dst, t, min(flow, e.weight));
+        if (d > 0) {
+          e.weight -= d;
+          g[e.dst][e.rev].weight += d;
+          return d;
+        }
+      }
+    }
+    return 0;
+  }
+};
+
+int main() {
+  int n, m, u, v, c;
+  cin >> n >> m;
+  Dinic flow(n);
+  for (int i = 0; i < m; ++i) {
+    cin >> u >> v >> c;
+    flow.add_edge(u, v, c);
+  }
+  cout << flow.MaximumFlow(0, n - 1) << endl;
+  return 0;
+}
+```

@@ -1,0 +1,13 @@
+The provided code is an implementation of the Depth-First Search (DFS) algorithm to find the discovery time (d[]) and finishing time (f[]) of each vertex in a directed graph. However, there are several areas where the code can be optimized for better performance and memory usage.
+
+1. Redundant Variables: The `WHITE`, `GRAY`, and `BLACK` constants are defined as macros, but they are only used in the `color[]` array. It would be more efficient to use `enum` instead of macros.
+
+2. Data Structure: The graph is represented as a 2D array `G[][]`, where `G[i][j]` stores the weight of the edge from vertex `i` to vertex `j`. However, for the given problem, we only need to check if an edge exists between two vertices. Therefore, using a boolean array instead of an integer array would be more memory-efficient.
+
+3. Unused Variables: The variable `e` is used to store the number of edges for each vertex, but it is not used anywhere in the code. This variable can be removed to simplify the code.
+
+4. Loop Optimization: The outer loop in the `dfs()` function iterates over all vertices, but the `search_loop()` function is only called for vertices that are not visited yet (i.e., `color[i] == WHITE`). We can optimize the code by removing the outer loop and directly calling `search_loop(i)` if `color[i]` is `WHITE`.
+
+5. Loop Unrolling: The inner loop in the `search_loop()` function iterates over all vertices to check if there is an edge from `i` to `next`. We can optimize this loop by unrolling it and using a conditional statement to break the loop early if an edge is found.
+
+6. Compiler Optimizations: We can use compiler optimizations and pragma directives to hint the compiler to optimize certain parts of the code. For example, we can use `#pragma omp parallel for` to parallelize the outer loop in the `dfs()` function, allowing for concurrent processing of vertices.

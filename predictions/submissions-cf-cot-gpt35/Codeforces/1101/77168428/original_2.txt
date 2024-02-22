@@ -1,0 +1,124 @@
+This program calculates the size of the largest subtree in a tree such that all the numbers in the nodes of the subtree have at most two distinct prime factors.
+
+To optimize the program, we can make the following changes:
+
+1. Remove unnecessary headers: The program includes the `<bits/stdc++.h>` header, which is not necessary. We can remove it.
+
+2. Remove unnecessary macros: The program defines several macros that are not used in the code. We can remove them.
+
+3. Use `constexpr` instead of `const`: The constant `N` is used to define the size of arrays. We can replace `const int N` with `constexpr int N` to allow the compiler to optimize the array size.
+
+4. Use references instead of passing by value: The function `get` returns a vector by value, which can be expensive for large vectors. We can change the signature of the function to `vector<int>& get(int x)` to return a reference to the vector instead.
+
+5. Use `emplace_back` instead of `push_back`: The function `get` adds elements to the vector using `push_back`. We can use `emplace_back` instead to construct the elements in place and avoid unnecessary copies.
+
+6. Use `reserve` to avoid reallocations: The function `get` adds elements to the vector dynamically. We can use `reserve` to reserve memory for the maximum number of elements in advance, avoiding reallocations.
+
+7. Use a reference to the vector in the loop: In the `dfs` function, the loop `for (auto u : g[v])` creates a copy of the vector `g[v]` in each iteration. We can use a reference to the vector instead to avoid the copy.
+
+8. Use `unordered_map` instead of `map`: The program uses a `map` to store the dynamic programming values. We can use an `unordered_map` instead to improve the lookup time.
+
+9. Remove unnecessary checks in the loop: In the `dfs` function, the loop `for (int i = 0; i < sz(cur); i++)` checks if `i` is less than the size of `cur` in each iteration. We can change the loop to `for (int i = 0, sz = cur.size(); i < sz; i++)` to avoid the check in each iteration.
+
+10. Use `emplace` instead of `insert`: In the `dfs` function, the line `dp[v][x] = t[i].x + 1;` inserts a new key-value pair into the map `dp[v]`. We can use `emplace` instead of `insert` to construct the element in place and avoid unnecessary copies.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <map>
+#include <unordered_map>
+using namespace std;
+
+constexpr int N = 2e5 + 100;
+vector<int> g[N], val(N), d(N), primes;
+unordered_map<int, int> dp[N];
+int ans = 0;
+
+vector<int>& get(int x) {
+  static vector<int> ret;
+  ret.clear();
+  ret.reserve(10);
+  for (int i = 2; i * i <= x; i++) {
+    if (x % i == 0) {
+      ret.emplace_back(i);
+      while (x % i == 0)
+        x /= i;
+    }
+  }
+  if (x != 1)
+    ret.emplace_back(x);
+  return ret;
+}
+
+struct max2 {
+  int x = 0, y = 0;
+  max2() {}
+  void rlx(int z) {
+    if (z >= x)
+      y = x, x = z;
+    else if (z >= y)
+      y = z;
+  }
+  int sum() { return x + y; }
+};
+
+void dfs(int v, int p) {
+  vector<int>& cur = get(val[v]);
+  vector<max2> t(cur.size());
+  for (const auto& u : g[v]) {
+    if (u == p)
+      continue;
+    dfs(u, v);
+    const int sz = cur.size();
+    for (int i = 0; i < sz; i++) {
+      int x = cur[i];
+      if (!dp[u].count(x))
+        continue;
+      t[i].rlx(dp[u][x]);
+    }
+  }
+  const int sz = cur.size();
+  for (int i = 0; i < sz; i++) {
+    int x = cur[i];
+    ans = max(ans, t[i].sum() + 1);
+    dp[v].emplace(x, t[i].x + 1);
+  }
+}
+
+int main() {
+  ios_base::sync_with_stdio(0);
+  cin.tie(0);
+  cout.tie(0);
+
+  for (int i = 2; i < N; i++) {
+    if (d[i] == 0) {
+      d[i] = i;
+      primes.push_back(i);
+    }
+    for (auto x : primes) {
+      if (x > d[i] || x * i >= N)
+        break;
+      d[x * i] = x;
+    }
+  }
+  int n;
+  cin >> n;
+  for (int i = 0; i < n; i++)
+    cin >> val[i];
+  for (int i = 0, a, b; i < n - 1; i++) {
+    cin >> a >> b;
+    a--;
+    b--;
+    g[a].push_back(b);
+    g[b].push_back(a);
+  }
+  dfs(0, -1);
+  cout << ans << '\n';
+
+  return 0;
+}
+```
+
+The optimized program improves the performance of the original program by minimizing unnecessary operations, reducing memory allocations, and using more efficient data structures.

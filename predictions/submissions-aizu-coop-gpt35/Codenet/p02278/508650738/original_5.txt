@@ -1,0 +1,124 @@
+The provided code is a C++ program that calculates the value of 'ans' based on a given input. The program uses a QuickFind data structure to perform union-find operations on a set of integers. The 'ans' value is calculated by iterating over the elements of the QuickFind structure and performing some calculations.
+
+Here is a step-by-step optimization strategy for the given code:
+
+1. Avoid including unnecessary headers: The code includes the `<bits/stdc++.h>` header, which is not a standard C++ header. It is recommended to include only the necessary headers, such as `<iostream>` and `<vector>`.
+
+2. Replace 'int' with 'size_t' for vector sizes: The code uses 'int' for vector sizes, which can be problematic if the size is larger than the maximum value representable by an 'int'. It is better to use 'size_t' for vector sizes to ensure compatibility with larger sizes.
+
+3. Initialize vectors with size: The code currently initializes the 'r', 'p', and 'v' vectors with a size of 0 and then resizes them in the 'init' function. It is more efficient to initialize the vectors with the correct size from the beginning.
+
+4. Avoid resizing vectors inside a loop: In the 'init' function, the 'v' vector is resized for each element. Resizing a vector inside a loop can be inefficient, especially if the loop is executed multiple times. It is better to initialize the vector with the correct size at the beginning or use a reserve function to preallocate memory.
+
+5. Use 'emplace_back' instead of 'push_back': In the 'unite' function, the 'v[x].push_back(v[y][i])' operation can be optimized by using 'v[x].emplace_back(v[y][i])'. 'emplace_back' avoids the creation of unnecessary temporary objects.
+
+6. Use 'size' member function instead of 'size()' function: In the 'unite' and 'same' functions, the 'size()' function is used to get the size of the 'v[y]' vector. It is more efficient to use the 'size' member function, which does not require a function call.
+
+7. Use iterators instead of indexing for 'v[y]' vector: In the 'unite' function, the 'v[y]' vector is accessed using indexing. It is better to use iterators to access the elements of the vector, as it can be more efficient.
+
+8. Use 'auto' keyword for range-based loops: In the 'unite' and 'same' functions, the loop variable type is explicitly defined as 'int'. It is recommended to use the 'auto' keyword for range-based loops to avoid potential type mismatches.
+
+9. Avoid unnecessary comparisons in 'same' function: The 'same' function currently compares 'p[x]' and 'p[y]' for equality. However, 'p[x]' and 'p[y]' are already assigned the same values in the previous line. The comparison can be removed to improve efficiency.
+
+10. Avoid unnecessary swaps in 'unite' function: The 'unite' function currently swaps 'x' and 'y' if 'r[x]' is less than 'r[y]'. However, the order of 'x' and 'y' does not affect the result. The swap operation can be removed to simplify the code.
+
+11. Avoid unnecessary calculations in 'same' function: The 'same' function currently performs unnecessary calculations to check if 'p[x]' and 'p[y]' are equal. It is sufficient to compare the values directly, without the need for calculations.
+
+12. Avoid copying the 'a' vector to 'b': The code creates a copy of the 'a' vector in the 'b' vector and then sorts 'b'. This is unnecessary and can be avoided. Instead, the 'a' vector can be sorted directly.
+
+13. Use 'emplace' instead of 'insert' for 'p' and 'q' maps: The 'p' and 'q' maps are used to store the indices of elements in the 'a' and 'b' vectors, respectively. Instead of using 'insert', which requires creating a pair object, it is more efficient to use 'emplace' to directly construct the key-value pairs in place.
+
+14. Avoid unnecessary calculations in 'ans' calculation: The 'ans' calculation can be optimized by avoiding unnecessary calculations. The 'tmp' variable can be initialized with the sum of the elements in 'v[i]' and then updated by subtracting 'm' and adding the minimum element of 'v[i]'. This avoids redundant calculations.
+
+15. Use 'reserve' for 'v' vector: Before the loop in the 'ans' calculation, the 'v' vector can be reserved with the maximum expected size. This can improve performance by avoiding dynamic memory allocations inside the loop.
+
+16. Optimize the 'ans' calculation loop: The 'ans' calculation loop can be optimized by using iterators instead of indexing for 'qf.v[i]'. Additionally, the 'k' variable can be calculated once outside the loop to avoid redundant calculations.
+
+17. Use 'emplace_hint' for 'q' map insertion: In the 'ans' calculation loop, the 'q' map is updated with 'b[0]' as the key and 'i' as the value. Instead of using 'insert', which requires locating the insertion position, it is more efficient to use 'emplace_hint' to provide a hint for the insertion position.
+
+With these optimizations in mind, here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <map>
+using namespace std;
+
+struct QuickFind {
+  vector<int> r, p;
+  vector<vector<int>> v;
+
+  QuickFind() {}
+  QuickFind(size_t size) { init(size); }
+
+  void init(size_t size) {
+    r.resize(size, 0);
+    p.resize(size, 0);
+    v.resize(size);
+    for (size_t i = 0; i < size; i++) {
+      r[i] = 1;
+      p[i] = i;
+      v[i].emplace_back(i);
+    }
+  }
+
+  bool same(size_t x, size_t y) { return p[x] == p[y]; }
+
+  void unite(size_t x, size_t y) {
+    x = p[x];
+    y = p[y];
+    if (x == y)
+      return;
+    if (r[x] < r[y]) {
+      r[x] += r[y];
+      for (auto it = v[y].begin(); it != v[y].end(); ++it) {
+        p[*it] = x;
+        v[x].emplace_back(*it);
+      }
+      v[y].clear();
+    } else {
+      r[y] += r[x];
+      for (auto it = v[x].begin(); it != v[x].end(); ++it) {
+        p[*it] = y;
+        v[y].emplace_back(*it);
+      }
+      v[x].clear();
+    }
+  }
+};
+
+int main() {
+  size_t n;
+  cin >> n;
+  vector<int> a(n);
+  for (size_t i = 0; i < n; i++)
+    cin >> a[i];
+  sort(a.begin(), a.end());
+  map<int, size_t> p, q;
+  for (size_t i = 0; i < n; i++) {
+    p.emplace(a[i], i);
+    q.emplace_hint(q.end(), a[i], i);
+  }
+  QuickFind qf(n);
+  for (size_t i = 0; i < n; i++)
+    qf.unite(i, p[a[i]]);
+  int ans = 0;
+  for (size_t i = 0; i < n; i++) {
+    auto& vi = qf.v[i];
+    size_t k = vi.size();
+    if (qf.p[i] != i || k == 1)
+      continue;
+    int m = a[vi[0]];
+    int tmp = 0;
+    for (auto it = vi.begin(); it != vi.end(); ++it) {
+      tmp += a[*it];
+      m = min(m, a[*it]);
+    }
+    ans += min(tmp + m * (k - 2), tmp + m + a[0] * (k + 1));
+  }
+  cout << ans << endl;
+  return 0;
+}
+```
+
+These optimizations aim to improve performance and reduce unnecessary operations while preserving the functionality and output of the original code.

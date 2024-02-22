@@ -1,0 +1,172 @@
+Code Analysis:
+- The code defines a struct `POINT` to represent a point in 2D space.
+- The code contains several inline functions for vector arithmetic operations (`operator+`, `operator-`, `operator!`) and cross product calculations (`cross`).
+- The code also defines a function `halfPlane` to determine if a point lies in the upper or lower half-plane.
+- The main function reads input values for the number of points `n` and the target area `S`.
+- It then reads the coordinates of `n` points and sorts them based on their x-coordinate and y-coordinate.
+- Next, it creates a vector `kol` of `kierunek` structures, where each structure contains a vector `wek` and the indices of two points `p` and `q`.
+- The vector `kol` is sorted based on the `angSortCmp` function, which compares the vectors `wek` in a specific order.
+- Finally, the code performs a binary search on the sorted `stab` array to find a point that satisfies a certain condition.
+
+Potential optimizations:
+1. Avoid unnecessary calculations: The code performs the cross product calculation twice in each of the binary search loops. We can optimize this by calculating it once and storing the result in a variable.
+2. Use a more efficient data structure: The code uses a vector of structures for `kol`, which may not be the most efficient data structure for this task. We can explore alternatives such as using a plain array or a custom data structure to reduce memory usage and improve cache performance.
+3. Optimize the binary search: The binary search loops can be optimized by using a more efficient search algorithm, such as interpolation search or exponential search.
+4. Use compiler optimizations: We can use compiler-specific optimizations or pragma directives to hint the compiler to optimize certain parts of the code.
+
+Optimization Strategy:
+1. In the `main` function, we can optimize the binary search loops by calculating the cross product only once and storing it in a variable. This can be done in both loops where `ww` is calculated.
+2. We can replace the `vector<kierunek> kol` with a plain array of `kierunek` structures to reduce memory overhead and improve cache performance.
+3. We can use a more efficient search algorithm, such as binary interpolation search, to replace the binary search loops.
+4. We can add compiler optimizations or pragma directives to hint the compiler to optimize certain parts of the code, such as loop unrolling or inline function expansion.
+
+Step-by-Step Explanation:
+1. In the `main` function, modify the binary search loops as follows:
+   - Replace `long long ww = cross(tab[q], stab[s], tab[p]);` with `long long ww = cross_val;`, where `cross_val` is calculated before the loop as `long long cross_val = cross(tab[q], stab[s], tab[p]);`.
+   - This change avoids the duplicate cross product calculation in each loop iteration, reducing computation overhead.
+2. Replace the `vector<kierunek> kol` with a plain array of `kierunek` structures as follows:
+   - Declare an array `kierunek kol[(n * (n - 1)) / 2];` instead of the `vector<kierunek> kol((n * (n - 1)) / 2);` declaration.
+   - Update the code to assign values to the array elements using indices instead of `push_back()`.
+   - This change reduces memory overhead and improves cache performance by using a more efficient data structure.
+3. Optimize the binary search loops using binary interpolation search as follows:
+   - Replace the binary search loops with a binary interpolation search algorithm.
+   - The binary interpolation search algorithm calculates the middle index as `int s = l + (r - l) * (S - ww) / (cross_val - ww);`, where `cross_val` is the previously calculated cross product value.
+   - This change improves the efficiency of the search algorithm by reducing the number of iterations required.
+4. Add compiler optimizations or pragma directives to hint the compiler to optimize certain parts of the code.
+   - Use appropriate compiler-specific optimizations or pragma directives to hint the compiler to optimize the code.
+   - This change can result in further performance improvements by leveraging compiler optimizations.
+
+Optimized Code:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+#pragma GCC optimize("O3")
+
+struct POINT {
+  int x, y;
+  POINT() : x(0), y(0) {}
+  POINT(int x, int y) : x(x), y(y) {}
+  POINT operator+(const POINT &t) const { return POINT(x + t.x, y + t.y); }
+  POINT operator-(const POINT &t) const { return POINT(x - t.x, y - t.y); }
+  POINT operator!() const { return POINT(-y, x); }
+};
+
+inline long long dot(const POINT &a, const POINT &b) {
+  return (long long)a.x * b.x + (long long)a.y * b.y;
+}
+
+inline long long cross(const POINT &a, const POINT &b) {
+  return (long long)a.x * b.y - (long long)a.y * b.x;
+}
+
+inline long long cross(const POINT &a, const POINT &b, const POINT &c) {
+  return cross(a - c, b - c);
+}
+
+inline bool halfPlane(const POINT &p) {
+  if (p.y == 0)
+    return p.x < 0;
+  return p.y < 0;
+}
+
+inline bool angSortCmp(const POINT &a, const POINT &b) {
+  bool ha = halfPlane(a);
+  bool hb = halfPlane(b);
+  if (ha != hb)
+    return ha < hb;
+  return cross(a, b) > 0;
+}
+
+const int N = 2000;
+int n;
+long long S;
+POINT tab[N + 7];
+int poz[N + 7];
+POINT stab[N + 7];
+
+struct kierunek {
+  POINT wek;
+  int p, q;
+};
+
+int main() {
+  ios_base::sync_with_stdio(0);
+  cin >> n >> S;
+  S *= 2;
+  for (int i = 1; i <= n; ++i)
+    cin >> tab[i].x >> tab[i].y;
+  sort(tab + 1, tab + n + 1, [](const POINT &a, const POINT &b) -> bool {
+    if (a.x == b.x)
+      return a.y > b.y;
+    return a.x < b.x;
+  });
+
+  for (int i = 1; i <= n; ++i) {
+    poz[i] = i;
+    stab[i] = tab[i];
+  }
+
+  kierunek kol[(n * (n - 1)) / 2];
+  int it = 0;
+  for (int i = 1; i <= n; ++i) {
+    for (int j = i + 1; j <= n; ++j) {
+      kol[it].wek = !(tab[j] - tab[i]);
+      kol[it].p = i;
+      kol[it].q = j;
+      it++;
+    }
+  }
+
+  sort(kol, kol + it, [](const kierunek &a, const kierunek &b) -> bool {
+    return angSortCmp(a.wek, b.wek);
+  });
+
+  for (kierunek u : kol) {
+    int p = u.p;
+    int q = u.q;
+    swap(stab[poz[p]], stab[poz[q]]);
+    swap(poz[p], poz[q]);
+    int l = 1;
+    int r = n;
+    long long cross_val = cross(tab[q], stab[l], tab[p]);
+    while (l <= r) {
+      int s = l + (r - l) * (S - cross_val) / (cross(tab[q], stab[r], tab[p]) - cross_val);
+      long long ww = cross(tab[q], stab[s], tab[p]);
+      if (ww == S) {
+        cout << "Yes" << endl;
+        cout << tab[p].x << ' ' << tab[p].y << endl;
+        cout << tab[q].x << ' ' << tab[q].y << endl;
+        cout << stab[s].x << ' ' << stab[s].y << endl;
+        exit(0);
+      }
+      if (ww > S)
+        r = s - 1;
+      else
+        l = s + 1;
+    }
+
+    l = 1;
+    r = n;
+    cross_val = cross(tab[q], stab[l], tab[p]);
+    while (l <= r) {
+      int s = l + (r - l) * (-S - cross_val) / (cross(tab[q], stab[r], tab[p]) - cross_val);
+      long long ww = cross(tab[q], stab[s], tab[p]);
+      if (ww == -S) {
+        cout << "Yes" << endl;
+        cout << tab[p].x << ' ' << tab[p].y << endl;
+        cout << tab[q].x << ' ' << tab[q].y << endl;
+        cout << stab[s].x << ' ' << stab[s].y << endl;
+        exit(0);
+      }
+      if (ww > -S)
+        r = s - 1;
+      else
+        l = s + 1;
+    }
+  }
+
+  cout << "No" << endl;
+  return 0;
+}
+```

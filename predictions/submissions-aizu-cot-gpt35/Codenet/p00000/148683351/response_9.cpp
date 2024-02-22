@@ -1,0 +1,14 @@
+#include <iostream>
+using namespace std;
+
+int main() {
+  for (int i = 1; i <= 9; i++) {
+    for (int j = i; j <= 9; j++) {
+      cout << i << "x" << j << "=" << i * j << endl;
+      if (i != j) {
+        cout << j << "x" << i << "=" << i * j << endl;
+      }
+    }
+  }
+  return 0;
+}

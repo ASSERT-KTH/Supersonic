@@ -1,0 +1,41 @@
+#include<iostream>
+#include<cstring>
+using namespace std;
+
+const int MAX = 1001;
+int mp[MAX][MAX];
+long long dp[MAX][MAX];
+
+void saiki(int h, int w) {
+  int x = 0, y = 0, dx[] = {0, 1}, dy[] = {1, 0};
+  while (x != w && y != h) {
+    int temp = x;
+    x += dx[mp[y][x]];
+    y += dy[mp[temp][y]];
+  }
+  cout << y + 1 << " " << x + 1 << endl;
+}
+
+int main() {
+  int h, w, n;
+  do {
+    cin >> h >> w >> n;
+    if (!h && !w && !n)
+      break;
+    for (int i = 0; i < h; i++)
+      for (int j = 0; j < w; j++)
+        cin >> mp[i][j];
+    memset(dp, 0, sizeof(dp));
+    dp[0][0] = n - 1;
+    for (int i = 0; i < h; i++)
+      for (int j = 0; j < w; j++) {
+        dp[i][j + 1] += dp[i][j] / 2 + mp[i][j] * dp[i][j] % 2;
+        dp[i + 1][j] += dp[i][j] / 2 + !mp[i][j] * dp[i][j] % 2;
+        if (dp[i][j] % 2)
+          mp[i][j] = !mp[i][j];
+      }
+    saiki(h, w);
+  } while (true);
+
+  return 0;
+}

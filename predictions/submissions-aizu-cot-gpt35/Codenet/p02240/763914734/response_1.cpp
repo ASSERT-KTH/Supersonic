@@ -1,0 +1,88 @@
+#include <algorithm>
+#include <stdio.h>
+#include <vector>
+using namespace std;
+
+class Relation {
+public:
+  Relation(int tmp_n, int tmp_m) {
+    n = tmp_n;
+    m = tmp_m;
+    V.resize(n);
+    num_of_each.resize(n, 0);
+    group.resize(n, false);
+    group_number = 1;
+  }
+
+  void push(int s, int t) {
+    V[s].push_back(t);
+    V[t].push_back(s);
+    num_of_each[s]++;
+    num_of_each[t]++;
+  }
+
+  void makeGroup() {
+    vector<pair<int, int>> Q;
+    Q.push_back({0, 0});
+    group[0] = true;
+    int front = 0;
+    while (front < Q.size()) {
+      int node = Q[front].first;
+      int index = Q[front].second;
+      front++;
+      if (num_of_each[node] > 0) {
+        for (int k = 0; k < num_of_each[node]; k++) {
+          if (!group[V[node][k]]) {
+            group[V[node][k]] = true;
+            Q.push_back({V[node][k], 0});
+          }
+        }
+      }
+      if (front == Q.size()) {
+        group_number++;
+        for (int i = 0; i < n; i++) {
+          if (!group[i]) {
+            group[i] = true;
+            Q.push_back({i, 0});
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  bool canAccsess(int s, int t) {
+    return group[s] && group[t];
+  }
+
+private:
+  vector<vector<int>> V;
+  vector<int> num_of_each;
+  vector<bool> group;
+  int group_number;
+  int n, m;
+};
+
+int main() {
+  int n, m, s, t, q;
+  scanf("%d %d", &n, &m);
+  Relation relation(n, m);
+  for (int i = 0; i < m; i++) {
+    scanf("%d %d", &s, &t);
+    relation.push(s, t);
+  }
+  relation.makeGroup();
+  scanf("%d", &q);
+  vector<pair<int, int>> queries(q);
+  for (int i = 0; i < q; i++) {
+    scanf("%d %d", &queries[i].first, &queries[i].second);
+  }
+  for (int i = 0; i < q; i++) {
+    if (relation.canAccsess(queries[i].first, queries[i].second)) {
+      printf("yes\n");
+    } else {
+      printf("no\n");
+    }
+  }
+  return 0;
+}

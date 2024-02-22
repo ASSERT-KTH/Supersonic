@@ -1,0 +1,91 @@
+#include <iostream>
+#include <vector>
+#include <functional>
+#include <limits>
+
+using namespace std;
+
+vector<vector<long long>> divide_and_conquer(long long h, long long w, const function<long long(long long, long long)> &f) {
+    const long long inf = numeric_limits<long long>::max() / 10;
+    vector<vector<long long>> dp(h, vector<long long>(w, inf));
+    function<void(long long, long long, long long, long long, long long)> dfs = [&](long long i, long long l, long long r, long long optl, long long optr) {
+        if (l > r)
+            return;
+        long long mid = (l + r) / 2, optm = -1;
+        for (long long j = optl; j <= min(mid, optr); ++j) {
+            long long cost = dp[i][j] + f(j + 1, mid);
+            if (cost < dp[i + 1][mid]) {
+                dp[i + 1][mid] = cost;
+                optm = j;
+            }
+        }
+        dfs(i, l, mid - 1, optl, optm);
+        dfs(i, mid + 1, r, optm, optr);
+    };
+    for (long long i = 0; i < w; ++i)
+        dp[0][i] = f(0, i);
+    for (long long i = 1; i < h; ++i)
+        for (long long j = 0; j < w; ++j)
+            dp[i][j] = inf;
+    for (long long i = 0; i < h - 1; ++i)
+        dfs(i, 0, w - 1, 0, w - 1);
+    return dp;
+}
+
+namespace cf190div1E {
+    void solve() {
+        int n, k;
+        cin >> n >> k;
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < n; ++j) {
+                int u;
+                cin >> u;
+                getchar();
+            }
+        }
+        for (int w = 1; w <= n; ++w) {
+            for (int l = 0, r = l + w; r < n; ++l, ++r) {
+                if (w >= 2)
+                    W[l][r] += W[l + 1][r] + W[l][r - 1] - W[l + 1][r - 1];
+            }
+        }
+        auto f = [&](long long i, long long j) { return W[i][j]; };
+        auto dp = divide_and_conquer(k, n, f);
+        cout << dp[k - 1][n - 1] << endl;
+    }
+}
+
+namespace cf438F {
+    void solve() {
+        long long N, K;
+        cin >> N >> K;
+        vector<long long> A(N);
+        for (int i = 0; i < N; ++i) {
+            cin >> A[i];
+            --A[i];
+        }
+        long long L, R, sum;
+        vector<long long> appear(100010);
+        appear[A[0]]++;
+        auto add = [&](long long idx) { sum += appear[A[idx]]++; };
+        auto del = [&](long long idx) { sum -= --appear[A[idx]]; };
+        function<long long(long long, long long)> f = [&](long long l, long long r) {
+            while (L > l)
+                add(--L);
+            while (L < l)
+                del(L++);
+            while (R < r)
+                add(++R);
+            while (R > r)
+                del(R--);
+            return sum;
+        };
+        auto dp = divide_and_conquer(K, N, f);
+        cout << dp[K - 1][N - 1] << endl;
+    }
+}
+
+int main(void) {
+    cf438F::solve();
+    return 0;
+}

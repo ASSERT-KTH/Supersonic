@@ -1,0 +1,13 @@
+The provided code calculates the maximum amount of tax that can be obtained from two investments (a and b) given certain conditions. The code uses a brute-force approach to iterate through all possible values of a and b to find the pair that maximizes the tax amount.
+
+However, there are several areas in the code that can be optimized to improve performance:
+
+1. Unnecessary vector initialization: The code initializes a 2D vector `tax` with dimensions 1000x2, but it never uses more than `i` rows. This leads to unnecessary memory allocation and initialization. We can optimize this by initializing the vector `tax` with a size equal to the maximum possible value of `i`.
+
+2. Redundant floating-point calculations: The code uses floating-point arithmetic to calculate the tax amounts. However, floating-point calculations can be expensive and prone to rounding errors. We can optimize this by using integer arithmetic instead.
+
+3. Redundant type conversions: The code performs unnecessary type conversions between `int` and `double` when calculating the tax amounts. We can optimize this by performing all calculations using integer arithmetic.
+
+4. Inefficient loop condition: The code uses a while loop with a condition that involves multiple comparisons and calculations. We can simplify the loop condition to improve readability and potentially improve performance.
+
+5. Use of `using namespace std`: The code uses the `using namespace std` directive, which is generally considered bad practice as it can lead to naming conflicts. It's better to explicitly qualify the standard library types and functions with the `std::` prefix.

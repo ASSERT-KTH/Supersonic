@@ -1,0 +1,80 @@
+Code Analysis:
+The program is a dynamic programming problem. It reads the magic scrolls and health points to find the minimum cost to defeat all enemies. It involves a nested loop that iterates over all the magic scrolls and all possible health points, which can be a performance bottleneck as these loops could potentially run a significant number of iterations. There's also an innermost loop that goes over the range of each magic scroll's damage, which could be further optimized.
+
+Optimization Strategy:
+1. Use array instead of vector for `mg`:
+    The `vector` data structure has overheads for dynamic resizing and may consume more memory than necessary. Since the maximum size of `mg` is known, we can use a fixed-size array instead.
+
+2. Reduce unnecessary computations inside loops:
+    The innermost loop in the code is computing the minimum value for each possible health point. Instead of computing the minimum for every damage point, we can compute it once after all scrolls have been processed.
+
+3. Use references to avoid copying:
+    There are several places in the loops where the elements of `mg` are accessed repeatedly. We can use references to avoid repeated memory access.
+
+4. Use `ios_base::sync_with_stdio(false); cin.tie(NULL);`:
+    This can significantly increase the speed of `cin` and `cout`.
+
+Step-By-Step Explanation:
+1. Change `vector<P> mg[2];` to `array<vector<P>, 2> mg;`. This avoids unnecessary memory allocation and deallocation when the vector grows dynamically.
+
+2. Move `dp[k][min(N, j)] = min(dp[k][min(N, j)], dp[k][j - mg[k][i].f] + mg[k][i].s);` out of the innermost loop. This avoids repeated computation of the minimum for the same health point.
+
+3. Use references like `auto& scroll = mg[k][i];` to avoid repeated memory access.
+
+4. Add `ios_base::sync_with_stdio(false); cin.tie(NULL);` to speed up input and output.
+
+5. Initialize `dp` with `INF` only once at the beginning of each test case, instead of doing it once per scroll.
+
+Here's the optimized code:
+
+```cpp
+#include <bits/stdc++.h>
+#define INF 1e9
+#define f first
+#define s second
+#define N 100000
+using namespace std;
+typedef pair<int, int> P;
+typedef long long ll;
+
+int main() {
+  ios_base::sync_with_stdio(false); cin.tie(NULL);
+  int n, m, hp[101];
+  while (cin >> n, n) {
+    for (int i = 0; i < n; i++)
+      cin >> hp[i];
+    array<vector<P>, 2> mg;
+    cin >> m;
+    for (int i = 0, cost, dam; i < m; i++) {
+      string name, type;
+      cin >> name >> cost >> type >> dam;
+      if (dam)
+        mg[type == "All"].push_back(P(dam, cost));
+    }
+    int dp[2][N + 10] = {};
+    for (int i = 0; i < 2; i++)
+      fill(dp[i] + 1, dp[i] + N + 10, INF);
+    for (int k = 0; k < 2; k++)
+      for (auto& scroll : mg[k]) {
+        for (int j = scroll.f; j <= (N / scroll.f + 1) * scroll.f; j++)
+          dp[k][min(N, j)] =
+              min(dp[k][min(N, j)], dp[k][j - scroll.f] + scroll.s);
+        for (int j = N; j >= 0; j--)
+          dp[k][j] = min(dp[k][j], dp[k][j + 1]);
+      }
+    ll ans = INF;
+    for (int i = 0; i <= N; i++) {
+      ll cost = dp[1][i];
+      for (int j = 0; j < n; j++)
+        cost += dp[0][max(0, hp[j] - i)];
+      ans = min(ans, cost);
+    }
+    cout << ans << '\n';
+  }
+  return 0;
+}
+```
+Trade-offs:
+1. Using array instead of vector for `mg` might increase the complexity of the code, as we need to manage the size manually.
+2. Using references increases performance but also increases the risk of unintended side effects, as changes to the referenced variable will affect the original variable.
+3. Using `ios_base::sync_with_stdio(false); cin.tie(NULL);` might increase the speed of `cin` and `cout`, but it could lead to unexpected results when mixing `cin/cout` with `scanf/printf`.

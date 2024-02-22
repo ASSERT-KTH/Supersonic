@@ -1,0 +1,128 @@
+Code Analysis:
+
+1. The code reads the input data and processes it in a while loop, where the condition for the loop is receiving three inputs (w, h, n).
+2. Inside the loop, it reads (x, y) coordinates of objects and stores them in a map, where y is the key and the values are a vector of x's.
+3. It then creates a matrix `O` of size `w x w`, which represents possible movements in the grid.
+4. It also creates a matrix `A` which is an identity matrix of size `w x w`.
+5. Then, it iterates over the map of objects using auto iteration and for each object it checks if the y coordinate has changed. If yes, it multiplies the matrix `A` with the power of matrix `O` raised to the difference between the new and old y coordinate minus one.
+6. Afterwards, it creates a new matrix `B` and updates it based on the x values of the current y coordinate. It then multiplies `A` with `B`.
+7. After the loop, it checks if the last y coordinate is less than `h-1`. If yes, it multiplies `A` with the power of `O` raised to `h-1` minus the last y coordinate.
+8. Finally, it multiplies `A` with a vector `b`, in which only the first element is 1, and the rest are 0. The last element of the result vector is then printed.
+
+Optimization Strategy:
+
+1. The major bottleneck in this program is the multiplication of matrices, which is an operation with time complexity of O(n^3). Therefore, we should aim to reduce the number of times the matrices are multiplied.
+2. The function `mat_pow` can be optimized using the divide and conquer approach, where instead of multiplying the matrix by itself `x` times, we can calculate the power of the matrix in logarithmic time.
+3. We can avoid using map for storing the objects. Instead, we can use a vector and sort it based on the y coordinate.
+
+Optimized Code:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+using ll = long long;
+#define rep(i, n) for (int(i) = 0; (i) < (int)(n); ++(i))
+#define all(x) (x).begin(), (x).end()
+#define pb push_back
+#define fi first
+#define se second
+#define dbg(x) cout << #x " = " << ((x)) << endl
+template <class T, class U>
+ostream &operator<<(ostream &o, const pair<T, U> &p) {
+  o << "(" << p.fi << "," << p.se << ")";
+  return o;
+}
+template <class T> ostream &operator<<(ostream &o, const vector<T> &v) {
+  o << "[";
+  for (T t : v) {
+    o << t << ",";
+  }
+  o << "]";
+  return o;
+}
+const ll mod = 1000000009;
+using vl = vector<ll>;
+using mat = vector<vl>;
+mat mul(const mat &A, const mat &B) {
+  int n = A.size();
+  mat C(n, vl(n));
+  rep(i, n) rep(j, n) rep(k, n)(C[i][j] += A[i][k] * B[k][j]) %= mod;
+  return C;
+}
+mat mat_pow(const mat &A, ll x) {
+  int n = A.size();
+  mat B(n, vl(n));
+  rep(i, n) B[i][i] = 1;
+  mat P(A);
+  for (; x; x >>= 1) {
+    if (x & 1)
+      B = mul(B, P);
+    if (x > 1)
+      P = mul(P, P);
+  }
+  return B;
+}
+vl mul(const mat &A, const vl &b) {
+  int n = A.size();
+  vl ret(n);
+  rep(i, n) rep(j, n)(ret[i] += A[i][j] * b[j]) %= mod;
+  return ret;
+}
+int main() {
+  int T = 1;
+  int w, n;
+  ll h;
+  while (cin >> w >> h >> n, w) {
+    vector<pair<ll, vector<int>>> obj(n);
+    rep(i, n) {
+      ll x, y;
+      cin >> x >> y;
+      --x;
+      --y;
+      if (y > 0) {
+        obj[i] = make_pair(y, vector<int>(1, x));
+      }
+    }
+    sort(obj.begin(), obj.end());
+    mat O(w, vl(w));
+    rep(i, w) {
+      for (int j = -1; j <= 1; ++j) {
+        if (0 <= i + j && i + j < w)
+          O[i][i + j] = 1;
+      }
+    }
+    mat A(w, vl(w));
+    rep(i, w) A[i][i] = 1;
+    ll ny = 0;
+    for (const auto &p : obj) {
+      ll Y = p.fi;
+      if (Y - ny > 1) {
+        A = mul(mat_pow(O, Y - ny - 1), A);
+      }
+      mat B(O);
+      for (int i : p.se) {
+        for (int j = -1; j <= 1; ++j) {
+          if (0 <= i + j && i + j < w)
+            B[i][i + j] = 0;
+        }
+      }
+      A = mul(B, A);
+      ny = Y;
+    }
+    if (ny != h - 1)
+      A = mul(mat_pow(O, h - 1 - ny), A);
+    vector<ll> b(w);
+    b[0] = 1;
+    vector<ll> res = mul(A, b);
+    ll ans = res[w - 1];
+    printf("Case %d: %lld\n", T++, ans);
+  }
+  return 0;
+}
+```
+
+Explanation:
+
+1. The function `mat_pow` has been optimized to calculate the power of a matrix in logarithmic time using the divide and conquer approach.
+2. The map for storing the objects was replaced with a vector and sorted based on the y coordinate. This reduces the time complexity of retrieval. However, this assumes that the number of objects is not very large, as sorting can be expensive for large inputs.
+3. These optimizations reduce the time complexity and memory usage, making the program more efficient. The trade-off is a slight increase in code complexity due to the use of the divide and conquer approach in the power function.

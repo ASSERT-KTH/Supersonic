@@ -1,0 +1,93 @@
+The given code is already quite optimized. However, a few slight changes can be made to improve the performance. Here are the step by step optimizations:
+
+1. **Avoiding unnecessary updates:** In the dfs function, the slow[node] is updated to zero twice, once in the beginning and once in if (st >= rngst && en <= rngen) condition. The second update is unnecessary because if the condition is true then slow[node] would have already been updated to zero in the beginning. So, we can remove the second update.
+
+2. **Avoiding unnecessary vector resizing:** Vectors in C++ are dynamic arrays and resizing them (which happens when we push_back) can be expensive in terms of time. The size of the vector 've' is equal to 'n'. So, we can reserve 'n' spaces in the vector beforehand.
+
+3. **Using appropriate data types:** You're using int32_t for the main function return type, but the standard return type is int. The int data type is typically 32 bits on modern systems, so there's no need to specify int32_t.
+
+4. **Change the order of conditions:** In the if-else condition inside the 'dfs' function, the second condition (en < rngst || st > rngen) which is a quick reject case, can be checked first. This can potentially save time as it will avoid unnecessary checks.
+
+5. **Avoiding unnecessary operations:** The operation slow[node] += 0; does not change the value of slow[node], so it can be removed.
+
+Here is the code after applying the above optimizations:
+
+```cpp
+#include <bits/stdc++.h>
+#define ff first
+#define ss second
+#define pb push_back
+#define ld long double
+#define f(i, x, n) for (int i = x; i < n; i++)
+using namespace std;
+const int mod = 1e9 + 7;
+int sgtree[8000000];
+int slow[8000000];
+int n, m;
+vector<array<int, 3>> ve;
+int dfs(int st, int en, int node, int rngst, int rngen, int value) {
+  sgtree[node] += slow[node];
+  slow[2 * node] += slow[node];
+  slow[2 * node + 1] += slow[node];
+  slow[node] = 0;
+  if (en < rngst || st > rngen) {
+    return 0;
+  } else if (st >= rngst && en <= rngen) {
+    slow[node] += value;
+    sgtree[node] += slow[node];
+    slow[2 * node] += slow[node];
+    slow[2 * node + 1] += slow[node];
+  } else {
+    dfs(st, (st + en) / 2, 2 * node, rngst, rngen, value);
+    dfs(((st + en) / 2) + 1, en, 2 * node + 1, rngst, rngen, value);
+    sgtree[node] = min(sgtree[2 * node] + slow[2 * node],
+                       sgtree[2 * node + 1] + slow[2 * node + 1]);
+  }
+  return 0;
+}
+void del(int i) { dfs(1, m - 1, 1, ve[i][1], ve[i][2], -1); }
+void add(int i) { dfs(1, m - 1, 1, ve[i][1], ve[i][2], 1); }
+int check() { return sgtree[1] + slow[1]; }
+void solve() {
+  cin >> n >> m;
+  ve.reserve(n);
+  if (m == 2) {
+    cout << "0\n";
+    return;
+  }
+  f(i, 0, n) {
+    int l, r, w;
+    cin >> l >> r >> w;
+    if (l == 1 && r == m) {
+      cout << "0\n";
+      return;
+    }
+    ve.push_back({w, l, r - 1});
+  }
+  sort(ve.begin(), ve.end());
+  int i = 0, j = -1, ans = 1000000;
+  while (j < ((int)ve.size() - 1)) {
+    if (check() > 0) {
+      del(i);
+      ans = min(ans, ve[j][0] - ve[i][0]);
+      i++;
+    } else {
+      j++;
+      add(j);
+    }
+  }
+  while (check() > 0) {
+    del(i);
+    ans = min(ans, ve[j][0] - ve[i][0]);
+    i++;
+  }
+  cout << ans << '\n';
+}
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  int t = 1;
+  f(tc, 1, t + 1) { solve(); }
+  return 0;
+}
+```

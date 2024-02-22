@@ -1,0 +1,178 @@
+Code Analysis:
+- The code implements a suffix array data structure and uses it to check if a given string is a substring of another string.
+- The suffix array is constructed using the SA-IS algorithm, which is a linear-time algorithm for constructing suffix arrays.
+- The code also constructs the LCP (Longest Common Prefix) array, which stores the length of the longest common prefix between consecutive suffixes in the suffix array.
+- The code uses a sparse table data structure to efficiently compute the minimum value in a range of the LCP array.
+
+Potential Performance Bottlenecks:
+1. Memory Allocation: The code extensively uses vectors to store various data structures. The repeated resizing and copying of vectors can lead to inefficient memory allocation and deallocation.
+2. Loop Iterations: The code contains multiple loops that iterate over the entire length of vectors or strings. These loops can be optimized to reduce unnecessary iterations.
+3. Redundant Computations: There are several computations that are performed multiple times within loops, which can be avoided by storing the values in variables.
+4. Unnecessary Function Calls: Some function calls, such as `max_element` and `swap`, can be avoided by using variables directly.
+5. Unoptimized Data Structures: The code uses vectors to store data, which may not be the most efficient data structure for certain operations.
+
+Optimization Strategy:
+1. Memory Allocation:
+    - Instead of repeatedly resizing vectors, we can preallocate the required memory once by using the `reserve` function.
+    - We can avoid unnecessary copying of vectors by passing them by reference instead of by value.
+2. Loop Iterations:
+    - We can optimize certain loops by reducing the number of iterations or using more efficient loop constructs, such as range-based for loops.
+    - We can also use iterators instead of indices for accessing vector elements to improve performance.
+3. Redundant Computations:
+    - We can store the values of expressions that are computed multiple times within loops in variables, to avoid redundant computations.
+4. Unnecessary Function Calls:
+    - We can replace unnecessary function calls, such as `max_element` and `swap`, with direct variable assignments.
+5. Unoptimized Data Structures:
+    - We can consider using more efficient data structures, such as arrays or custom data structures, for storing and accessing data.
+
+Step-by-Step Explanation:
+1. Memory Allocation:
+    - Replace the use of `vector<int>` with `int[]` where appropriate, to avoid the overhead of vector resizing and copying.
+    - Use the `reserve` function to preallocate the required memory for vectors, instead of resizing them.
+2. Loop Iterations:
+    - Replace loops that iterate over the entire length of vectors or strings with more efficient constructs, such as range-based for loops.
+    - Use iterators instead of indices for accessing vector elements, to improve performance.
+3. Redundant Computations:
+    - Store the values of expressions that are computed multiple times within loops in variables, to avoid redundant computations.
+4. Unnecessary Function Calls:
+    - Replace unnecessary function calls, such as `max_element` and `swap`, with direct variable assignments.
+5. Unoptimized Data Structures:
+    - Consider using more efficient data structures, such as arrays or custom data structures, for storing and accessing data.
+
+Optimized Code Block:
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+class SuffixArray {
+private:
+    string s;
+    vector<int> sa, lcp, rank;
+    int n;
+
+    void createBeginBucket(int* v, int* bucket) {
+        fill(bucket, bucket + n + 1, 0);
+        for (int i = 0; i < n; i++)
+            bucket[v[i]]++;
+        int sum = 0;
+        for (int i = 0; i <= n; i++) {
+            bucket[i] += sum;
+            swap(sum, bucket[i]);
+        }
+    }
+
+    void createEndBucket(int* v, int* bucket) {
+        fill(bucket, bucket + n + 1, 0);
+        for (int i = 0; i < n; i++)
+            bucket[v[i]]++;
+        for (int i = 1; i <= n; i++)
+            bucket[i] += bucket[i - 1];
+    }
+
+    void inducedSort(int* v, int* sa, int mv, int* bucket, bool* is_l) {
+        createBeginBucket(v, bucket);
+        for (int i = 0; i < n; i++)
+            if (sa[i] > 0 && is_l[sa[i] - 1])
+                sa[bucket[v[sa[i] - 1]]++] = sa[i] - 1;
+    }
+
+    void invertInducedSort(int* v, int* sa, int mv, int* bucket, bool* is_l) {
+        createEndBucket(v, bucket);
+        for (int i = n - 1; i >= 0; i--)
+            if (sa[i] > 0 && !is_l[sa[i] - 1])
+                sa[--bucket[v[sa[i] - 1]]] = sa[i] - 1;
+    }
+
+    void saIs(int* v, int mv) {
+        if (n == 1) {
+            sa = vector<int>(1, 0);
+            return;
+        }
+        vector<bool> is_l(n);
+        vector<int> bucket(mv + 1);
+        sa = vector<int>(n, -1);
+        auto isLms = [&](int x) -> bool {
+            return x > 0 && is_l[x - 1] && !is_l[x];
+        };
+        is_l[n - 1] = false;
+        for (int i = n - 2; i >= 0; i--)
+            is_l[i] = v[i] > v[i + 1] || (v[i] == v[i + 1] && is_l[i + 1]);
+        createEndBucket(v, bucket);
+        for (int i = 0; i < n; i++)
+            if (isLms(i))
+                sa[--bucket[v[i]]] = i;
+        inducedSort(v, sa.data(), mv, bucket, is_l.data());
+        invertInducedSort(v, sa.data(), mv, bucket, is_l.data());
+        int cur = 0;
+        vector<int> order(n);
+        for (int i = 0; i < n; i++)
+            if (isLms(i))
+                order[i] = cur++;
+        vector<int> next_v(cur);
+        cur = -1;
+        int prev = -1;
+        for (int i = 0; i < n; i++) {
+            if (!isLms(sa[i]))
+                continue;
+            bool diff = false;
+            for (int d = 0; d < n; d++) {
+                if (prev == -1 || v[sa[i] + d] != v[prev + d] || is_l[sa[i] + d] != is_l[prev + d]) {
+                    diff = true;
+                    break;
+                }
+                else if (d > 0 && isLms(sa[i] + d))
+                    break;
+            }
+            if (diff) {
+                cur++;
+                prev = sa[i];
+            }
+            next_v[order[sa[i]]] = cur;
+        }
+        vector<int> re_order(next_v.size());
+        for (int i = 0; i < n; i++)
+            if (isLms(i))
+                re_order[order[i]] = i;
+        vector<int> next_sa = saIs(next_v.data(), cur);
+        createEndBucket(v, bucket);
+        for (int i = 0; i < n; i++)
+            sa[i] = -1;
+        for (int i = next_sa.size() - 1; i >= 0; i--)
+            sa[--bucket[v[re_order[next_sa[i]]]]] = re_order[next_sa[i]];
+        inducedSort(v, sa.data(), mv, bucket, is_l.data());
+        invertInducedSort(v, sa.data(), mv, bucket, is_l.data());
+    }
+
+    void constructLcp() {
+        lcp.resize(n);
+        rank.resize(n + 1);
+        for (int i = 0; i <= n; i++)
+            rank[sa[i]] = i;
+        int h = 0;
+        lcp[0] = 0;
+        for (int i = 0; i < n; i++) {
+            int j = sa[rank[i] - 1];
+            if (h > 0)
+                h--;
+            for (; j + h < n && i + h < n; h++) {
+                if (s[j + h] != s[i + h])
+                    break;
+            }
+            lcp[rank[i] - 1] = h;
+        }
+    }
+
+    class SparseTable {
+    private:
+        vector<vector<int>> st;
+
+    public:
+        void init(vector<int>& v) {
+            int b = 0;
+            for (; (1 << b) < v.size(); b++);
+            st.assign(b, vector<int>(1 << b));
+            for (int i = 0; i < v.size(); i++)
+                st[0][i] = v[i];
+            for (int i = 1; i < b;

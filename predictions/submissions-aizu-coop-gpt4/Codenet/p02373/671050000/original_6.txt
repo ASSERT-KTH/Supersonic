@@ -1,0 +1,116 @@
+Code Analysis:
+The provided code is a C++ program implementing the Heavy-Light Decomposition algorithm for finding the Lowest Common Ancestor (LCA) in a tree. The LCA of two nodes u and v in the tree is the node located furthest from the root that is an ancestor to both u and v. 
+
+There are a few potential performance bottlenecks:
+
+1. There is a loop in the LCA function that iteratively checks if a node is an ancestor of another node until it finds the LCA. This could potentially degrade performance when dealing with large trees or when many LCA queries need to be performed.
+
+2. In the constructor of the HeavyLight struct, the code fills the len vector twice, once with 0s and then with 1s. This is unnecessary and can be optimized away.
+
+Optimization Strategy:
+
+1. Cache results: The LCA function is called multiple times for different pairs of nodes. If it is called again with the same pair of nodes, the result would be the same. We can use a map to cache the results of previous queries to avoid redundant computations.
+
+2. Avoid redundant computations: In the constructor of the HeavyLight struct, the len vector is filled twice, once with 0s and then with 1s. We can optimize this by only filling it once with the necessary values.
+
+Optimized Code Block:
+
+```c++
+#include <algorithm>
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+#define REP(i, n) for (int i = 0; i < int(n); ++i)
+#define FOR(i, a, b) for (int i = int(a); i < int(b); ++i)
+#define EACH(i, c) for (__typeof((c).begin()) i = (c).begin(); i != (c).end(); ++i)
+#define ALL(A) A.begin(), A.end()
+using namespace std;
+struct HeavyLight {
+  vector<vector<int>> len, tree;
+  int pathCount, n;
+  vector<int> size, parent, in, out, path, pathSize, pathPos, pathRoot;
+  unordered_map<int, unordered_map<int, int>> lca_cache;
+  HeavyLight(vector<vector<int>> tree)
+      : tree(tree), n(tree.size()), size(n), parent(n), in(n), out(n), path(n),
+        pathSize(n), pathPos(n), pathRoot(n) {
+    int time = 0;
+    dfs(0, -1, time);
+    buildPaths(0, newPath(0));
+    len = vector<vector<int>>(pathCount);
+    REP(i, pathCount) {
+      int m = pathSize[i];
+      len[i].resize(2 * m);
+      fill(len[i].begin() + m, len[i].begin() + 2 * m, 1);
+      for (int j = 2 * m - 1; j > 1; j -= 2)
+        len[i][j >> 1] = len[i][j] + len[i][j ^ 1];
+    }
+  }
+  void dfs(int u, int p, int &k) {
+    in[u] = k++, parent[u] = p, size[u] = 1;
+    for(auto v : tree[u]) if (v != p) dfs(v, u, k), size[u] += size[v];
+    out[u] = k++;
+  }
+  int newPath(int u) {
+    pathRoot[pathCount] = u;
+    return pathCount++;
+  }
+  void buildPaths(int u, int pt) {
+    path[u] = pt, pathPos[u] = pathSize[pt]++;
+    for(auto v : tree[u])
+      if (v != parent[u])
+        buildPaths(v, 2 * size[v] >= size[u] ? pt : newPath(v));
+  }
+  bool isAncestor(int p, int ch) {
+    return in[p] <= in[ch] && out[ch] <= out[p];
+  }
+  int lca(int a, int b) {
+    if (a > b) swap(a, b);
+    if (lca_cache.count(a) && lca_cache[a].count(b))
+        return lca_cache[a][b];
+    int result;
+    for (int root; !isAncestor(root = pathRoot[path[a]], b); a = parent[root])
+      ;
+    for (int root; !isAncestor(root = pathRoot[path[b]], a); b = parent[root])
+      ;
+    result = isAncestor(a, b) ? a : b;
+    lca_cache[a][b] = result;
+    return result;
+  }
+};
+int main(void) {
+  ios::sync_with_stdio(false);
+  int n;
+  cin >> n;
+  vector<vector<int>> tree(n);
+  REP(i, n) {
+    int k;
+    cin >> k;
+    REP(j, k) {
+      int ch;
+      cin >> ch;
+      tree[i].push_back(ch);
+    }
+  }
+  HeavyLight hl = HeavyLight(tree);
+  int q;
+  cin >> q;
+  while (q--) {
+    int u, v;
+    cin >> u >> v;
+    cout << hl.lca(u, v) << "\n";
+  }
+  return 0;
+}
+```
+
+Explanation:
+1. I added a hash map (lca_cache) to cache the results of previous LCA queries. This can significantly speed up the code if there are many repeated LCA queries.
+
+2. In the constructor of the HeavyLight struct, I removed the redundant fill operation which was filling the len vector with 0s.
+
+3. I replaced the macro EACH with a range-based for loop for better readability and type safety.
+
+4. The lca function now checks if the result of the current query is in the cache before performing the computation. If it is, it returns the cached result. If it is not, it performs the computation and stores the result in the cache before returning it.
+
+Trade-offs:
+The main trade-off of this optimization is the additional memory usage for the cache. However, this is a reasonable trade-off because it can significantly speed up the LCA queries, especially if there are many repeated queries.

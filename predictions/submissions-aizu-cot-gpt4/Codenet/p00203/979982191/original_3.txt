@@ -1,0 +1,76 @@
+This program appears to be solving some sort of puzzle or game. The primary optimizations that can be made are:
+
+1. Avoiding the repeated calculation of memo values - The function `func` repeatedly calculates the memoization values. This can be avoided by checking the memo value before calling the function and in the function, returning the memo value if it exists.
+
+2. Avoiding the full initialization of the `data` array - The `data` array is initialized in full every time, which is not necessary if we only read the values that we need.
+
+3. Removing the redundant check in `func` - The `if (memo[y][x] == 0) data[y][x] = 1;` check at the end of the `func` function is redundant since the function would have returned before reaching this point if `memo[y][x]` were non-zero.
+
+Here's the optimized code:
+
+```cpp
+#include <iostream>
+#define N 15
+using namespace std;
+void func(int, int);
+int jump(int, int);
+int X, Y, data[N][N], memo[N][N];
+int main() {
+  while (1) {
+    cin >> X >> Y;
+    if (X == 0 && Y == 0)
+      break;
+    for (int i = 0; i < Y; i++)
+      for (int j = 0; j < X; j++)
+        cin >> data[i][j], memo[i][j] = -1;
+    for (int i = 0; i < X; i++)
+      if (data[0][i] == 0)
+        func(0, i);
+    int cnt = 0;
+    for (int i = 0; i < X; i++)
+      cnt += memo[0][i] == -1 ? 0 : memo[0][i];
+    cout << cnt << endl;
+  }
+  return 0;
+}
+void func(int y, int x) {
+  if (memo[y][x] != -1) return;
+  if (y == Y - 1) {
+    memo[y][x] = 1;
+    return;
+  }
+  memo[y][x] = 0;
+  if (0 <= x - 1 && data[y + 1][x - 1] == 0) {
+    func(y + 1, x - 1);
+    memo[y][x] += memo[y + 1][x - 1];
+  }
+  if (x + 1 < X && data[y + 1][x + 1] == 0) {
+    func(y + 1, x + 1);
+    memo[y][x] += memo[y + 1][x + 1];
+  }
+  if (data[y + 1][x] == 0) {
+    func(y + 1, x);
+    memo[y][x] += memo[y + 1][x];
+  }
+  if (data[y + 1][x] == 2) {
+    int r = jump(y + 1, x);
+    if (r == -2)
+      memo[y][x] += 1;
+    else if (r != -1) {
+      func(r, x);
+      memo[y][x] += memo[r][x];
+    }
+  }
+}
+int jump(int y, int x) {
+  while (1) {
+    y += 2;
+    if (y >= Y - 1)
+      return -2;
+    if (data[y][x] != 1)
+      return y;
+  }
+  return -1;
+}
+```
+In this optimized version, we only initialize the `memo` array and do so with `-1` to represent uninitialized values. We then add a check at the start of `func` to return if the memo value has been calculated, and another when adding to `cnt` to ignore uninitialized values. These changes avoid calculating the same values multiple times and reduce the number of operations needed when reading in `data`. The redundant check at the end of `func` is also removed.

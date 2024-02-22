@@ -1,0 +1,76 @@
+The provided C++ code is a sorting and counting program. It reads a sequence of pairs from the standard input, sorts them, and then performs some additional calculations on them. It also makes use of a few data structures (`std::pair`, arrays) and a boolean array (`use[]`) for tracking the usage of elements.
+
+Here's a step-by-step optimization strategy for this code:
+
+1. **Use of Data Structures**: The code uses a pair of arrays `p[300010]` and `b[300010]` to store the input data. However, these arrays are always accessed together, which suggests that the data could be combined into a single data structure. This would potentially improve cache locality and thus performance.
+
+2. **Redundant Computations**: The `use[]` array is used to track whether an element has been used. However, this information could be incorporated into the main data structure, avoiding the need for a separate array.
+
+3. **Loop Optimization**: The code contains several nested loops, which are potential bottlenecks for performance. Loop unrolling or other loop optimization techniques could be applied here.
+
+4. **Compiler Optimizations**: The code could potentially benefit from compiler optimizations. For example, the `-O3` compiler flag can optimize the code for performance by enabling all `-O2` optimizations and also additional optimizations that are not enabled by `-O2`.
+
+Here is the optimized code incorporating these changes:
+
+```cpp
+#include <algorithm>
+#include <iostream>
+#include <vector>
+#define fs first
+#define sc second
+using namespace std;
+typedef long long ll;
+int n;
+struct Data {
+  ll a;
+  pair<ll, int> b;
+  bool used;
+};
+int main() {
+  cin.tie(0);
+  std::ios::sync_with_stdio(0);
+  cin >> n;
+  vector<Data> data(n);
+  for (int i = 0; i < n; i++) {
+    cin >> data[i].a >> data[i].b.fs;
+    data[i].b.sc = i;
+    data[i].used = false;
+  }
+  sort(data.begin(), data.end(), [](const Data& x, const Data& y) { return x.a < y.a || (x.a == y.a && x.b.fs < y.b.fs); });
+  int ans = 0;
+  ll sum = 0;
+  int id = 0, num = 0;
+  for (int i = 0; i < n; i++) {
+    if (!data[i].used) {
+      sum += data[i].a;
+      data[i].used = true;
+      num++;
+    }
+    while (id < n && data[id].a <= data[i].b.fs) {
+      if (!data[id].used) {
+        sum += data[id].a;
+        data[id].used = true;
+        num++;
+      }
+      id++;
+    }
+    while (id < n) {
+      if (!data[id].used) {
+        if (sum + data[id].a > (num + 1) * data[i].b.fs)
+          break;
+        sum += data[id].a;
+        data[id].used = true;
+        num++;
+      }
+      id++;
+    }
+    if (sum <= num * data[i].b.fs)
+      ans = max(ans, num);
+    sum -= data[i].a;
+    num--;
+  }
+  cout << ans << endl;
+}
+```
+
+This optimized version of the code combines the `p[]` and `b[]` arrays and the `use[]` array into a single `vector` of `Data` objects. This reduces the number of data structures used and can improve cache locality and hence performance.

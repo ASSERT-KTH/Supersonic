@@ -1,0 +1,80 @@
+There are few potential optimizations in the given C/C++ program. 
+
+1. Precomputation of string comparison: `tmp.find(C[i][j])` in the nested loop can be a costly operation as `find()` is O(n), where n is the string length. You can create a map which maps the character to its index in the string 'tmp'. This will reduce the time complexity to O(1).
+
+2. Inefficient use of `memset`: `memset` is a byte-by-byte operation, which is less efficient on modern hardware than using a loop to set the values. It might be faster to use a simple loop to initialize the values in the `nxt` array.
+
+3. Avoiding Recursion: The `dfs` function is recursive, which can lead to a high stack usage and potential stack overflow, as well as function call overhead. Iterative solutions are generally faster than recursive ones and use less memory.
+
+4. Including `<bits/stdc++.h>`: This header file includes practically every standard library. Including it in every program is quite inefficient and increases compilation time. Include only the necessary header files.
+
+Here is the optimized version:
+
+```C++
+#include <iostream>
+#include <string>
+#include <map>
+#include <vector>
+using namespace std;
+typedef long long int64;
+const string tmp = "NESW";
+const int vy[] = {-1, 0, 1, 0}, vx[] = {0, 1, 0, -1};
+int H, W;
+int64 L;
+vector<string> C(100);
+int sx, sy, sv;
+int64 nxt[100][100][4];
+map<char, int> tmpMap;
+
+void initTmpMap() {
+    for(int i = 0; i < tmp.length(); i++) {
+        tmpMap[tmp[i]] = i;
+    }
+}
+
+void dfs() {
+    int64 step = L;
+    int x = sx, y = sy, v = sv;
+    while (step > 0) {
+        int nx = x + vx[v], ny = y + vy[v], nv = (v + 1) % 4;
+        if (step == 0) {
+            cout << y + 1 << " " << x + 1 << " " << tmp[v] << endl;
+            break;
+        } else if (0 <= nx && 0 <= ny && nx < W && ny < H && C[ny][nx] != '#') {
+            int64 loop = ~nxt[nx][ny][v] ? nxt[x][y][v] - nxt[nx][ny][v] + 1 : step;
+            nxt[nx][ny][v] = nxt[x][y][v] + 1;
+            step = (step - 1) % loop;
+            x = nx; y = ny;
+        } else {
+            nxt[x][y][nv] = nxt[x][y][v];
+            step--;
+            v = nv;
+        }
+    }
+}
+
+int main() {
+    initTmpMap();
+    while (cin >> H >> W >> L, H) {
+        for (int i = 0; i < H; i++) {
+           for (int j = 0; j < W; j++) {
+               for (int k = 0; k < 4; k++) {
+                   nxt[i][j][k] = -1;
+               }
+           }
+        }
+        for (int i = 0; i < H; i++) {
+            cin >> C[i];
+            for (int j = 0; j < W; j++) {
+                if (tmpMap.count(C[i][j])) {
+                    sx = j, sy = i, sv = tmpMap[C[i][j]];
+                }
+            }
+        }
+        nxt[sx][sy][sv] = 0;
+        dfs();
+    }
+}
+```
+
+This version of the program uses a map to precompute the indices of the characters in `tmp`, replaces `memset` with a loop, replaces the recursive `dfs` function with an iterative one, and only includes the necessary header files.

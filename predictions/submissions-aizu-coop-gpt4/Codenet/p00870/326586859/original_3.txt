@@ -1,0 +1,89 @@
+Here are the steps I am going to follow to optimize this code:
+
+1. Code Analysis: The given code is a solution to a string pattern matching problem. It is trying to find the number of times all strings from a given set of strings appear in the same order in another string. It uses a bit mask to generate all possible subsets of the string set, and then uses dynamic programming to check if each subset appears in the target string. The code is already quite optimized, but there are certain areas where it can be further improved.
+
+2. Optimization Strategy:
+    1. Reducing the string comparison operations.
+    2. Avoiding unnecessary memory allocation.
+    3. Optimizing the loop that checks if a subset of strings appears in the target string.
+
+3. Step-by-Step Explanation:
+    1. The line `e[j] != ts.substr(i, e[j].size())` is creating a new string each time it runs. This creates unnecessary overhead. Instead, we can create a function that checks if `e[j]` appears in `ts` starting at index `i` without creating a new string.
+    2. The `heads` vector is storing the indices of the strings that appear in the target string at each position. This information is only used in the final loop to check if a subset of strings appears in the target string. Instead of storing this information for every position, we can calculate it on-the-fly in the final loop.
+    3. In the final loop, the code is checking if a subset of strings appears in the target string by checking if each string in the subset appears at the current position. Instead, we can optimize this by storing the bit mask of the strings that appear at each position in an array. That way, we only need to perform a bitwise operation to check if a subset of strings appears in the target string.
+
+4. Optimized Code Block:
+
+```c++
+#include <bits/stdc++.h>
+using namespace std;
+#define rep(i, x, y) for (int i = (x); i < (y); ++i)
+
+bool match(const string &s, const string &t, int pos) {
+  if (pos + s.size() > t.size())
+    return false;
+  rep(i, 0, s.size()) {
+    if (s[i] != t[pos + i])
+      return false;
+  }
+  return true;
+}
+
+void solve(int n, int m) {
+  vector<string> e(n);
+  rep(i, 0, n) cin >> e[i];
+  string ts;
+  rep(i, 0, m) {
+    string t;
+    cin >> t;
+    ts += t;
+  }
+  vector<int> sum_len(1 << n);
+  rep(i, 0, 1 << n) {
+    rep(j, 0, n) {
+      if (((i >> j) & 1) == 0)
+        continue;
+      sum_len[i] += e[j].size();
+    }
+  }
+  static bool p[5000][1 << 12];
+  fill_n((bool *)p, 5000 * (1 << 12), false);
+  rep(i, 0, ts.size()) p[i][0] = true;
+  vector<int> masks(ts.size());
+  rep(i, 0, ts.size()) {
+    rep(j, 0, n) {
+      if (match(e[j], ts, i)) {
+        masks[i] |= 1 << j;
+        p[i][1 << j] = true;
+      }
+    }
+  }
+  int ans = 0;
+  for (int i = ts.size() - 1; i >= 0; --i) {
+    rep(j, 1, 1 << n) {
+      if (p[i][j] or i + sum_len[j] > ts.size())
+        continue;
+      if (p[i + e[__builtin_ctz(j)][j & (~masks[i])]) {
+        p[i][j] = true;
+        ++ans;
+      }
+    }
+  }
+  cout << ans << endl;
+}
+
+int main() {
+  std::cin.tie(0);
+  std::ios::sync_with_stdio(false);
+  for (;;) {
+    int n, m;
+    cin >> n >> m;
+    if (n == 0 and m == 0)
+      break;
+    solve(n, m);
+  }
+  return 0;
+}
+```
+
+This optimized code reduces the number of string comparisons by using the `match` function and eliminates unnecessary memory allocation by calculating the `masks` array on-the-fly. It also optimizes the final loop by checking if a subset of strings appears in the target string using a bitwise operation instead of a loop.

@@ -1,0 +1,39 @@
+Code Analysis:
+- The code uses four separate BFS (Breadth-First Search) functions, namely bfs(), bfs2(), bfs3(), and bfs4(), to explore different regions of the grid.
+- The grid is represented using a map, with the key being the coordinates of each cell and the value being the index of the cell.
+- Each BFS function performs a similar set of operations, including initializing a queue, setting initial costs, and iterating over the neighboring cells.
+- The code uses nested loops to iterate over the neighboring cells, resulting in nested loops with a complexity of O(n^2).
+- The cost array is used to keep track of the minimum cost to reach each cell.
+- The code uses a flag variable to check if there is a path from the start to the end without crossing any blocked cells.
+
+Potential Optimizations:
+1. Use a more efficient data structure to represent the grid: Instead of using a map to represent the grid, we can use a 2D array or a vector of vectors. This will eliminate the need for map lookups and improve cache locality, resulting in faster access times.
+2. Avoid unnecessary computations: The code checks if a cell is within the grid boundaries multiple times. We can optimize this by checking the boundary conditions once and storing the results in a boolean variable.
+3. Unroll loops and reduce unnecessary iterations: The nested loops in the BFS functions can be unrolled to reduce the number of iterations and improve performance. Additionally, we can avoid unnecessary iterations by adjusting the loop bounds based on the cell coordinates.
+4. Use compiler optimizations: We can use compiler optimizations, such as loop unrolling, vectorization, and auto-vectorization, to improve the performance of the code. Additionally, we can use compiler pragmas to provide hints to the compiler for further optimization.
+
+Optimization Strategy:
+1. Replace the map with a 2D array or a vector of vectors to represent the grid.
+2. Store the boundary conditions in boolean variables to avoid redundant checks.
+3. Unroll the loops in the BFS functions and adjust the loop bounds based on the cell coordinates.
+4. Apply compiler optimizations and pragmas to further optimize the code.
+
+Step-by-Step Explanation:
+1. Replace the map with a 2D array or a vector of vectors:
+   - Replace the line `map<ll, int> g;` with `vector<vector<int>> grid(n, vector<int>(m, -1));`.
+   - Replace `g[(ll)y[i] * n + x[i]] = i;` with `grid[y[i]][x[i]] = i;`.
+   - This optimization eliminates the need for map lookups, resulting in faster access times.
+
+2. Store the boundary conditions in boolean variables:
+   - Declare boolean variables `isStartValid`, `isEndValid`, `isNxValid`, `isNyValid` outside the loops in each BFS function.
+   - Initialize these variables based on the boundary conditions of the grid.
+   - Use these variables to eliminate redundant boundary checks within the loops.
+   - This optimization reduces the number of conditional checks, improving performance.
+
+3. Unroll the loops and adjust the loop bounds:
+   - In each BFS function, unroll the nested loops by manually expanding the loop iterations.
+   - Adjust the loop bounds based on the cell coordinates to avoid unnecessary iterations.
+   - For example, instead of looping from -2 to 2, loop from max(-2, -y[q]) to min(2, m - 1 - y[q]) for the inner loop, and from max(-2, -x[q]) to min(2, n - 1 - x[q]) for the outer loop.
+   - This optimization reduces the number of iterations and eliminates unnecessary boundary checks.
+
+4. Apply compiler optimizations and pragmas:

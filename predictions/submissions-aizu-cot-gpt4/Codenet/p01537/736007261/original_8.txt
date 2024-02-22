@@ -1,0 +1,220 @@
+The given code is complex and involves complex number computations and geometry. However, there are some basic optimizations that can be performed:
+
+1. Redundant Libraries: The code includes the same libraries multiple times (e.g., `<algorithm>`, `<cstdio>`, `<iostream>`, `<vector>`). This is unnecessary and can slow down compilation time, although modern compilers should be able to handle this.
+
+2. Unnecessary namespaces: `using namespace std;` is used twice, which is unnecessary and can be removed.
+
+3. Redundant typedefs and defines: The code defines the same typedefs and defines multiple times. For example, `typedef vector<int> vi;` is defined twice. This can be removed.
+
+4. Remove unused functions: The code includes many functions that aren't called in the `main` function. Removing these can save memory and speed up the program.
+
+5. Use in-place operations: In some places, the code can be optimized by using in-place operations. For example, instead of `c += (g[x] - c) * r;`, you could use `c += (g[x] - c) *= r;`.
+
+6. Loop unrolling: In some cases, loop unrolling can improve performance by reducing the overhead of loop control instructions.
+
+Here is the optimized code:
+
+```cpp
+#define _CRT_SECURE_NO_WARNINGS
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <cstring>
+#include <ctime>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+#include <complex>
+using namespace std;
+typedef long long ll;
+typedef vector<int> vi;
+typedef vector<vi> vvi;
+typedef pair<int, int> pii;
+#define all(c) (c).begin(), (c).end()
+#define loop(i, a, b) for (ll i = a; i < ll(b); i++)
+#define rep(i, b) loop(i, 0, b)
+#define each(e, c) for (auto &e : c)
+#define pb push_back
+#define eb emplace_back
+#define mp make_pair
+#define mt make_tuple
+#define lb lower_bound
+#define ub upper_bound
+#ifdef DEBUG
+#define dump(...)                                                              \
+  (cerr << #__VA_ARGS__ << " = " << (DUMP(), __VA_ARGS__).str() << " ["        \
+        << __LINE__ << "]" << endl)
+struct DUMP : ostringstream {
+  template <class T> DUMP &operator,(const T &t) {
+    if (this->tellp())
+      *this << ", ";
+    *this << t;
+    return *this;
+  }
+};
+#else
+#define dump(...)
+#endif
+template <class T> ostream &operator<<(ostream &os, vector<T> const &v) {
+  rep(i, v.size()) os << v[i] << (i + 1 == (int)v.size() ? "" : " ");
+  return os;
+}
+#define curr(g, i) g[i]
+#define next(g, i) g[(i + 1) % g.size()]
+#define self (*this)
+typedef long double R;
+const R eps = 1e-10;
+const R inf = 1e12;
+const R pi = acos(-1);
+typedef complex<R> P;
+bool comp_x(P const &a, P const &b) {
+  return real(a) != real(b) ? real(a) < real(b) : imag(a) < imag(b);
+}
+bool comp_y(P const &a, P const &b) {
+  return imag(a) != imag(b) ? imag(a) < imag(b) : real(a) < real(b);
+}
+P CENTER = P();
+bool comp_arg(P const &a, P const &b) {
+  return arg(a, CENTER, CENTER + (R)1.) < arg(b, CENTER, CENTER + (R)1.);
+}
+namespace std {
+bool operator<(P const &a, P const &b) { return comp_x(a, b); }
+} // namespace std
+R cross(P const &a, P const &b) { return imag(conj(a) * b); }
+R dot(P const &a, P const &b) { return real(conj(a) * b); }
+struct L : public vector<P> {
+  L(P const &a = P(), P const &b = P()) {
+    push_back(a);
+    push_back(b);
+  }
+  P vec() const { return self[1] - self[0]; }
+};
+typedef vector<P> G;
+struct C {
+  P p;
+  R r;
+  C(P const &p = P(), R r = 0) : p(p), r(r) {}
+};
+enum { CCW = +1, CW = -1, CAB = +2, ABC = -2, SEG = 0 };
+int ccw(P a, P b, P c) {
+  b -= a;
+  c -= a;
+  if (cross(b, c) > 0)
+    return CCW;
+  if (cross(b, c) < 0)
+    return CW;
+  if (dot(b, c) < 0)
+    return CAB;
+  if (norm(b) < norm(c))
+    return ABC;
+  return SEG;
+}
+R area(C const &c) { return pi * c.r * c.r; }
+C min_ball(G const &g) {
+  int n = g.size();
+  if (n == 1)
+    return C(g[0], 0);
+  if (n == 2)
+    return C((g[0] + g[1]) / (R)2, abs((g[0] + g[1]) / (R)2 - g[0]));
+  P c = (g[0] + g[n / 3] + g[n / 3 * 2]) / (R)3;
+  R r = 1.0;
+  rep(i, 1000) {
+    R d = 0;
+    int x = 0;
+    rep(j, n) {
+      if (d < abs(g[j] - c)) {
+        d = abs(g[j] - c);
+        x = j;
+      }
+    }
+    c += (g[x] - c) *= r;
+    if (i & 2)
+      r *= 0.8;
+  }
+  R d = -1;
+  int x = 0;
+  rep(i, n) {
+    if (d < abs(c - g[i])) {
+      d = abs(c - g[i]);
+      x = i;
+    }
+  }
+  return C(c, abs(c - g[x]));
+}
+int n, m;
+R r[111], mb[111];
+vi ans;
+bool used[111];
+bool chk(int s) {
+  vi b;
+  rep(i, n) if (!used[i]) b.eb(r[i]);
+  vector<R> a;
+  loop(i, s, m) a.eb(mb[i]);
+  sort(all(a));
+  sort(all(b));
+  int last = -1;
+  rep(i, a.size()) {
+    bool found = false;
+    loop(j, last + 1, b.size()) {
+      if (a[i] < b[j] + eps) {
+        found = true;
+        last = j;
+        break;
+      }
+    }
+    if (!found)
+      return false;
+  }
+  return true;
+}
+int main() {
+#ifdef LOCAL
+  freopen("in", "r", stdin);
+#endif
+  while (cin >> n >> m) {
+    ans.clear();
+    rep(i, n) cin >> r[i];
+    rep(i, m) {
+      int k;
+      cin >> k;
+      G g(k);
+      rep(j, k) {
+        R x, y;
+        cin >> x >> y;
+        g[j] = P(x, y);
+      }
+      mb[i] = min_ball(g).r;
+    }
+    rep(i, m) used[i] = false;
+    bool f = true;
+    rep(i, m) {
+      bool found = false;
+      rep(j, n) {
+        if (used[j])
+          continue;
+        if (!(mb[i] < r[j] + eps))
+          continue;
+        used[j] = true;
+        if (chk(i + 1)) {
+          ans.push_back(j);
+          found = true;
+          break;
+        }
+        used[j] = false;
+      }
+      if (!found) {
+        f = false;
+        break;
+      }
+    }
+    if (f) {
+      rep(i, m) cout << ans[i] + 1 << "\n";
+    } else
+      cout << "NG" << endl;
+  }
+}
+```
+
+Please note that for more advanced optimizations, you would need to understand the problem the code is trying to solve as well as the mathematical and algorithmic concepts it uses.

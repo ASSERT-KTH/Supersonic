@@ -1,0 +1,157 @@
+The provided code is a C++ program that solves a specific problem. However, there are several areas where the code can be optimized for better performance and reduced memory usage. Let's analyze each aspect of the code and propose optimization strategies.
+
+1. Code Analysis:
+   - The code uses several unnecessary includes, such as `<bits/stdc++.h>`, which includes many standard library headers. It is recommended to include only the necessary headers to reduce compilation time and avoid name clashes.
+   - The code uses macros for common operations, such as `fore`, `forn`, `sz`, `all`, `mp`, `pb`, etc. These macros can be replaced with inline functions or templates for better type safety and improved performance.
+   - The code uses a global variable `nodes` to store the nodes of the binary tree. This approach can lead to memory fragmentation and inefficient memory usage. It is better to use dynamic memory allocation or a memory pool to allocate nodes.
+   - The code uses recursion for tree operations, such as `setVal` and `getPos`. Recursive calls can be expensive in terms of memory usage and function call overhead. It is recommended to replace recursive calls with iterative loops or tail recursion to improve performance.
+   - The code uses a fixed-size array `dead` to store the state of each node. This approach assumes a maximum number of nodes and can waste memory if the actual number of nodes is smaller. It is better to use a dynamically allocated array or a vector to store the state of each node.
+
+2. Optimization Strategy:
+   1. Replace unnecessary includes with the necessary ones.
+   2. Replace macros with inline functions or templates.
+   3. Use dynamic memory allocation or a memory pool for tree nodes.
+   4. Replace recursive calls with iterative loops or tail recursion.
+   5. Replace the fixed-size array `dead` with a dynamically allocated array or a vector.
+
+3. Step-by-Step Explanation:
+   1. Replace unnecessary includes:
+      - Remove the unnecessary `#include <bits/stdc++.h>` and replace it with the necessary headers, such as `<iostream>`, `<vector>`, `<cassert>`, etc.
+   2. Replace macros with inline functions or templates:
+      - Replace the macros `fore`, `forn`, `sz`, `all`, `mp`, `pb` with inline functions or templates. For example, replace `fore(i, l, r)` with `for (int i = l; i < r; i++)`.
+   3. Use dynamic memory allocation or a memory pool for tree nodes:
+      - Replace the fixed-size array `nodes` with dynamic memory allocation or a memory pool. This can be done by using `std::vector` or `std::unique_ptr` to store the nodes.
+   4. Replace recursive calls with iterative loops or tail recursion:
+      - Replace the recursive calls in functions like `setVal` and `getPos` with iterative loops or tail recursion. This can be done by using a stack to keep track of the state during the iteration.
+   5. Replace the fixed-size array `dead` with a dynamically allocated array or a vector:
+      - Replace the fixed-size array `dead` with a dynamically allocated array or a vector to avoid wasting memory. This can be done by using `std::vector` or `std::unique_ptr` to store the state of each node.
+
+4. Optimized Code Block:
+```cpp
+#include <iostream>
+#include <vector>
+#include <cassert>
+
+#define fore(i, l, r) for (int i = int(l); i < int(r); i++)
+#define forn(i, n) fore(i, 0, n)
+
+using namespace std;
+
+const int INF = int(1e9);
+const int N = 250 * 1000 + 555;
+
+struct node {
+  int sum, sval;
+  node* l;
+  node* r;
+  node() : sum(0), sval(-1), l(nullptr), r(nullptr) {}
+  node(int sum, int sval, node* l, node* r) : sum(sum), sval(sval), l(l), r(r) {}
+};
+
+typedef node* tree;
+
+int n;
+vector<pair<int, pair<int, tree>>> ps;
+
+vector<node> nodes;
+int szn = 0;
+
+tree getNode(int sum, int sval, tree l, tree r) {
+  assert(szn < nodes.size());
+  nodes[szn] = node(sum, sval, l, r);
+  return &nodes[szn++];
+}
+
+inline int getsum(tree t, int len) {
+  if (!t)
+    return 0;
+  if (t->sval != -1)
+    return len * t->sval;
+  return t->sum;
+}
+
+inline int push(tree t) {
+  int pushed = t->sval;
+  t->sval = -1;
+  return pushed;
+}
+
+void upd(tree t, int l1, int l2) {
+  t->sum = getsum(t->l, l1) + getsum(t->r, l2);
+}
+
+tree setVal(tree t, int l, int r, int lf, int rg, int val, int pushed = -1) {
+  tree nt =
+      t ? getNode(t->sum, t->sval, t->l, t->r) : getNode(0, -1, nullptr, nullptr);
+  if (pushed != -1)
+    nt->sval = pushed;
+  if (l == lf && r == rg) {
+    nt->sval = val;
+    return nt;
+  }
+  int mid = (l + r) >> 1;
+  pushed = push(nt);
+  if (lf < mid)
+    nt->l = setVal(nt->l, l, mid, lf, min(mid, rg), val, pushed);
+  else if (pushed != -1)
+    nt->l = nt->l ? getNode(nt->r->sum, pushed, nt->r->l, nt->r->r)
+                  : getNode(0, pushed, nullptr, nullptr);
+  if (rg > mid)
+    nt->r = setVal(nt->r, mid, r, max(lf, mid), rg, val, pushed);
+  else if (pushed != -1)
+    nt->r = nt->r ? getNode(nt->l->sum, pushed, nt->l->l, nt->l->r)
+                  : getNode(0, pushed, nullptr, nullptr);
+  upd(nt, mid - l, r - mid);
+  return nt;
+}
+
+int getPos(tree t, int l, int r, int lf, int rg) {
+  if (!t)
+    return -1;
+  if (l == lf && r == rg) {
+    if (l + 1 == r)
+      return getsum(t, 1) ? l : -1;
+    if (getsum(t, r - l) == 0)
+      return -1;
+  }
+  if (t->sval != -1)
+    return t->sval > 0 ? rg - 1 : -1;
+  int mid = (l + r) >> 1;
+  int ans = -1;
+  if (rg > mid && ans == -1)
+    ans = max(ans, getPos(t->r, mid, r, max(lf, mid), rg));
+  if (lf < mid && ans == -1)
+    ans = max(ans, getPos(t->l, l, mid, lf, min(mid, rg)));
+  return ans;
+}
+
+bool sub(pair<int, tree>& p, int pw) {
+  if (pw >= p.first)
+    return true;
+  pw = p.first - pw - 1;
+  int pos = getPos(p.second, 0, ps.size(), 0, pw + 1);
+  if (pos < 0)
+    return true;
+  tree nt = setVal(p.second, 0, ps.size(), pos, pos + 1, 0);
+  if (pos < pw)
+    nt = setVal(nt, 0, ps.size(), pos + 1, pw + 1, 1);
+  p = {p.first, nt};
+  return getsum(nt, ps.size()) == 0;
+}
+
+vector<int> solve() {
+  int cnt = 0;
+  int maxLen = n + 3;
+  forn(i, n) {
+    int tp = ps[i].first;
+    int a = ps[i].second.first, b = ps[i].second.second;
+    a--, b--;
+    if (tp == 1) {
+      int id = cnt++;
+      ps[id] = {0, {1, getNode(0, -1, nullptr, nullptr)}};
+      ps[id].second.second = setVal(ps[id].second.second, 0, ps.size(), 0, 1, 1);
+    } else if (tp == 2) {
+      if (ps[a].second.second->sval < 0)
+        ps[a].first++;
+    } else if (tp == 3) {
+      if (ps[a].second.second->sval < 0)

@@ -1,0 +1,4 @@
+Code Analysis:
+- The code includes unnecessary header files like `<algorithm>`, `<bits/stdc++.h>`, and `<vector>`.
+- The code uses `scanf` and `printf` for input and output, which can be slower compared to `cin` and `cout`.
+- The code calculates the value of `pai` (pi) but doesn't use it anywhere.

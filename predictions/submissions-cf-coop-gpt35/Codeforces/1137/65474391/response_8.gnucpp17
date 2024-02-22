@@ -1,0 +1,91 @@
+#include <iostream>
+#include <vector>
+#include <map>
+#include <set>
+#define fi first
+#define se second
+using namespace std;
+
+const int MAXN = 200005;
+const int MAXC = 400005;
+
+struct node {
+  int par, lev, idx;
+};
+
+int n, q;
+vector<int> g[MAXN];
+node a[MAXN];
+int chains = 0, timer = 0, colour = 0;
+vector<int> chain[MAXN];
+map<int, int> col[MAXC];
+map<int, set<int>> pos[MAXC];
+int root[MAXC];
+int segtree[4 * MAXN];
+
+void update(int v, int tl, int tr, int pos, int val) {
+    if (tl == tr) {
+        segtree[v] = val;
+    } else {
+        int tm = (tl + tr) / 2;
+        if (pos <= tm) {
+            update(2 * v, tl, tm, pos, val);
+        } else {
+            update(2 * v + 1, tm + 1, tr, pos, val);
+        }
+        segtree[v] = max(segtree[2 * v], segtree[2 * v + 1]);
+    }
+}
+
+int query(int v, int tl, int tr, int l, int r) {
+    if (l > r) {
+        return 0;
+    }
+    if (tl == l && tr == r) {
+        return segtree[v];
+    }
+    int tm = (tl + tr) / 2;
+    return max(query(2 * v, tl, tm, l, min(r, tm)),
+               query(2 * v + 1, tm + 1, tr, max(l, tm + 1), r));
+}
+
+void Init() {
+    ios::sync_with_stdio(false);
+    cin.tie(NULL);
+    cout.tie(NULL);
+    cin >> n >> q;
+    for (int i = 1; i < n; ++i) {
+        int u, v;
+        cin >> u >> v;
+        g[u].push_back(v);
+        g[v].push_back(u);
+    }
+    a[n].par = -1;
+    a[n].lev = 1;
+    a[n].idx = 0;
+    root[0] = n;
+    colour = n;
+}
+
+void DFS(int u) {
+    a[u].idx = ++timer;
+    for (int v : g[u]) {
+        if (a[v].par == 0) {
+            a[v].par = u;
+            a[v].lev = a[u].lev + 1;
+            DFS(v);
+        }
+    }
+}
+
+void HLD(int u) {
+    chain[a[u].lev].push_back(u);
+    col[a[u].lev][a[u].idx] = a[u].lev;
+    pos[a[u].lev][a[u].lev].insert(a[u].idx);
+    int heavy = 0, which = 0;
+    for (int v : g[u]) {
+        if (v != a[u].par && g[v].size() > heavy) {
+            heavy = g[v].size();
+            which = v;
+        }
+    }

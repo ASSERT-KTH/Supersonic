@@ -1,0 +1,140 @@
+#include <bits/stdc++.h>
+#define int long long
+using namespace std;
+const int N = 3e5 + 7, K = 20, X = 42, M = 998244353;
+int cnk[X];
+int fact[N], defact[N];
+int dp[1 << K][X];
+int sz[1 << K];
+int op[N][N], cl[N][N];
+int bad1[K], bad2[K];
+bitset<N> has;
+bitset<N> f, f2;
+int bpow(int a, int n) {
+  if (n == 0)
+    return 1;
+  if (n == 1)
+    return a % M;
+  if (n % 2 == 0) {
+    int mem = bpow(a, n / 2);
+    return (mem * mem) % M;
+  }
+  return (a * bpow(a, n - 1)) % M;
+}
+int obr(int x) { return bpow(x, M - 2); }
+void init() {
+  cnk[0] = 1;
+  for (int n = 1; n < X; n++) {
+    cnk[n] = 1;
+    for (int k = n - 1; k >= 1; k--) {
+      cnk[k] = (cnk[k] + cnk[k - 1]) % M;
+    }
+  }
+  fact[0] = 1;
+  for (int i = 1; i < N; i++)
+    fact[i] = (fact[i - 1] * i) % M;
+  defact[N - 1] = obr(fact[N - 1]);
+  for (int i = N - 2; i >= 0; i--) {
+    defact[i] = (defact[i + 1] * (i + 1)) % M;
+  }
+}
+int get_cnk(int n, int k) {
+  if (k > n)
+    return 0;
+  if (k < 0)
+    return 0;
+  if (n < X)
+    return cnk[k];
+  return (((fact[n] * defact[k]) % M) * defact[n - k]) % M;
+}
+signed main() {
+  ios_base ::sync_with_stdio(0);
+  cin.tie(0);
+  cout.tie(0);
+  has.reset();
+  memset(dp, 0, sizeof(dp));
+  f.reset();
+  f2.reset();
+  init();
+  int n, m;
+  cin >> n >> m;
+  for (int i = 0; i < n; i++) {
+    cin >> lr[i].first >> lr[i].second;
+    op[lr[i].first][i] = 1;
+    cl[lr[i].second][i] = 1;
+  }
+  for (int i = 0; i < m; i++) {
+    cin >> bad1[i] >> bad2[i];
+    bad1[i]--;
+    bad2[i]--;
+  }
+  dp[0][0] = 1;
+  sz[0] = 0;
+  for (int mask = 1; mask < (1 << m); mask++) {
+    int pos = __builtin_ctz(mask);
+    int nmask = 0, alone = 0, x = bad1[pos], nmask2 = 0, alone2 = 0;
+    unordered_set<int> lol;
+    vector<int> kek, kek2;
+    for (int i = pos; i < m; i++) {
+      if (mask & (1 << i)) {
+        if (bad1[i] != x && bad2[i] != x) {
+          nmask |= (1 << i);
+        }
+        lol.insert(bad1[i]);
+        lol.insert(bad2[i]);
+        if (bad1[i] == x && !f[bad2[i]]) {
+          f[bad2[i]] = 1;
+          kek.push_back(bad2[i]);
+        }
+        if (bad2[i] == x && !f[bad1[i]]) {
+          f[bad1[i]] = 1;
+          kek.push_back(bad1[i]);
+        }
+      }
+    }
+    for (int i = pos; i < m; i++) {
+      if (mask & (1 << i)) {
+        if (nmask & (1 << i)) {
+          if (!f[bad1[i]] && !f[bad2[i]])
+            nmask2 |= (1 << i);
+        }
+        if (f[bad1[i]] && bad2[i] != x && !f[bad2[i]] &&
+            !f2[bad2[i]]) {
+          f2[bad2[i]] = 1;
+          kek2.push_back(bad2[i]);
+        }
+        if (f[bad2[i]] && bad1[i] != x && !f[bad1[i]] &&
+            !f2[bad1[i]]) {
+          f2[bad1[i]] = 1;
+          kek2.push_back(bad1[i]);
+        }
+      }
+    }
+    for (int elem : kek) {
+      bool flag = 0;
+      for (int i = pos; i < m; i++) {
+        if (nmask & (1 << i)) {
+          if (bad1[i] == elem || bad2[i] == elem) {
+            flag = 1;
+            break;
+          }
+        }
+      }
+      if (!flag)
+        alone++;
+    }
+    for (auto elem : kek2) {
+      bool flag = 0;
+      for (int i = pos; i < m; i++) {
+        if (nmask2 & (1 << i)) {
+          if (bad1[i] == elem || bad2[i] == elem) {
+            flag = 1;
+            break;
+          }
+        }
+      }
+      if (!flag)
+        alone2++;
+    }
+    dp[mask][0] = 1;
+    sz[mask] = lol.size();

@@ -1,0 +1,111 @@
+The given program calculates the number of subarrays with a given greatest common divisor (GCD) in an array. It uses a sparse table to efficiently compute the GCD of any subarray in O(1) time. However, there are some optimizations that can be made to improve the program's performance.
+
+1. **Remove unnecessary includes**: The program includes unnecessary header files such as `<cstdlib>` and `<map>`. Since they are not used in the program, they can be removed.
+
+2. **Reduce the size of the `get_log` array**: The `get_log` array is currently declared with a size of 200,100. However, it is only used up to index 200,000 in the program. The size of the `get_log` array can be reduced to 200,001 to save memory.
+
+3. **Use `std::vector` instead of a fixed-size array**: The program uses a fixed-size array `a` with a size of 100,100 to store the input array. However, the actual size of the array is determined by the input value of `n`. It would be more flexible and memory-efficient to use a `std::vector` instead.
+
+4. **Use `std::unordered_map` instead of `std::map`**: The program uses a `std::map` to store the counts of different GCDs. However, `std::unordered_map` provides a faster average insertion and retrieval time. We can use `std::unordered_map<int, long long>` instead.
+
+5. **Change the loop condition in the nested while loop**: In the nested while loop, the condition `r - l > 1` can be changed to `r > l + 1`. This change avoids unnecessary subtraction in each iteration.
+
+6. **Use `printf` instead of `std::cout`**: The program uses `std::cout` for printing the answers. However, `printf` is generally faster and more memory-efficient for output.
+
+Here is the optimized version of the program:
+
+```cpp
+#include <cstdio>
+#include <iostream>
+#include <unordered_map>
+#include <vector>
+
+int gcd(int a, int b) {
+  if (b == 0) {
+    return a;
+  }
+  return gcd(b, a % b);
+}
+
+int main() {
+  std::vector<int> a;
+  std::unordered_map<int, long long> ans;
+
+  int n;
+  std::scanf("%d", &n);
+  a.resize(n);
+  for (int i = 0; i < n; i++) {
+    std::scanf("%d", &a[i]);
+  }
+
+  std::vector<std::vector<int>> st;
+  st.resize(n, std::vector<int>(20));
+
+  for (int i = 0; i < n; i++) {
+    st[i][0] = a[i];
+  }
+
+  std::vector<int> get_log;
+  get_log.resize(200001);
+  get_log[1] = 0;
+  for (int i = 2; i < 200001; i++) {
+    get_log[i] = get_log[i - 1];
+    while ((1 << get_log[i]) <= i) {
+      get_log[i]++;
+    }
+    get_log[i]--;
+  }
+
+  for (int nowP = 1; nowP < 20; nowP++) {
+    for (int i = 0; i + (1 << nowP) <= n; i++) {
+      st[i][nowP] = gcd(st[i][nowP - 1], st[i + (1 << (nowP - 1))][nowP - 1]);
+    }
+  }
+
+  for (int L = 0; L < n; L++) {
+    int prev_ind = L;
+    int now_ind = L;
+    while (now_ind < n) {
+      int now_gcd = st[L][get_log[now_ind - L + 1]];
+      int l = now_ind;
+      int r = n;
+      while (r > l + 1) {
+        int m = (l + r) / 2;
+        int x = st[L][get_log[m - L + 1]];
+        if (x < now_gcd) {
+          r = m;
+        } else {
+          l = m;
+        }
+      }
+      ans[now_gcd] += r - prev_ind;
+      now_ind = r;
+      prev_ind = r;
+    }
+  }
+
+  int q;
+  std::scanf("%d", &q);
+  while (q--) {
+    int x;
+    std::scanf("%d", &x);
+    std::printf("%lld\n", ans[x]);
+  }
+
+  return 0;
+}
+```
+
+Explanation of optimizations:
+
+1. Removed unnecessary includes: `<cstdlib>` and `<map>` were not used in the program, so they were removed.
+
+2. Reduced the size of the `get_log` array: The `get_log` array was reduced to a size of 200,001 to save memory.
+
+3. Used `std::vector` instead of a fixed-size array: The input array `a` was changed to a `std::vector` to allow for a flexible size determined by the input value of `n`.
+
+4. Used `std::unordered_map` instead of `std::map`: The `ans` map was changed to an `std::unordered_map` for faster average insertion and retrieval time.
+
+5. Changed the loop condition in the nested while loop: The loop condition in the nested while loop was changed to `r > l + 1` to avoid unnecessary subtraction in each iteration.
+
+6. Used `printf` instead of `std::cout`: The program now uses `std::printf` for printing the answers, which is generally faster and more memory-efficient for output.

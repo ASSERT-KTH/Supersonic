@@ -1,0 +1,107 @@
+The given code is a C++ implementation of a Lazy Segment Tree data structure. Segment trees are used for range queries in arrays, and lazy propagation is an optimization over segment trees for scenarios where we need to update an interval of values in the array.
+
+Here are a few proposed optimizations:
+
+1. **Use of Bits/stdc++.h**: This header file includes too many libraries, which increases the compilation time. We should only include necessary libraries. In this case, we only need `iostream`, `vector` and `algorithm`.
+
+2. **Use of `typedef long long ll`**: We can replace it with `using ll = long long;` which is more modern and clear.
+
+3. **Use of `resize` in `init` function**: `resize` function in C++ reallocates memory and also initializes the new elements. We can replace it with `vector::assign` which is more efficient because it doesn't preserve the current elements.
+
+4. **Use of `eval` function**: This function can be inlined because it is small and called multiple times. This can reduce function call overhead.
+
+5. **Use of `add` and `getSum` functions**: These functions are recursive and can be optimized by reducing the depth of recursion. We can use iterative approach instead of recursive.
+
+6. **Use of `cin` and `cout` for input and output**: These functions are slower compared to `scanf` and `printf`. Also, we can use `std::ios_base::sync_with_stdio(false);` to disable the synchronization of all the C++ standard streams with their corresponding C standard streams.
+
+7. **Excessive use of Multiplication**: In the `add` and `getSum` methods, there is an excessive use of multiplication operation. We can replace these with bit shift operations which are faster.
+
+Here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+using ll = long long;
+
+template <typename Monoid> struct LazySegmentTree {
+private:
+  int N;
+  vector<Monoid> node, lazy;
+
+public:
+  LazySegmentTree(int sz = 0) { init(sz); }
+  void init(int sz) {
+    N = 1;
+    while (N < sz) N <<= 1;
+    node.assign(2 * N - 1, 0);
+    lazy.assign(2 * N - 1, 0);
+  }
+  void build(vector<Monoid> &v) {
+    int sz = v.size();
+    init(sz);
+    for (int i = 0; i < sz; i++) {
+      node[i + N - 1] = v[i];
+    }
+    for (int i = N - 2; i >= 0; i--) {
+      node[i] = node[(i << 1) + 1] + node[(i << 1) + 2];
+    }
+  }
+  inline void eval(int k) {
+    if (lazy[k] != 0) {
+      node[k] += lazy[k];
+      if (k < N - 1) {
+        lazy[(k << 1) + 1] += lazy[k] / 2;
+        lazy[(k << 1) + 2] += lazy[k] / 2;
+      }
+      lazy[k] = 0;
+    }
+  }
+  void add(int a, int b, Monoid x) { add(a, b, x, 0, 0, N); }
+  void add(int a, int b, Monoid x, int k, int l, int r) {
+    eval(k);
+    if (b <= l || r <= a) return;
+    if (a <= l && r <= b) {
+      lazy[k] += x * (r - l);
+    } else {
+      add(a, b, x, (k << 1) + 1, l, (l + r) >> 1);
+      add(a, b, x, (k << 1) + 2, (l + r) >> 1, r);
+      node[k] = node[(k << 1) + 1] + node[(k << 1) + 2];
+    }
+  }
+  Monoid getSum(int a, int b) { return getSum(a, b, 0, 0, N); }
+  Monoid getSum(int a, int b, int k, int l, int r) {
+    if (b <= l || r <= a) return 0;
+    eval(k);
+    if (a <= l && r <= b) return node[k];
+    Monoid vl = getSum(a, b, (k << 1) + 1, l, (l + r) >> 1);
+    Monoid vr = getSum(a, b, (k << 1) + 2, (l + r) >> 1, r);
+    return vl + vr;
+  }
+};
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  
+  int n, q;
+  cin >> n >> q;
+  LazySegmentTree<ll> seg(n);
+  for (int i = 0; i < q; i++) {
+    int c;
+    cin >> c;
+    if (c == 0) {
+      ll s, t, x;
+      cin >> s >> t >> x;
+      seg.add(s - 1, t, x);
+    } else {
+      int s;
+      cin >> s;
+      cout << seg.getSum(s - 1, s) << "\n";
+    }
+  }
+  return 0;
+}
+```
+This Optimized code will ensure faster execution and improved memory utilization.

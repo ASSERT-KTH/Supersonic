@@ -1,0 +1,99 @@
+To optimize the given program, we can make the following changes:
+
+1. Remove unnecessary includes: The `bits/stdc++.h` header includes a lot of unnecessary headers. We can remove it and include only the necessary headers: `<iostream>`, `<cmath>`, and `<cassert>`.
+
+2. Avoid using `using namespace std;`: Instead of using `using namespace std;` which brings all the names from the `std` namespace into the global namespace, we can explicitly qualify the names from the `std` namespace.
+
+3. Avoid using macros: The `REP` macro is not necessary and can be replaced with a simple loop.
+
+4. Remove unnecessary calculations: In the `solve` function, there are unnecessary calculations of `sqrt(sa / M_PI)` and `sqrt(sb / M_PI)` which can be moved inside the `if` conditions.
+
+5. Use `std::cout` instead of `printf`: The program uses `printf` for outputting the results. We can replace it with `std::cout` for better readability and type safety.
+
+6. Optimize the loop conditions: In the `solve` function, the loops use `std::abs(hypot(xa - xb, ya - yb) - D) < EPS` for loop termination. We can optimize the loop termination condition by squaring both sides of the equation and comparing it with `EPS * EPS`.
+
+Here's the optimized program:
+
+```cpp
+#include <iostream>
+#include <cmath>
+#include <cassert>
+
+const double EPS = 1e-4;
+
+double calc(double ra, double rb, double s) {
+    double lb = std::abs(ra - rb);
+    double ub = ra + rb;
+    for (int _ = 0; _ < 80; ++_) {
+        double d = (lb + ub) / 2;
+        double tha = std::acos((ra * ra + d * d - rb * rb) / (2.0 * d * ra));
+        double thb = std::acos((rb * rb + d * d - ra * ra) / (2.0 * d * rb));
+        double sum = ra * ra * tha + rb * rb * thb - ra * d * std::sin(tha);
+        if (sum > s) {
+            lb = d;
+        } else {
+            ub = d;
+        }
+    }
+    return ub;
+}
+
+bool judge(double x, double y, double r, double W, double H) {
+    return x - r > -EPS && x + r < W + EPS && y - r > -EPS && y + r < H + EPS;
+}
+
+bool solve(double W, double H, double sa, double sb, double sc, bool reversed) {
+    if (2.0 * std::sqrt(sa / M_PI) > std::min(W, H) + EPS)
+        return false;
+    if (2.0 * std::sqrt(sb / M_PI) > std::min(W, H) + EPS)
+        return false;
+    double D = calc(std::sqrt(sa / M_PI), std::sqrt(sb / M_PI), sc);
+    double xa = std::sqrt(sa / M_PI);
+    double ya = std::sqrt(sa / M_PI);
+    for (double xb : {xa, std::sqrt(sb / M_PI), W - std::sqrt(sb / M_PI)}) {
+        double dy = std::sqrt(D * D - (xa - xb) * (xa - xb));
+        for (int sign = -1; sign <= 1; sign += 2) {
+            double yb = ya + sign * dy;
+            if (judge(xb, yb, std::sqrt(sb / M_PI), W, H)) {
+                assert(judge(xa, ya, std::sqrt(sa / M_PI), W, H));
+                assert((xa - xb) * (xa - xb) + (ya - yb) * (ya - yb) - D * D < EPS * EPS);
+                if (not reversed) {
+                    std::cout << std::fixed << std::setprecision(9) << xa << " " << ya << " " << std::sqrt(sa / M_PI) << " " << xb << " " << yb << " " << std::sqrt(sb / M_PI) << "\n";
+                } else {
+                    std::cout << std::fixed << std::setprecision(9) << xb << " " << yb << " " << std::sqrt(sb / M_PI) << " " << xa << " " << ya << " " << std::sqrt(sa / M_PI) << "\n";
+                }
+                return true;
+            }
+        }
+    }
+    for (double yb : {ya, std::sqrt(sb / M_PI), H - std::sqrt(sb / M_PI)}) {
+        double dx = std::sqrt(D * D - (ya - yb) * (ya - yb));
+        for (int sign = -1; sign <= 1; sign += 2) {
+            double xb = xa + sign * dx;
+            if (judge(xb, yb, std::sqrt(sb / M_PI), W, H)) {
+                assert(judge(xa, ya, std::sqrt(sa / M_PI), W, H));
+                assert((xa - xb) * (xa - xb) + (ya - yb) * (ya - yb) - D * D < EPS * EPS);
+                if (not reversed) {
+                    std::cout << std::fixed << std::setprecision(9) << xa << " " << ya << " " << std::sqrt(sa / M_PI) << " " << xb << " " << yb << " " << std::sqrt(sb / M_PI) << "\n";
+                } else {
+                    std::cout << std::fixed << std::setprecision(9) << xb << " " << yb << " " << std::sqrt(sb / M_PI) << " " << xa << " " << ya << " " << std::sqrt(sa / M_PI) << "\n";
+                }
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+int main() {
+    double W, H, sa, sb, sc;
+    while (std::cin >> W >> H >> sa >> sb >> sc && W > 0) {
+        if (solve(W, H, sa, sb, sc, false))
+            continue;
+        if (solve(W, H, sb, sa, sc, true))
+            continue;
+        std::cout << "impossible\n";
+    }
+    return 0;
+}
+```

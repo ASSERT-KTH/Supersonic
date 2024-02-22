@@ -1,0 +1,100 @@
+#include <bits/stdc++.h>
+using namespace std;
+using pii = pair<int, int>;
+const int maxLig = (1e5) + 5;
+const int maxCol = 12;
+const int maxReq = (1e5) + 5;
+const int sqr = 600;
+int nbLig, nbCol, nbReq;
+char grille[maxLig * maxCol];
+int proc[maxLig * maxCol];
+int tps = 0;
+
+// Function to compute the next position iteratively
+void comp(int lig, int col, int safeLig) {
+  int index = lig * maxCol + col;
+
+  if (proc[index] == tps)
+    return;
+
+  proc[index] = tps;
+
+  while (true) {
+    int nextLig = lig, nextCol = col;
+
+    if (grille[lig * maxCol + col] == '<')
+      --nextCol;
+    else if (grille[lig * maxCol + col] == '>')
+      ++nextCol;
+    else if (grille[lig * maxCol + col] == '^')
+      --nextLig;
+
+    if (nextLig == safeLig || grille[nextLig * maxCol + nextCol] == '~') {
+      grille[lig * maxCol + col] = nextLig;
+      grille[lig * maxCol + col + 1] = nextCol;
+      return;
+    }
+
+    lig = nextLig;
+    col = nextCol;
+  }
+}
+
+pair<int, int> getFin(int lig, int col) {
+  while (grille[lig * maxCol + col] != '~') {
+    lig = grille[lig * maxCol + col];
+    col = grille[lig * maxCol + col + 1];
+  }
+  return {lig, col};
+}
+
+int blocRef[maxLig];
+
+bool compBloc(int bloc) {
+  int deb = bloc * sqr, fin = min(nbLig, (bloc + 1) * sqr);
+  if (deb > nbLig)
+    return false;
+  for (int lig = deb + 1; lig <= fin; ++lig) {
+    blocRef[lig] = bloc;
+    for (int col = 1; col <= nbCol; ++col) {
+      comp(lig, col, deb);
+    }
+  }
+  return true;
+}
+
+int main() {
+  cin >> nbLig >> nbCol >> nbReq;
+  fill_n(grille, maxLig * maxCol, '~');
+  for (int lig = 1; lig <= nbLig; ++lig) {
+    for (int col = 1; col <= nbCol; ++col) {
+      cin >> grille[lig * maxCol + col];
+    }
+  }
+  ++tps;
+  for (int bloc = 0;; ++bloc) {
+    if (!compBloc(bloc))
+      break;
+  }
+  for (int req = 0; req < nbReq; ++req) {
+    char mode;
+    cin >> mode;
+    int lig, col;
+    cin >> lig >> col;
+    if (mode == 'A') {
+      pii res = getFin(lig, col);
+      if (res == pii{0, 0})
+        res = {-1, -1};
+      cout << res.first << " " << res.second << "\n";
+    } else {
+      ++tps;
+      char nv;
+      cin >> nv;
+      grille[lig * maxCol + col] = nv;
+      int bloc = blocRef[lig];
+      compBloc(bloc);
+      if (bloc)
+        compBloc(bloc - 1);
+    }
+  }
+}

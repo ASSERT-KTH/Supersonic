@@ -1,0 +1,97 @@
+**1. Code Analysis:**
+
+The provided code is a C++ program that reads a directed graph from the standard input and computes a topological sort of the vertices. The vertices are then printed to the standard output. The graph is represented as an adjacency list, where each vertex has a list of outgoing edges. Each edge is represented as a struct with a single integer field representing the target vertex. The topological sort is performed using a variant of depth-first search.
+
+Potential performance bottlenecks and inefficiencies include:
+- The use of `vector<int>` for the stack `S` in the topological sort function. This is inefficient because removing an element from the end of a vector requires moving all the other elements.
+- The use of `vector<int>` for `topological_order`, which collects the result of the topological sort. Again, this is inefficient because adding an element to the end of a vector can require resizing the vector and copying all the elements to the new vector.
+- The use of `vector<vector<Edge>>` for the adjacency list `G`. This is inefficient because each vector has a separate dynamic allocation, and accessing an element in a vector requires two pointer dereferences.
+
+**2. Optimization Strategy:**
+
+A. Replace `vector<int>` with `deque<int>` for `S` and `topological_order`. `deque` supports efficient removal of elements from the end and insertion at the end.
+
+B. Replace `vector<vector<Edge>>` with `vector<list<Edge>>` for `G`. `list` is more efficient than `vector` for cases where we need to remove elements from the middle, which occurs in the `topological_sort` function.
+
+C. Avoid unnecessary copies of `Edge` objects in the `topological_sort` function by using references.
+
+D. Use `reserve` to preallocate memory for `topological_order` based on the known size `V`.
+
+**3. Step-by-Step Explanation:**
+
+A. Replacing `vector<int>` with `deque<int>` for `S` and `topological_order` improves performance by reducing the time complexity of removing an element from the end of the stack from O(n) to O(1). This change also reduces the time complexity of adding an element to the end of `topological_order` from O(n) to O(1).
+
+B. Replacing `vector<vector<Edge>>` with `vector<list<Edge>>` for `G` improves performance by reducing the time complexity of removing an element from the middle of the list of edges from O(n) to O(1). The trade-off is that `list` uses more memory than `vector` because it has to store two pointers for each element.
+
+C. Avoiding unnecessary copies of `Edge` objects in the `topological_sort` function improves performance by reducing the overhead of copying.
+
+D. Using `reserve` to preallocate memory for `topological_order` based on the known size `V` improves performance by reducing the number of memory allocations.
+
+**4. Optimized Code Block:**
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+struct Edge {
+  int tgt_;
+  Edge(int t) : tgt_(t) {}
+};
+
+typedef vector<list<Edge>> Adj_list;
+
+vector<int> topological_sort(Adj_list &G) {
+  const int V = G.size();
+  deque<int> S;
+  vector<int> inorder(V, 0);
+
+  for (int i = 0; i < V; i++)
+    for (const Edge &e : G[i])
+      inorder[e.tgt_]++;
+
+  for (int i = 0; i < V; i++)
+    if (inorder[i] == 0)
+      S.push_back(i);
+
+  assert(!S.empty());
+
+  vector<int> topological_order;
+  topological_order.reserve(V);
+
+  while (!S.empty()) {
+    int v = S.back();
+    S.pop_back();
+    topological_order.push_back(v);
+
+    for (auto it = G[v].begin(); it != G[v].end(); ) {
+      Edge &e = *it;
+      inorder[e.tgt_]--;
+      if (inorder[e.tgt_] == 0) {
+        S.push_back(e.tgt_);
+        it = G[v].erase(it);
+      } else {
+        ++it;
+      }
+    }
+  }
+
+  for (int i = 0; i < V; i++)
+    assert(inorder[i] == 0);
+
+  return topological_order;
+}
+
+int main() {
+  int V, E;
+  cin >> V >> E;
+  Adj_list G(V);
+  for (int i = 0; i < E; i++) {
+    int s, t;
+    cin >> s >> t;
+    G[s].push_back(Edge(t));
+  }
+  vector<int> ans = topological_sort(G);
+  for (int i = 0; i < V; i++)
+    cout << ans[i] << endl;
+}
+```

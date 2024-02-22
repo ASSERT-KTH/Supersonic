@@ -1,0 +1,114 @@
+#include <iostream>
+#include <iomanip>
+#include <vector>
+#include <algorithm>
+
+typedef long long ll;
+typedef long double ld;
+
+#define FASTIO \
+  std::ios_base::sync_with_stdio(false); \
+  std::cin.tie(NULL); \
+  std::cout.tie(NULL);
+
+#define PRECISION std::cout << std::fixed << std::setprecision(20);
+
+struct SegTree {
+  int* tree;
+  int* arr;
+  std::vector<std::pair<int, int>> store;
+  int n;
+
+  SegTree(int n, int* _arr) : n(n) {
+    tree = new int[4 * n];
+    store.resize(n);
+    arr = _arr;
+    for (int i = 0; i < n; i++)
+      store[i] = std::make_pair(arr[i], i);
+    build(0, n - 1, 0);
+  }
+
+  int merge(int lval, int rval, int sl, int sr) {
+    int cntl = 0;
+    int cntr = 0;
+    for (int i = sl; i <= sr; i++) {
+      if (store[i].first == lval)
+        cntl++;
+      if (store[i].first == rval)
+        cntr++;
+    }
+    if (cntl >= cntr) {
+      return lval;
+    } else {
+      return rval;
+    }
+  }
+
+  void build(int ss, int se, int si) {
+    if (ss == se) {
+      tree[si] = arr[ss];
+    } else {
+      int mid = ss + (se - ss) / 2;
+      build(ss, mid, 2 * si + 1);
+      build(mid + 1, se, 2 * si + 2);
+      tree[si] = merge(tree[2 * si + 1], tree[2 * si + 2], ss, se);
+    }
+  }
+
+  int query(int qs, int qe) {
+    return query(qs, qe, 0, n - 1);
+  }
+
+  int query(int qs, int qe, int ss, int se) {
+    if (ss >= qs && se <= qe) {
+      return tree[ss];
+    }
+    int mid = ss + (se - ss) / 2;
+    if (qe <= mid) {
+      return query(qs, qe, ss, mid);
+    } else if (qs >= mid + 1) {
+      return query(qs, qe, mid + 1, se);
+    } else {
+      return merge(query(qs, qe, ss, mid), query(qs, qe, mid + 1, se), qs, qe);
+    }
+  }
+};
+
+void solve() {
+  int n, q;
+  std::cin >> n >> q;
+  int* arr = new int[n];
+  for (int i = 0; i < n; i++)
+    std::cin >> arr[i];
+
+  SegTree tree(n, arr);
+
+  while (q--) {
+    int l, r;
+    std::cin >> l >> r;
+    l--;
+    r--;
+    int x = tree.query(l, r);
+    int mx = 0;
+    for (int i = l; i <= r; i++) {
+      if (arr[i] == x)
+        mx++;
+    }
+    int len = (r - l + 1);
+    int extra = len - mx;
+    int left = std::max(0, mx - extra - 1);
+    std::cout << 1 + left << "\n";
+  }
+
+  delete[] arr;
+  delete[] tree.tree;
+}
+
+int main() {
+  FASTIO;
+  PRECISION;
+  int t = 1;
+  for (int i = 1; i <= t; i++) {
+    solve();
+  }
+}

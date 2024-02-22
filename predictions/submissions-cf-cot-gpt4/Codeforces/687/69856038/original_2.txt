@@ -1,0 +1,70 @@
+The given C/C++ program reads a graph as input and then performs some operations on it. The program also uses `std::sort` for sorting the edges of the graph. 
+
+Optimization 1: Avoiding Multiple Array Access
+
+In the given code, there are multiple accesses to the arrays `ii`, `jj`, `ww` inside the loop running over `m` in the `main` function. Each array access takes constant time, but multiple accesses can add up to a significant amount of time if the array is large. Therefore, it's more efficient to only access each array once and store the value in a local variable for further use.
+
+Optimization 2: Reducing the Scope of Variables
+
+In the original code, the variables `i`, `j`, `w` are defined outside the loop. This might lead to unnecessary memory usage if these variables are not needed outside the loop. Therefore, it's more efficient to reduce the scope of these variables and define them inside the loop.
+
+Optimization 3: Avoiding Unnecessary Computations
+
+In the original code, the bitwise shift operation is done twice for `i` and `j`. However, `i1` and `j1` can be computed from `i0` and `j0` by adding 1, which is a less costly operation than the bitwise shift. 
+
+Optimized Code:
+
+```cpp
+#include <algorithm>
+#include <iostream>
+using namespace std;
+const int N = 1000, M = N * (N - 1) / 2;
+int dsu[N * 2];
+int find(int i) { return dsu[i] < 0 ? i : (dsu[i] = find(dsu[i])); }
+bool join(int i, int j) {
+  i = find(i);
+  j = find(j);
+  if (i == j)
+    return false;
+  if (dsu[i] > dsu[j])
+    dsu[i] = j;
+  else {
+    if (dsu[i] == dsu[j])
+      dsu[i]--;
+    dsu[j] = i;
+  }
+  return true;
+}
+int main() {
+  int n, m, q;
+  scanf("%d%d%d", &n, &m, &q);
+  static int ii[M], jj[M], ww[M], hh[M];
+  for (int h = 0; h < m; h++) {
+    scanf("%d%d%d", &ii[h], &jj[h], &ww[h]), ii[h]--, jj[h]--;
+    hh[h] = h;
+  }
+  sort(hh, hh + m, [&](int a, int b) { return ww[a] > ww[b]; });
+  while (q-- > 0) {
+    int l, r;
+    scanf("%d%d", &l, &r), l--, r--;
+    fill_n(dsu, n * 2, -1);
+    int w = -1;
+    for (int h = 0; h < m; h++) {
+      int h_ = hh[h];
+      if (l <= h_ && h_ <= r) {
+        int i = ii[h_];
+        int j = jj[h_];
+        int i0 = i << 1;
+        int i1 = i0 + 1;
+        int j0 = j << 1;
+        int j1 = j0 + 1;
+        if (join(i0, j1) && !join(i1, j0)) {
+          w = ww[h_];
+          break;
+        }
+      }
+    }
+    printf("%d\n", w);
+  }
+}
+```

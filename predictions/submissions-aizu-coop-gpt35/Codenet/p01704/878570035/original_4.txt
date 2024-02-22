@@ -1,0 +1,152 @@
+Code Analysis:
+1. The code defines several global variables, including arrays to store the properties of items (vw, pf, vf, th) and variables N and pw to store the number of items and the power of the engine, respectively.
+2. The code uses a brute force approach to find the minimum cost. It iterates over a range of values for the weight of the engine, calculates the cost for each weight using the `calc` function, and keeps track of the weight with the minimum cost.
+3. The `calc` function calculates the cost for a given weight of the engine by iterating over each item and calculating the additional cost required to meet the item's requirements.
+4. The code uses floating-point arithmetic and compares floating-point values using the `<=` operator, which can lead to inaccuracies.
+
+Optimization Strategy:
+1. Use more efficient data structures to store the properties of items.
+2. Avoid unnecessary calculations by caching intermediate results.
+3. Optimize the `calc` function by reducing the number of iterations and eliminating unnecessary calculations.
+4. Use integer arithmetic instead of floating-point arithmetic to avoid floating-point inaccuracies.
+5. Use a more efficient method to compare floating-point values.
+
+Step-by-Step Explanation:
+1. Replace the arrays `vw`, `pf`, `vf`, and `th` with a single array of structs to store the properties of items. This reduces the number of variables and improves memory usage. The struct can be defined as follows:
+```cpp
+struct Item {
+  int vw, pf, vf, th;
+};
+```
+2. Replace the floating-point type `flt` with an integer type to avoid floating-point inaccuracies. Use a scaling factor to convert between the integer and original floating-point values. For example, if the original floating-point values are in the range [0, 1], multiply them by a large integer value, such as 1e9, to convert them to integers. Adjust the scaling factor based on the range of the original values.
+```cpp
+typedef long long LL;
+const LL SCALE_FACTOR = 1000000000; // adjust the scaling factor based on the range of original values
+```
+3. Define a vector `items` to store the items. Replace the array accesses in the main loop and `calc` function with vector accesses.
+```cpp
+vector<Item> items(N);
+// Replace vw[i] with items[i].vw, pf[i] with items[i].pf, vf[i] with items[i].vf, th[i] with items[i].th
+```
+4. Calculate the maximum weight of the engine (`right`) using the maximum values of `th` and `vw`. This avoids the need to initialize `right` with `INT_MAX`, which might cause integer overflow issues.
+```cpp
+flt right = 0;
+for (int i = 0; i < N; ++i) {
+  right = max(right, (flt)items[i].th / items[i].vw);
+}
+```
+5. Cache the results of the calculations in the `calc` function to avoid redundant calculations. Use a memoization table to store the results for each weight. Initialize the table with a large value to indicate that the result has not been computed yet.
+```cpp
+vector<flt> memo(right * SCALE_FACTOR + 1, FLT_MAX);
+```
+6. Modify the `calc` function to use the memoization table. When calculating the cost for a given weight, check if the result has already been computed. If so, return the cached result. Otherwise, calculate the cost and store it in the memoization table for future use.
+```cpp
+flt calc(flt W) {
+  LL weight = W * SCALE_FACTOR;
+  if (memo[weight] < FLT_MAX)
+    return memo[weight];
+  flt cost = W * pw;
+  for (int i = 0; i < N; ++i) {
+    flt need = items[i].th - W * items[i].vw;
+    if (need <= 0)
+      continue;
+    flt f = need / items[i].vf;
+    cost += f * items[i].pf;
+  }
+  memo[weight] = cost;
+  return cost;
+}
+```
+7. Modify the main loop to use integer arithmetic instead of floating-point arithmetic. Iterate over the weights using integer values and divide them by the scaling factor to obtain the corresponding floating-point values inside the loop.
+```cpp
+flt left = 0;
+for (int _ = 0; _ < 200; ++_) {
+  LL m1 = (left * 2 + right) / 3;
+  LL m2 = (left + right * 2) / 3;
+  flt c1 = calc(m1 / (flt)SCALE_FACTOR);
+  flt c2 = calc(m2 / (flt)SCALE_FACTOR);
+  if (c1 < c2)
+    right = m2 / (flt)SCALE_FACTOR;
+  else
+    left = m1 / (flt)SCALE_FACTOR;
+}
+```
+8. Use a more efficient method to compare floating-point values. Instead of using `<=` operator, calculate the absolute difference between the values and compare it to a small threshold (`eps`). This avoids unexpected behavior due to floating-point inaccuracies.
+```cpp
+flt diff = fabs(c1 - c2);
+if (diff < eps)
+  right = m2 / (flt)SCALE_FACTOR;
+else if (c1 < c2)
+  right = m2 / (flt)SCALE_FACTOR;
+else
+  left = m1 / (flt)SCALE_FACTOR;
+```
+
+Optimized Code Block:
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long LL;
+typedef pair<int, int> PII;
+
+struct Item {
+  int vw, pf, vf, th;
+};
+
+const int MAXN = 100000 + 10;
+const LL SCALE_FACTOR = 1000000000;
+const flt eps = 1e-7;
+
+vector<Item> items;
+int N, pw;
+vector<flt> memo;
+
+flt calc(flt W) {
+  LL weight = W * SCALE_FACTOR;
+  if (memo[weight] < FLT_MAX)
+    return memo[weight];
+  flt cost = W * pw;
+  for (int i = 0; i < N; ++i) {
+    flt need = items[i].th - W * items[i].vw;
+    if (need <= 0)
+      continue;
+    flt f = need / items[i].vf;
+    cost += f * items[i].pf;
+  }
+  memo[weight] = cost;
+  return cost;
+}
+
+int main() {
+  while (scanf("%d", &N) == 1 && N) {
+    scanf("%d", &pw);
+    items.resize(N);
+    for (int i = 0; i < N; ++i) {
+      scanf("%d%d%d%d", &items[i].vw, &items[i].pf, &items[i].vf, &items[i].th);
+    }
+    flt right = 0;
+    for (int i = 0; i < N; ++i) {
+      right = max(right, (flt)items[i].th / items[i].vw);
+    }
+    memo.assign(right * SCALE_FACTOR + 1, FLT_MAX);
+    flt left = 0;
+    for (int _ = 0; _ < 200; ++_) {
+      LL m1 = (left * 2 + right) / 3;
+      LL m2 = (left + right * 2) / 3;
+      flt c1 = calc(m1 / (flt)SCALE_FACTOR);
+      flt c2 = calc(m2 / (flt)SCALE_FACTOR);
+      flt diff = fabs(c1 - c2);
+      if (diff < eps)
+        right = m2 / (flt)SCALE_FACTOR;
+      else if (c1 < c2)
+        right = m2 / (flt)SCALE_FACTOR;
+      else
+        left = m1 / (flt)SCALE_FACTOR;
+    }
+    printf("%.10f\n", calc(left));
+  }
+  return 0;
+}
+```
+
+This optimized code improves performance by using more efficient data structures, avoiding unnecessary calculations, and optimizing the `calc` function. It also reduces the chance of floating-point inaccuracies by using integer arithmetic and a more efficient method to compare floating-point values.

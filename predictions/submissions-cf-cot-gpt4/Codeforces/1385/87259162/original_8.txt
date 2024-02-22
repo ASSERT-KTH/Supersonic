@@ -1,0 +1,123 @@
+There are several ways to optimize the given C++ program. Here they are:
+
+1. Avoid using `#include <bits/stdc++.h>`: This is a header file that includes most of the standard library header files in C++. It's not a standard library header. It might cause the compiler to include more files than it needs to, which can slow down the compilation process. It's better to include only the necessary libraries, like `#include <vector>`, `#include <iostream>`, `#include <utility>`, and so on.
+
+2. Avoid using `using namespace std;`: This can also slow down the compilation process because it makes all names in the `std` namespace available in the global namespace. It's better to use the `std::` prefix when needed.
+
+3. Use `std::ios_base::sync_with_stdio(false)` and `std::cin.tie(0)`: These two lines will make input/output in C++ nearly as fast as in C, which can help to speed up the program.
+
+4. Avoid using macros if possible: Macros can make code hard to read and debug. It's better to use functions or templates instead. In this case, macros `FORb`, `FORe`, `print`, `pb`, `ins` can be replaced.
+
+5. Use `std::vector<bool>` carefully: `std::vector<bool>` is a bit different from other `std::vector<T>`. It's a specialization of `std::vector` designed to use one bit per boolean, but it has some drawbacks. If the performance of `std::vector<bool>` is a problem in the program, it could be replaced with `std::deque<bool>` or `std::vector<char>`.
+
+6. Remove `#ifdef _WIN32` block: This block of code checks whether the operating system is Windows or not. If the code is not meant to be platform-specific, this block can be removed.
+
+7. Use `std::endl` carefully: `std::endl` not only inserts a newline character, but also flushes the output buffer, which can be slow. If you just want to print a newline, use `'\n'` instead.
+
+8. Be careful with memory allocation and deallocation: In the `compute` function, `topo_order` is allocated with `calloc` and freed with `free`. But in C++, it's better to use `new` and `delete` instead. Or even better, use smart pointers or containers that handle memory for you.
+
+9. Reduce the use of global variables: In this case, `ts`, `directed_edges`, `undirected_edges`, `topo_order`, `possible` are global variables. It's better to make them local to functions or pass them as parameters to functions if necessary.
+
+Here is the optimized version of the code:
+
+```cpp
+#include <vector>
+#include <iostream>
+#include <utility>
+
+using LL = long long int;
+using ULL = unsigned long long;
+using pii = std::pair<int, int>;
+using plli = std::pair<LL, LL>;
+using pdd = std::pair<double, double>;
+
+const int len = 200001;
+std::vector<int> g[len];
+std::vector<pii> directed_edges, undirected_edges;
+std::vector<int> ts;
+int* topo_order;
+bool possible;
+
+void dfs(int node, std::vector<bool>& visited) {
+    visited[node] = true;
+    for (int next : g[node]) {
+        if (!visited[next]) {
+            dfs(next, visited);
+        }
+    }
+    ts.push_back(node);
+}
+
+void compute(int n, int m) {
+    std::vector<bool> visited(n + 1, false);
+    for (int i = 1; i < n + 1; i++) {
+        if (!visited[i]) {
+            dfs(i, visited);
+        }
+    }
+    int order = 0;
+    for (int i = n - 1; i >= 0; i--) {
+        topo_order[ts[i]] = order++;
+    }
+    for (auto& e : directed_edges) {
+        if (topo_order[e.first] > topo_order[e.second]) {
+            possible = false;
+            break;
+        }
+    }
+    if (!possible) {
+        std::cout << "NO\n";
+        return;
+    }
+    std::cout << "YES\n";
+    for (auto& p : directed_edges) {
+        std::cout << p.first << " " << p.second << '\n';
+    }
+    for (auto& p : undirected_edges) {
+        if (topo_order[p.first] < topo_order[p.second]) {
+            std::cout << p.first << " " << p.second << '\n';
+        } else {
+            std::cout << p.second << " " << p.first << '\n';
+        }
+    }
+    delete[] topo_order;
+}
+
+void read_and_query() {
+    int n, m;
+    std::cin >> n >> m;
+    for (int i = 0; i < n + 1; i++) {
+        g[i].clear();
+    }
+    int t, u, v;
+    directed_edges.clear();
+    undirected_edges.clear();
+    ts.clear();
+    topo_order = new int[n + 1];
+    possible = true;
+    for (int i = 0; i < m; i++) {
+        std::cin >> t >> u >> v;
+        if (t == 0) {
+            undirected_edges.push_back({u, v});
+        } else {
+            directed_edges.push_back({u, v});
+            g[u].push_back(v);
+        }
+    }
+    compute(n, m);
+}
+
+int main() {
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(0);
+    
+    int t;
+    std::cin >> t;
+    while (t--) {
+        read_and_query();
+    }
+    return 0;
+}
+```
+
+Please note that the optimizations here are focused on improving readability and reducing the compilation time. The running time of the code is mostly determined by the algorithm used, and without changing the algorithm used in this code, there's not much we can do to optimize running time. The memory usage of the code is also relatively efficient. However, using `new` and `delete` instead of `calloc` and `free` can help to prevent memory leaks and undefined behavior.

@@ -1,0 +1,91 @@
+This is a complex program. It's essentially finding the greatest common divisor (GCD) of different subsets of an array and storing the results in a map. The program is optimized in a way that it's hard to find quick optimizations that don't involve changing the logic of the program. However, there are still a few things that can be done to further optimize it:
+
+1. Reduce the size of `get_log` array: This array is used to store precomputed values of base-2 logarithms. The maximum index accessed in this array is `n` (the size of the input array), but the array is declared with a size of 200100. We can optimize the memory usage by declaring this array with a size of `n`.
+
+2. Use `scanf` and `printf` instead of `cin` and `cout`: `scanf` and `printf` are faster than `cin` and `cout` in C++. Since this program involves a lot of input/output operations, this can lead to a noticeable improvement in running time.
+
+3. Use bitwise operations instead of power of 2: Bitwise operations are faster than arithmetic operations. In this program, power of 2 is used in several places, which can be replaced by bitwise operations.
+
+4. Use an `unordered_map` instead of `map`: `unordered_map` has an average time complexity of O(1) for insert and access operations, while `map` has a time complexity of O(log(n)). However, please note that this could potentially increase the memory usage.
+
+Here is the optimized program:
+
+```cpp
+#include <cstdio>
+#include <cstdlib>
+#include <unordered_map>
+using namespace std;
+
+int gcd(int a, int b) {
+  if (b == 0) {
+    return a;
+  }
+  return gcd(b, a % b);
+}
+
+int n;
+int q;
+unordered_map<int, long long> ans;
+int a[100100];
+int st[100100][20];
+int get_log[100100];
+
+int get(int l, int r) {
+  int sz = get_log[r - l];
+  return gcd(st[l][sz], st[r - (1 << sz)][sz]);
+}
+
+signed main() {
+  scanf("%d", &n);
+
+  get_log[1] = 0;
+  for (int i = 2; i <= n; i++) {
+    get_log[i] = get_log[i - 1];
+    if ((1 << get_log[i]) <= i)
+      get_log[i]++;
+    get_log[i]--;
+  }
+
+  for (int i = 0; i < n; i++) {
+    scanf("%d", &a[i]);
+    st[i][0] = a[i];
+  }
+
+  for (int nowP = 1; nowP < 20; nowP++) {
+    for (int i = 0; i + (1 << nowP) <= n; i++) {
+      st[i][nowP] = gcd(st[i][nowP - 1], st[i + (1 << (nowP - 1))][nowP - 1]);
+    }
+  }
+
+  for (int L = 0; L < n; L++) {
+    int prev_ind = L;
+    int now_ind = L;
+    while (now_ind < n) {
+      int now_gcd = get(L, now_ind + 1);
+      int l = now_ind;
+      int r = n;
+      while (r - l > 1) {
+        int m = (l + r) / 2;
+        int x = get(L, m + 1);
+        if (x < now_gcd)
+          r = m;
+        else
+          l = m;
+      }
+      ans[now_gcd] += r - prev_ind;
+      now_ind = r;
+      prev_ind = r;
+    }
+  }
+
+  scanf("%d", &q);
+  while (q--) {
+    int x;
+    scanf("%d", &x);
+    printf("%lld\n", ans[x]);
+  }
+
+  return 0;
+}
+```
+Please note that the effect of these optimizations will be more noticeable on large inputs.

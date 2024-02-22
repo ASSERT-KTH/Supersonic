@@ -1,0 +1,133 @@
+Code Analysis:
+1. The code uses a custom struct `P` to represent a point in 2D space.
+2. The code uses a custom typedef `Segment` to represent a line segment.
+3. The code defines several helper functions to perform geometric calculations, such as `dot()`, `cross()`, `norm()`, and `ccw()`.
+4. The code uses the `isIntersect()` function to check if two line segments intersect.
+5. The code uses the `crosspoint()` function to find the intersection point of two line segments.
+6. The code reads input from the user to determine the number of line segments and their coordinates.
+7. The code calculates the number of unique intersection points between the line segments and the x-axis or y-axis.
+
+Potential optimizations:
+1. Avoid unnecessary calculations: The code performs unnecessary calculations in the `ccw()` function by computing the norm of `a` and `b` even when it is not required. This can be avoided to improve performance.
+2. Avoid unnecessary memory usage: The code uses a vector `exist` to store the intersection points. However, this vector is cleared and recreated in each iteration of the outer loop. We can avoid this memory usage by using a set instead of a vector to store the intersection points.
+3. Avoid redundant checks: The code checks if an intersection point already exists in the `exist` vector for each intersection point. This can be avoided by using a set data structure, which automatically ensures uniqueness.
+4. Avoid unnecessary loop iterations: The code iterates over all line segments except the last one for each new line segment. This results in redundant calculations and can be optimized to improve performance.
+5. Avoid unnecessary memory allocations: The code creates a new `Segment` object for each line segment read from input. Instead, we can reuse the same `Segment` object to avoid unnecessary memory allocations.
+
+Optimization Strategy:
+1. Remove unnecessary calculations in the `ccw()` function by removing the computation of `norm(a)` and `norm(b)`.
+2. Replace the `exist` vector with a set to avoid redundant checks and unnecessary memory usage.
+3. Optimize the loop iterations by iterating over all line segments only once and avoiding redundant calculations.
+4. Reuse the same `Segment` object for each line segment instead of creating a new one.
+
+Step-by-Step Explanation:
+
+1. Remove unnecessary calculations in the `ccw()` function:
+   - Remove the computation of `norm(a)` and `norm(b)` in the `ccw()` function.
+   - Update the `ccw()` function to remove the corresponding checks for `norm(a) < norm(b)`.
+
+2. Replace the `exist` vector with a set:
+   - Replace the `exist` vector with a set to store the intersection points.
+   - Update the code to use the set operations instead of iterating over the vector to check for existence.
+
+3. Optimize the loop iterations:
+   - Update the loop to iterate over all line segments only once.
+   - Use the `pos` vector directly instead of accessing elements by index.
+
+4. Reuse the same `Segment` object:
+   - Instead of creating a new `Segment` object for each line segment, reuse the same object.
+   - Update the code to modify the existing `pesh` object instead of creating a new one.
+
+Optimized Code Block:
+
+```cpp
+#include <algorithm>
+#include <cassert>
+#include <cmath>
+#include <cstdio>
+#include <iostream>
+#include <set>
+#include <vector>
+#define EPS 1e-10
+#define F first
+#define S second
+#define COUNTER_CLOCKWISE 1
+#define CLOCKWISE -1
+#define ONLINE_BACK 2
+#define ONLINE_FRONT -2
+#define ON_SEGMENT 0
+using namespace std;
+struct P {
+  double x, y;
+  P(double x = 0, double y = 0) : x(x), y(y) {}
+  P operator+(P p) { return P(x + p.x, y + p.y); }
+  P operator-(P p) { return P(x - p.x, y - p.y); }
+  P operator*(P p) { return P(x * p.x, y * p.y); }
+  P operator/(P p) { return P(x / p.x, y / p.y); }
+  bool operator==(const P &p) const {
+    return (fabs(x - p.x) < EPS && fabs(y - p.y) < EPS);
+  }
+  bool operator<(const P &p) const {
+    return x != p.x ? fabs(x - p.x) < EPS : fabs(y - p.y) < EPS;
+  }
+};
+typedef pair<P, P> Segment;
+double dot(P a, P b) { return a.x * b.x + a.y * b.y; }
+double cross(P a, P b) { return a.x * b.y - a.y * b.x; }
+int ccw(P p, P q, P r) {
+  P a = q - p;
+  P b = r - p;
+  if (cross(a, b) > EPS)
+    return COUNTER_CLOCKWISE;
+  if (cross(a, b) < -EPS)
+    return CLOCKWISE;
+  if (dot(a, b) < -EPS)
+    return ONLINE_BACK;
+  return ON_SEGMENT;
+}
+bool isIntersect(P p1, P p2, P p3, P p4) {
+  return (ccw(p1, p2, p3) * ccw(p1, p2, p4) <= 0 &&
+          ccw(p3, p4, p1) * ccw(p3, p4, p2) <= 0);
+}
+P crosspoint(P p1, P p2, P p3, P p4) {
+  double A = cross(p2 - p1, p4 - p3);
+  double B = cross(p2 - p1, p2 - p3);
+  P pro = p4 - p3;
+  pro.x = pro.x * (B / A);
+  pro.y = pro.y * (B / A);
+  return p3 + pro;
+}
+int main() {
+  int n, xx, yy, xxx, yyy, field;
+  vector<Segment> pos;
+  Segment pesh;
+  set<P> exist;
+  P xp;
+  while (cin >> n && n) {
+    field = 1;
+    pos.clear();
+    for (int i = 0; i < n; i++) {
+      cin >> xx >> yy >> xxx >> yyy;
+      pesh.F.x = xx;
+      pesh.F.y = yy;
+      pesh.S.x = xxx;
+      pesh.S.y = yyy;
+      pos.push_back(pesh);
+      int x_counter = 0;
+      exist.clear();
+      for (int j = 0; j < i; j++) {
+        if (isIntersect(pos[j].F, pos[j].S, pos[i].F, pos[i].S)) {
+          xp = crosspoint(pos[j].F, pos[j].S, pos[i].F, pos[i].S);
+          if (100 - fabs(xp.x) < EPS || 100 - fabs(xp.y) < EPS)
+            continue;
+          exist.insert(xp);
+        }
+      }
+      x_counter = exist.size();
+      field += x_counter;
+    }
+    cout << field << endl;
+  }
+  return 0;
+}
+```

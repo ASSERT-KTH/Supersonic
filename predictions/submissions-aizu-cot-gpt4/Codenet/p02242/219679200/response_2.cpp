@@ -1,0 +1,54 @@
+#include <algorithm>
+#include <cstdio>
+#include <queue>
+#include <vector>
+using uint = unsigned int;
+using P = std::pair<uint, uint>;
+class Graph {
+  const uint n_;
+  uint *const g_;
+  const uint INFINIT;
+
+public:
+  Graph(uint n)
+      : n_(n), g_(new uint[(n_ * n_)]), INFINIT(100000 * (n_ - 1) + 1) {
+    std::fill_n(g_, (n_ * n_), INFINIT);
+  }
+  ~Graph() { delete[] g_; }
+  uint *operator[](uint i) const { return g_ + (n_ * i); }
+  void dijkstra(uint *dist) {
+    std::fill_n(dist, n_, INFINIT);
+    std::priority_queue<P, std::vector<P>, std::greater<P>> queue;
+    dist[0] = 0;
+    queue.push(P(0, 0));
+    while (!queue.empty()){
+      P p = queue.top(); queue.pop();
+      uint v = p.second;
+      if (dist[v] < p.first) continue;
+      for (uint i = 0; i < n_; ++i) {
+        if (dist[i] > dist[v] + (*this)[v][i]){
+          dist[i] = dist[v] + (*this)[v][i];
+          queue.push(P(dist[i], i));
+        }
+      }
+    }
+  }
+};
+int main() {
+  uint n;
+  std::scanf("%u", &n);
+  Graph g(n);
+  uint u, k, c, v;
+  for (auto i = 0u; i < n; ++i) {
+    std::scanf("%u %u", &u, &k);
+    for (auto j = 0u; j < k; ++j) {
+      std::scanf("%u %u", &c, &v);
+      g[u][c] = v;
+    }
+  }
+  uint dist[n];
+  g.dijkstra(dist);
+  for (auto i = 0u; i < n; ++i) {
+    std::printf("%u %u\n", i, dist[i]);
+  }
+}

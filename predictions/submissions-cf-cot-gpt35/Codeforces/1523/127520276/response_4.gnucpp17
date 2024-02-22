@@ -1,0 +1,66 @@
+#include <cstdlib>
+#include <iostream>
+#include <queue>
+#include <random>
+#include <vector>
+
+constexpr int N = 5e4, M = 1e5, LOGN = 16;
+
+int main() {
+  std::cin.tie(0);
+  std::ios_base::sync_with_stdio(0);
+
+  std::vector<std::vector<int>> by_length(N + 1);
+  std::vector<int> ans(N + 1);
+  std::vector<std::vector<int>> ft(N);
+
+  auto add = [&](int t) {
+    for (int i = N - rent[t].first - 1; i < N; i |= i + 1) {
+      ft[i].push_back(rent[t].second);
+    }
+  };
+
+  auto query = [&](int l, int r) {
+    int res = M;
+    for (int i = N - l; i > N - r; i &= i - 1) {
+      for (int j : ft[i - 1]) {
+        res = std::min(res, rent[j].second);
+      }
+    }
+    return res;
+  };
+
+  int n, m;
+  std::cin >> n >> m;
+
+  std::vector<interval> rent(m + 1);
+  for (int i = 0; i < m; ++i) {
+    std::cin >> rent[i].first >> rent[i].second;
+    rent[i].first--;
+    by_length[rent[i].second - rent[i].first].push_back(i);
+  }
+
+  std::vector<interval> for_rent;
+  for (int epoch = n; epoch; --epoch) {
+    for (int i : by_length[epoch]) {
+      add(i);
+    }
+    for_rent.emplace_back(0, n);
+    while (!for_rent.empty()) {
+      auto [l, r] = for_rent.back();
+      for_rent.pop_back();
+      int t = query(l, r);
+      if (t != M) {
+        ans[epoch] += rent[t].second - rent[t].first;
+        for_rent.emplace_back(l, rent[t].first);
+        for_rent.emplace_back(rent[t].second, r);
+      }
+    }
+  }
+
+  for (int rented = 1; rented <= n; ++rented) {
+    std::cout << ans[rented] << '\n';
+  }
+
+  return 0;
+}

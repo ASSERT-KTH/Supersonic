@@ -1,0 +1,95 @@
+This is a complex logical parser that checks the validity of certain logical expressions. Its runtime is mostly dominated by the parsing process, but there are a few small improvements we can make:
+
+1. Pass string by reference: The solve function currently accepts a string by copy. Passing large strings by copy can be expensive in terms of both time and space. We can instead pass the string by reference to avoid this unnecessary copy.
+
+2. Avoid string iterator incrementation: The code frequently increments the string iterator (begin++). This operation is not free and can slow down the execution, especially when the string is large. To optimize this, we can try to minimize the number of iterator increments. 
+
+3. Program uses global variable `mask` which could lead to issues in a multi-threaded environment. We can pass it as an argument to the `solve` function.
+
+4. Reserve space for the string: If we know that the string S will be large, we can call `reserve` to preallocate enough space for it. This will avoid the cost of multiple reallocations as the string grows.
+
+5. Use faster IO Operations: C++ stream operations are easy to use but they are slower. We can use faster IO operations like `scanf` and `printf` instead of `cin` and `cout`.
+
+Here's the optimized version of the code:
+
+```c++
+#include <cstdio>
+#include <algorithm>
+#include <cctype>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+template <class T> struct Parser {
+  typedef string::const_iterator State;
+  T solve(const string &S, int &mask) {
+    State begin = S.begin();
+    return equation(begin);
+  }
+  T equation(State &begin) {
+    T left = formula(begin);
+    T right = formula(begin);
+    return left == right;
+  }
+  T formula(State &begin) {
+    if (*begin == '(') {
+      T left = formula(++begin);
+      char op = *begin;
+      T right;
+      if (op == '-')
+        right = formula(++begin);
+      else
+        right = formula(begin);
+      T ret = deduce(left, op, right);
+      return ret;
+    } else if (*begin == '-') {
+      return !formula(++begin);
+    } else {
+      return boolean(begin);
+    }
+  }
+  T deduce(T x, char op, T y) {
+    if (op == '*') {
+      return x and y;
+    } else if (op == '+') {
+      return x or y;
+    } else {
+      return !x or y;
+    }
+  }
+  T boolean(State &begin) {
+    T ret;
+    if (*begin == 'T')
+      ret = 1;
+    else if (*begin == 'F')
+      ret = 0;
+    else
+      ret = (mask >> (*begin - 'a')) & 1;
+    begin++;
+    return ret;
+  }
+};
+
+void solve(const string &S) {
+  Parser<bool> ps;
+  for (int mask = 0; mask < (1 << 11); mask++) {
+    if (!ps.solve(S, mask)) {
+      printf("NO\n");
+      return;
+    }
+  }
+  printf("YES\n");
+}
+
+int main() {
+  string S;
+  S.reserve(1000);
+  while (scanf("%s", &S[0]) && S != "#") {
+    solve(S);
+  }
+  return 0;
+}
+```
+
+Please note that the optimizations made were mostly about reducing the memory footprint and enhancing the speed of the I/O operations. The computational complexity remains the same.

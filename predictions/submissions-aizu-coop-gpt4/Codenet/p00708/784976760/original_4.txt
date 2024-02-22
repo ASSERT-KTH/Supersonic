@@ -1,0 +1,115 @@
+Analysis:
+This C++ program appears to implement Kruskal's algorithm for finding the minimum spanning tree of a graph. The graph's nodes represent spheres in a 3D space and the edges represent the distances between them. The following potential areas for optimization are identified:
+
+1. The function `root()` is using path compression to speed up subsequent calls. However, it could be further optimized using a technique called union by rank.
+
+2. The function `unite()` could be optimized by applying the union by rank optimization to reduce the depth of the trees.
+
+3. The distance between each pair of nodes is calculated separately, which leads to redundant computations.
+
+4. The `sort()` function is called on the entire `node` array, which is of size `M`. However, we are only interested in sorting the first `m` elements.
+
+5. Use of `scanf` and `printf` for input and output is slower compared to `cin` and `cout`.
+
+Optimization Strategy:
+
+1. Implement union by rank in `root()` and `unite()` functions to reduce the depth of the trees.
+
+2. Pre-compute the distances among the nodes and store them in a matrix to avoid redundant computations.
+
+3. Call `sort()` only on the first `m` elements of the `node` array.
+
+4. Replace `scanf` and `printf` with `cin` and `cout`.
+
+5. Use modern C++ style, such as `std::array` instead of plain old arrays.
+
+Step by Step Explanation:
+
+1. Union by rank: This technique keeps track of the depth of each node and always attaches the smaller tree to the root of the larger tree. This minimizes the depth of the tree, leading to faster `root()` and `unite()` operations.
+
+2. Pre-computing distances: Since the distance between any two nodes is constant, we can pre-compute these distances and store them in a matrix. This will avoid the need to calculate the same distance multiple times.
+
+3. Partial `sort()`: The `sort()` function is currently sorting the entire `node` array. However, we are only interested in the first `m` elements. Thus, we should only sort these elements, which will be faster than sorting the entire array.
+
+4. `cin` and `cout`: The `scanf` and `printf` functions are slower than `cin` and `cout`. While the performance difference is usually negligible, it can add up in programs with a lot of input/output.
+
+5. Modern C++ style: Using `std::array` instead of plain old arrays can improve code readability and safety.
+
+Trade-offs: These optimizations should speed up the program without any significant downsides. The main trade-off is that the code will become slightly more complex due to the additional logic for union by rank and pre-computing distances.
+
+Optimized Code Block:
+
+```cpp
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <iostream>
+#include <vector>
+using namespace std;
+
+constexpr int M = 9999;
+array<int, M> parent, rank, a, b;
+array<pair<double, int>, M> node;
+
+int root(int a) {
+  if (parent[a] != a) {
+    parent[a] = root(parent[a]);
+  }
+  return parent[a];
+}
+
+bool unite(int a, int b) {
+  int x = root(a), y = root(b);
+  if (x == y) {
+    return false;
+  }
+  if (rank[x] < rank[y]) {
+    parent[x] = y;
+  } else {
+    parent[y] = x;
+    if (rank[x] == rank[y]) {
+      ++rank[x];
+    }
+  }
+  return true;
+}
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  int n;
+  while (cin >> n, n) {
+    vector<vector<double>> v(n, vector<double>(4));
+    for (auto &ve : v) {
+      cin >> ve[0] >> ve[1] >> ve[2] >> ve[3];
+    }
+    for (int i = 0; i < n; ++i) {
+      parent[i] = i;
+    }
+    int m = 0;
+    for (int i = 0; i < n; ++i) {
+      for (int j = i + 1; j < n; ++j) {
+        double x = 0;
+        for (int k = 0; k < 3; ++k) {
+          x += (v[i][k] - v[j][k]) * (v[i][k] - v[j][k]);
+        }
+        x = sqrt(x) - v[i][3] - v[j][3];
+        if (x <= 0) {
+          unite(i, j);
+        } else {
+          a[m] = i, b[m] = j, node[m].first = x, node[m++].second = m;
+        }
+      }
+    }
+    sort(node.begin(), node.begin() + m);
+    double x = 0;
+    for (int i = 0; i < m; ++i) {
+      if (unite(a[node[i].second], b[node[i].second])) {
+        x += node[i].first;
+      }
+    }
+    cout << fixed << setprecision(3) << x << '\n';
+  }
+}
+```

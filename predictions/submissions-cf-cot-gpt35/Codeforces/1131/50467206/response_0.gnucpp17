@@ -1,0 +1,77 @@
+#include <iostream>
+#include <fstream>
+#include <algorithm>
+#include <utility>
+#include <vector>
+using namespace std;
+
+const int NMax = 1e7 + 5;
+
+int height[NMax];
+long long cost[NMax];
+long long dp[NMax];
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+
+  int N, M;
+  cin >> N >> M;
+
+  vector<pair<int, int>> blocks;
+  for (int i = 0; i < N; ++i) {
+    int K;
+    cin >> K;
+    for (int j = 0; j < K; ++j) {
+      int h;
+      cin >> h;
+      int c;
+      cin >> c;
+      blocks.push_back({h, c});
+    }
+  }
+
+  int Q, curr = 0;
+  cin >> Q;
+  for (int i = 0; i < Q; ++i) {
+    int id, mult;
+    cin >> id >> mult;
+    for (int j = 0; j < blocks[id].size(); ++j) {
+      int h = blocks[id][j].first;
+      int c = blocks[id][j].second;
+      height[++curr] = h;
+      cost[curr] = 1LL * mult * c;
+    }
+  }
+
+  vector<pair<int, long long>> stackPushLeft, stackPushRight;
+  for (int i = 1; i <= M; ++i) {
+    long long minLeft = dp[i - 1];
+    while (stackPushLeft.size() && i - height[i] + 1 <= stackPushLeft.back().first) {
+      minLeft = min(minLeft, stackPushLeft.back().second);
+      stackPushLeft.pop_back();
+    }
+    dp[i] = minLeft + cost[i];
+
+    long long valHere = dp[i - 1];
+    minLeft = min(minLeft, valHere);
+    stackPushLeft.push_back({i, minLeft});
+
+    int idx = -1;
+    while (stackPushRight.size() && (idx = stackPushRight.back().first) && idx + height[idx] - 1 < i) {
+      stackPushRight.pop_back();
+    }
+    if (stackPushRight.size()) {
+      long long dpPlusCost = stackPushRight.back().second;
+      dp[i] = min(dp[i], dpPlusCost);
+    }
+    long long dpPlusCost = dp[i - 1] + cost[i];
+    if (stackPushRight.size()) {
+      dpPlusCost = min(dpPlusCost, stackPushRight.back().second);
+    }
+    stackPushRight.push_back({i, dpPlusCost});
+  }
+
+  cout << dp[M] << '\n';
+  return 0;
+}

@@ -1,0 +1,73 @@
+This C++ program represents a Union-Find data structure, often used in graph theory to quickly determine whether two elements are in the same set and to merge two sets. It appears that the program is quite well-optimized as it already uses a common optimization in Union-Find called "path compression" in the `get_boss` function. It also uses the "union by rank" optimization in the `unite` function, where the root of the tree with fewer nodes is attached to the root of the tree with more nodes, minimizing tree height.
+
+However, there are still a few areas where we can further optimize this code:
+
+1. **Input/Output Operations:** The `scanf` and `printf` functions are quite slow compared to their C++ counterparts `cin` and `cout`. However, we can use `ios::sync_with_stdio(false); cin.tie(NULL); cout.tie(NULL);` to turn off synchronization between the C and C++ standard streams, which will make `cin` and `cout` faster.
+
+2. **Memory Management:** The code uses dynamic memory allocation for the `boss` and `height` arrays. This is not necessary since the maximum size of these arrays is known at compile time. It's better to use `std::vector` which can be resized dynamically and doesn't require manual memory management.
+
+3. **Function Inlining:** Both `is_same` and `get_boss` functions are simple and called frequently. We can suggest the compiler to inline them. Inlined functions may execute faster because they are substituted into the code at compile-time, removing the overhead of a function call.
+
+4. **Avoiding unnecessary function calls:** In the `unite` function, `get_boss` is called twice for each of `x` and `y`. We could store the results in local variables to avoid the second call.
+
+Here is the optimized code, with comments indicating the changes:
+
+```cpp
+#include <iostream>
+#include <vector>
+using namespace std;
+int N;
+vector<int> boss, height;
+
+// Suggest compiler to inline these functions
+inline int get_boss(int id) {
+  if (boss[id] == id)
+    return id;
+  else {
+    return boss[id] = get_boss(boss[id]);
+  }
+}
+inline bool is_same(int x, int y) { return get_boss(x) == get_boss(y); }
+
+void unite(int x, int y) {
+  int boss_x = get_boss(x);
+  int boss_y = get_boss(y);
+  if (boss_x == boss_y)
+    return;
+  if (height[x] > height[y]) {
+    boss[boss_y] = boss_x;
+  } else if (height[x] < height[y]) {
+    boss[boss_x] = boss_y;
+  } else {
+    boss[boss_y] = boss_x;
+    height[x]++;
+  }
+}
+
+int main() {
+  ios::sync_with_stdio(false); cin.tie(NULL); cout.tie(NULL); // Fast I/O
+  int Q, command, x, y;
+  cin >> N >> Q;
+  boss.resize(N); // Use vector instead of dynamic allocation
+  height.resize(N); // Use vector instead of dynamic allocation
+  for (int i = 0; i < N; i++) {
+    boss[i] = i;
+    height[i] = 1;
+  }
+  for (int i = 0; i < Q; i++) {
+    cin >> command >> x >> y;
+    if (command == 0) {
+      unite(x, y);
+    } else {
+      if (is_same(x, y)) {
+        cout << "1\n";
+      } else {
+        cout << "0\n";
+      }
+    }
+  }
+  return 0;
+}
+```
+
+Remember that these changes may increase the complexity of the code and may not always result in a noticeable performance improvement, especially for smaller inputs. But they do follow good coding practices and could be helpful for larger inputs or more complex applications.

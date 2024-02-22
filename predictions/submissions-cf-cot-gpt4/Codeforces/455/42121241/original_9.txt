@@ -1,0 +1,147 @@
+The given C/C++ program is already quite efficient, but there are a few small modifications we can make to optimize it a bit further.
+
+Step 1: Use `std::ios_base::sync_with_stdio(false);` to turn off synchronization between the C and C++ standard streams. This can speed up I/O operations.
+
+Step 2: Use `cin.tie(NULL);` to untie `cin` from `cout`. By default, each time `cin` is accessed, `cout` is flushed. We don't need this in our case, so we can turn it off to save time.
+
+Step 3: Replace `scanf` and `printf` functions with `std::cin` and `std::cout`. Because we've turned off synchronization, we can now use the typically faster C++ I/O functions instead.
+
+Step 4: Use pre-increment and pre-decrement operators (`++i` or `--i`) instead of post-increment and post-decrement (`i++` or `i--`) where possible. Pre-increment and pre-decrement are slightly faster because they don't require a temporary object to be created.
+
+Now let's implement these optimizations:
+
+```cpp
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <deque>
+#include <map>
+using namespace std;
+struct dat {
+  static int n;
+  deque<int> A;
+  map<int, int> M;
+  dat *next = NULL;
+  int count(int p, int x) const {
+    if (p > size()) {
+      map<int, int>::const_iterator it = M.find(x);
+      if (it == M.end())
+        return next->count(p - size(), x);
+      else
+        return next->count(p - size(), x) + it->second;
+    }
+    int ans = 0;
+    for (int i = 0; i < p; ++i)
+      ans += A[i] == x;
+    return ans;
+  }
+  void insert(int p, int x) {
+    if (p > size()) {
+      next->insert(p - size(), x);
+      return;
+    }
+    A.insert(A.begin() + p, x);
+    M[x]++;
+    split();
+  }
+  int erase(int p) {
+    if (size() < p)
+      return next->erase(p - size());
+    auto it = A.begin() + p - 1;
+    int x = *it;
+    A.erase(it);
+    if (--M[x] == 0)
+      M.erase(x);
+    merge();
+    return x;
+  }
+  void push_back(int x) {
+    A.push_back(x);
+    M[x]++;
+  }
+  void push_front(int x) {
+    A.push_front(x);
+    M[x]++;
+  }
+  int pop_back() {
+    int x = A.back();
+    A.pop_back();
+    if (--M[x] == 0)
+      M.erase(x);
+    return x;
+  }
+  int pop_front() {
+    int x = A.front();
+    A.pop_front();
+    if (--M[x] == 0)
+      M.erase(x);
+    return x;
+  }
+  int size() const { return A.size(); }
+  void split() {
+    if (size() < n << 1)
+      return;
+    dat *tmp = new dat;
+    while (size() > n)
+      tmp->push_front(pop_back());
+    tmp->next = next;
+    next = tmp;
+  }
+  void merge() {
+    if (next == NULL || size() + next->size() > n)
+      return;
+    dat *tmp = next;
+    while (next->size() > 0)
+      push_back(tmp->pop_front());
+    next = tmp->next;
+    delete tmp;
+  }
+  void print() const {
+    for (int x : A)
+      cerr << x << ' ';
+    if (next == NULL)
+      cerr << '\n';
+    else
+      next->print();
+  }
+};
+int dat::n;
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  int n, m, last = 0;
+  cin >> n;
+  dat::n = ceil(sqrt(n << 2));
+  dat *D = new dat, *cur = D;
+  for (int i = 0; i < n; ++i) {
+    if (cur->size() >= dat::n) {
+      cur->next = new dat;
+      cur = cur->next;
+    }
+    int x;
+    cin >> x;
+    cur->push_back(x);
+  }
+  cin >> m;
+  for (; m > 0; --m) {
+    int op, l, r, k;
+    cin >> op;
+    cin >> l >> r;
+    l = (l + last - 1) % n + 1;
+    r = (r + last - 1) % n + 1;
+    if (op == 2) {
+      cin >> k;
+      k = (k + last - 1) % n + 1;
+    }
+    if (l > r)
+      swap(l, r);
+    if (op == 1)
+      D->insert(l - 1, D->erase(r));
+    else {
+      l = D->count(l - 1, k);
+      r = D->count(r, k);
+      cout << (last = r - l) << '\n';
+    }
+  }
+}
+```

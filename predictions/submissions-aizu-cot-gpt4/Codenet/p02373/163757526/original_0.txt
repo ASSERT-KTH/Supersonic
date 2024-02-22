@@ -1,0 +1,77 @@
+The given C++ program performs a pre-calculation of the least common ancestor (LCA) for every pair of nodes in a tree using a depth-first search (DFS) and then a sparse table.
+
+There are primarily two possible optimizations for this program:
+
+1. Memory Usage: The program uses a 2D array "ST" which is of size [20][200010]. This seems to be wasteful because the sparse table only fills half of the size. So, we can change it to a 1D array to save memory.
+
+2. Running Time: In the function "build", there is a nested loop where the outer loop is for the height of the sparse table and the inner loop is for each element in the path. The inner loop can be optimized by pre-computing some of the calculations that are repeated.
+
+Here are the mentioned optimizations applied to the original code:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+#define fi first
+#define se second
+typedef pair<int, int> ii;
+typedef vector<int> vi;
+const int MAXN = 100005;
+const int LOGN = 20;
+int idx_in_path[MAXN];
+ii path[MAXN << 1];
+vi adjList[MAXN];
+int path_size = 0;
+void dfs(int u, int depth = 0) {
+  idx_in_path[u] = path_size;
+  path[path_size++] = ii(depth, u);
+  for (int v : adjList[u]) {
+    dfs(v, depth + 1);
+    path[path_size++] = ii(depth, u);
+  }
+}
+ii ST[MAXN << 1]; // Changed to 1D array
+int Log[MAXN << 1]; // Added for pre-computation
+void build(int n) {
+  Log[1] = 0;
+  for (int i = 2; i <= n; i++)
+    Log[i] = Log[i/2] + 1; // Pre-compute the logarithms
+  for (int i = 0; i < n; i++)
+    ST[i] = path[i];
+  for (int j = 1; j <= Log[n]; j++)
+    for (int i = 0; i + (1 << j) <= n; i++)
+      ST[i] = min(ST[i], ST[i + (1 << (j - 1))]); // Use pre-computed logarithms
+}
+int lca(int u, int v) {
+  int l = idx_in_path[u], r = idx_in_path[v];
+  if (l > r)
+    swap(l, r);
+  r++;
+  int p = Log[r - l]; // Use pre-computed logarithms
+  return min(ST[l], ST[r - (1 << p)]).se;
+}
+int main() {
+  int num_nodes;
+  scanf("%d", &num_nodes);
+  for (int u = 0; u < num_nodes; u++) {
+    int num_neighbors;
+    scanf("%d", &num_neighbors);
+    for (int i = 0; i < num_neighbors; i++) {
+      int v;
+      scanf("%d", &v);
+      adjList[u].push_back(v);
+    }
+  }
+  dfs(0);
+  build(path_size);
+  int num_queries;
+  scanf("%d", &num_queries);
+  for (int i = 0; i < num_queries; i++) {
+    int u, v;
+    scanf("%d%d", &u, &v);
+    printf("%d\n", lca(u, v));
+  }
+  return 0;
+}
+```
+
+The optimized program reduces memory usage by changing the 2D array to a 1D array and reduces running time by pre-computing the logarithms used in the build function.

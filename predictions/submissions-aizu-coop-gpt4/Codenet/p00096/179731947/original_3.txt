@@ -1,0 +1,51 @@
+This program calculates a dynamic programming (DP) table, then uses the table to answer several queries. The dynamic programming computation is the most computationally expensive part of the program, so that's where we should focus our optimization efforts.
+
+1. **Code Analysis**:
+
+The main computational part of the code involves three nested loops, making the time complexity O(n^3), which is quite high. The space complexity is O(n), as there is a two-dimensional array `dp` being stored.
+
+2. **Optimization Strategy**:
+
+   1. We can't really change the data structures as the 2D array is essential for the DP solution.
+
+   2. The third loop seems to be redundant. It iterates from 0 to j (or 1000, whichever is smaller), adding the previous DP result to the current one. It looks like a prefix sum, which can be calculated in O(1) time if we store the prefix sums.
+
+   3. We can't use loop unrolling or tail recursion as those optimizations are not applicable here.
+
+   4. Modern compilers are good at optimizing code, but sometimes they need hints. In our case, we can use the `#pragma omp parallel for` directive to parallelize the outer loop. However, this might not be beneficial due to the overhead of starting and stopping threads.
+
+3. **Step-by-Step Explanation**:
+
+First, we calculate the prefix sum of the DP array. This way, instead of having a third loop, we can calculate the sum in constant time.
+
+Next, we add the `#pragma omp parallel for` directive before the outer loop. This will make the program use multiple cores (if available) to calculate the DP table, which can result in a substantial speedup.
+
+4. **Optimized Code Block**:
+
+Here is the optimized code:
+
+```cpp
+#include <algorithm>
+#include <iostream>
+#include <vector>
+using namespace std;
+int main() {
+  unsigned long long dp[4001][5];
+  unsigned long long prefix[4001][5] = {0};
+  for (int i = 0; i < 5; i++)
+    for (int j = 0; j < 4001; j++)
+      dp[j][i] = i == 1 && j <= 1000 ? 1 : 0;
+  for (int i = 2; i <= 4; i++)
+    #pragma omp parallel for
+    for (int j = 0; j <= 4000; j++) {
+      prefix[j][i] = (j > 0 ? prefix[j-1][i] : 0) + dp[j][i-1];
+      dp[j][i] = (j > 1000 ? prefix[j-1000][i] : prefix[j][i]);
+    }
+  int n;
+  while (cin >> n)
+    cout << dp[n][4] << endl;
+  return 0;
+}
+```
+
+This optimization reduces the time complexity from O(n^3) to O(n^2), which is a substantial improvement. The trade-off is increased code complexity: we now have a prefix sum array and we're using OpenMP for parallelization, which might not be familiar to some programmers. However, the benefits outweigh the costs in this case.

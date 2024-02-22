@@ -1,0 +1,202 @@
+#include <iostream>
+#include <vector>
+#include <list>
+#include <queue>
+#include <algorithm>
+#include <cmath>
+
+#define ll long long int
+
+std::vector<std::list<ll>> v;
+std::vector<std::vector<ll>> diam;
+std::vector<ll> tour, path;
+std::vector<ll> h, first, parent, dist;
+ll n, root, root1;
+
+void height_initialise(ll x, ll y) {
+  h[x] = y;
+  for (ll node : v[x]) {
+    if (h[node] == 0) {
+      height_initialise(node, y + 1);
+    }
+  }
+}
+
+void distanc(ll x, ll y) {
+  dist[x] = y;
+  for (ll node : v[x]) {
+    if (dist[node] == 0) {
+      distanc(node, y + 1);
+    }
+  }
+}
+
+void euler(ll x, ll y) {
+  tour.emplace_back(x);
+  for (ll node : v[x]) {
+    if (node != y) {
+      euler(node, x);
+    }
+  }
+  if (y != 0) {
+    tour.emplace_back(y);
+  }
+}
+
+void euler_tour() {
+  euler(root, 0);
+  for (ll i = 0; i < tour.size(); i++) {
+    if (first[tour[i]] == 0) {
+      first[tour[i]] = i;
+    }
+  }
+}
+
+void sparsemin() {
+  ll size = tour.size();
+  for (ll i = 0; i < size; i++) {
+    std::vector<ll> row(20);
+    row[0] = tour[i];
+    stmin.emplace_back(std::move(row));
+  }
+  for (ll j = 1; (1 << j) <= size; j++) {
+    for (ll i = 0; i <= size - (1 << j); i++) {
+      ll x = stmin[i][j - 1];
+      ll y = stmin[i + (1 << (j - 1))][j - 1];
+      if (h[x] > h[y]) {
+        stmin[i][j] = y;
+      } else {
+        stmin[i][j] = x;
+      }
+    }
+  }
+}
+
+ll spminquery(ll l, ll r) {
+  ll length = r - l + 1;
+  ll k = log2(length);
+  ll x = stmin[l][k];
+  ll y = stmin[l + length - (1 << k)][k];
+  if (h[x] < h[y]) {
+    return x;
+  }
+  return y;
+}
+
+ll bfs(ll x, ll flag) {
+  std::queue<ll> q;
+  q.emplace(x);
+  ll y;
+  while (!q.empty()) {
+    x = q.front();
+    q.pop();
+    for (ll node : v[x]) {
+      if (parent[node] == 0) {
+        q.emplace(node);
+        if (flag == 1) {
+          parent[node] = x;
+        }
+      }
+    }
+    y = x;
+  }
+  return y;
+}
+
+void diameter() {
+  ll x, y, z;
+  x = bfs(1, 0);
+  y = bfs(x, 1);
+  root1 = y;
+  z = y;
+  while (parent[z] != 0) {
+    path.emplace_back(z);
+    z = parent[z];
+  }
+  path.emplace_back(z);
+  std::reverse(path.begin(), path.end());
+  for (ll i = 0; i < path.size(); i++) {
+    diam[i].emplace_back(path[i]);
+  }
+  root = x;
+  for (ll i = 0; i < path.size(); i++) {
+    std::queue<ll> q;
+    q.emplace(path[i]);
+    while (!q.empty()) {
+      x = q.front();
+      q.pop();
+      for (ll node : v[x]) {
+        if (std::find(diam[i].begin(), diam[i].end(), node) == diam[i].end()) {
+          q.emplace(node);
+          diam[i].emplace_back(node);
+        }
+      }
+    }
+  }
+}
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(NULL);
+
+  std::cin >> n;
+  v.resize(n + 1);
+  h.resize(n + 1);
+  first.resize(n + 1);
+  parent.resize(n + 1);
+  dist.resize(n + 1);
+  diam.resize(n + 1);
+
+  for (ll i = 0; i < n - 1; i++) {
+    ll x, y;
+    std::cin >> x >> y;
+    v[x].emplace_back(y);
+    v[y].emplace_back(x);
+  }
+
+  diameter();
+  height_initialise(root, 0);
+  euler_tour();
+  sparsemin();
+  distanc(root, 0);
+
+  ll ans = 0;
+  std::vector<std::pair<ll, ll>> an;
+  for (ll i = 0; i < path.size() / 2; i++) {
+    for (ll j = diam[i].size() - 1; j > 0; j--) {
+      ll x = root1;
+      ll y = diam[i][j];
+      an.emplace_back(x, y);
+      ll l = first[x];
+      ll r = first[y];
+      ll z = spminquery(std::min(l, r), std::max(l, r));
+      z = dist[x] + dist[y] - 2 * dist[z];
+      ans += z;
+    }
+  }
+
+  for (ll i = path.size() / 2; i < path.size(); i++) {
+    for (ll j = diam[i].size() - 1; j > 0; j--) {
+      ll x = root;
+      ll y = diam[i][j];
+      an.emplace_back(x, y);
+      ll l = first[x];
+      ll r = first[y];
+      ll z = spminquery(std::min(l, r), std::max(l, r));
+      z = dist[x] + dist[y] - 2 * dist[z];
+      ans += z;
+    }
+  }
+
+  for (ll i = path.size() - 1; i > 0; i--) {
+    ll x = root;
+    ll y = diam[i][0];
+    an.emplace_back(x, y);
+    ll l = first[x];
+    ll r = first[y];
+    ll z = spminquery(std::min(l, r), std::max(l, r));
+    z = dist[x] + dist[y] - 2 * dist[z];
+    ans += z;
+  }
+
+  std::cout << ans << '\n';

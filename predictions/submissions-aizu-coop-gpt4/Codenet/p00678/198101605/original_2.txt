@@ -1,0 +1,78 @@
+Code Analysis: 
+The given code is a C++ program that seems to be calculating a form of geometric mean for a set of points (P) and associated speeds (V) in 2D space. The computation appears to be iterative, with each iteration refining the value of 'now', which is the current point of interest.
+
+Performance bottlenecks:
+
+1. The `dist` function is called multiple times within the main loop, which results in unnecessary computation.
+2. The program is using vector push_back function which can cause unnecessary reallocations of the vector's underlying array.
+3. The `dist` function computes the square root, which is a computationally expensive operation.
+4. The `add` function is called multiple times, which could be optimized.
+
+Optimization Strategy:
+
+1. Compute and store the distance only once and reuse it.
+2. Reserve vector size beforehand to avoid reallocations.
+3. Avoid the computation of the square root in the `dist` function, if possible.
+4. Optimize the `add` function by removing the conditional check and directly return the result of addition.
+
+Optimized Code Block:
+
+```
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <iostream>
+#include <vector>
+using namespace std;
+double EPS = 1e-6;
+double add(double a, double b) {
+  return a + b;  // Removed conditional check and directly return result of addition
+}
+struct point {
+  double x, y;
+  point() {}
+  point(double x, double y) : x(x), y(y) {}
+  point operator+(point p) { return point(add(x, p.x), add(y, p.y)); }
+  point operator-(point p) { return point(add(x, -p.x), add(y, -p.y)); }
+  point operator*(double d) { return point(x * d, y * d); }
+  point operator/(double d) { return point(x / d, y / d); }
+};
+double dist(point a, point b) {
+  return pow(a.x - b.x, 2) + pow(a.y - b.y, 2);  // Avoid computation of square root
+}
+int main(void) {
+  int n, x, y, v;
+  vector<point> P;
+  vector<double> V;
+  while (cin >> n, n) {
+    P.reserve(n);  // Reserve size to avoid reallocations
+    V.reserve(n);
+    for (int i = 0; i < n; i++) {
+      cin >> x >> y >> v;
+      P.push_back(point(x, y));
+      V.push_back(v);
+    }
+    double r = 0.98;
+    point now(0, 0);
+    for (double d = 10; d > EPS; d *= r) {
+      int mx = 0;
+      double mxd = 0;
+      double current_dist = 0;
+      for (int j = 0; j < P.size(); j++) {
+        current_dist = dist(now, P[j]);  // Compute and store the distance
+        if (current_dist / V[j] > mxd)
+          mx = j, mxd = current_dist / V[j];
+      }
+      now = now + ((P[mx] - now) / sqrt(current_dist) * d);  // Use stored distance
+    }
+    double ans = 0;
+    for (int i = 0; i < P.size(); i++) {
+      ans = max(ans, dist(now, P[i]) / V[i]);
+    }
+    printf("%.8f\n", ans);
+  }
+  return 0;
+}
+```
+
+These changes should improve the performance of the program by reducing unnecessary computations, avoiding expensive operations, and optimizing memory usage. The trade-off is a slight increase in code complexity, but this should be manageable given the performance gains.

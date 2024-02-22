@@ -1,0 +1,110 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+template <typename T, typename JoinFn>
+class seg_tree {
+public:
+  seg_tree(int n, const T &zero = T(), const JoinFn &join_fn = JoinFn())
+      : join_fn_(join_fn), n_(n), data_(n, zero) {}
+  seg_tree(const std::vector<T> &data, const JoinFn &join_fn = JoinFn())
+      : join_fn_(join_fn), n_((int)data.size()), data_(data) {}
+  int size() const { return n_; }
+  template <typename UpdateFn>
+  void update(int pos, const T &val, UpdateFn update_fn) {
+    update_fn(data_[pos], val);
+  }
+  T query(int pos) const { return data_[pos]; }
+  T query(int first, int last) const {
+    return join_fn_(data_[first], data_[last]);
+  }
+  template <typename ContainsFn>
+  int find(T val, ContainsFn contains_fn) const {
+    for (int i = n_ - 1; i >= 0; --i) {
+      if (contains_fn(data_[i], val)) {
+        return i;
+      }
+    }
+    return n_;
+  }
+
+private:
+  const JoinFn join_fn_;
+  const int n_;
+  std::vector<T> data_;
+};
+
+int main() {
+  std::ios::sync_with_stdio(false);
+  std::cin.tie(nullptr);
+  
+  int n, k;
+  std::cin >> n >> k;
+  std::vector<std::vector<int>> a(n, std::vector<int>(k));
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < k; ++j) {
+      std::cin >> a[i][j];
+    }
+  }
+  
+  auto join = [](const std::pair<int, int> &a, const std::pair<int, int> &b) {
+    return std::pair(std::min(a.first, b.first), std::max(a.second, b.second));
+  };
+  auto update = [](std::pair<int, int> &a, const std::pair<int, int> &b) { a = b; };
+  
+  std::vector<seg_tree<std::pair<int, int>, decltype(join)>> trees(
+      1 << k, seg_tree<std::pair<int, int>, decltype(join)>(n, {1e9, -1e9}, join));
+  
+  for (int mask = 0; mask < (1 << k); ++mask) {
+    for (int i = 0; i < n; ++i) {
+      int val = 0;
+      for (int j = 0; j < k; ++j) {
+        if (mask & (1 << j)) {
+          val += a[i][j];
+        } else {
+          val -= a[i][j];
+        }
+      }
+      trees[mask].update(i, {val, val}, update);
+    }
+  }
+  
+  int q;
+  std::cin >> q;
+  while (q--) {
+    int type;
+    std::cin >> type;
+    if (type == 1) {
+      int i;
+      std::cin >> i;
+      --i;
+      std::vector<int> b(k);
+      for (int j = 0; j < k; ++j) {
+        std::cin >> b[j];
+      }
+      for (int mask = 0; mask < (1 << k); ++mask) {
+        int val = 0;
+        for (int j = 0; j < k; ++j) {
+          if (mask & (1 << j)) {
+            val += b[j];
+          } else {
+            val -= b[j];
+          }
+        }
+        trees[mask].update(i, {val, val}, update);
+      }
+    } else {
+      int l, r;
+      std::cin >> l >> r;
+      --l, --r;
+      int ans = -1e9;
+      for (int mask = 0; mask < (1 << k); ++mask) {
+        auto a = trees[mask].query(l, r);
+        ans = std::max(ans, a.second - a.first);
+      }
+      std::cout << ans << '\n';
+    }
+  }
+  
+  return 0;
+}

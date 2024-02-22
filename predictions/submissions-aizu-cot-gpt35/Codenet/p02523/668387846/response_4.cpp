@@ -1,0 +1,8 @@
+#include <complex>
+#include <iostream>
+
+int main() {
+  std::complex<double> P1, P2;
+  std::cin >> P1.real() >> P1.imag() >> P2.real() >> P2.imag();
+  std::cout << std::abs(P1 - P2) << std::endl;
+}

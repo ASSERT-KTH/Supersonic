@@ -1,0 +1,86 @@
+The code you've provided is already quite optimized, but a few small changes could potentially improve both run-time and memory usage:
+
+1. The usage of `#include <bits/stdc++.h>` is generally discouraged. It includes a large number of standard libraries, which increases compilation time. This line can be replaced with the specific libraries needed for the code.
+2. The macros defined at the beginning of the program are only used once or twice throughout the code. Removing these and using the original functions can improve readability and may also help reduce compilation time.
+3. The number of prime numbers between 2 and 60 is 18. This knowledge can be used to optimize memory usage by directly initializing `mask` and `pri` with size 18.
+4. Since `pri` only needs to store prime numbers between 2 and 60, it can be hard-coded. This will save the time required to calculate these values every time the code is run.
+5. Instead of using `INT_MAX`, `numeric_limits<int>::max()` could be used, as it is more portable and standard.
+
+Here is the optimized version of the code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <random>
+#include <chrono>
+#include <cassert>
+#include <limits>
+using namespace std;
+
+using ll = long long;
+using vi = vector<int>;
+using vvi = vector<vi>;
+using vll = vector<ll>;
+using vvll = vector<vll>;
+using vb = vector<bool>;
+using vd = vector<double>;
+using vs = vector<string>;
+using pii = pair<int, int>;
+using pll = pair<ll, ll>;
+using pdd = pair<double, double>;
+using vpii = vector<pii>;
+using vvpii = vector<vpii>;
+using vpll = vector<pll>;
+using vvpll = vector<vpll>;
+using vpdd = vector<pdd>;
+using vvpdd = vector<vpdd>;
+
+mt19937_64 rng(chrono::steady_clock::now().time_since_epoch().count());
+
+template <typename T> void ckmin(T &a, const T &b) { a = min(a, b); }
+template <typename T> void ckmax(T &a, const T &b) { a = max(a, b); }
+
+const int MAXV = 61;
+int main() {
+  ios_base::sync_with_stdio(0);
+  cin.tie(0);
+  cout << fixed << setprecision(15);
+
+  int N;
+  cin >> N;
+  vi a(N);
+  for (int i = 0; i < N; i++) cin >> a[i];
+
+  vi pri = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59};
+  vi mask(18, 0);
+
+  for (int v = 1; v < MAXV; v++) 
+    for (int i = 0; i < 17; i++) 
+      if (v % pri[i] == 0) mask[v] |= 1 << i;
+
+  vvpii dp(N + 1, vpii(1 << 17, {numeric_limits<int>::max(), -1}));
+  dp[0][0].first = -1;
+
+  for (int i = 0; i < N; i++)
+    for (int m = 0; m < (1 << 17); m++)
+      if (dp[i][m].first < numeric_limits<int>::max())
+        for (int v = 1; v < MAXV; v++)
+          if (!(mask[v] & m))
+            ckmin(dp[i + 1][m ^ mask[v]], make_pair(dp[i][m].first + abs(v - a[i]), v));
+
+  vi b(N);
+  int m = min_element(dp.back().begin(), dp.back().end()) - dp.back().begin();
+  for (int i = N-1; i >= 0; i--) {
+    b[i] = dp[i + 1][m].second;
+    m ^= mask[b[i]];
+  }
+
+  for (int i = 0; i < N; i++) cout << b[i] << " ";
+  cout << "\n";
+
+  return 0;
+}
+```
+
+Please note that I made the assumption that the code is correct and working as intended. The optimization does not modify the logic of the code.

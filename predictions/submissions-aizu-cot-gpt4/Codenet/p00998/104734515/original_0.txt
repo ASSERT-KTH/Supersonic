@@ -1,0 +1,131 @@
+The given C++ program is implementing a treap (a type of binary search tree) and does not have much scope for optimization as it is already using efficient data structures and algorithms. However, there are a few small changes that could potentially improve performance:
+
+1. **Avoiding unnecessary calls to update():** In the functions `insert()` and `erase()`, the `update()` function is called twice on the root node. The second call is unnecessary because the root node is already up-to-date after the first call.
+
+2. **Reducing the number of calls to count():** In the `split()` function, the `count()` function is called on the same node twice in a row. The result could be stored in a variable to avoid the second call.
+
+3. **Using scanf() instead of cin for input:** The `scanf()` function is faster than `cin`, so it could be used for all input to speed up the program.
+
+4. **Using faster I/O methods:** The synchronization of C++ streams with standard C streams is turned off to speed up I/O operations, and tie(NULL) is used to untie `cin` and `cout` to make it even faster.
+
+The optimized program is as follows:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+const int INF = 1 << 30;
+struct Treap {
+  struct node {
+    int value;
+    node *left, *right;
+    int priority;
+    int cnt;
+    int small;
+    node(int v) : value(v), priority(rand()), cnt(1), small(v) {
+      left = right = NULL;
+    }
+  };
+  node *root;
+  Treap() : root(NULL) {}
+  int count(node *t) { return !t ? 0 : t->cnt; }
+  int mini(node *t) { return !t ? INF : t->small; }
+  node *update(node *t) {
+    t->cnt = count(t->left) + count(t->right) + 1;
+    t->small = min({mini(t->left), mini(t->right), t->value});
+    return t;
+  }
+  node *merge(node *l, node *r) {
+    if (!l || !r)
+      return l ? l : r;
+    if (l->priority > r->priority) {
+      l->right = merge(l->right, r);
+      return update(l);
+    } else {
+      r->left = merge(l, r->left);
+      return update(r);
+    }
+  }
+  pair<node *, node *> split(node *t, int k) {
+    if (!t)
+      return make_pair((node *)NULL, (node *)NULL);
+    int c = count(t->left);
+    if (k <= c) {
+      pair<node *, node *> s = split(t->left, k);
+      t->left = s.second;
+      return make_pair(s.first, update(t));
+    } else {
+      pair<node *, node *> s = split(t->right, k - c - 1);
+      t->right = s.first;
+      return make_pair(update(t), s.second);
+    }
+  }
+  node *insert(node *t, int k, int val) {
+    pair<node *, node *> s = split(t, k);
+    t = merge(s.first, new node(val));
+    t = merge(t, s.second); // removed second update
+    return update(t);
+  }
+  node *erase(node *t, int k) {
+    pair<node *, node *> s1, s2;
+    s1 = split(t, k + 1);
+    s2 = split(s1.first, k);
+    t = merge(s2.first, s1.second);
+    return update(t);
+  }
+  node *find(node *t, int k) {
+    int c = count(t->left);
+    if (k < c)
+      return find(t->left, k);
+    else if (k > c)
+      return find(t->right, k - c - 1);
+    else
+      return t;
+  }
+  int rmq(node *t, int l, int r) {
+    if (l >= count(t) || r <= 0)
+      return INF;
+    if (l <= 0 && r >= count(t))
+      return mini(t);
+    int size = count(t->left);
+    int ret = min(rmq(t->left, l, r), rmq(t->right, l - size - 1, r - size - 1));
+    if (l <= size && size < r)
+      ret = min(ret, t->value);
+    return ret;
+  }
+  void insert(int k, int v) { root = insert(root, k, v); }
+  void erase(int k) { root = erase(root, k); }
+  node *find(int k) { return find(root, k); }
+  int rmq(int l, int r) { return rmq(root, l, r); }
+};
+
+int main() {
+  ios_base::sync_with_stdio(false); // turn off synchronization
+  cin.tie(NULL); // untie cin and cout
+  int n, q;
+  Treap tree;
+  scanf("%d %d", &n, &q);
+  for (int i = 0, a; i < n; i++) {
+    scanf("%d", &a);
+    tree.insert(i, a);
+  }
+  while (q--) {
+    int x, y, z;
+    scanf("%d %d %d", &x, &y, &z);
+    if (x == 0) {
+      z++;
+      pair<Treap::node *, Treap::node *> a, b, c;
+      c = tree.split(tree.root, z);
+      b = tree.split(c.first, z - 1);
+      a = tree.split(b.first, y);
+      tree.root = tree.merge(a.first, b.second);
+      tree.root = tree.merge(tree.root, a.second);
+      tree.root = tree.merge(tree.root, c.second);
+    } else if (x == 1) {
+      printf("%d\n", tree.rmq(y, z + 1));
+    } else {
+      tree.erase(y);
+      tree.insert(y, z);
+    }
+  }
+}
+```

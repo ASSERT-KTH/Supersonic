@@ -1,0 +1,288 @@
+Code Analysis:
+1. The code implements a lazy segment tree data structure, which is used to efficiently perform range queries and updates on an array.
+2. The LazySegmentTree class has an init() function that initializes the segment tree with the given size, a build() function that builds the segment tree from a given vector, an eval() function that updates the lazy propagation values, an add() function that adds a value to a range of elements in the segment tree, and a getSum() function that returns the sum of a range of elements in the segment tree.
+3. The main() function reads the input values and performs the required operations using the LazySegmentTree class.
+
+Optimization Strategy:
+1. Replace the "bits/stdc++.h" include with specific headers required by the program. This will help reduce the compilation time.
+2. Replace the "typedef long long ll" with "using ll = long long" for better code readability.
+3. Replace the vector data structure with a dynamically allocated array for better memory efficiency.
+4. Use a single array for both the node and lazy propagation values to reduce memory usage.
+5. Use a stack-based loop unrolling technique to optimize the loop in the add() function.
+6. Use a loop-based approach instead of recursion in the getSum() function to avoid function call overhead.
+7. Use compiler optimizations like -O3 flag for maximum optimization.
+
+Step-by-Step Explanation:
+1. Replace the "bits/stdc++.h" include with specific headers required by the program:
+```cpp
+#include <iostream>
+#include <vector>
+```
+2. Replace the "typedef long long ll" with "using ll = long long":
+```cpp
+using ll = long long;
+```
+3. Replace the vector data structure with a dynamically allocated array in the LazySegmentTree class:
+```cpp
+vector<Monoid> node, lazy;
+```
+to
+```cpp
+Monoid* node;
+Monoid* lazy;
+```
+4. Modify the init() function to allocate memory for the node and lazy arrays:
+```cpp
+void init(int sz) {
+  N = 1;
+  while (N < sz)
+    N <<= 1;
+  node = new Monoid[2 * N - 1];
+  lazy = new Monoid[2 * N - 1];
+  memset(node, 0, sizeof(Monoid) * (2 * N - 1));
+  memset(lazy, 0, sizeof(Monoid) * (2 * N - 1));
+}
+```
+5. Modify the build() function to use the new dynamically allocated arrays:
+```cpp
+void build(vector<Monoid>& v) {
+  int sz = int(v.size());
+  init(sz);
+  for (int i = 0; i < sz; i++) {
+    node[i + N - 1] = v[i];
+  }
+  for (int i = N - 2; i >= 0; i--) {
+    node[i] = node[i * 2 + 1] + node[i * 2 + 2];
+  }
+}
+```
+6. Modify the add() function to use a stack-based loop unrolling technique:
+```cpp
+void add(int a, int b, Monoid x, int k, int l, int r) {
+  eval(k);
+  if (b <= l || r <= a)
+    return;
+  if (a <= l && r <= b) {
+    lazy[k] += x * (r - l);
+    return;
+  }
+  int m = (l + r) / 2;
+  if (a < m) {
+    add(a, b, x, 2 * k + 1, l, m);
+  }
+  if (b > m) {
+    add(a, b, x, 2 * k + 2, m, r);
+  }
+}
+void add(int a, int b, Monoid x) {
+  int stack[32], sp = 1;
+  stack[0] = 0;
+  while (sp) {
+    int k = stack[--sp];
+    eval(k);
+    if (b <= a || b <= l || r <= a)
+      continue;
+    if (a <= l && r <= b) {
+      lazy[k] += x * (r - l);
+      continue;
+    }
+    if (sp < 30) {
+      int m = (l + r) / 2;
+      stack[sp++] = 2 * k + 2;
+      stack[sp++] = 2 * k + 1;
+    } else {
+      int m = (l + r) / 2;
+      add(a, b, x, 2 * k + 2, m, r);
+      add(a, b, x, 2 * k + 1, l, m);
+    }
+  }
+}
+```
+7. Modify the getSum() function to use a loop-based approach instead of recursion:
+```cpp
+Monoid getSum(int a, int b, int k, int l, int r) {
+  while (true) {
+    eval(k);
+    if (b <= l || r <= a)
+      return 0;
+    if (a <= l && r <= b)
+      return node[k];
+    int m = (l + r) / 2;
+    if (a < m) {
+      k = 2 * k + 1;
+      r = m;
+    } else {
+      k = 2 * k + 2;
+      l = m;
+    }
+  }
+}
+Monoid getSum(int a, int b) {
+  int k = 0, l = 0, r = N;
+  while (true) {
+    eval(k);
+    if (b <= l || r <= a)
+      return 0;
+    if (a <= l && r <= b)
+      return node[k];
+    int m = (l + r) / 2;
+    if (a < m) {
+      k = 2 * k + 1;
+      r = m;
+    } else {
+      k = 2 * k + 2;
+      l = m;
+    }
+  }
+}
+```
+8. Add compiler optimizations to the code:
+```cpp
+#pragma GCC optimize("O3")
+```
+
+Optimized Code Block:
+```cpp
+#include <iostream>
+#include <vector>
+
+using ll = long long;
+
+template <typename Monoid>
+struct LazySegmentTree {
+private:
+  int N;
+  Monoid* node;
+  Monoid* lazy;
+
+public:
+  LazySegmentTree(int sz = 0) { init(sz); }
+  void init(int sz) {
+    N = 1;
+    while (N < sz)
+      N <<= 1;
+    node = new Monoid[2 * N - 1];
+    lazy = new Monoid[2 * N - 1];
+    memset(node, 0, sizeof(Monoid) * (2 * N - 1));
+    memset(lazy, 0, sizeof(Monoid) * (2 * N - 1));
+  }
+  void build(std::vector<Monoid>& v) {
+    int sz = int(v.size());
+    init(sz);
+    for (int i = 0; i < sz; i++) {
+      node[i + N - 1] = v[i];
+    }
+    for (int i = N - 2; i >= 0; i--) {
+      node[i] = node[i * 2 + 1] + node[i * 2 + 2];
+    }
+  }
+  void eval(int k) {
+    if (lazy[k] != 0) {
+      node[k] += lazy[k];
+      if (k < N - 1) {
+        lazy[2 * k + 1] += lazy[k] / 2;
+        lazy[2 * k + 2] += lazy[k] / 2;
+      }
+      lazy[k] = 0;
+    }
+  }
+  void add(int a, int b, Monoid x, int k, int l, int r) {
+    eval(k);
+    if (b <= l || r <= a)
+      return;
+    if (a <= l && r <= b) {
+      lazy[k] += x * (r - l);
+      return;
+    }
+    int m = (l + r) / 2;
+    if (a < m) {
+      add(a, b, x, 2 * k + 1, l, m);
+    }
+    if (b > m) {
+      add(a, b, x, 2 * k + 2, m, r);
+    }
+  }
+  void add(int a, int b, Monoid x) {
+    int stack[32], sp = 1;
+    stack[0] = 0;
+    while (sp) {
+      int k = stack[--sp];
+      eval(k);
+      if (b <= a || b <= l || r <= a)
+        continue;
+      if (a <= l && r <= b) {
+        lazy[k] += x * (r - l);
+        continue;
+      }
+      if (sp < 30) {
+        int m = (l + r) / 2;
+        stack[sp++] = 2 * k + 2;
+        stack[sp++] = 2 * k + 1;
+      } else {
+        int m = (l + r) / 2;
+        add(a, b, x, 2 * k + 2, m, r);
+        add(a, b, x, 2 * k + 1, l, m);
+      }
+    }
+  }
+  Monoid getSum(int a, int b, int k, int l, int r) {
+    while (true) {
+      eval(k);
+      if (b <= l || r <= a)
+        return 0;
+      if (a <= l && r <= b)
+        return node[k];
+      int m = (l + r) / 2;
+      if (a < m) {
+        k = 2 * k + 1;
+        r = m;
+      } else {
+        k = 2 * k + 2;
+        l = m;
+      }
+    }
+  }
+  Monoid getSum(int a, int b) {
+    int k = 0, l = 0, r = N;
+    while (true) {
+      eval(k);
+      if (b <= l || r <= a)
+        return 0;
+      if (a <= l && r <= b)
+        return node[k];
+      int m = (l + r) / 2;
+      if (a < m) {
+        k = 2 * k + 1;
+        r = m;
+      } else {
+        k = 2 * k + 2;
+        l = m;
+      }
+    }
+  }
+};
+
+#pragma GCC optimize("O3")
+
+int main() {
+  int n, q;
+  std::cin >> n >> q;
+  LazySegmentTree<ll> seg(n);
+  for (int i = 0; i < q; i++) {
+    int c;
+    std::cin >> c;
+    if (c == 0) {
+      ll s, t, x;
+      std::cin >> s >> t >> x;
+      seg.add(s - 1, t, x);
+    } else {
+      int s;
+      std::cin >> s;
+      std::cout << seg.getSum(s - 1, s) << std::endl;
+    }
+  }
+  return 0;
+}
+```
+
+The optimized code focuses on reducing memory usage by replacing the vector with dynamically allocated arrays and improving the efficiency of the add() and getSum() functions through loop unrolling and loop-based approaches. Compiler optimizations are also suggested to further enhance the performance.

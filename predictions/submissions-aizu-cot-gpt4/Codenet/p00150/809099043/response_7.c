@@ -1,0 +1,32 @@
+#include <stdio.h>
+#include <math.h>
+
+int isprime1(int n) {
+  if(n <= 1) return 0;
+  if(n == 2) return 1;
+  if(n % 2 == 0) return 0;
+  for (int i = 3; i <= sqrt(n); i += 2) {
+    if (n % i == 0)
+      return 0;
+  }
+  return 1;
+}
+
+int main() {
+  int n, p, q, i;
+  char output[10000] = "";
+  while (scanf("%d", &n), n != 0) {
+    for (i = n; ; i--) {
+      if (isprime1(i) == 1 && isprime1(i - 2) == 1) {
+        p = i - 2;
+        q = i;
+        break;
+      }
+    }
+    char buffer[100];
+    sprintf(buffer, "%d %d\n", p, q);
+    strcat(output, buffer);
+  }
+  printf("%s", output);
+  return 0;
+}

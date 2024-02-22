@@ -1,0 +1,203 @@
+The given code is an implementation of a static range minimum query (RMQ) algorithm using a sparse table. The algorithm finds the minimum value in a given range of an array.
+
+Upon analyzing the code, the following potential optimizations can be made:
+
+1. Remove unnecessary includes: Some header files, such as `algorithm`, `functional`, `map`, `queue`, `set`, `stack`, and `utility`, are not used in the code. These can be removed to reduce unnecessary overhead.
+
+2. Remove unnecessary macros: The macros `INF` and `MOD` are defined but not used in the code. They can be removed.
+
+3. Remove unnecessary typedefs: The typedefs `int32`, `int64`, `uint32`, and `uint64` are defined but not used in the code. They can be removed.
+
+4. Avoid unnecessary memory allocation: The code uses dynamic memory allocation for the `a`, `R`, `L`, `part`, and `table` arrays. However, the size of these arrays is known at compile time. Using static arrays instead of dynamic allocation can improve performance.
+
+5. Optimize the sparse table construction: The current implementation of the sparse table construction has room for optimization. The code can be simplified and optimized by using a more efficient algorithm, such as the binary lifting technique.
+
+6. Optimize the query function: The current implementation of the query function has redundant computations. The bitwise operations for bitmask manipulation can be simplified and optimized. Additionally, the query function can be modified to return the minimum value directly instead of the index.
+
+7. Use optimized input/output operations: The code currently uses `std::cin` and `std::cout` for input and output operations. These operations can be slow compared to other input/output methods. Using a faster input/output method, such as `scanf` and `printf`, can improve performance.
+
+Based on these optimizations, the following step-by-step explanation and optimized code are provided:
+
+Step-by-Step Explanation:
+
+1. Remove unnecessary includes:
+   - Remove the following includes since they are not used in the code:
+     ```cpp
+     #include <algorithm>
+     #include <functional>
+     #include <map>
+     #include <queue>
+     #include <set>
+     #include <stack>
+     #include <utility>
+     ```
+
+2. Remove unnecessary macros:
+   - Remove the following macros since they are not used in the code:
+     ```cpp
+     #define INF 1000000000
+     #define MOD 1000000007
+     ```
+
+3. Remove unnecessary typedefs:
+   - Remove the following typedefs since they are not used in the code:
+     ```cpp
+     using int32 = std::int_fast32_t;
+     using int64 = std::int_fast64_t;
+     using uint32 = std::uint_fast32_t;
+     using uint64 = std::uint_fast64_t;
+     ```
+
+4. Avoid unnecessary memory allocation:
+   - Replace the dynamic memory allocation for `a`, `R`, `L`, `part`, and `table` with static arrays.
+   - Replace the following lines:
+     ```cpp
+     a = (T *)std::calloc(array.size(), sizeof(T));
+     R = (uint32 *)std::calloc((array.size() + 0x1F) >> 5, sizeof(uint32));
+     L = (uint32 *)std::calloc((array.size() + 0x1F) >> 5, sizeof(uint32));
+     part = (uint32 *)std::calloc(array.size(), sizeof(uint32));
+     table = (uint32 **)std::calloc(s + 1, sizeof(uint32 *));
+     ```
+     with:
+     ```cpp
+     T a[array.size()];
+     uint32 R[(array.size() + 0x1F) >> 5] = {};
+     uint32 L[(array.size() + 0x1F) >> 5] = {};
+     uint32 part[array.size()] = {};
+     uint32 *table[s + 1];
+     ```
+
+5. Optimize the sparse table construction:
+   - Replace the current sparse table construction algorithm with a more efficient algorithm, such as the binary lifting technique.
+   - Modify the `StaticRMQ` constructor as follows:
+     ```cpp
+     StaticRMQ(std::vector<T> &array) {
+       uint32 n = array.size();
+       uint32 logn = 32 - __builtin_clz(n);  // Compute the log base 2 of n
+
+       // Initialize the static arrays
+       for (uint32 t = 0; t <= logn; ++t) {
+         table[t] = new uint32[n];
+       }
+
+       // Initialize the first level of the sparse table
+       for (uint32 i = 0; i < n; ++i) {
+         table[0][i] = i;
+       }
+
+       // Compute the rest of the levels of the sparse table using binary lifting
+       for (uint32 t = 1; t <= logn; ++t) {
+         for (uint32 i = 0; i + (1 << t) <= n; ++i) {
+           uint32 x = table[t - 1][i];
+           uint32 y = table[t - 1][i + (1 << (t - 1))];
+           table[t][i] = (array[x] < array[y]) ? x : y;
+         }
+       }
+     }
+     ```
+
+6. Optimize the query function:
+   - Simplify the bitwise operations for bitmask manipulation in the query function.
+   - Modify the query function as follows:
+     ```cpp
+     T operator()(uint32 begin, uint32 end) {
+       uint32 len = end - begin + 1;
+       uint32 loglen = 31 - __builtin_clz(len);  // Compute the log base 2 of len
+
+       uint32 x = table[loglen][begin];
+       uint32 y = table[loglen][end - (1 << loglen) + 1];
+       return std::min(a[x], a[y]);
+     }
+     ```
+
+7. Use optimized input/output operations:
+   - Replace `std::cin` with `scanf` for input and `std::cout` with `printf` for output.
+   - Modify the main function as follows:
+     ```cpp
+     int main(void) {
+       uint32 n, l;
+       scanf("%u %u", &n, &l);
+
+       std::vector<uint32> a(n);
+       for (uint32 i = 0; i < n; ++i) {
+         scanf("%u", &a[i]);
+       }
+
+       StaticRMQ<uint32> S(a);
+
+       printf("%u", S(0, l));
+       for (uint32 i = 1; i < n - l + 1; ++i) {
+         printf(" %u", S(i, i + l));
+       }
+       printf("\n");
+
+       return 0;
+     }
+     ```
+
+Optimized Code:
+
+```cpp
+#include <cstdio>
+#include <vector>
+
+template <typename T>
+class StaticRMQ {
+  T *a;
+  uint32 **table;
+
+public:
+  StaticRMQ(std::vector<T> &array) {
+    uint32 n = array.size();
+    uint32 logn = 32 - __builtin_clz(n);  // Compute the log base 2 of n
+
+    // Initialize the static arrays
+    table = new uint32 *[logn + 1];
+    for (uint32 t = 0; t <= logn; ++t) {
+      table[t] = new uint32[n];
+    }
+
+    // Initialize the first level of the sparse table
+    for (uint32 i = 0; i < n; ++i) {
+      table[0][i] = i;
+    }
+
+    // Compute the rest of the levels of the sparse table using binary lifting
+    for (uint32 t = 1; t <= logn; ++t) {
+      for (uint32 i = 0; i + (1 << t) <= n; ++i) {
+        uint32 x = table[t - 1][i];
+        uint32 y = table[t - 1][i + (1 << (t - 1))];
+        table[t][i] = (array[x] < array[y]) ? x : y;
+      }
+    }
+
+    a = new T[n];
+    for (uint32 i = 0; i < n; ++i) {
+      a[i] = array[i];
+    }
+  }
+
+  T operator()(uint32 begin, uint32 end) {
+    uint32 len = end - begin + 1;
+    uint32 loglen = 31 - __builtin_clz(len);  // Compute the log base 2 of len
+
+    uint32 x = table[loglen][begin];
+    uint32 y = table[loglen][end - (1 << loglen) + 1];
+    return std::min(a[x], a[y]);
+  }
+};
+
+int main(void) {
+  uint32 n, l;
+  scanf("%u %u", &n, &l);
+
+  std::vector<uint32> a(n);
+  for (uint32 i = 0; i < n; ++i) {
+    scanf("%u", &a[i]);
+  }
+
+  StaticRMQ<uint32> S(a);
+
+  printf("%u", S(0, l));
+  for (uint32 i = 1; i < n - l + 1; ++i) {
+    printf(" %u",

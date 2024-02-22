@@ -1,0 +1,112 @@
+1. Using `<bits/stdc++.h>` for importing libraries is not recommended as it includes every standard library which increases the program's compilation time. Import the specific libraries that are needed.
+
+2. Do not use macros for simple operations (like `#define ff first` or `#define ss second`). These macros can cause confusion and could introduce errors that are hard to debug. It's better to use the original method names.
+
+3. You are using `int32_t main()` which is not standard. Use `int main()`. 
+
+4. Avoid using `#define f(i, x, n) for (int i = x; i < n; i++)`. It makes the code more difficult to read and understand.
+
+5. The `solve` function is doing too many things. It's better to split the functionality into smaller, more manageable functions.
+
+6. Using global variables is generally not recommended. It makes the code harder to understand and it can lead to bugs that are difficult to debug. It would be better to pass these variables as function arguments.
+
+Here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <array>
+
+using namespace std;
+const int mod = 1e9 + 7;
+
+int dfs(int st, int en, int node, int rngst, int rngen, int value, vector<int>& sgtree, vector<int>& slow) {
+  sgtree[node] += slow[node];
+  slow[2 * node] += slow[node];
+  slow[2 * node + 1] += slow[node];
+  slow[node] = 0;
+
+  if (st >= rngst && en <= rngen) {
+    slow[node] += value;
+    sgtree[node] += slow[node];
+    slow[2 * node] += slow[node];
+    slow[2 * node + 1] += slow[node];
+    slow[node] = 0;
+  } else if (en < rngst || st > rngen) {
+    slow[node] += 0;
+  } else {
+    dfs(st, (st + en) / 2, 2 * node, rngst, rngen, value, sgtree, slow);
+    dfs(((st + en) / 2) + 1, en, 2 * node + 1, rngst, rngen, value, sgtree, slow);
+    sgtree[node] = min(sgtree[2 * node] + slow[2 * node], sgtree[2 * node + 1] + slow[2 * node + 1]);
+  }
+
+  return 0;
+}
+
+void del(int i, vector<array<int, 3>>& ve, vector<int>& sgtree, vector<int>& slow, int m) {
+  dfs(1, m - 1, 1, ve[i][1], ve[i][2], -1, sgtree, slow);
+}
+
+void add(int i, vector<array<int, 3>>& ve, vector<int>& sgtree, vector<int>& slow, int m) {
+  dfs(1, m - 1, 1, ve[i][1], ve[i][2], 1, sgtree, slow);
+}
+
+int check(vector<int>& sgtree, vector<int>& slow) {
+  return sgtree[1] + slow[1];
+}
+
+void solve() {
+  int n, m;
+  cin >> n >> m;
+  vector<int> sgtree(8000000);
+  vector<int> slow(8000000);
+  vector<array<int, 3>> ve;
+
+  if (m == 2) {
+    cout << "0\n";
+    return;
+  }
+
+  for (int i = 0; i < n; i++) {
+    int l, r, w;
+    cin >> l >> r >> w;
+    if (l == 1 && r == m) {
+      cout << "0\n";
+      return;
+    }
+    ve.push_back({w, l, r - 1});
+  }
+
+  sort(ve.begin(), ve.end());
+
+  int i = 0, j = -1, ans = 1000000;
+  while (j < ((int)ve.size() - 1)) {
+    if (check(sgtree, slow) > 0) {
+      del(i, ve, sgtree, slow, m);
+      ans = min(ans, ve[j][0] - ve[i][0]);
+      i++;
+    } else {
+      j++;
+      add(j, ve, sgtree, slow, m);
+    }
+  }
+  while (check(sgtree, slow) > 0) {
+    del(i, ve, sgtree, slow, m);
+    ans = min(ans, ve[j][0] - ve[i][0]);
+    i++;
+  }
+
+  cout << ans << '\n';
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  int t = 1;
+  for (int tc = 1; tc <= t; tc++) {
+    solve();
+  }
+  return 0;
+}
+```

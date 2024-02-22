@@ -1,0 +1,111 @@
+#include <vector>
+using namespace std;
+
+struct mod_int {
+  int val;
+  mod_int(long long v = 0) {
+    if (v < 0)
+      v = v % 998244353 + 998244353;
+    if (v >= 998244353)
+      v %= 998244353;
+    val = v;
+  }
+  mod_int &operator+=(const mod_int &other) {
+    val += other.val;
+    if (val >= 998244353)
+      val -= 998244353;
+    return *this;
+  }
+  mod_int &operator-=(const mod_int &other) {
+    val -= other.val;
+    if (val < 0)
+      val += 998244353;
+    return *this;
+  }
+  mod_int &operator*=(const mod_int &other) {
+    val = val * 1LL * other.val % 998244353;
+    return *this;
+  }
+  mod_int &operator/=(const mod_int &other) { return *this *= other.inv(); }
+  mod_int operator-() const { return val == 0 ? 0 : 998244353 - val; }
+  mod_int inv() const {
+    int g = 998244353, r = val, x = 0, y = 1;
+    while (r != 0) {
+      int q = g / r;
+      g %= r;
+      swap(g, r);
+      x -= q * y;
+      swap(x, y);
+    }
+    return x < 0 ? x + 998244353 : x;
+  }
+};
+
+template <typename T> struct RMQ {
+  vector<T> values;
+  void build(const vector<T> &_values) {
+    values = _values;
+  }
+};
+
+struct LCA {
+  vector<vector<int>> adj;
+  void init(const vector<vector<int>> &_adj) {
+    adj = _adj;
+  }
+  void build() {}
+};
+
+struct query {
+  int type, v;
+  mod_int d;
+};
+
+int main() {
+  int N, Q;
+  LCA lca;
+  vector<mod_int> values;
+  vector<query> pending_queries;
+
+  cin >> N >> Q;
+  lca.init(N);
+
+  for (int i = 0; i < N - 1; i++) {
+    int u, v;
+    cin >> u >> v;
+    u--;
+    v--;
+    lca.add_edge(u, v);
+  }
+
+  lca.build();
+  values.assign(N, 0);
+
+  for (int q = 0; q < Q; q++) {
+    query qry;
+    cin >> qry.type >> qry.v;
+    qry.v--;
+
+    if (qry.type == 1) {
+      int d;
+      cin >> d;
+      qry.d = d;
+      pending_queries.push_back(qry);
+    } else if (qry.type == 2) {
+      mod_int answer = values[qry.v];
+      for (query &prev : pending_queries)
+        if (prev.type == 1) {
+          if (prev.v == qry.v) {
+            answer += prev.d;
+          }
+        }
+      cout << answer << '\n';
+    } else {
+      assert(false);
+    }
+
+    if ((int)pending_queries.size() >= 1000) {
+      pending_queries.clear();
+    }
+  }
+}

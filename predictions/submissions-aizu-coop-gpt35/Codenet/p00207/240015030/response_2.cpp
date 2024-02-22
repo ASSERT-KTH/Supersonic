@@ -1,0 +1,1 @@
+int xs, ys, xg, yg;

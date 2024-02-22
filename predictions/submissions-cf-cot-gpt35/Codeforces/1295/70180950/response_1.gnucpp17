@@ -1,0 +1,120 @@
+#include <iostream>
+#pragma GCC optimize("Ofast")
+
+const long long maxn = 2e5 + 11;
+const long long inf = 1e15 + 12;
+
+struct node {
+  long long l, mid, r, val, add;
+  node *left, *right;
+  node(long long l, long long r) : l(l), r(r), add(0), left(nullptr), right(nullptr) {
+    mid = (l + r) / 2;
+    val = 0;
+  }
+};
+
+long long a[maxn], ps[maxn], p[maxn], pref[maxn];
+
+long long f(long long x, long long y) {
+  return std::min(x, y);
+}
+
+void build(node *root) {
+  std::vector<node*> stack;
+  stack.push_back(root);
+  while (!stack.empty()) {
+    node *current = stack.back();
+    stack.pop_back();
+    if (current->r - current->l == 1) {
+      current->val = pref[current->l];
+      if (current->l == n - 1) {
+        current->val = inf;
+      }
+    } else {
+      current->left = new node(current->l, current->mid);
+      current->right = new node(current->mid, current->r);
+      stack.push_back(current->right);
+      stack.push_back(current->left);
+    }
+  }
+}
+
+void add_val(node *root, long long ql, long long qr, long long val) {
+  std::vector<node*> stack;
+  stack.push_back(root);
+  while (!stack.empty()) {
+    node *current = stack.back();
+    stack.pop_back();
+    if (current->r <= ql || current->l >= qr) {
+      continue;
+    }
+    if (ql == current->l && current->r == qr) {
+      current->add += val;
+      continue;
+    }
+    stack.push_back(current->right);
+    stack.push_back(current->left);
+    current->left->add += current->add;
+    current->right->add += current->add;
+    current->val = f(current->left->val, current->right->val) + current->add;
+    current->add = 0;
+  }
+}
+
+long long get_min(node *root, long long ql, long long qr) {
+  std::vector<node*> stack;
+  stack.push_back(root);
+  long long result = inf;
+  while (!stack.empty()) {
+    node *current = stack.back();
+    stack.pop_back();
+    if (current->r <= ql || current->l >= qr) {
+      continue;
+    }
+    if (ql == current->l && current->r == qr) {
+      result = f(result, current->val);
+      continue;
+    }
+    stack.push_back(current->right);
+    stack.push_back(current->left);
+    current->left->add += current->add;
+    current->right->add += current->add;
+    current->val = f(current->left->val, current->right->val) + current->add;
+    current->add = 0;
+  }
+  return result;
+}
+
+void solve() {
+  long long n;
+  std::cin >> n;
+  long long ans = inf;
+  long long mus = 0;
+  for (long long i = 0; i < n; i++) {
+    long long cur;
+    std::cin >> cur;
+    p[i] = cur;
+    ps[cur - 1] = i;
+  }
+  for (long long i = 0; i < n; i++) {
+    long long cur;
+    std::cin >> cur;
+    a[i] = cur;
+    if (i == 0) {
+      pref[i] = cur;
+    } else {
+      pref[i] = pref[i - 1] + cur;
+    }
+    ans = std::min(ans, cur);
+    mus += cur;
+    add_val(root, ps[i], n, -2 * cur);
+    ans = std::min(ans, get_min(root, 0, n) + mus);
+  }
+  std::cout << ans << std::endl;
+}
+
+int main() {
+  std::ios::sync_with_stdio(false);
+  solve();
+  return 0;
+}

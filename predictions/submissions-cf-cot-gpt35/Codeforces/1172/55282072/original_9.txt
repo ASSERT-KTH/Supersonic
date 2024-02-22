@@ -1,0 +1,99 @@
+Explanation:
+
+1. The code includes unnecessary headers. The `<algorithm>` and `<map>` headers are not used in the program. We can remove them to reduce unnecessary overhead.
+
+2. The code declares a constant `MOD` and a `struct mod_int`. The `struct mod_int` is used to store and manipulate modular integers. We can optimize the `mod_int` struct by using a single `int` value instead of a struct. We can also remove unnecessary overloaded operators and functions that are not used in the program.
+
+3. The code defines and initializes three global vectors: `factorial`, `inv_factorial`, and `inv`. These vectors are used to store precomputed factorials and inverses. However, the program only uses these vectors in the `prepare_factorials` function and the `choose` function. We can move the declaration and initialization of these vectors inside the `prepare_factorials` function to reduce memory usage.
+
+4. The code uses a map `save[2]` to store precomputed results for the `solve` function. However, the map is only used to check if a result has already been computed for a given input. We can optimize this by using a single boolean variable to store the result instead of a map.
+
+5. The code uses a vector `probability` to store the probabilities for each iteration of the loop in the `main` function. However, the program only uses the current and previous probabilities in each iteration. We can optimize this by using two variables instead of a vector to store the probabilities.
+
+Optimized program:
+
+```cpp
+#include <cassert>
+#include <iostream>
+#include <vector>
+
+const int MOD = 998244353;
+
+int mod_inv(int a, int m = MOD) {
+  int g = m, r = a, x = 0, y = 1;
+  while (r != 0) {
+    int q = g / r;
+    g %= r;
+    std::swap(g, r);
+    x -= q * y;
+    std::swap(x, y);
+  }
+  return x < 0 ? x + m : x;
+}
+
+int choose(int n, int r) {
+  assert(0 <= r && r <= n);
+  int result = 1;
+  for (int i = 1; i <= r; ++i) {
+    result = (result * (n - i + 1)) % MOD;
+    result = (result * mod_inv(i)) % MOD;
+  }
+  return result;
+}
+
+int main() {
+  std::ios::sync_with_stdio(false);
+  std::cin.tie(nullptr);
+
+  int N, M;
+  std::cin >> N >> M;
+
+  std::vector<int> likes(N);
+  std::vector<int> weights(N);
+  for (int i = 0; i < N; ++i) {
+    std::cin >> likes[i];
+  }
+  for (int i = 0; i < N; ++i) {
+    std::cin >> weights[i];
+  }
+
+  int L = 0, DL = 0;
+  for (int i = 0; i < N; ++i) {
+    if (likes[i]) {
+      L += weights[i];
+    } else {
+      DL += weights[i];
+    }
+  }
+
+  int probability_M = 1;
+  int probability_M_minus_1 = 0;
+  for (int iter = 0; iter < M; ++iter) {
+    int new_probability_M_plus_1 = 0;
+    int new_probability_M_minus_1 = 0;
+    for (int i = -M; i <= M; ++i) {
+      if ((i + iter) % 2 != 0 || std::abs(i) > iter) {
+        continue;
+      }
+      int up = (iter + i) / 2;
+      int down = (iter - i) / 2;
+      if (down > DL) {
+        continue;
+      }
+      int like_probability = ((L + up) * mod_inv(L + DL + i)) % MOD;
+      int dislike_probability = (MOD - like_probability) % MOD;
+      new_probability_M_plus_1 = (new_probability_M_plus_1 + probability_M * like_probability) % MOD;
+      new_probability_M_minus_1 = (new_probability_M_minus_1 + probability_M * dislike_probability) % MOD;
+    }
+    probability_M_plus_1 = new_probability_M_plus_1;
+    probability_M_minus_1 = new_probability_M_minus_1;
+  }
+
+  for (int i = 0; i < N; ++i) {
+    int answer = (weights[i] * choose(likes[i] ? L : DL, 1)) % MOD;
+    std::cout << answer << '\n';
+  }
+
+  return 0;
+}
+```

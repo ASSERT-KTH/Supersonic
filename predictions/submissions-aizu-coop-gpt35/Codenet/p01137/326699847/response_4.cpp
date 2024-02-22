@@ -1,0 +1,11 @@
+The given code calculates the minimum number of operations required to reach a given integer `e` by subtracting perfect squares and perfect cubes. The code uses nested loops to iterate through all possible combinations of `z`, `y`, and `x` (which is always 0), and calculates the minimum number of operations.
+
+However, there are several potential performance bottlenecks and inefficiencies in the code that can be optimized:
+
+1. The code uses the `sqrt` function inside the inner loop, which can be computationally expensive. Since `sqrt(e - val)` is calculated repeatedly, we can pre-calculate it outside the loop and store it in a variable.
+
+2. The code uses the `min` function to update the minimum value `m` inside the inner loop. This can be optimized by using a simple `if` statement to check and update the minimum value.
+
+3. The code uses the `continue` statement inside the inner loop to skip unnecessary iterations. However, we can optimize this further by breaking out of the inner loop when `val2` exceeds `e`, as the subsequent `y` values will also result in a larger `val2`.
+
+4. The code uses the `cin` and `cout` streams for input/output operations, which can be slow. We can optimize this by using the faster `scanf` and `printf` functions.

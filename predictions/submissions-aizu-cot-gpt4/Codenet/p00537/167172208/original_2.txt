@@ -1,0 +1,73 @@
+The given C/C++ program can be optimized in the following ways:
+
+1. Use of `#include<bits/stdc++.h>`: This is actually a bad practice because it includes a lot of unnecessary headers which increase the compilation time. Instead, include only the headers that are required for this program. In this case, you only need `#include <vector>`, `#include <cstdio>`, and `#include <algorithm>`.
+
+2. Use of `scanf` and `printf`: Although it's a minor optimization, `scanf` and `printf` are generally faster than `cin` and `cout`. So, stick with `scanf` and `printf`.
+
+3. Avoid too many function calls: In the `for` loop where you're calling `segtree.Add(u, v, 1);`, you can reduce the number of function calls by doing the comparison inside the function itself.
+
+4. Pre-calculate `(l+r)/2`: In the `Add` and `Query` functions, the `(l+r)/2` is calculated twice. You can calculate it once and store it in a variable to save some CPU cycles.
+
+Here's the optimized code following the steps above:
+
+```cpp
+#include <vector>
+#include <cstdio>
+#include <algorithm>
+using namespace std;
+
+struct SegmentTree {
+  vector<int> seg, add;
+  int sz;
+  SegmentTree(int n) {
+    sz = 1;
+    while (sz < n)
+      sz *= 2;
+    seg.assign(sz * 2 + 1, 0), add.assign(sz * 2 + 1, 0);
+  }
+  void Add(int a, int b, int x, int k, int l, int r) {
+    if(a > b) swap(a, b);
+    if (a >= r || b <= l) {
+      return;
+    } else if (a <= l && r <= b) {
+      add[k] += x;
+    } else {
+      int mid = (l + r) / 2;
+      Add(a, b, x, 2 * k + 1, l, mid);
+      Add(a, b, x, 2 * k + 2, mid, r);
+      seg[k] = seg[2 * k + 1] + add[2 * k + 1] + seg[2 * k + 2] + add[2 * k + 2];
+    }
+  }
+  int Query(int a, int b, int k, int l, int r) {
+    if (a >= r || b <= l)
+      return (0);
+    if (a <= l && r <= b)
+      return (seg[k] + add[k]);
+    int mid = (l + r) / 2;
+    return (Query(a, b, 2 * k + 1, l, mid) + Query(a, b, 2 * k + 2, mid, r) + add[k]);
+  }
+  void Add(int a, int b, int x) { Add(a, b, x, 0, 0, sz); }
+  int Query(int a, int b) { return (Query(a, b, 0, 0, sz)); }
+};
+
+int main() {
+  int N, M, P[100000];
+  scanf("%d %d", &N, &M);
+  SegmentTree segtree(N);
+  for (int i = 0; i < M; i++) {
+    scanf("%d", &P[i]);
+    --P[i];
+  }
+  for (int i = 1; i < M; i++) {
+    segtree.Add(P[i - 1], P[i], 1);
+  }
+  long long ret = 0;
+  for (int i = 0; i < N - 1; i++) {
+    long long used = segtree.Query(i, i + 1);
+    int A, B, C;
+    scanf("%d %d %d", &A, &B, &C);
+    ret += min(used * A, C + used * B);
+  }
+  printf("%lld\n", ret);
+}
+```

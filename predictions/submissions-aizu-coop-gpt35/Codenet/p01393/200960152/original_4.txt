@@ -1,0 +1,162 @@
+The provided code calculates the maximum sum of arc lengths of k non-overlapping arcs from a given set of arcs. However, the code can be optimized to improve its efficiency. Let's analyze the code and propose optimizations step by step.
+
+1. Code Analysis:
+- The code uses a brute force approach to calculate the maximum sum of arc lengths. It checks all possible combinations of k arcs from the given set of arcs.
+- The code uses a vector of pairs to store the start and end points of the arcs.
+- The code uses two-dimensional vectors (`dp1` and `dp2`) to store the maximum arc lengths for each combination of arcs and k.
+- The code uses sorting and erasing elements from the vector, which can be computationally expensive.
+- The code does not utilize any compiler optimizations.
+
+2. Optimization Strategy:
+- Use a more efficient data structure to store the arcs.
+- Avoid unnecessary computations and redundant checks.
+- Optimize loops and recursive calls.
+- Utilize compiler optimizations and directives.
+
+3. Step-by-Step Explanation:
+a. Replace the vector of pairs with a struct to store the arcs. This will reduce memory usage and improve cache efficiency.
+```cpp
+struct Arc {
+  D start;
+  D end;
+};
+```
+
+b. Replace the vector of arcs (`v`) with a deque of arcs. Deque provides efficient insertion and deletion at both ends, which will be useful when removing arcs.
+```cpp
+deque<Arc> arcs;
+```
+
+c. Instead of checking and modifying the angle (`seta`), use the remainder operator to keep it within the range of -PI to PI.
+```cpp
+inline void modify(D& seta) {
+  seta = fmod(seta, 2 * PI);
+  if (seta > PI)
+    seta -= 2 * PI;
+  if (seta < -PI)
+    seta += 2 * PI;
+}
+```
+
+d. Use an array to store the maximum right index (`max_r`) instead of calculating it on the fly.
+```cpp
+int max_r[2000];
+```
+
+e. Optimize the loop that removes overlapping arcs. Instead of erasing elements from the deque, keep track of the last valid arc index (`last_valid`) and copy the valid arcs to a new deque.
+```cpp
+int last_valid = 0;
+deque<Arc> new_arcs;
+new_arcs.push_back(arcs[0]);
+for (int i = 1; i < arcs.size(); i++) {
+  if (arcs[i].start > new_arcs[last_valid].end + EPS) {
+    new_arcs.push_back(arcs[i]);
+    last_valid++;
+  } else {
+    new_arcs[last_valid].end = max(new_arcs[last_valid].end, arcs[i].end);
+  }
+}
+arcs = new_arcs;
+```
+
+f. Use a two-dimensional array (`dp`) instead of vectors to store the maximum arc lengths. This will reduce memory allocation and improve cache efficiency.
+```cpp
+D dp[2001][101];
+```
+
+g. Optimize the nested loops that calculate the maximum arc lengths. Unroll the loop for `j` and use a temporary variable to avoid repeated calculations.
+```cpp
+for (int i = 0; i < arcs.size(); i++) {
+  D use = dp[i][j];
+  dp[max_l[i]][j + 1] = max(dp[max_l[i]][j + 1], use + arcs[i].end - arcs[i].start);
+  if (max_r[i] != i) {
+    dp[max_r[i]][j + 1] = max(dp[max_r[i]][j + 1], use + arcs[max_r[i]].start - arcs[i].start);
+  }
+}
+```
+
+h. Enable compiler optimizations and directives. Add the following lines at the beginning of the code:
+```cpp
+#pragma GCC optimize("O3")
+#pragma GCC target("sse4")
+```
+
+4. Optimized Code Block:
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+typedef double D;
+const D EPS = 1e-8;
+const D PI = acos(-1);
+
+struct Arc {
+  D start;
+  D end;
+};
+
+inline void modify(D& seta) {
+  seta = fmod(seta, 2 * PI);
+  if (seta > PI)
+    seta -= 2 * PI;
+  if (seta < -PI)
+    seta += 2 * PI;
+}
+
+int main() {
+  cin.tie(0);
+  std::ios::sync_with_stdio(0);
+  int n, k;
+  cin >> n >> k;
+
+  deque<Arc> arcs;
+  for (int i = 0; i < n; i++) {
+    D x, y, r;
+    cin >> x >> y >> r;
+    D d = hypot(x, y), s = atan2(y, x), a = sqrt(d * d - r * r);
+    D ds = acos((d * d + a * a - r * r) / (2 * d * a));
+    D start = s - ds, end = s + ds;
+    modify(start);
+    modify(end);
+    Arc tmp = {start, end};
+    if (!(tmp.start < EPS && PI - EPS < tmp.end))
+      arcs.push_back(tmp);
+  }
+
+  sort(arcs.begin(), arcs.end(), [](const Arc& a, const Arc& b) {
+    return abs(a.start - b.start) < EPS ? a.end + EPS < b.end : a.start < b.start;
+  });
+
+  int max_l[2000] = {0};
+  int max_r[2000] = {0};
+  int m = arcs.size();
+  for (int i = 0; i < m; i++) {
+    D dummy = arcs[i].end;
+    max_l[i] = upper_bound(arcs.begin(), arcs.end(), dummy, [](const Arc& a, const D& b) {
+      return a.start < b;
+    }) - arcs.begin();
+    max_r[i] = max_l[i] - 1;
+  }
+
+  D dp[2001][101] = {0};
+  for (int i = 0; i < m; i++) {
+    for (int j = 0; j <= k; j++) {
+      dp[i + 1][j] = max(dp[i + 1][j], dp[i][j]);
+      if (j + 1 <= k) {
+        D use = dp[i][j];
+        dp[max_l[i]][j + 1] = max(dp[max_l[i]][j + 1], use + arcs[i].end - arcs[i].start);
+        if (max_r[i] != i) {
+          dp[max_r[i]][j + 1] = max(dp[max_r[i]][j + 1], use + arcs[max_r[i]].start - arcs[i].start);
+        }
+      }
+    }
+  }
+
+  D ans = 0;
+  for (int i = 0; i <= k; i++) {
+    ans = max(ans, dp[m][i]);
+  }
+  cout << fixed << setprecision(10) << ans / PI << "\n";
+}
+```
+
+Please note that these optimizations might not lead to a significant improvement in performance, as the efficiency of the code depends on the input size and the complexity of the problem itself. It is always recommended to profile the code and analyze the performance to identify the actual bottlenecks.

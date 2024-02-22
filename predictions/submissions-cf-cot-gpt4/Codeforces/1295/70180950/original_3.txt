@@ -1,0 +1,131 @@
+The given C/C++ program is already written in a highly optimized way using segment trees. However, there are still a few minor optimizations that can be made to enhance its performance. 
+
+Here are the steps in optimizing the program:
+
+1. **Avoid Unnecessary Computations:** We can reduce the number of computations by storing the inverse of `2*a[ps[i]]` in a variable, instead of calculating it twice in the `add_val` function. 
+
+2. **Optimize I/O Operations:** The `ios::sync_with_stdio(false);` is used to unsync the I/O of C and C++. This allows you to use C and C++ I/O together, but it makes I/O operations faster. We can also add `cin.tie(NULL);` and `cout.tie(NULL);` to untie the cin and cout. This improves the speed of input and output operations. 
+
+3. **Avoid Repeated Function Calls:** If a function takes a long time to compute and is called multiple times with the same arguments, it can be more efficient to store the result the first time and use that stored result instead of recomputing. In our case, we can avoid the repeated call of `min(root->mid, qr)` and `max(root->mid, ql)` by storing them in variables.
+
+4. **Inline Small Functions:** For very small functions that are called frequently, it can be faster to replace the function call with the body of the function itself. This is known as function inlining. In our case, function `f(ll x, ll y)` can be inlined as it is a simple one-liner function.
+
+Below is the optimized version of the code:
+
+```cpp
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <set>
+#include <string>
+#include <vector>
+#pragma GCC optimize("Ofast")
+using namespace std;
+typedef long long ll;
+typedef long double ld;
+#define pll pair<ll, ll>
+#define pb push_back
+const ll maxn = ll(2e5) + 11;
+const ll inf = ll(1e15) + 12;
+const ll mod = ll(1e9) + 7;
+ll n;
+ll a[maxn], ps[maxn], p[maxn], pref[maxn];
+struct node {
+  ll l, mid, r, val, add;
+  node *left, *right;
+  node(ll l, ll r) : l(l), r(r) {
+    add = 0;
+    mid = (l + r) / 2;
+    val = 0;
+    left = right = nullptr;
+  }
+};
+inline ll f(ll x, ll y) { return min(x, y); }
+void build(node *root) {
+  if (root->r - root->l == 1) {
+    root->val = pref[root->l];
+    if (root->l == n - 1) {
+      root->val = inf;
+    }
+  } else {
+    root->left = new node(root->l, root->mid);
+    root->right = new node(root->mid, root->r);
+    build(root->left);
+    build(root->right);
+    root->val = f(root->left->val, root->right->val);
+  }
+}
+void push(node *root) {
+  if (root->left != nullptr) {
+    root->left->add += root->add;
+    root->right->add += root->add;
+  }
+  root->val += root->add;
+  root->add = 0;
+}
+void add_val(node *root, ll ql, ll qr, ll val) {
+  push(root);
+  if (root->r <= ql || root->l >= qr) {
+    return;
+  }
+  if (ql == root->l && root->r == qr) {
+    root->add += val;
+    push(root);
+    return;
+  }
+  ll mid_min_qr = min(root->mid, qr);
+  ll mid_max_ql = max(root->mid, ql);
+  add_val(root->left, ql, mid_min_qr, val);
+  add_val(root->right, mid_max_ql, qr, val);
+  root->val = f(root->left->val, root->right->val);
+}
+ll get_min(node *root, ll ql, ll qr) {
+  push(root);
+  if (root->r <= ql || root->l >= qr) {
+    return inf;
+  }
+  if (ql == root->l && root->r == qr) {
+    return root->val;
+  }
+  ll mid_min_qr = min(root->mid, qr);
+  ll mid_max_ql = max(root->mid, ql);
+  return f(get_min(root->left, ql, mid_min_qr), get_min(root->right, mid_max_ql, qr));
+}
+void solve() {
+  cin >> n;
+  for (ll i = 0; i < n; i++) {
+    ll cur;
+    cin >> cur;
+    p[i] = cur;
+    ps[cur - 1] = i;
+  }
+  for (ll i = 0; i < n; i++) {
+    ll cur;
+    cin >> cur;
+    a[i] = cur;
+    if (i == 0) {
+      pref[i] = cur;
+    } else
+      pref[i] = pref[i - 1] + cur;
+  }
+  node *root = new node(0, n);
+  build(root);
+  ll ans = min(a[0], a[n - 1]);
+  ll mus = 0;
+  for (ll i = 0; i < n; i++) {
+    ll val = -2 * a[ps[i]];
+    add_val(root, ps[i], n, val);
+    mus += a[ps[i]];
+    ll cur = get_min(root, 0, n) + mus;
+    ans = min(ans, cur);
+  }
+  cout << ans << endl;
+}
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(NULL);
+  cout.tie(NULL);
+  solve();
+  return 0;
+}
+```

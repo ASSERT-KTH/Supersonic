@@ -1,0 +1,208 @@
+The given code is a C++ program that solves a maze puzzle. The program takes in the dimensions of a maze grid, followed by the maze itself, and outputs the minimum number of moves required to reach the goal from the starting position.
+
+Upon analyzing the code, we can identify several areas that can be optimized:
+
+1. Redundant Memory Allocation: The program uses a 2D vector `field` to represent the maze grid. However, the grid is initialized with a constant size of 60x60, regardless of the actual dimensions of the maze. This results in unnecessary memory allocation for unused cells.
+
+2. Excessive Memory Usage: The program uses additional data structures like `queue` and `priority_queue` to store intermediate results and perform breadth-first search (BFS). These data structures can be optimized to reduce memory usage.
+
+3. Inefficient Loop Initialization: The program uses nested loops to initialize the `memo2` array with a constant value. This can be optimized to use memset or a single loop.
+
+4. Inefficient Function Call: The `getdis` function is called multiple times with the same input parameters. This results in redundant computations, which can be avoided.
+
+5. Inefficient Priority Queue Comparison: The `Compare` functor used to compare elements in the priority queue can be simplified to improve readability and potentially improve performance.
+
+Based on these observations, we can formulate the following optimization strategy:
+
+1. Replace the 2D vector `field` with a dynamically allocated 2D array to minimize memory usage.
+
+2. Optimize the memory usage of the queues by using a single queue instead of a `queue` and a `priority_queue`. This can be achieved by using a custom struct to store the necessary information.
+
+3. Optimize the initialization of the `memo2` array using memset or a single loop.
+
+4. Avoid redundant function calls to the `getdis` function by storing and reusing the computed distances.
+
+5. Simplify the comparison operator used in the priority queue to improve code readability.
+
+Now, let's proceed with the step-by-step explanation of each optimization:
+
+1. Replace the 2D vector `field` with a dynamically allocated 2D array:
+```cpp
+// Replace
+vector<vector<int>> field(H + 2, vector<int>(W + 2, true));
+// With
+bool** field = new bool*[H + 2];
+for (int i = 0; i < H + 2; ++i) {
+  field[i] = new bool[W + 2];
+  memset(field[i], false, sizeof(bool) * (W + 2));
+}
+```
+This optimization reduces the memory usage by using a dynamically allocated 2D array instead of a vector of vectors.
+
+2. Optimize the memory usage of the queues:
+```cpp
+// Replace
+queue<aa> que;
+priority_queue<bb, vector<bb>, Compare> que;
+// With
+queue<bb> que;
+```
+By using a single queue instead of a `queue` and a `priority_queue`, we can reduce the memory usage.
+
+3. Optimize the initialization of the `memo2` array:
+```cpp
+// Replace
+for (int i = 0; i < 60; ++i) {
+  for (int j = 0; j < 60; ++j) {
+    for (int k = 0; k < 4; ++k) {
+      memo2[i][j][k] = 999999;
+    }
+  }
+}
+// With
+memset(memo2, 999999, sizeof(memo2));
+```
+Using `memset` allows us to initialize the `memo2` array with a constant value in a more efficient way.
+
+4. Avoid redundant function calls to the `getdis` function:
+```cpp
+// Replace
+atime += getdis(field, fx, fy, gx, gy);
+// With
+if (memo2[fx][fy][gx] == -1) {
+  memo2[fx][fy][gx] = getdis(field, fx, fy, gx, gy);
+}
+atime += memo2[fx][fy][gx];
+```
+By storing the computed distances in the `memo2` array, we can avoid redundant function calls to `getdis` and reuse the computed distances.
+
+5. Simplify the comparison operator used in the priority queue:
+```cpp
+// Replace
+class Compare {
+public:
+  bool operator()(const bb &l, const bb &r) { return l.turn > r.turn; }
+};
+// With
+struct Compare {
+  bool operator()(const bb &l, const bb &r) const { return l.turn > r.turn; }
+};
+```
+This simplifies the comparison operator and improves code readability.
+
+Now, let's put all the optimizations together in the optimized code block:
+
+```cpp
+#include <iostream>
+#include <cstring>
+#include <queue>
+using namespace std;
+
+const int dx[4] = {-1, 0, 1, 0};
+const int dy[4] = {0, 1, 0, -1};
+const int dx2[4] = {-1, 0, 2, 1};
+const int dy2[4] = {0, 2, 1, -1};
+
+struct aa {
+  int x;
+  int y;
+  int turn;
+};
+
+int getdis(const bool** field, const int fx, const int fy, const int gx, const int gy, int** memo) {
+  int ans = 999999;
+  queue<aa> que;
+  que.push({fx, fy, 0});
+  while (!que.empty()) {
+    aa atop(que.front());
+    que.pop();
+    if (atop.x == gx && atop.y == gy) {
+      ans = atop.turn;
+      break;
+    }
+    for (int i = 0; i < 4; ++i) {
+      const int nextx = atop.x + dx[i];
+      const int nexty = atop.y + dy[i];
+      if (!field[nexty][nextx]) {
+        if (atop.turn + 1 < memo[nexty][nextx]) {
+          memo[nexty][nextx] = atop.turn + 1;
+          que.push({nextx, nexty, atop.turn + 1});
+        }
+      }
+    }
+  }
+  return ans;
+}
+
+struct bb {
+  int kx;
+  int ky;
+  int opway;
+  int turn;
+};
+
+struct Compare {
+  bool operator()(const bb &l, const bb &r) const { return l.turn > r.turn; }
+};
+
+int main() {
+  while (1) {
+    int H, W;
+    cin >> H >> W;
+    if (!H)
+      break;
+
+    bool** field = new bool*[H + 2];
+    for (int i = 0; i < H + 2; ++i) {
+      field[i] = new bool[W + 2];
+      memset(field[i], false, sizeof(bool) * (W + 2));
+    }
+
+    int*** memo2 = new int**[60];
+    for (int i = 0; i < 60; ++i) {
+      memo2[i] = new int*[60];
+      for (int j = 0; j < 60; ++j) {
+        memo2[i][j] = new int[4];
+        memset(memo2[i][j], -1, sizeof(int) * 4);
+      }
+    }
+
+    int kx = 99, ky = 99;
+    int ox[2];
+    int oy[2];
+    int num = 0;
+    for (int i = 0; i < H; ++i) {
+      string st;
+      cin >> st;
+      for (int j = 0; j < W; ++j) {
+        if (st[j] == 'X') {
+          kx = min(kx, j + 1);
+          ky = min(ky, i + 1);
+          field[i + 1][j + 1] = false;
+        } else if (st[j] == 'o') {
+          field[i + 1][j + 1] = false;
+        } else if (st[j] == '.') {
+          field[i + 1][j + 1] = false;
+          ox[num] = j + 1;
+          oy[num] = i + 1;
+          num++;
+        }
+      }
+    }
+
+    if (kx == 1 && ky == 1) {
+      cout << 0 << endl;
+      continue;
+    }
+
+    for (int way = 0; way < 4; ++way) {
+      int amin = 999999;
+      bool ok = true;
+      for (int op = 0; op < 2; ++op) {
+        int atime = 0;
+        for (int lu = 0; lu < 2; ++lu) {
+          const int fx = ox[op ^ lu];
+          const int fy = oy[op ^ lu];
+          int gx = kx + dx2[way];
+          int gy = ky + dy2[way];
+          if (

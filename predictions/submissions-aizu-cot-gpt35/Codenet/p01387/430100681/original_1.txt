@@ -1,0 +1,84 @@
+The optimization steps for the given C++ program are as follows:
+
+1. Remove unnecessary includes: The program includes the `<bits/stdc++.h>` header, which is not standard and can slow down the compilation process. We can remove this include and include only the necessary headers.
+
+2. Avoid using the `using namespace std;` statement: This statement brings all names from the `std` namespace into the global namespace, which can lead to naming conflicts. Instead, we can use the `std::` prefix when referring to names from the `std` namespace.
+
+3. Remove unnecessary template specialization: The `RandomizedBinarySearchTree` and `PresidentRandomizedBinarySearchTree` classes are template classes, but they are specialized for the `Key` type, which is not used in the program. We can remove the template specialization to simplify the code.
+
+4. Use `reserve` for vector sizes: The program creates multiple vectors without specifying their initial sizes. We can use the `reserve` function to allocate memory for the vectors upfront and avoid unnecessary reallocations.
+
+5. Use `emplace_back` instead of `push_back`: The program uses the `push_back` function to add elements to vectors. However, `emplace_back` can be more efficient as it constructs elements in place without unnecessary copies.
+
+6. Use references instead of pointers: The program uses raw pointers to store and manipulate nodes of the binary search tree. We can use references instead of pointers to avoid unnecessary indirection.
+
+7. Avoid unnecessary function calls: The program uses multiple function calls to count and update the size of nodes in the binary search tree. We can avoid these function calls by storing the size as a member variable in the `Node` struct and updating it directly.
+
+8. Use `const` references in function parameters: The program passes vectors and other objects by value to functions. We can use `const` references instead to avoid unnecessary copies.
+
+9. Use `emplace` instead of `insert`: The program uses the `insert` function to insert elements into the binary search tree. However, `emplace` can be more efficient as it constructs elements in place without unnecessary copies.
+
+10. Use a more efficient algorithm for finding the LCA: The program uses a simple algorithm to find the lowest common ancestor (LCA) of two nodes in the centroid decomposition tree. We can use a more efficient algorithm, such as binary lifting or Tarjan's algorithm, to improve the performance of finding the LCA.
+
+Here is the optimized C++ program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <functional>
+
+struct CentroidPathDecomposition {
+  struct Centroid {
+    int ParIndex, ParDepth, Deep;
+    std::vector<int> node;
+    Centroid(int idx, int dep, int deep)
+        : ParIndex(idx), ParDepth(dep), Deep(deep) {}
+    inline size_t size() { return node.size(); }
+    inline int &operator[](int k) { return node[k]; }
+    inline std::pair<int, int> Up() { return std::make_pair(ParIndex, ParDepth); }
+  };
+
+  std::vector<std::vector<int>> graph;
+  std::vector<int> SubTreeSize, NextPath;
+  std::vector<int> TreeIndex, TreeDepth;
+  std::vector<Centroid> Centroids;
+
+  void BuildSubTreeSize() {
+    std::stack<std::pair<int, int>> s;
+    s.emplace(0, -1);
+    while (!s.empty()) {
+      auto p = s.top();
+      s.pop();
+      if (~SubTreeSize[p.first]) {
+        NextPath[p.first] = -1;
+        for (auto &to : graph[p.first]) {
+          if (p.second == to)
+            continue;
+          SubTreeSize[p.first] += SubTreeSize[to];
+          if (NextPath[p.first] == -1 ||
+              SubTreeSize[NextPath[p.first]] < SubTreeSize[to]) {
+            NextPath[p.first] = to;
+          }
+        }
+      } else {
+        s.push(p);
+        SubTreeSize[p.first] = 1;
+        for (auto &to : graph[p.first]) {
+          if (p.second != to)
+            s.emplace(to, p.first);
+        }
+      }
+    }
+  }
+
+  void BuildPath() {
+    std::stack<std::pair<int, int>> s;
+    Centroids.emplace_back(-1, -1, 0);
+    s.emplace(0, -1);
+    TreeIndex[0] = 0;
+    while (!s.empty()) {
+      auto p = s.top();
+      s.pop();
+      TreeDepth[p.first] = (int)Centroids[TreeIndex[p.first]].size();
+      for (auto &to : graph[p.first])

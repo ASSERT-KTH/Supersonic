@@ -1,0 +1,146 @@
+To optimize the given program, we can make the following modifications:
+
+1. Remove unnecessary includes: The program includes several unnecessary libraries, such as `<bitset>`, `<cassert>`, `<cmath>`, `<deque>`, `<functional>`, `<iomanip>`, `<map>`, `<optional>`, `<queue>`, `<random>`, `<set>`, `<stack>`, and `<string_view>`. These libraries are not being used in the program and can be removed to reduce the compilation time and memory usage.
+
+2. Remove unnecessary functions: The program defines two unnecessary functions `operator<<` and `print`. These functions are not used in the program and can be removed to simplify the code.
+
+3. Remove unnecessary debug macro: The program defines a debug macro that is used for printing debug information. However, this macro is not used in the program and can be removed.
+
+4. Optimize the seg_tree class: The seg_tree class is used to implement a segment tree. We can optimize this class by using a more efficient algorithm for finding the next power of two. Instead of using a loop to find the next power of two, we can use a bitwise operation to calculate it in constant time.
+
+5. Optimize the update function: The update function in the seg_tree class can be optimized by using a reference parameter for the update_fn. This avoids unnecessary copying of the update_fn object.
+
+6. Optimize the find function: The find function in the seg_tree class can be optimized by using a const reference parameter for the val parameter. This avoids unnecessary copying of the val object.
+
+7. Use emplace_back instead of push_back: In the main function, when populating the vector of seg_trees, we can use the emplace_back function instead of push_back to avoid unnecessary copying of the seg_tree objects.
+
+8. Use reserve to allocate memory: In the main function, we can use the reserve function to pre-allocate memory for the vector of seg_trees. This avoids unnecessary reallocation of memory when adding elements to the vector.
+
+Here is the optimized program:
+
+```cpp
+#include <algorithm>
+#include <iostream>
+#include <vector>
+using namespace std;
+
+template <typename T, typename JoinFn>
+class seg_tree {
+public:
+  seg_tree(int n, const T &zero = T(), const JoinFn &join_fn = JoinFn())
+      : join_fn_(join_fn), n_(n), data_(2 * next_power_of_two(n_) - 1, zero) {}
+  seg_tree(const std::vector<T> &data, const JoinFn &join_fn = JoinFn())
+      : join_fn_(join_fn), n_((int)data.size()),
+        data_(2 * next_power_of_two(n_) - 1) {
+    init(0, 0, n_ - 1, data);
+  }
+  int size() const { return n_; }
+  template <typename UpdateFn>
+  void update(int pos, const T &val, UpdateFn &update_fn) {
+    return update(0, 0, n_ - 1, pos, val, update_fn);
+  }
+  T query(int pos) const { return query(pos, pos); }
+  T query(int first, int last) const {
+    return query(0, 0, n_ - 1, first, last);
+  }
+  template <typename ContainsFn>
+  int find(const T &val, ContainsFn &contains_fn) const {
+    if (!contains_fn(data_[0], val)) {
+      return n_;
+    }
+    return find(0, 0, n_ - 1, val, contains_fn);
+  }
+
+private:
+  const JoinFn join_fn_;
+  const int n_;
+  std::vector<T> data_;
+  static constexpr int next_power_of_two(int x) {
+    x--;
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+    return x + 1;
+  }
+  void init(int node, int t_first, int t_last, const std::vector<T> &data) {
+    if (t_first == t_last) {
+      data_[node] = data[t_first];
+      return;
+    }
+    int t_mid = (t_first + t_last) >> 1;
+    init(2 * node + 1, t_first, t_mid, data);
+    init(2 * node + 2, t_mid + 1, t_last, data);
+    data_[node] = join_fn_(data_[2 * node + 1], data_[2 * node + 2]);
+  }
+  template <typename UpdateFn>
+  void update(int node, int t_first, int t_last, int pos, const T &val,
+              UpdateFn &update_fn) {
+    if (t_first == t_last) {
+      update_fn(data_[node], val);
+      return;
+    }
+    int t_mid = (t_first + t_last) >> 1;
+    if (pos <= t_mid) {
+      update(2 * node + 1, t_first, t_mid, pos, val, update_fn);
+    } else {
+      update(2 * node + 2, t_mid + 1, t_last, pos, val, update_fn);
+    }
+    data_[node] = join_fn_(data_[2 * node + 1], data_[2 * node + 2]);
+  }
+  T query(int node, int t_first, int t_last, int first, int last) const {
+    if (first <= t_first && t_last <= last) {
+      return data_[node];
+    }
+    int t_mid = (t_first + t_last) >> 1;
+    if (last <= t_mid) {
+      return query(2 * node + 1, t_first, t_mid, first, last);
+    }
+    if (t_mid < first) {
+      return query(2 * node + 2, t_mid + 1, t_last, first, last);
+    }
+    return join_fn_(
+        query(2 * node + 1, t_first, t_mid, first, last),
+        query(2 * node + 2, t_mid + 1, t_last, first, last));
+  }
+  template <typename ContainsFn>
+  int find(int node, int t_first, int t_last, const T &val,
+           ContainsFn &contains_fn) const {
+    if (t_first == t_last) {
+      return t_first;
+    }
+    int t_mid = (t_first + t_last) >> 1;
+    if (contains_fn(data_[2 * node + 1], val)) {
+      return find(2 * node + 1, t_first, t_mid, val, contains_fn);
+    } else {
+      return find(2 * node + 2, t_mid + 1, t_last, val, contains_fn);
+    }
+  }
+};
+
+int main() {
+  std::ios::sync_with_stdio(false);
+  std::cin.tie(nullptr);
+  std::cout << std::boolalpha;
+  std::vector<vector<int>> a;
+  int n, k, q;
+  cin >> n >> k;
+  a.reserve(n);
+  for (int i = 0; i < n; ++i) {
+    a.emplace_back(vector<int>(k));
+    for (int j = 0; j < k; ++j) {
+      cin >> a[i][j];
+    }
+  }
+  auto join = [](const pair<int, int> &a, const pair<int, int> &b) {
+    return pair(min(a.first, b.first), max(a.second, b.second));
+  };
+  auto update = [](pair<int, int> &a, const pair<int, int> &b) { a = b; };
+  vector<seg_tree<pair<int, int>, decltype(join)>> trees(
+      1 << k, seg_tree<pair<int, int>, decltype(join)>(
+                  n, {1e9, -1e9}, join));
+  for (int mask = 0; mask < (1 << k); ++mask) {
+    for (int i = 0; i < n; ++i) {
+      int val = 0;
+      for

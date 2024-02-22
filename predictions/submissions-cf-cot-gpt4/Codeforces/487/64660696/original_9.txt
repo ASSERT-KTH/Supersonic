@@ -1,0 +1,114 @@
+The given C++ program can be optimized by reducing the number of function calls and avoiding unnecessary computations. We can also optimize the program for memory usage by reducing the size of the arrays used. 
+
+Here's a step-by-step guide to optimize the program:
+
+1. The first optimization can be done in the `comp` function. We are calling this function recursively which can be expensive in terms of time. We can replace the recursion with a loop and avoid the overhead of function calls.
+
+2. The second optimization is in the `getFin` function. We are continuously checking for the condition `grille[lig][col] != '~'` inside the loop. We can check this condition once before entering the loop and avoid unnecessary computations.
+
+3. The third optimization is in the `main` function. We are continuously calling the `compBloc` function inside a loop. We can check the condition `if (!compBloc(bloc))` once before entering the loop and avoid unnecessary function calls.
+
+4. In terms of memory usage, we can reduce the size of the arrays `grille`, `proc`, `go`, and `blocRef` if the maximum possible values of their indices are known and are less than `maxLig` and `maxCol`.
+
+Now, let's apply these optimizations to the program:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+using pii = pair<int, int>;
+const int maxLig = (1e5) + 5;
+const int maxCol = 12;
+const int maxReq = (1e5) + 5;
+const int sqr = 600;
+int nbLig, nbCol, nbReq;
+char grille[maxLig][maxCol];
+int proc[maxLig][maxCol];
+int tps = 0;
+pair<int, int> go[maxLig][maxCol];
+
+void comp(int lig, int col, int safeLig) {
+  while (proc[lig][col] != tps) {
+    proc[lig][col] = tps;
+    int nextLig = lig, nextCol = col;
+    if (grille[lig][col] == '<')
+      --nextCol;
+    else if (grille[lig][col] == '>')
+      ++nextCol;
+    else if (grille[lig][col] == '^')
+      --nextLig;
+    if (nextLig == safeLig || grille[nextLig][nextCol] == '~') {
+      go[lig][col] = {nextLig, nextCol};
+    } else if (grille[lig][col] != '^' && grille[lig][nextCol] != '^' &&
+               grille[lig][col] != grille[lig][nextCol]) {
+      go[lig][col] = {0, 0};
+    } else {
+      lig = nextLig;
+      col = nextCol;
+    }
+  }
+}
+
+pair<int, int> getFin(int lig, int col) {
+  if (grille[lig][col] == '~')
+    return {lig, col};
+  while (true) {
+    pii e = go[lig][col];
+    lig = e.first;
+    col = e.second;
+    if (grille[lig][col] == '~')
+      break;
+  }
+  return {lig, col};
+}
+
+int blocRef[maxLig];
+bool compBloc(int bloc) {
+  int deb = bloc * sqr, fin = min(nbLig, (bloc + 1) * sqr);
+  if (deb > nbLig)
+    return false;
+  for (int lig = deb + 1; lig <= fin; ++lig) {
+    blocRef[lig] = bloc;
+    for (int col = 1; col <= nbCol; ++col) {
+      comp(lig, col, deb);
+    }
+  }
+  return true;
+}
+
+int main() {
+  cin >> nbLig >> nbCol >> nbReq;
+  fill_n(&grille[0][0], maxLig * maxCol, '~');
+  for (int lig = 1; lig <= nbLig; ++lig) {
+    for (int col = 1; col <= nbCol; ++col) {
+      cin >> grille[lig][col];
+    }
+  }
+  ++tps;
+  for (int bloc = 0; bloc < nbLig; ++bloc) {
+    if (!compBloc(bloc))
+      break;
+  }
+  for (int req = 0; req < nbReq; ++req) {
+    char mode;
+    cin >> mode;
+    int lig, col;
+    cin >> lig >> col;
+    if (mode == 'A') {
+      pii res = getFin(lig, col);
+      if (res == pii{0, 0})
+        res = {-1, -1};
+      cout << res.first << " " << res.second << "\n";
+    } else {
+      ++tps;
+      char nv;
+      cin >> nv;
+      grille[lig][col] = nv;
+      int bloc = blocRef[lig];
+      if (bloc) {
+        compBloc(bloc);
+        compBloc(bloc - 1);
+      }
+    }
+  }
+}
+```

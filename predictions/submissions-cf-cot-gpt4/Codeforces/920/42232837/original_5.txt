@@ -1,0 +1,86 @@
+The given code is a number theory problem, which tries to find the smallest number not less than x, such that the number of prime factors (in pint) less than or equal to this number is not less than k. The code mainly consists of two parts: Sieve of Eratosthenes to find all primes less than maxn and binary search to find the answer. 
+
+Here are the optimization steps:
+
+1. **Memory Optimization**: The variable `pr` is a boolean array of size `maxn + 100`. This array is used to mark whether a number is prime or not. In C++, boolean arrays take 1 byte per element. This could be optimized by using `bitset` which takes only 1 bit per element. This would reduce the memory usage by almost 8 times.
+
+2. **Running Time Optimization**: In the process of finding all primes less than maxn, we can optimize it by skipping the even numbers (except 2), because they are not prime. So, we can start from 3 and increment the loop counter by 2 in each iteration.
+
+3. **Avoid Repeated Division**: In the `fac` function, we are repeatedly dividing the input number `x` by `i` until `x` is not divisible by `i`. Instead of using a while loop to do the division, we can use a logarithm to find out how many times we can divide `x` by `i`. Then, we can divide `x` by `i^count` in one go. This can significantly improve the performance when `x` is a large number.
+
+4. **Avoid Global Variables**: Using global variables makes the code harder to understand and debug. It's better to pass them as function parameters or make them local variables if possible.
+
+Here is the optimized code:
+
+```cpp
+#include <bitset>
+#include <vector>
+#include <iostream>
+#include <cmath>
+using namespace std;
+const int maxn = 1.8e7;
+bitset<maxn + 100> pr;
+vector<long long> pint, f;
+
+void fac(int x, vector<long long>& f) {
+  f.clear();
+  for (auto i : pint) {
+    if (x % i != 0)
+      continue;
+    if (i * i > x)
+      break;
+    f.push_back(i);
+    int count = log(x) / log(i);
+    x /= pow(i, count);
+  }
+  if (x != 1)
+    f.push_back(x);
+}
+
+int solve(int val, const vector<long long>& f) {
+  int ret = 0;
+  int lim = 1 << f.size();
+  for (int j = 1; j < lim; j++) {
+    int tp = 1, ct = 0;
+    for (unsigned int i = 0; i < f.size(); i++) {
+      if ((j >> i) & 1) {
+        tp *= f[i];
+        ct++;
+      }
+    }
+    ret += (ct % 2 ? 1 : -1) * val / tp;
+  }
+  return val - ret;
+}
+
+int main() {
+  pr.set();
+  pr[0] = pr[1] = false;
+  for (int i = 2; i * i <= maxn; i += (i == 2 ? 1 : 2))
+    if (pr[i])
+      for (int j = i * i; j <= maxn; j += i)
+        pr[j] = false;
+  for (int i = 2; i <= maxn; i++)
+    if (pr[i])
+      pint.push_back(i);
+
+  int cas;
+  cin >> cas;
+  while (cas--) {
+    int x, p, k;
+    cin >> x >> p >> k;
+    fac(p, f);
+    int a1 = solve(x, f), L = x + 1, R = maxn, ans = 0;
+    while (L <= R) {
+      int mid = (L + R) / 2;
+      int val = solve(mid, f) - a1;
+      if (val >= k)
+        R = mid - 1, ans = mid;
+      else
+        L = mid + 1;
+    }
+    cout << ans << endl;
+  }
+  return 0;
+}
+```

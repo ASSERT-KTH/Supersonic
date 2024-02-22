@@ -1,0 +1,93 @@
+This program implements a solution for a train scheduling problem using the Primal-Dual method for minimum-cost maximum-flow problems. That being said, there are several areas where the program can be optimized.
+
+Optimization Strategy:
+
+1. Avoid Unnecessary Copying of Objects: Functions like `augment` and `primal_dual` accept the graph G, a vector of edge structures, as a pointer. Instead, consider passing these by reference to avoid unnecessary copying of objects.
+
+2. Use Arrays Instead of Maps for Fixed-Size Data: The `f` object is a 2D map array which is used to store the vertices of the graph. Since the size of the array is known in advance (100x2), consider replacing this map array with a fixed-size 2D array. This can potentially reduce the overhead incurred due to map operations.
+
+3. Avoid Unnecessary Computations: The program is repeatedly using the operation `e.capa - e.flow` in the `augment` function. Instead of computing this every time, consider storing the result in a variable and reusing it.
+
+4. Avoid Frequent Memory Allocation and Deallocation: The resize function is used multiple times in the code. Instead of frequently resizing the vectors, consider reserving an upper limit of memory for the vectors using the reserve function.
+
+5. Optimize Recursion and Loops: In the `augment` function, there's a while loop that could be optimized by using a 'break' statement as soon as the target node is found instead of traversing the entire graph.
+
+Optimized Code Block:
+
+Here is an optimized version of the code considering the above optimization strategies:
+
+```cpp
+#include <cstdio>
+#include <vector>
+#include <queue>
+#define rep(i, n) for (int i = 0; i < (n); i++)
+using namespace std;
+const int V_MAX = 6000;
+const int CAPA_INF = 1 << 29;
+const int COST_INF = 1 << 29;
+template <class T, class U> struct edge {
+  int v, rev;
+  T capa;
+  U cost;
+  T flow;
+};
+template <class T, class U>
+void add_directed_edge(vector<edge<T, U>> *G, int u, int v, T capa, U cost) {
+  G[u].push_back((edge<T, U>){v, G[v].size(), capa, cost, 0});
+  G[v].push_back((edge<T, U>){u, G[u].size() - 1, 0, -cost, 0});
+}
+template <class T, class U>
+pair<T, U> augment(int n, vector<edge<T, U>> &G, int s, int t, U *pot) {
+  static int pre[V_MAX];
+  static U d[V_MAX];
+  rep(u, n) d[u] = (u == s ? 0 : COST_INF);
+  bool ok = false;
+  priority_queue<pair<U, int>> Q;
+  Q.push(make_pair(0, s));
+  while (!Q.empty()) {
+    int u = Q.top().second;
+    U cost = -Q.top().first;
+    Q.pop();
+    if (cost < d[u])
+      continue;
+    if (u == t)
+      ok = true;
+    break; // Break as soon as target node is reached
+    rep(i, G[u].size()) {
+      edge<T, U> &e = G[u][i];
+      U cost2 = cost + e.cost + pot[u] - pot[e.v];
+      T flowCapaDiff = e.capa - e.flow; // Avoid repeated computation
+      if (flowCapaDiff > 0 && cost2 < d[e.v]) {
+        d[e.v] = cost2;
+        pre[e.v] = e.rev;
+        Q.push(make_pair(-cost2, e.v));
+      }
+    }
+  }
+  // Remaining augment function code...
+}
+template <class T, class U>
+pair<T, U> primal_dual(int n, vector<edge<T, U>> &G, int s, int t) {
+  // Remaining primal_dual function code...
+}
+struct train {
+  int t1, t2, cost;
+};
+int main() {
+  // Replaced map with a fixed-size 2D array for 'f' object
+  int f[100][2][100];
+  for (int n; scanf("%d", &n), n;) {
+    vector<train> T[99];
+    rep(i, n - 1) {
+      int m;
+      scanf("%d", &m);
+      T[i].reserve(m); // Reserve memory instead of resizing
+      // Remaining main function code...
+    }
+    // Remaining main function code...
+  }
+  return 0;
+}
+```
+
+Please note that this optimization is mostly theoretical, and the actual performance gain may vary depending on the specific compiler, hardware, and input data used.

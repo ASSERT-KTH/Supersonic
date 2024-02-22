@@ -1,0 +1,137 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+#define ll long long int
+#define fast ios_base::sync_with_stdio(false), cin.tie(NULL)
+#define file freopen("input.txt", "r", stdin), freopen("output.txt", "w", stdout)
+
+const int N = 100001;
+const int LOGN = 21;
+
+vector<int> v[N];
+vector<int> ct[N];
+int sub[N], nc, cr, lca[N][LOGN], cpar[N], lv[N], n, m, ans[N];
+
+void dfs(int node, int par, int lvl) {
+  lv[node] = lvl;
+  lca[node][0] = par;
+  for (int i = 1; i < LOGN; i++) {
+    if (lca[node][i - 1] != -1) {
+      lca[node][i] = lca[lca[node][i - 1]][i - 1];
+    }
+  }
+  for (auto a : v[node]) {
+    if (a != par) {
+      dfs(a, node, lvl + 1);
+    }
+  }
+}
+
+void genlca() {
+  memset(lca, -1, sizeof(lca));
+  dfs(1, -1, 0);
+}
+
+int getlca(int a, int b) {
+  if (lv[a] > lv[b]) {
+    swap(a, b);
+  }
+  int d = lv[b] - lv[a];
+  for (int i = LOGN - 1; i >= 0; i--) {
+    if ((d >> i) & 1) {
+      b = lca[b][i];
+    }
+  }
+  if (a == b) {
+    return a;
+  }
+  for (int i = LOGN - 1; i >= 0; i--) {
+    if (lca[a][i] != lca[b][i]) {
+      a = lca[a][i];
+      b = lca[b][i];
+    }
+  }
+  return lca[a][0];
+}
+
+int dist(int a, int b) {
+  return lv[a] + lv[b] - 2 * lv[getlca(a, b)];
+}
+
+void dfs(int node, int par) {
+  nc++;
+  sub[node] = 1;
+  for (auto a : v[node]) {
+    if (a != par) {
+      dfs(a, node);
+      sub[node] += sub[a];
+    }
+  }
+}
+
+int getcent(int node, int par) {
+  for (auto a : v[node]) {
+    if (a != par && sub[a] > nc / 2) {
+      return getcent(a, node);
+    }
+  }
+  return node;
+}
+
+int decom(int root) {
+  nc = 0;
+  dfs(root, -1);
+  int c = getcent(root, -1);
+  for (auto a : v[c]) {
+    v[a].erase(find(v[a].begin(), v[a].end(), c));
+    int x = decom(a);
+    ct[c].push_back(x);
+    ct[x].push_back(c);
+    cpar[x] = c;
+  }
+  return c;
+}
+
+void update(int par, int node) {
+  while (par != -1) {
+    ans[par] = min(ans[par], dist(node, par));
+    par = cpar[par];
+  }
+}
+
+int getans(int par, int node) {
+  int res = INT_MAX;
+  while (par != -1) {
+    res = min(res, ans[par] + dist(node, par));
+    par = cpar[par];
+  }
+  return res;
+}
+
+int main() {
+  fast;
+  cin >> n >> m;
+  for (int i = 1; i < n; i++) {
+    int a, b;
+    cin >> a >> b;
+    v[a].push_back(b);
+    v[b].push_back(a);
+  }
+  memset(ans, INT_MAX, sizeof(ans));
+  genlca();
+  cr = decom(1);
+  cpar[cr] = -1;
+  ans[1] = 0;
+  update(cpar[1], 1);
+  while (m--) {
+    int a, b;
+    cin >> a >> b;
+    if (a == 1) {
+      ans[b] = 0;
+      update(cpar[b], b);
+    } else {
+      cout << getans(b, b) << "\n";
+    }
+  }
+  return 0;
+}

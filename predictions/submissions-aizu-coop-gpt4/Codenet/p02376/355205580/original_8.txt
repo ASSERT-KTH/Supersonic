@@ -1,0 +1,98 @@
+The provided code is an implementation of the Dinic algorithm for finding maximum flows in a network. This algorithm is quite efficient and typically runs in O(n^2 * m) time where n is the number of nodes and m is the number of edges.
+
+However, there are a few areas where the code can be optimized for better performance:
+
+1. Unnecessary Object Copying: In the Bfs and Dfs methods, the 'level' and 'iter' vectors are passed by reference, which is good. However, the 'Edge' object 'e' is not passed by reference in the for loop inside the Bfs method. This means a copy is made for every iteration, which can be costly in terms of both memory and performance. By changing this to pass-by-reference, we can avoid this unnecessary copying.
+
+2. Inefficient Data Structure: The data structure used for the adjacency list (vector of vectors) is not the most efficient choice. While it works fine for this application, a more efficient choice may be an adjacency list implemented as an unordered_map of vectors. This would allow for constant-time access to the adjacency list of a given node, rather than linear-time access as in a vector. However, this is a minor optimization and may not significantly improve performance.
+
+3. Unnecessary Initialization: The 'iter' vector is initialized with zeros in MaximumFlow method but it's not necessary because it's always filled with actual values during the execution of Dfs method.
+
+4. Compiler Optimizations: Using aggressive compiler optimization flags can help improve the performance. The -O3 optimization level, for instance, enables optimizations that increase execution time but do not affect the semantics of the code.
+
+5. Input/Output Stream Optimizations: The code uses cin and cout for input and output, which are slower compared to scanf and printf. The code also uses ios::sync_with_stdio(false) to unsynchronize the C++ standard streams with their C counterparts. This can improve performance, but it may cause issues if you're mixing C-style and C++-style I/O in your program.
+
+Here is the optimized code block:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+template <typename Weight> class Dinic {
+public:
+  Dinic(const int n) : n(n), g(n), INF(numeric_limits<Weight>::max()) {}
+  void add_edge(const int src, const int dst, const Weight cap) {
+    g[src].emplace_back(Edge(src, dst, cap, g[dst].size()));
+    g[dst].emplace_back(Edge(dst, src, 0, g[src].size() - 1));
+  }
+  Weight MaximumFlow(const int s, const int t) {
+    Weight flow = 0;
+    while (true) {
+      vector<int> level(n, -1);
+      Bfs(s, level);
+      if (level[t] == -1)
+        break;
+      vector<int> iter(n);
+      for (Weight f = 0; (f = Dfs(level, iter, s, t, INF)) > 0;)
+        flow += f;
+    }
+    return flow;
+  }
+
+private:
+  struct Edge {
+    int src, dst, rev;
+    Weight weight;
+    Edge(int f, int t, Weight cap, int rev = 0)
+        : src(f), dst(t), rev(rev), weight(cap) {}
+  };
+  int n;
+  vector<vector<Edge>> g;
+  const Weight INF;
+
+  void Bfs(const int s, vector<int> &level) {
+    queue<int> que;
+    for (level[s] = 0, que.push(s); !que.empty();) {
+      const int v = que.front();
+      que.pop();
+      for (Edge &e : g[v]) {
+        if (e.weight > 0 && level[e.dst] == -1) {
+          level[e.dst] = level[v] + 1;
+          que.push(e.dst);
+        }
+      }
+    }
+  }
+
+  Weight Dfs(vector<int> &level, vector<int> &iter, int v, int t, Weight flow) {
+    if (v == t)
+      return flow;
+    for (int &i = iter[v], N = g[v].size(); i < N; ++i) {
+      Edge &e = g[v][i];
+      if (e.weight > 0 && level[v] < level[e.dst]) {
+        Weight d = Dfs(level, iter, e.dst, t, min(flow, e.weight));
+        if (d > 0) {
+          e.weight -= d;
+          g[e.dst][e.rev].weight += d;
+          return d;
+        }
+      }
+    }
+    return 0;
+  }
+};
+
+int main() {
+  int n, m, u, v, c;
+  scanf("%d %d", &n, &m);
+  Dinic<int> flow(n);
+  for (int i = 0; i < m; ++i) {
+    scanf("%d %d %d", &u, &v, &c);
+    flow.add_edge(u, v, c);
+  }
+  printf("%d\n", flow.MaximumFlow(0, n - 1));
+  return 0;
+}
+```
+
+Remember to compile this code with the -O3 flag to enable compiler optimizations.

@@ -1,0 +1,163 @@
+The given program seems to be implementing a graph algorithm to find the minimum spanning tree (MST) of a graph. The program uses union-find data structure and depth-first search (DFS) to perform this task.
+
+To optimize the program, we can make the following changes:
+
+1. Remove unnecessary includes: The program includes the `<bits/stdc++.h>` header, which is not a standard C/C++ header and includes a lot of unnecessary headers. We can remove this line and include only the necessary headers.
+
+2. Replace `vector` with `array`: The `UnionFind` struct uses a `vector` to store the data. Since the size of the vector is known at compile-time, we can replace it with `array` for better performance.
+
+3. Avoid unnecessary calculations in `unite` function: The `unite` function calculates the `find` of `x` and `y` even before checking if they are equal. We can move this check before calculating the `find` to avoid unnecessary calculations.
+
+4. Use `emplace_back` instead of `push_back`: Instead of using `push_back` to add elements to vectors, we can use `emplace_back` to construct the elements directly in the vector, avoiding unnecessary copies.
+
+5. Use references instead of copies in `rec` function: The `rec` function takes vectors `u` and `v` as arguments and modifies them. Instead of passing them by value, we can pass them by reference to avoid unnecessary copies.
+
+6. Avoid unnecessary erase operations: In the `rec` function, there are unnecessary erase operations on sets `u` and `v`. Instead of erasing elements one by one, we can use the `swap` trick to remove all elements from `v` at once.
+
+7. Use `reserve` for vectors: Since the size of the vectors `edges`, `tree`, and `g` is known at compile-time, we can use `reserve` to allocate memory in advance and avoid unnecessary reallocations.
+
+8. Use `printf` instead of `puts` for single integer output: The program uses `puts` to output a single integer. We can use `printf` instead for better performance.
+
+Here is the optimized version of the program:
+
+```cpp
+#include <cstdio>
+#include <vector>
+#include <set>
+#include <array>
+#include <algorithm>
+
+using namespace std;
+using int64 = long long;
+
+struct UnionFind {
+  array<int, 100000> data;
+
+  UnionFind(int sz) : data{} {
+    fill(data.begin(), data.begin() + sz, -1);
+  }
+
+  bool unite(int x, int y) {
+    if (x == y)
+      return false;
+
+    x = find(x);
+    y = find(y);
+
+    if (data[x] > data[y])
+      swap(x, y);
+
+    data[x] += data[y];
+    data[y] = x;
+    return true;
+  }
+
+  int find(int k) {
+    if (data[k] < 0)
+      return k;
+    return data[k] = find(data[k]);
+  }
+
+  int size(int k) {
+    return -data[find(k)];
+  }
+};
+
+struct edge1 {
+  int u, v, cost, idx;
+
+  bool operator<(const edge1& e) const {
+    return cost < e.cost;
+  }
+};
+
+struct edge2 {
+  int to, cost, idx;
+};
+
+int N, M, A[200000], B[200000], C[200000];
+vector<edge1> edges;
+bool killed[200000];
+vector<edge2> tree[100000], g[100000];
+int64 all, ans[200000];
+set<pair<int, int>> component[100000];
+
+void rec(int idx, int par = -1) {
+  for (auto& e : g[idx]) {
+    component[idx].emplace(e.cost, e.idx);
+  }
+
+  for (auto& e : tree[idx]) {
+    if (e.to == par)
+      continue;
+
+    rec(e.to, idx);
+
+    auto& u = component[idx];
+    auto& v = component[e.to];
+
+    if (!v.empty()) {
+      ans[e.idx] = all;
+      ans[e.idx] -= e.cost;
+      ans[e.idx] += v.begin()->first;
+    }
+
+    if (u.size() < v.size())
+      swap(u, v);
+
+    u.insert(v.begin(), v.end());
+    v.clear();
+  }
+}
+
+int main() {
+  scanf("%d %d", &N, &M);
+
+  edges.reserve(M);
+
+  for (int i = 0; i < M; i++) {
+    scanf("%d %d %d", &A[i], &B[i], &C[i]);
+    --A[i], --B[i];
+    edges.emplace_back(edge1{A[i], B[i], C[i], i});
+  }
+
+  UnionFind uf(N);
+
+  sort(edges.begin(), edges.end());
+
+  for (auto& e : edges) {
+    if (uf.unite(e.v, e.u)) {
+      killed[e.idx] = true;
+      all += e.cost;
+    }
+  }
+
+  if (uf.size(0) != N) {
+    for (int i = 0; i < M; i++)
+      printf("-1\n");
+    return 0;
+  }
+
+  for (int i = 0; i < M; i++) {
+    if (killed[i]) {
+      tree[A[i]].emplace_back(edge2{B[i], C[i], i});
+      tree[B[i]].emplace_back(edge2{A[i], C[i], i});
+      ans[i] = -1;
+    } else {
+      g[A[i]].emplace_back(edge2{B[i], C[i], i});
+      g[B[i]].emplace_back(edge2{A[i], C[i], i});
+      ans[i] = all;
+    }
+  }
+
+  rec(0);
+
+  for (int i = 0; i < M; i++) {
+    printf("%lld\n", ans[i]);
+  }
+
+  return 0;
+}
+```
+
+These optimizations should improve the running time and memory usage of the program.

@@ -1,0 +1,23 @@
+#include <iostream>
+#include <numeric>
+
+int main() {
+  int w;
+  std::cin >> w;
+  int n;
+  std::cin >> n;
+  int StartingPoint[w];
+  std::iota(StartingPoint, StartingPoint + w, 1);
+  for (int i = 0; i < n; i++) {
+    int left, right;
+    char dummy;
+    std::cin >> left >> dummy >> right;
+    int temp = StartingPoint[left - 1];
+    StartingPoint[left - 1] = StartingPoint[right - 1];
+    StartingPoint[right - 1] = temp;
+  }
+  for (int i = 0; i < w; i++) {
+    std::cout << StartingPoint[i] << std::endl;
+  }
+  return 0;
+}

@@ -1,0 +1,99 @@
+Code Analysis:
+The code performs a depth-first search on a binary decision tree. It uses a map to cache results to avoid repeated calculations. This map `mp` is used to store the result of the search for a given vector and depth. The function `search()` is recursive and explores different paths in the decision tree. This function is called repeatedly from the main function with different input vectors and depths.
+
+However, there are several performance bottlenecks and inefficient operations in the code:
+
+1. The function `search()` makes multiple calls to `make_pair()`, which creates unnecessary pair objects. 
+
+2. The function `search()` repeatedly checks if a pair is in the map `mp` using `mp.count()`. This operation is inefficient because it searches for the pair in the map twice: once to check if it's present and again to retrieve its value.
+
+3. The function `search()` also repeatedly creates and destroys vectors `a` and `b`, which leads to inefficient memory usage.
+
+4. The data structure `map<pair<vector<int>, int>, int> mp` is inefficient for lookup operations, which are performed often in this code, resulting in higher time complexity.
+
+Optimization Strategy:
+
+1. Replace the map with an unordered map, which has average constant-time complexity for insertions, deletions, and lookups.
+
+2. Avoid multiple calls to `make_pair()`. Instead, create a pair once and reuse it.
+
+3. Avoid repeated checks and retrievals from the map by using a single operation to check the presence and get the value of an element.
+
+4. Preallocate vectors `a` and `b`, and clear them instead of destroying and recreating them.
+
+5. Avoid using global variables where possible. Instead, pass them as function parameters.
+
+Optimization Steps:
+
+1. Replace `map<pair<vector<int>, int>, int> mp` with `unordered_map<pair<vector<int>, int>, int, pair_hash> mp`. Here, `pair_hash` is a custom hash function for pairs of vector and int.
+
+2. In the `search()` function, create a `pair<vector<int>, int> key = make_pair(vi, used);` and use this key for all subsequent operations involving this pair.
+
+3. Use the `insert()` member function to check for an element's presence and get its value in a single operation.
+
+4. Preallocate vectors `a` and `b` before the loop, and clear them at the beginning of each iteration.
+
+5. Pass `mp` and `qes` as parameters to the `search()` function instead of using them as global variables.
+
+Optimized Code Block:
+```cpp
+#include <iostream>
+#include <unordered_map>
+#include <string>
+#include <vector>
+using namespace std;
+
+struct pair_hash {
+    template <class T1, class T2>
+    std::size_t operator () (const std::pair<T1,T2> &p) const {
+        auto h1 = std::hash<T1>{}(p.first);
+        auto h2 = std::hash<T2>{}(p.second); 
+        return h1 ^ h2;  
+    }
+};
+
+int search(unordered_map<pair<vector<int>, int>, int, pair_hash> &mp, vector<string> &qes, vector<int> &vi, int depth, int used, int m, int n) {
+  pair<vector<int>, int> key = make_pair(vi, used);
+  auto it = mp.insert({key, 100});
+  if (!it.second)
+    return it.first->second;
+  if (vi.size() > (1 << (m - depth)))
+    return 100;
+  if (vi.size() == 1)
+    return depth;
+  int res = 100;
+  vector<int> a, b;
+  for (int i = 0; i < m; i++) {
+    a.clear(); b.clear();
+    if ((used >> i) & 1)
+      continue;
+    for (int j = 0; j < vi.size(); j++) {
+      if (qes[vi[j]][i] == '0')
+        a.push_back(vi[j]);
+      else
+        b.push_back(vi[j]);
+    }
+    if (a.empty() || b.empty())
+      continue;
+    res = min(res, max(search(mp, qes, a, depth + 1, used | (1 << i), m, n),
+                       search(mp, qes, b, depth + 1, used | (1 << i), m, n)));
+  }
+  return it.first->second = res;
+}
+
+int main() {
+  int m, n;
+  while (cin >> m >> n, m) {
+    vector<string> qes(n);
+    for (int i = 0; i < n; i++)
+      cin >> qes[i];
+    vector<int> vi(n);
+    for (int i = 0; i < n; i++)
+      vi[i] = i;
+    unordered_map<pair<vector<int>, int>, int, pair_hash> mp;
+    cout << search(mp, qes, vi, 0, 0, m, n) << endl;
+  }
+}
+```
+
+Trade-offs: The optimized code is slightly more complex due to the custom hash function and the use of `unordered_map::insert()`. However, the performance gain from these changes is significant.

@@ -1,0 +1,119 @@
+The given C++ program performs operations on a binary search tree (BST). It offers two operations: insertion of an integer key into the BST and printing of all elements in the BST in both in-order and pre-order traversal.
+
+Here are the main performance bottlenecks observed in the current implementation:
+
+1. Dynamic Memory Allocation: The current BST implementation uses dynamic memory allocation using `malloc` during node insertion. This operation can be expensive in terms of time complexity.
+
+2. Redundant Tree Traversal: The tree traversal functions `inorder` and `preorder` are called every time a "print" command is issued. If the tree has not been modified since the last print, this is redundant work.
+
+3. Use of `std::string` for command: The `std::string` class involves dynamic memory allocation and deallocation, which can be slower than using C-style strings.
+
+Here is the strategy to optimize the code:
+
+1. Use a custom allocator to allocate memory for nodes: Custom allocator can pre-allocate a block of memory for a certain number of nodes, reducing the overhead of dynamic allocation.
+
+2. Cache the result of the latest in-order and pre-order traversal: We can store the result of the last tree traversal and print this result if the tree hasn't been modified since then.
+
+3. Use C-style strings instead of `std::string`: Using `char` arrays instead of `std::string` can avoid the overhead of dynamic memory management.
+
+4. Reducing unnecessary comparisons and assignments: In the `insert` function, the `else` part does the same assignment `x = x->right` irrespective of whether the condition `z->key < x->key` is true or not. This can be optimized.
+
+Now let's implement these optimizations:
+
+```cpp
+#include <cstdio>
+#include <vector>
+using namespace std;
+
+#define MAX_NODES 500000
+#define CMD_SIZE 10
+
+struct Node {
+  int key;
+  Node *right, *left;
+};
+
+Node *root, *NIL;
+Node pool[MAX_NODES];
+int poolIdx = 0;
+vector<int> inorderRes, preorderRes;
+bool isModified = false;
+
+Node* allocNode(int key) {
+  Node* node = &pool[poolIdx++];
+  node->key = key;
+  node->left = NIL;
+  node->right = NIL;
+  return node;
+}
+
+void insert(int k) {
+  Node *y = NIL;
+  Node *x = root;
+  Node *z = allocNode(k);
+  while (x != NIL) {
+    y = x;
+    x = (z->key < x->key) ? x->left : x->right;
+  }
+  if (y == NIL) {
+    root = z;
+  } else {
+    if (z->key < y->key) {
+      y->left = z;
+    } else {
+      y->right = z;
+    }
+  }
+  isModified = true;
+}
+
+void inorder(Node *u) {
+  if (u == NIL)
+    return;
+  inorder(u->left);
+  inorderRes.push_back(u->key);
+  inorder(u->right);
+}
+
+void preorder(Node *u) {
+  if (u == NIL)
+    return;
+  preorderRes.push_back(u->key);
+  preorder(u->left);
+  preorder(u->right);
+}
+
+void print() {
+  if (isModified) {
+    inorderRes.clear();
+    preorderRes.clear();
+    inorder(root);
+    preorder(root);
+    isModified = false;
+  }
+  for (int key : inorderRes)
+    printf(" %d", key);
+  printf("\n");
+  for (int key : preorderRes)
+    printf(" %d", key);
+  printf("\n");
+}
+
+int main() {
+  int n, x;
+  char com[CMD_SIZE];
+  scanf("%d", &n);
+  for (int i = 0; i < n; i++) {
+    scanf("%s", com);
+    if (strcmp(com, "insert") == 0) {
+      scanf("%d", &x);
+      insert(x);
+    } else if (strcmp(com, "print") == 0) {
+      print();
+    }
+  }
+  return 0;
+}
+```
+
+This optimized version of the code uses a custom allocator for nodes and caches the result of tree traversals. It uses C-style strings for commands and reduces unnecessary comparisons and assignments in the `insert` function. It ensures to clear and re-populate the cached traversal results only when the tree is modified, i.e., when a new node is inserted. This avoids redundant tree traversals and thus improves the performance of the "print" operation.

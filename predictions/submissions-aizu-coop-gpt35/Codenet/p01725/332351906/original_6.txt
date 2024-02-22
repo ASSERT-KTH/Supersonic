@@ -1,0 +1,270 @@
+After analyzing the provided code, we can identify several areas for potential optimization:
+
+1. Inefficient data structure: The `ch` array is currently used to map the characters '+' (43), '-' (45), and '*' (42) to their corresponding weights. This array is of size 1 << 8, which is larger than necessary. We can optimize this by using a smaller array of size 256, as that is the range of ASCII characters.
+
+2. Redundant computation: The `get` function is called multiple times within the `calc` function, even though the result is not used in some cases. We can optimize this by removing the unused computation.
+
+3. Recursive calls: The `bnf` and `calc` functions are recursive, which can lead to stack overflow errors for large inputs. We can optimize this by using an iterative approach instead.
+
+4. Compiler optimizations: We can suggest some compiler optimizations or pragma directives to hint the compiler to optimize certain parts of the code.
+
+Now, let's optimize the code step by step:
+
+Step 1: Optimizing the data structure
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+string S;
+int p, ch[256]; // Change the array size to 256 to match the range of ASCII characters
+
+ll bnf();
+ll getNum() {
+  ll res = 0;
+  while (isdigit(S[p]))
+    res = res * 10 + S[p++] - '0';
+  return res;
+}
+
+ll get(ll &a, ll b, char c) {
+  if (c == '+')
+    a += b;
+  if (c == '-')
+    a -= b;
+  if (c == '*')
+    a *= b;
+  return a;
+}
+
+ll calc(int c) {
+  ll res, t;
+  if (S[p] == '(')
+    p++, res = bnf(), p++;
+  else
+    res = getNum();
+  while (p < S.size() && S[p] != ')' && ch[S[p]] > c)
+    t = S[p++], get(res, calc(ch[t]), t);
+  return res;
+}
+
+ll bnf() {
+  ll res = calc(-1), t;
+  while (p < S.size() && S[p] != ')')
+    t = S[p++], get(res, calc(ch[t]), t);
+  return res;
+}
+
+int main() {
+  cin >> S;
+  ll res = bnf();
+  for (int i = 0; i < 3; i++)
+    for (int j = 0; j < 3; j++)
+      for (int k = 0; k < 3; k++) {
+        ch['+'] = i, ch['-'] = j, ch['*'] = k;
+        p = 0;
+        res = max(res, calc(-100));
+      }
+  cout << res << endl;
+  return 0;
+}
+```
+
+Step 2: Removing redundant computation
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+string S;
+int p, ch[256];
+
+ll bnf();
+ll getNum() {
+  ll res = 0;
+  while (isdigit(S[p]))
+    res = res * 10 + S[p++] - '0';
+  return res;
+}
+
+ll get(ll &a, ll b, char c) {
+  if (c == '+')
+    a += b;
+  else if (c == '-')
+    a -= b;
+  else if (c == '*')
+    a *= b;
+  return a;
+}
+
+ll calc(int c) {
+  ll res, t;
+  if (S[p] == '(')
+    p++, res = bnf(), p++;
+  else
+    res = getNum();
+  while (p < S.size() && S[p] != ')' && ch[S[p]] > c) {
+    t = S[p++];
+    if (ch[t] > c)
+      get(res, calc(ch[t]), t);
+  }
+  return res;
+}
+
+ll bnf() {
+  ll res = calc(-1), t;
+  while (p < S.size() && S[p] != ')') {
+    t = S[p++];
+    if (ch[t] > -1)
+      get(res, calc(ch[t]), t);
+  }
+  return res;
+}
+
+int main() {
+  cin >> S;
+  ll res = bnf();
+  for (int i = 0; i < 3; i++)
+    for (int j = 0; j < 3; j++)
+      for (int k = 0; k < 3; k++) {
+        ch['+'] = i, ch['-'] = j, ch['*'] = k;
+        p = 0;
+        res = max(res, calc(-100));
+      }
+  cout << res << endl;
+  return 0;
+}
+```
+
+Step 3: Optimizing recursive calls
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+string S;
+int p, ch[256];
+
+ll bnf() {
+  ll res = 0, a = 0, b = 0;
+  char op = '+';
+  bool isNum = false;
+  for (p = 0; p < S.size(); p++) {
+    if (isdigit(S[p])) {
+      ll num = 0;
+      while (isdigit(S[p]))
+        num = num * 10 + S[p++] - '0';
+      if (isNum)
+        a = get(a, num, op);
+      else
+        res = num;
+      isNum = true;
+      p--;
+    } else if (S[p] == '(') {
+      int start = p + 1;
+      int count = 1;
+      while (count != 0) {
+        p++;
+        if (S[p] == '(')
+          count++;
+        else if (S[p] == ')')
+          count--;
+      }
+      ll num = bnf();
+      if (isNum)
+        a = get(a, num, op);
+      else
+        res = num;
+      isNum = true;
+    } else if (S[p] == '+' || S[p] == '-' || S[p] == '*') {
+      op = S[p];
+      isNum = false;
+    }
+  }
+  return res;
+}
+
+int main() {
+  cin >> S;
+  ll res = 0;
+  for (int i = 0; i < 3; i++)
+    for (int j = 0; j < 3; j++)
+      for (int k = 0; k < 3; k++) {
+        ch['+'] = i, ch['-'] = j, ch['*'] = k;
+        res = max(res, bnf());
+      }
+  cout << res << endl;
+  return 0;
+}
+```
+
+Step 4: Adding compiler optimizations
+
+We can suggest the following compiler optimizations and pragma directives:
+
+1. Enable compiler optimizations: Add `-O3` flag during compilation to enable maximum optimizations.
+
+2. Use pragma directives: Use `#pragma GCC optimize` to suggest specific optimizations to the compiler. For example, we can suggest loop unrolling for the three nested loops in the main function:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+string S;
+int p, ch[256];
+
+ll bnf() {
+  ll res = 0, a = 0, b = 0;
+  char op = '+';
+  bool isNum = false;
+  for (p = 0; p < S.size(); p++) {
+    if (isdigit(S[p])) {
+      ll num = 0;
+      while (isdigit(S[p]))
+        num = num * 10 + S[p++] - '0';
+      if (isNum)
+        a = get(a, num, op);
+      else
+        res = num;
+      isNum = true;
+      p--;
+    } else if (S[p] == '(') {
+      int start = p + 1;
+      int count = 1;
+      while (count != 0) {
+        p++;
+        if (S[p] == '(')
+          count++;
+        else if (S[p] == ')')
+          count--;
+      }
+      ll num = bnf();
+      if (isNum)
+        a = get(a, num, op);
+      else
+        res = num;
+      isNum = true;
+    } else if (S[p] == '+' || S[p] == '-' || S[p] == '*') {
+      op = S[p];
+      isNum = false;
+    }
+  }
+  return res;
+}
+
+int main() {
+  cin >> S;
+  ll res = 0;
+  #pragma GCC optimize("unroll-loops")
+  for (int i = 0; i < 3; i++)
+    for (int j = 0; j < 3; j++)
+      for (int k = 0; k < 3; k++) {
+        ch['+'] = i, ch['-'] = j, ch['*'] = k;
+        res = max(res, bnf());
+      }
+  cout << res << endl;
+  return 0;
+}
+```
+
+This completes the optimization of the given C++ program.

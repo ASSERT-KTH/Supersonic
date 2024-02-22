@@ -1,0 +1,132 @@
+Step 1: Remove unnecessary headers
+
+The program includes `<algorithm>` and `<utility>` headers, but it does not use any functions or classes from these headers. Therefore, we can remove these headers as they are unnecessary.
+
+Step 2: Optimize the unordered_map
+
+The program uses an `unordered_map` to store the answer for each pair of nodes. However, the size of the map can be reduced significantly by using a different approach.
+
+Instead of storing the answer for each pair of nodes, we can store the answer for each unique edge. Since the input guarantees that there are no duplicate edges, this approach will not result in any loss of information.
+
+To implement this optimization, we can change the `ans` data structure from `unordered_map<int, unordered_map<int, int>>` to `vector<int>`.
+
+Step 3: Modify the dfs3 function
+
+The dfs3 function updates the answer map based on the values in the `dif` and `bak` arrays. However, we can avoid using these arrays altogether by using a modified version of the dfs3 function.
+
+Instead of storing the values in `dif` and `bak` arrays, we can calculate the values on the fly while traversing the tree. This will eliminate the need for these additional arrays and reduce memory usage.
+
+To implement this optimization, we can modify the dfs3 function as follows:
+
+1. Remove the `dif` and `bak` arrays.
+2. Modify the arguments of the dfs3 function to include the current difference (cnt) and the current backup (bk) values.
+3. Update the answer map based on the current difference (cnt) and backup (bk) values during the traversal.
+
+Step 4: Modify the main function
+
+The main function needs to be modified to accommodate the changes made in the previous steps.
+
+1. Change the type of the `ans` variable from `unordered_map<int, unordered_map<int, int>>` to `vector<int>`.
+2. Initialize the `ans` vector with a size of `n-1` and all values set to 0.
+3. Update the scanf statement for reading k to `scanf("%d\n", &k)` to consume the newline character after reading the integer.
+
+Here is the optimized version of the program:
+
+```
+#include <cstdio>
+#include <vector>
+using namespace std;
+const int N = 100001;
+int par[N], hev[N], siz[N], dep[N], top[N];
+vector<int> edg[N];
+vector<int> ans;
+void dfs(int u) {
+  siz[u] = 1;
+  hev[u] = -1;
+  for (int v : edg[u]) {
+    if (v == par[u])
+      continue;
+    par[v] = u;
+    dep[v] = dep[u] + 1;
+    dfs(v);
+    siz[u] += siz[v];
+    if (hev[u] == -1 || siz[v] > siz[hev[u]])
+      hev[u] = v;
+  }
+}
+void dfs2(int u) {
+  for (int v : edg[u]) {
+    if (v == par[u])
+      continue;
+    if (v == hev[u])
+      top[v] = top[u];
+    else
+      top[v] = v;
+    dfs2(v);
+  }
+}
+void path(int u, int v) {
+  while (true) {
+    if (top[u] == top[v]) {
+      if (dep[u] > dep[v])
+        swap(u, v);
+      ans[top[u]]++;
+      ans[v]--;
+      return;
+    }
+    if (dep[top[u]] > dep[top[v]])
+      swap(u, v);
+    ans[top[v]]++;
+    ans[v]--;
+    v = par[top[v]];
+  }
+}
+void dfs3(int u, int cnt, int bk) {
+  for (int v : edg[u]) {
+    if (v == par[u])
+      continue;
+    if (v == hev[u]) {
+      int diff = cnt + ans[u];
+      ans[min(u, v)] += diff;
+      ans[max(u, v)] -= diff;
+      dfs3(v, diff, bk);
+    } else {
+      ans[min(u, v)] += bk;
+      dfs3(v, 0, ans[u]);
+    }
+  }
+}
+int main() {
+  int n, k, u, v;
+  scanf("%d\n", &n);
+  for (int i = 0; i < n; i++)
+    edg[i] = vector<int>();
+  for (int i = 0; i < n - 1; i++) {
+    scanf("%d%d", &u, &v);
+    u--;
+    v--;
+    if (u > v)
+      swap(u, v);
+    edg[u].push_back(v);
+    edg[v].push_back(u);
+    ans.push_back(0);
+  }
+  par[0] = 0;
+  dep[0] = 0;
+  dfs(0);
+  top[0] = 0;
+  dfs2(0);
+  scanf("%d\n", &k);
+  while (k--) {
+    scanf("%d%d", &u, &v);
+    u--;
+    v--;
+    path(u, v);
+  }
+  dfs3(0, 0, 0);
+  printf("%d", ans[0]);
+  for (int i = 1; i < n - 1; i++)
+    printf(" %d", ans[i]);
+  printf("\n");
+}
+```

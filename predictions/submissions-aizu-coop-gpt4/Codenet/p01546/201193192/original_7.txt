@@ -1,0 +1,85 @@
+The provided C++ code is a complex network graph algorithm that attempts to find the shortest path in a graph using a variant of the Bellman-Ford algorithm. The code is relatively optimized but there are several improvements that can still be made to enhance its performance and memory usage.
+
+Optimization Strategy:
+1. Avoid unnecessary copying of objects: In function `mul`, the matrix `b` is passed by value which leads to unnecessary copying. We can pass it by reference to avoid copying.
+2. Preallocate memory for vectors: The vectors are currently being resized during the execution of the program. We can preallocate memory to these vectors to prevent resizing.
+3. Use `std::array` instead of `std::vector` for fixed-size arrays: The `dp` and `prv` arrays have a fixed size of 155. We can use `std::array` instead of `std::vector` which is faster for fixed-size arrays.
+4. Avoid using `std::endl`: `std::endl` not only adds a newline character but also flushes the output stream which is slower than just adding a newline character.
+5. Use a priority queue for optimizing the shortPhase function: Here, we are currently iterating over all edges for all vertices. Instead, we can use a priority queue to only process the edges for the vertex with the maximum score.
+
+Optimized Code Block:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+#define for_(i, a, b) for (int i = (a); i < (b); ++i)
+#define for_rev(i, a, b) for (int i = (a); i >= (b); --i)
+
+typedef vector<int> Ary;
+typedef vector<Ary> Mat;
+
+struct Edge {
+  int to, c;
+};
+
+// dp and prv are now std::array instead of std::vector
+array<array<int, 155>, 155> dp;
+array<array<int, 155>, 155> prv;
+
+void maxUpdate(int &a, int b) { a = max(a, b); }
+
+// pass b by reference to avoid copying
+void mul(Mat &res, const Mat &a, const Mat &b) {
+  int N = a.size();
+  res = a;
+  for_(i, 0, N) for_(j, 0, N) for_(k, 0, N) {
+    if (a[i][k] >= 0 && b[k][j] >= 0)
+      maxUpdate(res[i][j], a[i][k] + b[k][j]);
+  }
+}
+
+// Preallocating memory for vectors
+vector<vector<Edge>> adj(155);
+
+bool shortPhase() {
+  memset(dp.data(), -1, sizeof(dp));
+  memset(prv.data(), -1, sizeof(prv));
+  for_(v, 0, V) dp[0][v] = 0;
+  int max_score = -1, step = -1, terminal = -1;
+  for_(i, 0, 150) {
+    for_(v, 0, V) {
+      if (dp[i][v] == -1)
+        continue;
+      for (Edge e : adj[v]) {
+        if (dp[i + 1][e.to] < dp[i][v] + e.c) {
+          dp[i + 1][e.to] = dp[i][v] + e.c;
+          prv[i + 1][e.to] = v;
+          if (max_score < dp[i + 1][e.to]) {
+            max_score = dp[i + 1][e.to];
+            terminal = e.to;
+          }
+        }
+      }
+    }
+    if (max_score >= K) {
+      step = i + 1;
+      break;
+    }
+  }
+  if (max_score >= K) {
+    cout << step << '\n';  // replaced std::endl with '\n'
+    restore(step, terminal);
+    return true;
+  }
+  if (max_score == -1) {
+    cout << -1 << '\n';  // replaced std::endl with '\n'
+    return true;
+  }
+  return false;
+}
+
+// rest of the code remains the same
+```
+
+Please note that the priority queue optimization is not reflected in this code as it would require substantial changes to the shortPhase function.

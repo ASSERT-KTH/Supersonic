@@ -1,0 +1,11 @@
+The given code calculates the win rates of two players in a game by exhaustively iterating over all possible combinations of moves for both players. It uses nested loops to generate all possible permutations of the moves and keeps track of the win rates.
+
+However, the code can be optimized in several ways to improve its performance:
+
+1. **Avoid unnecessary calculations**: The code currently calculates the sum of the moves for each permutation of moves. Instead, we can calculate the sums incrementally as we generate the permutations, avoiding redundant calculations.
+
+2. **Avoid unnecessary memory allocation**: The code uses two arrays, `num` and `a`, to store the moves and sums. These arrays are allocated and deallocated in each iteration of the outermost loop. We can optimize this by allocating these arrays only once outside the loop.
+
+3. **Optimize loop structure**: The code uses nested loops to generate all possible permutations of the moves. This can be optimized by using a recursive approach or by using a more efficient algorithm to generate permutations.
+
+4. **Use more efficient data structures**: The code currently uses arrays to store the moves and sums. Using more efficient data structures like bitsets or bit manipulation can significantly reduce memory usage and improve performance.

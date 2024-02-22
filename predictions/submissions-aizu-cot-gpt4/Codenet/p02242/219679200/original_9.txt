@@ -1,0 +1,78 @@
+The code you provide essentially implements the Dijkstra's algorithm for shortest path in a graph. The main optimization can be done in the method `dijkstra` where the selection of the next node to visit is done via a linear search operation. This can be optimized using a priority queue. However, the constraints of the task do not allow completely altering the structure of the algorithm.
+
+Still, there are some smaller optimizations that can be done:
+1. The `visited` array is currently a local variable in the `dijkstra` function. This array is always the same size as the number of nodes, and can therefore be moved to be a member of the `Graph` class to avoid constant allocation and deallocation.
+
+2. The `dist` array and the `visited` array are both initialized with `std::fill_n` function, which has linear time complexity. This operation can be optimized by using the `std::fill` function instead, which utilizes memory block operations if possible and can be faster.
+
+3. We can also reduce the number of memory accesses by storing the result of `base_dist + es[j]` in a temporary variable.
+
+Here is the optimized version of the code:
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+using uint = unsigned int;
+class Graph {
+  const uint n_;
+  uint *const g_;
+  const uint INFINIT;
+  bool *visited;  // moved to class scope
+
+public:
+  Graph(uint n)
+      : n_(n), g_(new uint[(n_ * n_)]), INFINIT(100000 * (n_ - 1) + 1), visited(new bool[n_]) {
+    std::fill(g_, g_ + (n_ * n_), INFINIT);
+    std::fill(visited, visited + n_, false);
+  }
+  ~Graph() {
+    delete[] g_;
+    delete[] visited;
+  }
+  uint *operator[](uint i) const { return g_ + (n_ * i); }
+  void dijkstra(uint *dist) {
+    std::fill(dist, dist + n_, INFINIT);
+    auto i = 0u;
+    visited[i] = true;
+    dist[i] = 0u;
+    for (auto n = 0u; n < n_ - 1; ++n) {
+      auto cur_min = INFINIT;
+      auto es = (*this)[i];
+      auto base_dist = dist[i];
+      for (auto j = 0u; j < n_; ++j) {
+        if (visited[j])
+          continue;
+        auto temp = base_dist + es[j];  // store in a temporary variable
+        dist[j] = std::min(dist[j], temp);
+        if (cur_min > dist[j]) {
+          cur_min = dist[j];
+          i = j;
+        }
+      }
+      visited[i] = true;
+      dist[i] = cur_min;
+    }
+  }
+};
+
+int main() {
+  uint n;
+  std::scanf("%u", &n);
+  Graph g(n);
+  uint u, k, c, v;
+  for (auto i = 0u; i < n; ++i) {
+    std::scanf("%u %u", &u, &k);
+    for (auto j = 0u; j < k; ++j) {
+      std::scanf("%u %u", &c, &v);
+      g[u][c] = v;
+    }
+  }
+  uint dist[n];
+  g.dijkstra(dist);
+  for (auto i = 0u; i < n; ++i) {
+    std::printf("%u %u\n", i, dist[i]);
+  }
+}
+```
+
+Please note that these optimizations may not significantly improve the performance of the program, as the major bottleneck is the linear search in the Dijkstra's algorithm implementation, and the task constraints do not allow for a complete redesign of this component.

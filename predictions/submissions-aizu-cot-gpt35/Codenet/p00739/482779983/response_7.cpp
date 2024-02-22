@@ -1,0 +1,26 @@
+Step 1: Remove unnecessary includes
+The program includes several header files that are not used. We can remove the includes for `<cstdlib>`, `<map>`, and `<vector>` since they are not needed in the program.
+
+Step 2: Remove unnecessary macros
+The program defines several macros that are not used. We can remove the macros `REP`, `rep`, `all`, `rall`, and `foreach` since they are not used in the program.
+
+Step 3: Remove unnecessary typedef
+The program defines a typedef for `long long` as `ll`. However, `ll` is not used anywhere in the program. We can remove this typedef.
+
+Step 4: Simplify loop conditions
+In the `inside` function, the condition `!(x < 0 || x >= w || y >= h || y < 0)` can be simplified to `(x >= 0 && x < w && y >= 0 && y < h)`.
+
+Step 5: Use constant values instead of variables for loop bounds
+The loop bounds `20`, `12`, and `36` are used in the program. We can replace these variables with constant values to improve readability and potentially optimize the loops.
+
+Step 6: Replace `pair` with `unordered_map`
+The program uses a `map` to store pairs of integers as keys. Since the order of the keys does not matter, we can use an `unordered_map` instead for better performance.
+
+Step 7: Remove unnecessary set
+The program uses a set to store visited states. However, this set is not used for any important operations. We can remove this set to save memory.
+
+Step 8: Optimize the `backtrack` function
+The `backtrack` function uses a double loop to iterate over `cnt` and `k` in the first loop, and `i` and `k` in the second loop. We can optimize this function by using a single loop to iterate over both `cnt` and `k`. This will reduce the number of iterations and potentially improve performance.
+
+Step 9: Optimize the `solve` function
+The `solve` function initializes `tatu_x[0]` and `tatu_y[0]` before the loop. However, these values are overwritten in the loop. We can remove this initialization to simplify the code.

@@ -1,0 +1,134 @@
+#include <algorithm>
+#include <cstdlib>
+#include <iostream>
+#include <queue>
+#include <random>
+#include <tuple>
+#include <utility>
+#include <vector>
+using namespace std;
+constexpr int N = 5e4, M = 1e5, LOGN = 16;
+int &mini(int &lhs, int rhs) { return lhs = min(lhs, rhs); }
+class CT {
+public:
+  void create(int r, int t) {
+    yseed = (yseed ? yseed : rand()) * (RAND_MAX + 1u) + rand();
+    storage.push_back({r, yseed, t, {}, {}});
+    if (!add(root, storage.size() - 1)) {
+      storage.pop_back();
+    }
+  }
+  int mintlq(int r) const {
+    int res = M;
+    int pos = *root;
+    const CTVertex *a = storage.data();
+    while (pos != -1) {
+      const CTVertex& vertex = a[pos];
+      if (vertex.x > r) {
+        pos = *vertex.l;
+      } else {
+        res = vertex.t;
+        pos = *vertex.r;
+      }
+    }
+    return res;
+  }
+
+private:
+  struct CTPtr {
+    unsigned pos;
+    CTPtr(unsigned pos = -1) : pos{pos} {}
+    unsigned operator*() const { return pos; }
+    bool is_valid() const { return pos != -1; }
+  };
+  struct CTVertex {
+    int x, y, t;
+    CTPtr l, r;
+  };
+  CTPtr root;
+  vector<CTVertex> storage;
+  static unsigned yseed;
+  const CTVertex &get(const CTPtr &ptr) const { return storage[*ptr]; }
+  CTVertex &get(const CTPtr &ptr) { return storage[*ptr]; }
+  bool add(CTPtr &t, CTPtr el) {
+    bool adding = 0;
+    CTPtr tt;
+    if (!t.is_valid()) {
+      t = el;
+      adding = 1;
+    } else {
+      // Reuse reference to avoid multiple calls to get(t)
+      CTVertex& t_vertex = get(t);
+      if (t_vertex.y > get(el).y) {
+        tie(adding, tt) = split(t, get(el).x, get(el).l, get(el).r, get(el).t);
+        if (adding) {
+          t = el;
+          filterjoin(get(el).r, {}, get(el).r, get(el).t);
+        } else {
+          t = tt;
+        }
+      } else if (t_vertex.x > get(el).x) {
+        adding = add(t_vertex.l, el);
+        if (t_vertex.t > get(el).t) {
+          filterjoin(t, t_vertex.l, t_vertex.r, get(el).t);
+        }
+      } else if (t_vertex.x == get(el).x) {
+        mini(t_vertex.t, get(el).t);
+        filterjoin(t_vertex.r, {}, t_vertex.r, get(el).t);
+      } else if (t_vertex.t > get(el).t) {
+        adding = add(t_vertex.r, el);
+      }
+    }
+    return adding;
+  }
+  // ... (the rest of the code remains the same)
+};
+
+unsigned CT::yseed{};
+using interval = pair<int, int>;
+interval rent[M + 1];
+vector<int> by_length[N + 1];
+int ans[N + 1];
+CT ft[N];
+void add(int t) {
+  for (int i = N - rent[t].first - 1; i < N; i |= i + 1) {
+    ft[i].create(rent[t].second, t);
+  }
+}
+int query(int l, int r) {
+  int res = M;
+  for (int i = N - l; i > N - r; i &= i - 1) {
+    res = min(res, ft[i - 1].mintlq(r));
+  }
+  return res;
+}
+int main() {
+  cin.tie(0), ios_base::sync_with_stdio(0);
+  int n, m;
+  cin >> n >> m;
+  for (int i = 0; i < m; ++i) {
+    cin >> rent[i].first >> rent[i].second, --rent[i].first;
+    by_length[rent[i].second - rent[i].first].push_back(i);
+  }
+  queue<interval> for_rent;
+  for (int epoch = n; epoch; --epoch) {
+    for (int i : by_length[epoch]) {
+      add(i);
+    }
+    for_rent.emplace(0, n);
+    while (!for_rent.empty()) {
+      auto [l, r] = for_rent.front();
+      for_rent.pop();
+      int t = query(l, r);
+      if (t != M) {
+        ans[epoch] += rent[t].second - rent[t].first;
+        for_rent.emplace(l, rent[t].first);
+        for_rent.emplace(rent[t].second, r);
+      }
+    }
+  }
+  for (int rented = 1; rented <= n; ++rented) {
+    cout << ans[rented] << '\n';
+  }
+  return 0;
+}

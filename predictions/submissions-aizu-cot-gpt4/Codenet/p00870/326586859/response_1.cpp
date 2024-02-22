@@ -1,0 +1,91 @@
+#include <bits/stdc++.h>
+using namespace std;
+#define rep(i, x, y) for (int i = (x); i < (y); ++i)
+#define debug(x) #x << "=" << (x)
+#ifdef DEBUG
+#define _GLIBCXX_DEBUG
+#define print(x) std::cerr << debug(x) << " (L:" << __LINE__ << ")" << std::endl
+#else
+#define print(x)
+#endif
+const int inf = 1e9;
+const int64_t inf64 = 1e18;
+const double eps = 1e-9;
+template <typename T> ostream &operator<<(ostream &os, const vector<T> &vec) {
+  os << "[";
+  for (const auto &v : vec) {
+    os << v << ",";
+  }
+  os << "]";
+  return os;
+}
+void solve(int n, int m, vector<string> &e, string &ts) {
+  int concatenated_len = 0;
+  rep(i, 0, n) {
+    concatenated_len += e[i].size();
+  }
+  vector<int> sum_len(1 << n);
+  static bool p[5000][1 << 12];
+  fill_n((bool *)p, 5000 * (1 << 12), false);
+  vector<vector<int>> heads(ts.size());
+  rep(i, 0, ts.size()) p[i][0] = true;
+  rep(i, 0, ts.size()) {
+    rep(j, 0, n) {
+      if (i + e[j].size() > ts.size() or e[j] != ts.substr(i, e[j].size()))
+        continue;
+      p[i][1 << j] = true;
+      heads[i].push_back(j);
+    }
+  }
+  int ans = 0;
+  for (int i = ts.size() - 1; i >= 0; --i) {
+    rep(j, 1, 1 << n) {
+      if (p[i][j])
+        continue;
+      if (sum_len[j] == 0) {
+        rep(k, 0, n) {
+          if (((j >> k) & 1) == 0)
+            continue;
+          sum_len[j] += e[k].size();
+        }
+      }
+      if (i + sum_len[j] > ts.size())
+        continue;
+      for (int k : heads[i]) {
+        if (((j >> k) & 1) == 0)
+          continue;
+        int i2 = i + e[k].size();
+        if (p[i2][j & (~(1 << k))]) {
+          p[i][j] = true;
+          break;
+        }
+      }
+    }
+    if (p[i][(1 << n) - 1])
+      ++ans;
+  }
+  cout << ans << endl;
+}
+int main() {
+  std::cin.tie(0);
+  std::ios::sync_with_stdio(false);
+  cout.setf(ios::fixed);
+  cout.precision(10);
+  for (;;) {
+    int n, m;
+    cin >> n >> m;
+    if (n == 0 and m == 0)
+      break;
+    vector<string> e(n);
+    string ts;
+    for(auto &s : e)
+      cin >> s;
+    for(int i = 0; i < m; i++){
+      string t;
+      cin >> t;
+      ts += t;
+    }
+    solve(n, m, e, ts);
+  }
+  return 0;
+}

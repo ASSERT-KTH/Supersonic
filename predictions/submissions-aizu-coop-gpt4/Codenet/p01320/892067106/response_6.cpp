@@ -1,0 +1,27 @@
+This is a complex geometric-based code, so the key areas we can optimize are:
+
+1. **Memory Usage**: There are many vectors created in the code, which can take up a lot of memory. We should look to minimize the size of these vectors or find alternatives with lower memory footprints.
+
+2. **Data Structures**: We should examine the data structures used in the code to see if there are more efficient alternatives. For instance, the code uses vectors extensively, which are not always the most efficient data structure, especially when the size of the data is known in advance.
+
+3. **Redundant Computations**: There might be computations or operations that are being repeated multiple times. If we can identify these, we can store the result and reuse it, instead of recalculating it each time.
+
+4. **Loop Optimizations**: The code uses a lot of loops. We can look into unrolling some of these loops to improve performance.
+
+5. **Code Refactoring**: We can look into refactoring the code to make it more readable and maintainable. This will make it easier to identify potential performance bottlenecks and areas for optimization.
+
+6. **Utilizing Compiler Optimizations**: Modern C++ compilers can often optimize the code better if given the right hints. Using `#pragma` directives or compiler flags can help the compiler to produce more efficient code.
+
+Here's how we will optimize:
+
+1. For **Memory Usage**, we'll examine the vectors to see if any of them can be replaced with arrays or other data structures with a smaller memory footprint. We'll also look into using `reserve()` before `push_back()` to minimize reallocations.
+
+2. For **Data Structures**, we'll look into alternatives to vectors, such as arrays or `std::array`, and potentially more efficient data structures like `std::deque` or `std::list` for certain operations.
+
+3. For **Redundant Computations**, we'll identify repeated calculations and store their results in variables for reuse. 
+
+4. For **Loop Optimizations**, we'll look into unrolling loops where possible and using `#pragma` directives to give hints to the compiler to vectorize or parallelize loops.
+
+5. For **Code Refactoring**, we'll restructure the code to make it more readable and maintainable. This will help us identify potential performance bottlenecks and areas for optimization.
+
+6. For **Compiler Optimizations**, we'll use `-O2` or `-O3` optimization flags during compilation to make the compiler optimize the code further.

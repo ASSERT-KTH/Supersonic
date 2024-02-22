@@ -1,0 +1,85 @@
+#include <algorithm>
+#include <ios>
+#include <iostream>
+#include <numeric>
+#include <queue>
+#include <vector>
+using namespace std;
+
+struct Node {
+  int depth;
+  int below;
+};
+
+void compute_depth(int u, int p, const vector<int>& children, vector<Node>& nodes) {
+  int depth = nodes[u].depth;
+  for (int i = children[u]; i != -1; i = children[i]) {
+    int v = i;
+    if (v != p) {
+      nodes[v].depth = depth + 1;
+      compute_depth(v, u, children, nodes);
+    }
+  }
+}
+
+void compute_below(int u, int p, const vector<int>& children, vector<Node>& nodes) {
+  int below = nodes[u].below;
+  for (int i = children[u]; i != -1; i = children[i]) {
+    int v = i;
+    if (v != p) {
+      compute_below(v, u, children, nodes);
+      below += nodes[v].below + 1;
+    }
+  }
+  nodes[u].below = below;
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(nullptr);
+  
+  int n, k;
+  cin >> n >> k;
+  
+  vector<int> children(n, -1);
+  vector<int> edges(2 * (n - 1));
+  vector<Node> nodes(n);
+  
+  for (int i = 0; i < n - 1; ++i) {
+    int u, v;
+    cin >> u >> v;
+    --u;
+    --v;
+    
+    edges[2 * i] = v;
+    edges[2 * i + 1] = children[u];
+    children[u] = 2 * i;
+    
+    edges[2 * (n - 1) + 2 * i] = u;
+    edges[2 * (n - 1) + 2 * i + 1] = children[v];
+    children[v] = 2 * (n - 1) + 2 * i;
+  }
+  
+  nodes[0].depth = 0;
+  compute_depth(0, -1, children, nodes);
+  compute_below(0, -1, children, nodes);
+  
+  priority_queue<int, vector<int>, greater<int>> pq;
+  for (int i = 0; i < n; ++i) {
+    int score = nodes[i].depth - nodes[i].below;
+    if (pq.size() < k) {
+      pq.push(score);
+    } else if (score > pq.top()) {
+      pq.pop();
+      pq.push(score);
+    }
+  }
+  
+  long long sum = 0;
+  while (!pq.empty()) {
+    sum += pq.top();
+    pq.pop();
+  }
+  
+  cout << sum << '\n';
+}

@@ -1,0 +1,83 @@
+This code reads a set of relations between items and then creates groups based on these relations. After that, it responds to queries to check if two items belong to the same group or not. Here are some areas where we can optimize the code:
+
+1. **Inefficient data structures**: The program uses `vector<int>* V` to store the relations, `int* num_of_each` to store the number of relations for each item, and `int* group` to store the group number of each item. These are C-style arrays, which are not recommended in C++. We should use `std::vector` instead.
+
+2. **Redundant computations**: The size of the vector `V[i]` is calculated every time we go through the `for` loop in the `makeGroup()` method. This is unnecessary and we can store the size in a variable before the loop.
+
+3. **Unoptimized loops**: In the `makeGroup()` method, there are nested loops. The outer loop is infinite and the inner loop iterates until the queue is empty. After that, another loop is used to check the group of each item. This is inefficient and we can simplify it by using a single loop until all items have been assigned a group.
+
+4. **Unnecessary operations**: The `push` method updates `num_of_each` every time a relation is added. But this is not necessary because the size of `V[i]` is equal to `num_of_each[i]`.
+
+Here is the optimized code:
+
+```cpp
+#include <algorithm>
+#include <queue>
+#include <stdio.h>
+#include <vector>
+using namespace std;
+class Relation {
+public:
+  Relation(int tmp_n, int tmp_m) : n(tmp_n), m(tmp_m), group_number(1), V(tmp_n), group(tmp_n, 0) {}
+  
+  void push(int s, int t) {
+    V[s].push_back(t);
+    V[t].push_back(s);
+  }
+  
+  void makeGroup() {
+    queue<int> Q;
+    Q.push(0);
+    group[0] = 1;
+    while (!Q.empty()) {
+      int node = Q.front();
+      Q.pop();
+      int num = V[node].size();
+      for (int k = 0; k < num; k++) {
+        if (group[V[node][k]] == 0) {
+          group[V[node][k]] = group[node];
+          Q.push(V[node][k]);
+        }
+      }
+      if (Q.empty()) {
+        auto it = find(group.begin(), group.end(), 0);
+        if (it != group.end()) {
+          group_number++;
+          *it = group_number;
+          Q.push(distance(group.begin(), it));
+        }
+      }
+    }
+  }
+  
+  bool canAccsess(int s, int t) { return group[s] == group[t]; }
+
+private:
+  vector<vector<int>> V;
+  vector<int> group;
+  int group_number;
+  int n, m;
+};
+int main() {
+  int n, m, s, t, q;
+  scanf("%d %d", &n, &m);
+  Relation relation(n, m);
+  for (int i = 0; i < m; i++) {
+    scanf("%d %d", &s, &t);
+    relation.push(s, t);
+  }
+  relation.makeGroup();
+  scanf("%d", &q);
+  for (int i = 0; i < q; i++) {
+    scanf("%d %d", &s, &t);
+    if (relation.canAccsess(s, t)) {
+      printf("yes\n");
+    } else {
+      printf("no\n");
+    }
+  }
+  return 0;
+}
+```
+
+The optimized code uses `std::vector` for dynamic arrays and reduces redundant computations and unnecessary operations. The `makeGroup()` method is simplified by using a single loop until all items have been assigned a group. Also, the `push` method is simplified by removing the update of `num_of_each`. The functionality of the program remains the same.

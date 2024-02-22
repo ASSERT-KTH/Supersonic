@@ -1,0 +1,138 @@
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <unordered_set>
+
+using namespace std;
+
+typedef long long ll;
+typedef pair<ll, ll> ii;
+typedef vector<ll> poly;
+
+const ll MAXN = 1 << 20;
+
+vector<ll> pr;
+vector<bool> can(MAXN);
+unordered_set<ll> g[MAXN];
+
+void SieveOfEratosthenes() {
+    vector<ll> lp(MAXN + 1);
+    for (ll i = 2; i <= MAXN; i++) {
+        if (lp[i] == 0) {
+            lp[i] = i;
+            pr.emplace_back(i);
+        }
+        for (ll j = 0; j < pr.size() && pr[j] <= lp[i] && i * pr[j] <= MAXN; ++j)
+            lp[i * pr[j]] = pr[j];
+    }
+}
+
+void div_rec(vector<ll>& r, vector<pair<ll, ll>>& f, ll k, ll c) {
+    if (k == f.size()) {
+        r.emplace_back(c);
+        return;
+    }
+    for (ll i = 0; i <= f[k].second; i++) {
+        div_rec(r, f, k + 1, c);
+        c *= f[k].first;
+    }
+}
+
+poly multiply(poly& p1, poly& p2) {
+    ll n = p1.size() + p2.size() + 1;
+    ll m = 1, cnt = 0;
+    while (m <= n) {
+        m += m;
+        cnt++;
+    }
+    vector<ll> R(m);
+    for (ll i = 0; i < m; i++) {
+        R[i] = 0;
+        for (ll j = 0; j < cnt; j++) {
+            R[i] = (R[i] << 1) | ((i >> j) & 1);
+        }
+    }
+    vector<ii> cp1(m), cp2(m);
+    for (ll i = 0; i < p1.size(); i++) {
+        cp1[i] = p1[i];
+    }
+    for (ll i = 0; i < p2.size(); i++) {
+        cp2[i] = p2[i];
+    }
+    dft(cp1, m, false);
+    dft(cp2, m, false);
+    for (ll i = 0; i < m; i++) {
+        cp1[i] = cp1[i] * cp2[i];
+    }
+    dft(cp1, m, true);
+    poly res;
+    n -= 2;
+    for (ll i = 0; i < n; i++) {
+        res.emplace_back((ll)floor(cp1[i].real() + 0.5));
+    }
+    return res;
+}
+
+void solve() {
+    SieveOfEratosthenes();
+    ll n, x, y;
+    cin >> n >> x >> y;
+    ll OFFSET = x;
+    poly l(2 * OFFSET + 1), r(2 * OFFSET + 1);
+    for (ll i = 0; i <= n; i++) {
+        ll X;
+        cin >> X;
+        l[X + OFFSET]++;
+        r[-X + OFFSET]++;
+    }
+    poly p = multiply(l, r);
+    for (ll i = 0; i < 2 * OFFSET; i++) {
+        if (i + 2 * OFFSET < p.size() && p[i + 2 * OFFSET]) {
+            can[i] = true;
+        }
+    }
+    ll q;
+    cin >> q;
+    vector<ll> res(q, -1);
+    for (ll i = 0; i < q; i++) {
+        ll X;
+        cin >> X;
+        if (g[X].empty()) {
+            ll it = X;
+            vector<pair<ll, ll>> aux;
+            while (it != 1) {
+                if (aux.empty() || aux.back().first != pr[it]) {
+                    aux.emplace_back(pr[it], 1);
+                } else {
+                    aux.back().second++;
+                }
+                it /= pr[it];
+            }
+            div_rec(g[X], aux, 0, 1);
+        }
+        for (ll j : g[X]) {
+            ll need = j - 2 * y;
+            if (need <= 0 || need % 2) {
+                continue;
+            }
+            if (can[need / 2]) {
+                res[i] = max(res[i], j);
+            }
+        }
+    }
+    for (ll i = 0; i < q; i++) {
+        cout << res[i];
+        if (i != q - 1) {
+            cout << ' ';
+        }
+    }
+    cout << endl;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+    solve();
+    return 0;
+}

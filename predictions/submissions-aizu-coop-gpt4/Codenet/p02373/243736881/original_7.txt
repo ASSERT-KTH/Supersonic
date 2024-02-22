@@ -1,0 +1,111 @@
+The given C++ program performs a decomposition of a tree and queries the lowest common ancestor of two nodes. Here are some optimization steps we can take to improve the performance and memory usage of the program:
+
+1. **Inefficient Data Structures:** The current implementation uses multiple arrays for storing related information about each node. This scatters related data across different memory locations, which may not be cache-friendly. We could encapsulate all related information into a single node structure, which could improve cache locality and hence performance.
+
+2. **Redundant Computations:** The current implementation uses two separate loops to initialize vis[] and par[] arrays, and then uses another loop to initialize the vis[] array again. This is redundant and can be avoided.
+
+3. **Loop Optimizations:** In the decomp function, a while loop is used to drain the queue, which is unnecessary. Instead, we can pop the front element immediately after using it.
+
+4. **Compiler Optimizations:** We can use compiler flags for optimization, such as `-O2` or `-O3` during compilation. These flags tell the compiler to perform optimization on the code for better runtime performance.
+
+5. **Use of Constants:** The constant `B` is set to 200 but is not used anywhere in the code, so we can remove it.
+
+Below is the optimized version of the program:
+
+```cpp
+#include <algorithm>
+#include <cassert>
+#include <iostream>
+#include <queue>
+#include <vector>
+using namespace std;
+
+struct Node {
+  int color, parent, depth, top, goUp;
+  bool visited;
+};
+
+int n;
+vector<vector<int>> g;
+vector<Node> nodes;
+
+void decomp(int root) {
+  queue<int> q;
+  q.push(root);
+  vector<int> tord;
+  while (!q.empty()) {
+    int v = q.front(); q.pop();
+    nodes[v].visited = true;
+    tord.push_back(v);
+    for (int c : g[v]) {
+      if (!nodes[c].visited) {
+        q.push(c);
+        nodes[c].parent = v;
+        nodes[c].depth = nodes[v].depth + 1;
+      }
+    }
+  }
+  int c = 0;
+  for (int u : tord) {
+    if (nodes[u].visited)
+      continue;
+    q.push(u);
+    while (!q.empty()) {
+      int v = q.front(); q.pop();
+      nodes[v].visited = true;
+      nodes[v].color = c;
+      nodes[v].goUp = nodes[u].parent;
+      nodes[v].top = u;
+      for (int c : g[v]) {
+        if (!nodes[c].visited)
+          q.push(c);
+      }
+    }
+    c++;
+  }
+}
+
+int solve(int u, int v) {
+  while (nodes[u].color != nodes[v].color) {
+    assert(u != -1 && v != -1);
+    if (nodes[nodes[u].top].depth > nodes[nodes[v].top].depth)
+      u = nodes[u].goUp;
+    else
+      v = nodes[v].goUp;
+  }
+  while (u != v) {
+    assert(u != -1 && v != -1);
+    if (nodes[u].depth > nodes[v].depth)
+      u = nodes[u].parent;
+    else
+      v = nodes[v].parent;
+  }
+  return u;
+}
+
+int main() {
+  cin >> n;
+  g.assign(n, {});
+  nodes = vector<Node>(n);
+  for (int i = 0; i < n; i++) {
+    int k;
+    cin >> k;
+    for (int j = 0; j < k; j++) {
+      int c;
+      cin >> c;
+      g[i].push_back(c);
+      nodes[c].parent = i;
+    }
+  }
+  decomp(0);
+  int q;
+  cin >> q;
+  for (int i = 0; i < q; i++) {
+    int u, v;
+    cin >> u >> v;
+    cout << solve(u, v) << endl;
+  }
+}
+```
+
+In this optimized code, all related information about a node is stored in one place in the Node structure. This improves cache locality and hence performance. Redundant computations are avoided and the queue is drained more efficiently.

@@ -1,0 +1,179 @@
+Code Analysis:
+
+1. The code includes a large number of unnecessary header files that are not used in the program. This can potentially slow down the compilation process.
+
+2. The code uses a lot of macros for common operations, such as looping and debugging. While macros can improve code readability, excessive use of macros can make the code harder to understand and maintain.
+
+3. The code includes a lot of unused functions and variables, such as `toStr()`, `toBinStr()`, and `random_gen()`. These unused parts should be removed to improve code clarity.
+
+4. The code uses a `DisjointSet` data structure to find a minimum spanning tree (MST) of a graph. However, the implementation of the `DisjointSet` is not optimized and can be improved for better efficiency.
+
+5. The code performs unnecessary sorting of the adjacency list of node 1. The sorting is done based on the degree of the nodes in non-increasing order. However, this sorting is not necessary for finding the MST.
+
+6. The code uses a set of pairs (`MST`) to store the edges of the MST. This can be replaced with a vector of pairs to improve memory usage.
+
+7. The code uses recursive depth-first search (DFS) to build the MST. This can be optimized by using an iterative approach or using tail recursion.
+
+Optimization Strategy:
+
+1. Remove unnecessary header files: Remove the unnecessary header files that are not used in the program to improve compilation time.
+
+2. Remove unused functions and variables: Remove the unused functions and variables to improve code clarity.
+
+3. Optimize the DisjointSet data structure: Optimize the implementation of the DisjointSet data structure to improve efficiency.
+
+4. Remove unnecessary sorting: Remove the sorting of the adjacency list of node 1, as it is not necessary for finding the MST.
+
+5. Replace set with vector for MST: Replace the set of pairs with a vector of pairs to improve memory usage.
+
+6. Optimize the MST construction: Optimize the MST construction algorithm by using an iterative approach or tail recursion.
+
+Optimized Code Block:
+
+```
+#pragma comment(linker, "/stack:200000000")
+#pragma GCC optimize("Ofast,no-stack-protector")
+#pragma GCC target("avx")
+#include <algorithm>
+#include <iostream>
+#include <vector>
+using namespace std;
+
+const int MAXN = 2e5 + 100;
+
+struct DisjointSet {
+    vector<int> parent;
+    vector<int> rank;
+
+    DisjointSet(int n) {
+        parent.resize(n);
+        rank.resize(n);
+        for (int i = 0; i < n; ++i) {
+            make(i);
+        }
+    }
+
+    void make(int u) {
+        parent[u] = u;
+        rank[u] = 0;
+    }
+
+    int find(int u) {
+        if (parent[u] == u) return u;
+        return parent[u] = find(parent[u]);
+    }
+
+    void merge(int u, int v) {
+        u = find(u);
+        v = find(v);
+        if (u == v) return;
+        if (rank[u] < rank[v]) {
+            parent[u] = v;
+        } else if (rank[u] > rank[v]) {
+            parent[v] = u;
+        } else {
+            parent[v] = u;
+            ++rank[u];
+        }
+    }
+};
+
+int main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+
+    int n, m, k;
+    cin >> n >> m >> k;
+
+    vector<int> deg(n + 1);
+    vector<bool> chose(n + 1, false);
+    vector<int> par(n + 1, -1);
+    vector<vector<int>> g(n + 1), g_MST(n + 1);
+    vector<pair<int, int>> edge;
+
+    while (m--) {
+        int u, v;
+        cin >> u >> v;
+        g[u].push_back(v);
+        g[v].push_back(u);
+        ++deg[u];
+        ++deg[v];
+        edge.emplace_back(u, v);
+    }
+
+    if (deg[1] < k) {
+        cout << "NO";
+        return 0;
+    }
+
+    int cnt = 0;
+    for (auto v : g[1]) {
+        if (deg[v] == 1) {
+            ++cnt;
+        }
+    }
+
+    if (cnt > k) {
+        cout << "NO";
+        return 0;
+    }
+
+    DisjointSet dsu(n + 1);
+
+    for (auto v : g[1]) {
+        if (deg[v] == 1) {
+            dsu.merge(1, v);
+            g_MST[1].push_back(v);
+            chose[v] = true;
+        }
+    }
+
+    for (auto v : g[1]) {
+        if (deg[v] == 1) {
+            continue;
+        }
+        if (dsu.find(1) != dsu.find(v)) {
+            dsu.merge(1, v);
+            g_MST[1].push_back(v);
+            chose[v] = true;
+            ++cnt;
+            if (cnt == k) {
+                break;
+            }
+        }
+    }
+
+    for (auto E : edge) {
+        int u = E.first;
+        int v = E.second;
+        if (u == 1 || v == 1) {
+            continue;
+        }
+        if (dsu.find(u) != dsu.find(v)) {
+            dsu.merge(u, v);
+            g_MST[u].push_back(v);
+            g_MST[v].push_back(u);
+        }
+    }
+
+    if (cnt > k || g_MST[1].size() < n - 1) {
+        cout << "NO";
+        return 0;
+    }
+
+    if (cnt == k) {
+        cout << "YES" << endl;
+        for (int u = 1; u <= n; ++u) {
+            for (auto v : g_MST[u]) {
+                if (u < v) {
+                    cout << u << " " << v << endl;
+                }
+            }
+        }
+        return 0;
+    }
+
+    int root = 1;
+    par[root] = root;
+
+    for (auto v : g[1]) {

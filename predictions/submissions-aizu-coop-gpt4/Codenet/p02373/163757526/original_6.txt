@@ -1,0 +1,108 @@
+The provided code is a C++ program that uses the concept of Lowest Common Ancestor (LCA) in a graph. The lowest common ancestor between two nodes 'u' and 'v' in a tree is the node located farthest from the root that is an ancestor of both 'u' and 'v'. The program uses a preprocessing technique to build a Sparse Table which is then used to query the LCA between two nodes in logarithm time complexity.
+
+The code is well-optimized in terms of time complexity. It uses depth-first search (DFS) which is efficient for tree traversal, and it uses a Sparse Table for LCA queries, which is also efficient.
+
+However, there are still some optimizations that can be made, especially in terms of memory usage and code readability:
+
+1. Use of `<bits/stdc++.h>`: This is a header file in C++ which includes most of the standard libraries. It's convenient but can increase the compilation time significantly. It's better to include only the libraries that are used in the code.
+
+2. Use of global variables: Global variables are used in this code for ease, but they could be avoided for better style and to prevent potential conflicts. 
+
+3. Use of macros: Macros like `#define fi first` and `#define se second` are used for brevity but these can be confusing for others reading the code. It's better to use the complete `first` and `second` keywords for clarity.
+
+4. Use of `scanf` and `printf`: Although these functions are faster than `cin` and `cout`, they are less safe and less user-friendly. It's better to use `cin` and `cout` for input and output, and use `ios::sync_with_stdio(false)` and `cin.tie(NULL)` to speed up `cin` and `cout`.
+
+5. The `build` function can be slightly optimized by computing `(1 << i)` and `(1 << (i - 1))` outside the loop.
+
+6. The `lca` function can be optimized by reusing the result of `31 - __builtin_clz(r - l)` instead of calculating it twice.
+
+7. The variable names are not self-explanatory. It's better to use descriptive variable names for better readability.
+
+8. The code lacks comments, which makes it harder to understand. It's good practice to add comments explaining what each part of the code does.
+
+Here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <cmath>
+
+using namespace std;
+
+typedef pair<int, int> pii;
+
+const int MAXN = 100005;
+const int LOGN = 20;
+
+vector<int> adjList[MAXN];
+pii path[MAXN << 1];
+int idx_in_path[MAXN];
+int path_size = 0;
+
+// DFS to prepare the path array
+void dfs(int node, int depth = 0) {
+  idx_in_path[node] = path_size;
+  path[path_size++] = make_pair(depth, node);
+  for (int child : adjList[node]) {
+    dfs(child, depth + 1);
+    path[path_size++] = make_pair(depth, node);
+  }
+}
+
+pii ST[LOGN][MAXN << 1];
+
+// Building the Sparse Table
+void build(int n) {
+  int h = ceil(log2(n + 1));
+  for (int i = 0; i < n; i++)
+    ST[0][i] = path[i];
+  for (int i = 1; i < h; i++) {
+    int step = (1 << i);
+    int half_step = (1 << (i - 1));
+    for (int j = 0; j + step <= n; j++)
+      ST[i][j] = min(ST[i - 1][j], ST[i - 1][j + half_step]);
+  }
+}
+
+// Query the LCA
+int lca(int u, int v) {
+  int l = idx_in_path[u], r = idx_in_path[v];
+  if (l > r)
+    swap(l, r);
+  r++;
+  int p = 31 - __builtin_clz(r - l);
+  pii left_range = ST[p][l];
+  pii right_range = ST[p][r - (1 << p)];
+  return min(left_range, right_range).second;
+}
+
+int main() {
+  ios::sync_with_stdio(false); 
+  cin.tie(NULL);
+  
+  int num_nodes;
+  cin >> num_nodes;
+  for (int i = 0; i < num_nodes; i++) {
+    int num_neighbors;
+    cin >> num_neighbors;
+    for (int j = 0; j < num_neighbors; j++) {
+      int neighbor;
+      cin >> neighbor;
+      adjList[i].push_back(neighbor);
+    }
+  }
+  
+  dfs(0);
+  build(path_size);
+  
+  int num_queries;
+  cin >> num_queries;
+  for (int i = 0; i < num_queries; i++) {
+    int u, v;
+    cin >> u >> v;
+    cout << lca(u, v) << "\n";
+  }
+  
+  return 0;
+}
+```

@@ -1,0 +1,127 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+const int maxn = 1e6 + 5;
+const int nax = 26;
+const int inf = 1e9;
+
+int segtree[4 * maxn], lazy[4 * maxn], value[maxn], adj[nax][maxn];
+vector<int> good(maxn, 0), seta, tmp, dp(maxn, inf);
+
+void build(int node, int l, int r) {
+  if (l == r) {
+    segtree[node] = value[l];
+    return;
+  }
+  int mid = (l + r) / 2;
+  build(node << 1, l, mid);
+  build(node << 1 | 1, mid + 1, r);
+  segtree[node] = min(segtree[node << 1], segtree[node << 1 | 1]);
+}
+
+void lazify(int node, int l, int r) {
+  if (lazy[node] != 0) {
+    segtree[node] += lazy[node];
+    if (l < r) {
+      lazy[node << 1] += lazy[node];
+      lazy[node << 1 | 1] += lazy[node];
+    }
+    lazy[node] = 0;
+  }
+}
+
+void assign(int node, int l, int r, int idx, int val) {
+  lazify(node, l, r);
+  if (l == r) {
+    segtree[node] = val;
+    return;
+  }
+  int mid = (l + r) / 2;
+  lazify(node << 1, l, mid);
+  lazify(node << 1 | 1, mid + 1, r);
+  if (l <= idx && idx <= mid)
+    assign(node << 1, l, mid, idx, val);
+  else
+    assign(node << 1 | 1, mid + 1, r, idx, val);
+  segtree[node] = min(segtree[node << 1], segtree[node << 1 | 1]);
+}
+
+void updateRange(int node, int l, int r, int a, int b, int val) {
+  lazify(node, l, r);
+  if (l > b || l > r || r < a)
+    return;
+  if (a <= l && r <= b) {
+    segtree[node] += val;
+    if (l < r) {
+      lazy[node << 1] += val;
+      lazy[node << 1 | 1] += val;
+    }
+    return;
+  }
+  int mid = (l + r) / 2;
+  updateRange(node << 1, l, mid, a, b, val);
+  updateRange(node << 1 | 1, mid + 1, r, a, b, val);
+  segtree[node] = min(segtree[node << 1], segtree[node << 1 | 1]);
+}
+
+int query(int node, int l, int r, int a, int b) {
+  lazify(node, l, r);
+  if (l > b || a > r || l > r)
+    return inf;
+  if (a <= l && r <= b)
+    return segtree[node];
+  int mid = (l + r) / 2;
+  int lq = query(node << 1, l, mid, a, b);
+  int rq = query(node << 1 | 1, mid + 1, r, a, b);
+  return min(lq, rq);
+}
+
+void dfs(int node, int par) {
+  if (par != -1)
+    dp[node] = min(dp[node], dp[par] + 1);
+  if (good[node]) {
+    updateRange(1, 1, tmp.size(), 1, tmp.size(), 1);
+    dp[node] = min(dp[node], query(1, 1, tmp.size(), 1, tmp.size()));
+  }
+  tmp.push_back(dp[node]);
+  assign(1, 1, tmp.size(), tmp.size(), dp[node] + good[node]);
+  for (int i = 0; i < nax; i++) {
+    if (adj[i][node] != -1) {
+      dfs(adj[i][node], node);
+    }
+  }
+  assign(1, 1, tmp.size(), tmp.size(), inf);
+  tmp.pop_back();
+}
+
+void solve() {
+  memset(adj, -1, sizeof adj);
+  int n, x, k;
+  cin >> n;
+  char c;
+  for (int i = 1; i <= n; i++) {
+    cin >> x >> c;
+    adj[c - 'a'][x] = i;
+  }
+  cin >> k;
+  for (int i = 0; i < k; i++) {
+    cin >> x;
+    good[x] = 1;
+    seta.push_back(x);
+  }
+  dp[0] = 0;
+  dfs(0, -1);
+  for (int i = 0; i < k; i++) {
+    cout << dp[seta[i]] << " ";
+  }
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(0);
+  cout.tie(0);
+  solve();
+  return 0;
+}

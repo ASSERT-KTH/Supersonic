@@ -1,0 +1,136 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cmath>
+
+using namespace std;
+
+const int MAXN = 400002;
+
+int a;
+vector<int> l[MAXN];
+int skok[MAXN], o[MAXN], zam[MAXN], GR[MAXN][2], mxd[MAXN], mxp[MAXN], dp[MAXN][2], sz[MAXN], good[MAXN];
+vector<int> gd, bd;
+
+int CALC(int v, int p, int D) {
+  mxd[v] = 1;
+  sz[v] = 1;
+  int c1 = 0, c2 = 0;
+  for (int h : l[v]) {
+    if (h == p)
+      continue;
+    int x = CALC(h, v, D + 1);
+    mxd[v] = max(mxd[v], x + 1);
+    sz[v] += sz[h];
+    if (x >= c1)
+      c2 = c1, c1 = x;
+    else if (x > c2)
+      c2 = x;
+  }
+  mxp[v] = c1 + c2 + 1;
+  return mxd[v];
+}
+
+int find_centroid(int v, int p) {
+  int MX = 0, num = -1;
+  for (int h : l[v]) {
+    if (h != p && sz[h] > MX)
+      MX = sz[h], num = h;
+  }
+  return MX > a / 2 ? find_centroid(num, v) : v;
+}
+
+void KROLIK(int v) {
+  if (good[v])
+    gd.push_back(v);
+  else
+    bd.push_back(v);
+  for (int h : l[v]) {
+    if (!good[h])
+      KROLIK(h);
+  }
+}
+
+void RIP_PAPA(int v, int p) {
+  for (int q = 0; q < l[v].size(); q++) {
+    if (l[v][q] == p) {
+      l[v].erase(l[v].begin() + q);
+      break;
+    }
+  }
+  for (int h : l[v])
+    RIP_PAPA(h, v);
+}
+
+int eba = 0;
+void rnm(int v) {
+  zam[v] = eba++;
+  vector<int> dq = {v};
+  for (; !dq.empty();) {
+    int x = dq[0];
+    dq.erase(dq.begin());
+    for (int h : l[x]) {
+      if (zam[h] != -1)
+        continue;
+      dq.push_back(h);
+      zam[h] = eba++;
+    }
+  }
+}
+
+int iba = 0;
+void rnm2(int v) {
+  zam[v] = iba++;
+  vector<int> dq = {v};
+  for (; !dq.empty();) {
+    int x = dq[0];
+    dq.erase(dq.begin());
+    for (int h : l[x]) {
+      zam[h] = iba++;
+      if (good[h])
+        continue;
+      dq.push_back(h);
+    }
+  }
+}
+
+int ST;
+
+int GA(int LEN) {
+  if (o[LEN] != -1)
+    return o[LEN];
+  int d1, d2, w, rg;
+  for (int q = ST; q >= 0; q--) {
+    if (good[q]) {
+      dp[q][0] = sz[q] / LEN;
+      dp[q][1] = sz[q] % LEN;
+      continue;
+    }
+    dp[q][0] = 0;
+    d1 = d2 = 0, w = GR[q][0], rg = GR[q][1];
+    for (; w <= rg; w++) {
+      dp[q][0] += dp[w][0];
+      if (dp[w][1] >= d1)
+        d2 = d1, d1 = dp[w][1];
+      else
+        d2 = max(d2, dp[w][1]);
+    }
+    if (d1 + d2 + 1 < LEN)
+      dp[q][1] = d1 + 1;
+    else
+      dp[q][0]++, dp[q][1] = 0;
+  }
+  return o[LEN] = dp[0][0];
+}
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+  cout.tie(nullptr);
+
+  cin >> a;
+  o[1] = a;
+  ST = a - 1;
+  for (int q = 1; q <= a; q++)
+    skok[a / q]++;
+  for (int &i : skok)

@@ -1,0 +1,116 @@
+#include <iostream>
+#include <array>
+#include <bitset>
+#include <tuple>
+#include <vector>
+
+struct SegTree {
+  std::array<std::bitset<65536>, 131072> sand, sor, lazy;
+  int n;
+  
+  SegTree(int n_) {
+    n = n_;
+  }
+  
+  void upd(int id, int v) {
+    sand[id] |= v;
+    sor[id] |= v;
+    lazy[id] |= v;
+  }
+  
+  void push(int id, int il, int ir) {
+    if (lazy[id].none())
+      return;
+    upd(il, lazy[id]);
+    upd(ir, lazy[id]);
+    lazy[id].reset();
+  }
+  
+  void update(int x, int y, int v, int id = 0, int l = 0, int r = 0) {
+    if (x <= l && r <= y) {
+      upd(id, v);
+      return;
+    }
+    if (x >= r || l >= y)
+      return;
+    int mid = (l + r) >> 1, il = id + 1, ir = id + 2 * (mid - l);
+    push(id, il, ir);
+    update(x, y, v, il, l, mid);
+    update(x, y, v, ir, mid, r);
+    sand[id] = sand[il] & sand[ir];
+    sor[id] = sor[il] | sor[ir];
+  }
+  
+  std::pair<std::bitset<65536>, std::bitset<65536>> get(int x, int y, int id = 0, int l = 0, int r = 0) {
+    if (x <= l && r <= y) {
+      return {sand[id], sor[id]};
+    }
+    if (x >= r || l >= y)
+      return {std::bitset<65536>().set(), std::bitset<65536>().reset()};
+    int mid = (l + r) >> 1, il = id + 1, ir = id + 2 * (mid - l);
+    push(id, il, ir);
+    auto retl = get(x, y, il, l, mid);
+    auto retr = get(x, y, ir, mid, r);
+    return {retl.first & retr.first, retl.second | retr.second};
+  }
+};
+
+struct Constraint {
+  long long l, r;
+  int v;
+};
+
+int main() {
+  int k, q;
+  std::cin >> k >> q;
+  int n = 1 << k, mask = (1 << k) - 1;
+  SegTree low(n), hig(n);
+  std::vector<Constraint> cons(q);
+  
+  for (int i = 0; i < q; ++i) {
+    std::cin >> cons[i].l >> cons[i].r >> cons[i].v;
+    int la = cons[i].l & mask, lb = (cons[i].l >> k) & mask;
+    int ra = cons[i].r & mask, rb = (cons[i].r >> k) & mask;
+    if (lb + 1 < rb) {
+      low.update(0, n, cons[i].v);
+    } else if (lb < rb) {
+      low.update(la, n, cons[i].v);
+      low.update(0, ra + 1, cons[i].v);
+    } else {
+      low.update(la, ra + 1, cons[i].v);
+    }
+    hig.update(lb, rb + 1, cons[i].v);
+  }
+  
+  auto cek = [&](int la, int ra, int lb, int rb, int v) {
+    auto resh = hig.get(lb, rb + 1);
+    auto resl = low.get(la, ra + 1);
+    return (resl.second & resh.second) == v;
+  };
+  
+  bool ok = true;
+  
+  for (const auto& c : cons) {
+    int la = c.l & mask, lb = (c.l >> k) & mask;
+    int ra = c.r & mask, rb = (c.r >> k) & mask;
+    if (lb == rb) {
+      ok &= cek(la, ra, lb, rb, c.v);
+    } else {
+      ok &= cek(la, n - 1, lb, lb, c.v);
+      ok &= cek(0, ra, rb, rb, c.v);
+      if (lb + 1 < rb) {
+        ok &= cek(0, n - 1, lb + 1, rb - 1, c.v);
+      }
+    }
+    if (!ok)
+      break;
+  }
+  
+  if (!ok) {
+    std::cout << "impossible" << std::endl;
+    return 0;
+  }
+  
+  std::cout << "possible" << std::endl;
+  return 0;
+}

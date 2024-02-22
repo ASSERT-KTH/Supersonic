@@ -1,0 +1,86 @@
+#include <iostream>
+#include <vector>
+using namespace std;
+
+struct node {
+  int l, r, val;
+  node *left, *right;
+  node(int l, int r) : l(l), r(r) {
+    val = 0;
+    left = right = nullptr;
+  }
+};
+
+void build(node *root, const vector<int>& pref) {
+  if (root->r - root->l == 1) {
+    root->val = pref[root->l];
+    if (root->l == pref.size() - 1) {
+      root->val = INT_MAX;
+    }
+  } else {
+    root->left = new node(root->l, (root->l + root->r) / 2);
+    root->right = new node((root->l + root->r) / 2, root->r);
+    build(root->left, pref);
+    build(root->right, pref);
+    root->val = min(root->left->val, root->right->val);
+  }
+}
+
+void add_val(node *root, int ql, int qr, int val) {
+  if (root->r <= ql || root->l >= qr) {
+    return;
+  }
+  if (ql == root->l && root->r == qr) {
+    root->val += val;
+    return;
+  }
+  add_val(root->left, ql, min(root->left->r, qr), val);
+  add_val(root->right, max(root->right->l, ql), qr, val);
+  root->val = min(root->left->val, root->right->val);
+}
+
+int get_min(node *root, int ql, int qr, int min_val) {
+  if (root->r <= ql || root->l >= qr) {
+    return INT_MAX;
+  }
+  if (ql == root->l && root->r == qr) {
+    return root->val + min_val;
+  }
+  return min(get_min(root->left, ql, min(root->left->r, qr), min_val),
+             get_min(root->right, max(root->right->l, ql), qr, min_val));
+}
+
+int solve() {
+  int n;
+  cin >> n;
+  vector<int> p(n), a(n), ps(n), pref(n);
+  for (int i = 0; i < n; i++) {
+    cin >> p[i];
+    ps[p[i] - 1] = i;
+  }
+  for (int i = 0; i < n; i++) {
+    cin >> a[i];
+    if (i == 0) {
+      pref[i] = a[i];
+    } else {
+      pref[i] = pref[i - 1] + a[i];
+    }
+  }
+  node *root = new node(0, n);
+  build(root, pref);
+  int ans = min(a[0], a[n - 1]);
+  int mus = 0;
+  for (int i = 0; i < n; i++) {
+    add_val(root, ps[i], n, -2 * a[ps[i]]);
+    mus += a[ps[i]];
+    int cur = get_min(root, 0, n, mus);
+    ans = min(ans, cur);
+  }
+  cout << ans << endl;
+  return 0;
+}
+
+int main() {
+  ios::sync_with_stdio(false);
+  return solve();
+}

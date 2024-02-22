@@ -1,0 +1,94 @@
+First, let's analyze the code and identify potential performance bottlenecks and inefficient memory usage:
+
+1. Inefficient memory usage: The code uses a 2D vector `adj` to represent the adjacency list. However, the size of `adj` is fixed to `n`, the number of nodes in the graph. This can lead to memory wastage if the graph is sparse, as many elements in `adj` will be unused.
+
+2. Redundant computations: The functions `compute_depth` and `compute_below` both traverse the adjacency list in a recursive manner. This can lead to redundant computations, as the same nodes can be visited multiple times.
+
+3. Sorting the score vector: The code sorts the `score` vector using `std::sort` in descending order. This operation has a time complexity of O(n log n), which can be improved.
+
+Based on the analysis, the following optimization strategy can be formulated:
+
+1. Efficient data structure: Replace the 2D vector `adj` with a more memory-efficient data structure. One option is to use an `unordered_map<int, vector<int>>` to represent the adjacency list, where each node is mapped to a vector of its adjacent nodes.
+
+2. Avoid redundant computations: Modify the `compute_depth` and `compute_below` functions to avoid redundant computations. This can be achieved by keeping track of visited nodes and skipping already visited nodes during traversal.
+
+3. Optimize sorting: Instead of sorting the entire `score` vector, we can use a partial sorting algorithm to find the top `k` elements. This can be achieved using the `std::partial_sort` algorithm, which has a time complexity of O(n log k).
+
+Now, let's go through each optimization step in detail:
+
+1. Efficient data structure: Replace the `vector<vector<int>> adj` with an `unordered_map<int, vector<int>> adj`. This will reduce memory usage by only allocating space for the adjacent nodes of each node, rather than allocating space for all nodes in the graph.
+
+2. Avoid redundant computations: Modify the `compute_depth` and `compute_below` functions to keep track of visited nodes. This can be done by maintaining a `visited` vector of size `n` and setting the visited nodes to `true`.
+
+3. Optimize sorting: Replace the `std::sort(score.begin(), score.end(), greater<int>())` with `std::partial_sort(score.begin(), score.begin() + k, score.end(), greater<int>())`. This will sort only the first `k` elements, resulting in better performance compared to sorting the entire vector.
+
+Here's the optimized code:
+
+```cpp
+#include <algorithm>
+#include <ios>
+#include <iostream>
+#include <numeric>
+#include <unordered_map>
+#include <vector>
+using namespace std;
+
+void compute_depth(int u, int p, unordered_map<int, vector<int>> &adj, vector<int> &depth, vector<bool> &visited) {
+  visited[u] = true;
+  for (int v : adj[u]) {
+    if (!visited[v]) {
+      depth[v] = depth[u] + 1;
+      compute_depth(v, u, adj, depth, visited);
+    }
+  }
+}
+
+void compute_below(int u, int p, unordered_map<int, vector<int>> &adj, vector<int> &below, vector<bool> &visited) {
+  visited[u] = true;
+  for (int v : adj[u]) {
+    if (!visited[v]) {
+      compute_below(v, u, adj, below, visited);
+      below[u] += below[v] + 1;
+    }
+  }
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(nullptr);
+  
+  int n, k;
+  cin >> n >> k;
+  
+  unordered_map<int, vector<int>> adj;
+  for (int i = 0; i < n - 1; ++i) {
+    int u, v;
+    cin >> u >> v;
+    --u;
+    --v;
+    adj[u].push_back(v);
+    adj[v].push_back(u);
+  }
+  
+  vector<int> depth(n);
+  vector<bool> visited(n, false);
+  compute_depth(0, -1, adj, depth, visited);
+  
+  vector<int> below(n);
+  fill(visited.begin(), visited.end(), false);
+  compute_below(0, -1, adj, below, visited);
+  
+  vector<int> score(n);
+  for (int i = 0; i < n; ++i) {
+    score[i] = depth[i] - below[i];
+  }
+  
+  partial_sort(score.begin(), score.begin() + k, score.end(), greater<int>());
+  
+  cout << accumulate(score.begin(), score.begin() + k, 0ll) << '\n';
+  
+  return 0;
+}
+```
+
+This optimized code addresses the memory wastage issue by using an `unordered_map` for the adjacency list, avoids redundant computations by keeping track of visited nodes, and optimizes the sorting operation by using `std::partial_sort` instead of `std::sort`.

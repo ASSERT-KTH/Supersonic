@@ -1,0 +1,114 @@
+1. Code Analysis:
+The given code is a complex program with multiple functions. The main function runs an infinite loop, which breaks when N and M both are zero. It calls the function "func" multiple times. Inside the func function, we have two main for loops, each with a time complexity of O(N^2), which are significant performance bottlenecks. The code also includes custom string comparison and copy functions, which are unnecessary as the standard library provides highly efficient implementations for these.
+
+2. Optimization Strategy:
+  1. Replace custom string comparison and copying functions with standard library functions.
+  2. Replace the "Info" and "Data" structs with more efficient alternatives.
+  3. Optimize the nested loops to reduce the time complexity.
+  4. Make use of compiler optimizations.
+
+3. Step-by-Step Explanation:
+  1. Use std::string instead of char arrays. This allows us to use the efficient library functions for string comparison and copying and makes the code cleaner and more readable.
+  2. Use std::vector instead of array for storing "OK" and "NOT" data. This allows us to dynamically resize the data structure and makes it easier to erase elements.
+  3. Optimize the nested loops by breaking early when a matching element is found. This can significantly reduce the running time in some cases.
+  4. By using the -O3 compiler flag, we can enable various compiler optimizations such as inline expansion, loop unrolling, and vectorization.
+
+4. Optimized Code Block:
+```
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <string>
+
+using namespace std;
+
+struct Info {
+  string from, to;
+  int rank;
+  bool erased;
+};
+
+struct Data {
+  string from, to, message;
+};
+
+void func() {
+  int N, M;
+  cin >> N >> M;
+  vector<Info> OK, NOT;
+  string buf, from, to;
+  for (int i = 0; i < N; i++) {
+    cin >> buf >> from >> to;
+    if (buf[0] == 'p') {
+      OK.push_back({from, to, i, false});
+    } else {
+      NOT.push_back({from, to, i, false});
+    }
+  }
+  for (int i = NOT.size() - 1; i >= 0; i--) {
+    for (int k = OK.size() - 1; k >= 0; k--) {
+      if (NOT[i].rank < OK[k].rank || OK[k].erased == true)
+        continue;
+      if (NOT[i].from == OK[k].from && NOT[i].to == OK[k].to) {
+        OK[k].erased = true;
+        break;
+      }
+    }
+  }
+  for (int i = OK.size() - 1; i >= 0; i--) {
+    for (int k = NOT.size() - 1; k >= 0; k--) {
+      if (OK[i].rank < NOT[k].rank || NOT[k].erased == true)
+        continue;
+      if (OK[i].from == NOT[k].from && OK[i].to == NOT[k].to) {
+        NOT[k].erased = true;
+        break;
+      }
+    }
+  }
+  queue<Data> Q;
+  for (int loop = 0; loop < M; loop++) {
+    Data data;
+    cin >> data.from >> data.to >> data.message;
+    bool flag = false;
+    for (int i = 0; i < OK.size(); i++) {
+      if (OK[i].erased == true)
+        continue;
+      if (OK[i].from == data.from && OK[i].to == data.to) {
+        flag = true;
+        break;
+      }
+    }
+    if (!flag)
+      continue;
+    flag = true;
+    for (int i = 0; i < NOT.size(); i++) {
+      if (NOT[i].erased == true)
+        continue;
+      if (NOT[i].from == data.from && NOT[i].to == data.to) {
+        flag = false;
+        break;
+      }
+    }
+    if (flag) {
+      Q.push(data);
+    }
+  }
+  cout << Q.size() << "\n";
+  while (!Q.empty()) {
+    cout << Q.front().from << " " << Q.front().to << " " << Q.front().message << "\n";
+    Q.pop();
+  }
+}
+
+int main() {
+  while (true) {
+    int N, M;
+    cin >> N >> M;
+    if (N == 0 && M == 0)
+      break;
+    func();
+  }
+  return 0;
+}
+```
+Compile this program with `-O3` flag for best performance: `g++ -O3 program.cpp`

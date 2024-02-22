@@ -1,0 +1,58 @@
+The given C/C++ program seems to be already well optimized. However, there are a few things we could do to further optimize the program:
+
+1. Reduce the use of floating point calculations: Floating point operations are expensive in terms of CPU cycles. If we can reduce the use of floating point operations, it can speed up the program. In the given program, the `calc` function involves floating point operations. However, the calculations in this function are necessary for the functionality of the program and cannot be avoided. Still, we can take the multiplication operation `W * vw[i]` out of the loop, store its result in an array and use this array inside the loop.
+
+2. Avoid unnecessary memory allocations: The program uses a few arrays (`vw`, `pf`, `vf`, `th`) of size `MAXN`. If `N` is much smaller than `MAXN`, then a lot of memory is wasted. We could dynamically allocate these arrays based on the value of `N` to save memory.
+
+3. Avoid division operation in loop: The division operation is expensive compared to multiplication. We can calculate the reciprocal of `vf[i]` outside the loop and use multiplication inside the loop.
+
+4. Avoid unnecessary function calls: In the main function, `calc(left)` is called twice. We could store the result of the first call and reuse it.
+
+Following these optimization steps, the optimized program is:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long LL;
+typedef pair<int, int> PII;
+typedef double flt;
+const flt eps = 1e-7;
+int *vw, *pf, *vf, *th;
+flt *vwW;
+int N, pw;
+flt calc(flt W) {
+  for (int i = 0; i < N; ++i) vwW[i] = W * vw[i];  // move out of loop
+  flt cost = W * pw;
+  for (int i = 0; i < N; ++i) {
+    flt need = th[i] - vwW[i];  // use precalculated value
+    if (need > 0) {
+      flt f = need * vf[i];  // multiply instead of divide
+      cost += f * pf[i];
+    }
+  }
+  return cost;
+}
+int main() {
+  while (scanf("%d", &N) == 1 && N) {
+    vw = new int[N]; pf = new int[N]; vf = new int[N]; th = new int[N]; vwW = new flt[N];  // dynamic allocation
+    scanf("%d", &pw);
+    for (int i = 0; i < N; ++i) {
+      scanf("%d%d%d%d", vw + i, pf + i, vf + i, th + i);
+      vf[i] = 1.0 / vf[i];  // reciprocal
+    }
+    flt left = 0, right = INT_MAX;
+    flt c1, c2;
+    for (int _ = 0; _ < 200; ++_) {
+      flt m1 = (left + left + right) / 3.0;
+      flt m2 = (left + right + right) / 3.0;
+      c1 = calc(m1); c2 = calc(m2);
+      if (c1 < c2) right = m2;
+      else left = m1;
+    }
+    printf("%.10f\n", c1);  // reuse calculated value
+    delete[] vw; delete[] pf; delete[] vf; delete[] th; delete[] vwW;  // free memory
+  }
+  return 0;
+}
+```
+Please note that the optimizations proposed here are micro-optimizations and the actual performance improvement may vary depending on the specific CPU architecture and compiler used. It is always recommended to measure the performance before and after optimizations to make sure they actually improve the performance.

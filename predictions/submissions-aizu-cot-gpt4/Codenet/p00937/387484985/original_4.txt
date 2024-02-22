@@ -1,0 +1,95 @@
+This program mainly does three things:
+
+1. Reads input data: the structure of a graph and an array of length 3.
+2. Calculates the reachability for each pair of nodes in the graph for certain steps.
+3. Checks whether the start point can be reached.
+
+The main optimization steps are as follows:
+
+1. Change the ordering of nested loops: The most time-consuming part is calculating the reachability. Originally, it uses four nested loops. The outermost two loops iterate the steps and nodes, and the innermost two loops check each node's reachable nodes. If we change the ordering of the loops to iterate each node's reachable nodes first, we can have fewer iterations. This is because we only need to update the reachability when it changes, instead of checking it at each step.
+
+2. Reduce unnecessary calculations: In the original code, the reachability is calculated for up to 100 steps, which is not necessary. We can stop the calculation when there is no change in reachability.
+
+3. Use a queue to efficiently find the next node to check: In the original code, it checks all nodes to find the next node to check, which can be inefficient. Instead, we can use a queue to store the nodes whose reachability has changed, and only check these nodes in the next step.
+
+Here is the optimized code:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+int N, M;
+int A[3];
+vector<int> G[51];
+bool used[51];
+bool dp[101][51][51];
+queue<pair<int, int>> que;
+bool changed;
+int main() {
+  cin >> N >> M;
+  for (int i = 0; i < 3; i++)
+    cin >> A[i];
+  for (int i = 0; i < M; i++) {
+    int f, t;
+    cin >> f >> t;
+    f--;
+    t--;
+    G[f].push_back(t);
+  }
+  for (int i = 0; i < N; i++)
+    dp[0][i][i] = true, que.push({0, i});
+  while (!que.empty()) {
+    auto [i, j] = que.front(); que.pop();
+    for (int k = 0; k < N; k++) {
+      if (dp[i][j][k]) {
+        for (int to : G[k]) {
+          if (!dp[i + 1][j][to]) {
+            dp[i + 1][j][to] = true;
+            que.push({i + 1, j});
+            changed = true;
+          }
+        }
+      }
+    }
+    if (!changed) break;
+    changed = false;
+  }
+  used[N - 1] = true;
+  for (int ite = 1;; ite++) {
+    bool ok = false;
+    vector<int> idx;
+    for (int i = 0; i < N; i++) {
+      if (used[i])
+        continue;
+      int cnt = 0;
+      for (int j = 0; j < 3; j++) {
+        int a = A[j];
+        for (int k = 0; k < N; k++) {
+          if (dp[a][i][k] && used[k]) {
+            cnt++;
+            break;
+          }
+        }
+      }
+      if (cnt == 3) {
+        ok = true;
+        idx.push_back(i);
+      }
+    }
+    if (ok) {
+      for (int i : idx) {
+        used[i] = true;
+      }
+      if (used[0]) {
+        cout << ite << endl;
+        return 0;
+      }
+    } else {
+      break;
+    }
+  }
+  cout << "IMPOSSIBLE" << endl;
+  return 0;
+}
+```
+
+Please note that the level of optimization achieved depends on the specific input data. The optimized code can be faster than the original code for some inputs, but it might be slower for others.

@@ -1,0 +1,93 @@
+**Code Analysis:**
+
+This program seems to take an array of integers and tries to divide it into k sub-arrays such that the sum of each sub-array does not exceed a certain value P. It then finds the minimum possible value of P. The program does this by initializing P as the sum of all array elements divided by k, then it starts checking if the array can be divided into k sub-arrays with sum not exceeding P. If it cannot, it increments P until it finds a value where it can divide the array.
+
+The major performance bottlenecks in this program are:
+
+1. The function `IsAllLoaded()` is called multiple times with the same array but different P values. Each time, it scans the entire array, causing redundant computations.
+
+2. The function `Input()` is inefficient as it uses `vector::push_back()` inside a loop, which can cause multiple reallocations of the underlying array.
+
+**Optimization Strategy:**
+
+1. **Inefficient Data Structures:** The current data structures are not inefficient, but the `vector::push_back()` method can be optimized by reserving space initially if the size is known beforehand.
+
+2. **Redundant Computations:** The function `IsAllLoaded()` can be optimized by avoiding the rechecking of the same elements in the array for different P values. This could be achieved by memorizing the maximum P value for which the function returned true for each element and skipping the check for smaller P values.
+
+3. **Loops:** The while loop in the `Calc()` function can be optimized by avoiding the linear increment of P. A binary search approach can be used to find the minimum P value more efficiently.
+
+4. **Compiler Optimizations:** Compiler optimizations flags like `-O2` or `-O3` can be used to enable general optimization.
+
+**Step-By-Step Explanation:**
+
+1. **Reserving Space for Vector:** In the `Input()` function, before the loop, `W.reserve(n)` can be called to preallocate the necessary space. This will reduce the number of reallocations when elements are added to the vector. The trade-off is a slightly larger memory usage if the actual number of elements is less than n, but it's usually worth it for the performance gain.
+
+2. **Avoid Redundant Computations:** To avoid redundant computations in the `IsAllLoaded()` function, a memoization approach can be used. However, this might significantly increase code complexity and memory usage, so it's not always the best option.
+
+3. **Binary Search for P:** In the `Calc()` function, instead of incrementing `P` one by one, a binary search approach can be used. The lower bound can be the maximum element in the array (since each element can be a separate sub-array) and the upper bound can be the sum of all elements (since all elements can be in one sub-array). By halving the search space in each iteration, this significantly reduces the number of times `IsAllLoaded()` is called.
+
+**Optimized Code Block:**
+
+```
+#include <algorithm>
+#include <iostream>
+#include <numeric>
+#include <vector>
+using namespace std;
+
+vector<int> Input(const int n) {
+  vector<int> W;
+  W.reserve(n);
+  for (int i = 0; i < n; i++) {
+    int w;
+    cin >> w;
+    W.push_back(w);
+  }
+  return W;
+}
+
+bool IsAllLoaded(int P, vector<int> W, int k) {
+  int TrackIndex = 0;
+  int CurrentSum = 0;
+  for (int i = 0; i < W.size(); i++) {
+    if (W[i] > P) {
+      return false;
+    }
+    if (CurrentSum + W[i] > P) {
+      TrackIndex++;
+      if (TrackIndex == k) {
+        return false;
+      }
+      CurrentSum = 0;
+    }
+    CurrentSum += W[i];
+  }
+  return true;
+}
+
+int Calc(vector<int> W, int k) {
+  int Sum = accumulate(W.begin(), W.end(), 0);
+  int left = *max_element(W.begin(), W.end());
+  int right = Sum;
+  while (left < right) {
+    int mid = left + (right - left) / 2;
+    if (IsAllLoaded(mid, W, k)) {
+      right = mid;
+    } else {
+      left = mid + 1;
+    }
+  }
+  return left;
+}
+
+int main() {
+  int n, k;
+  cin >> n >> k;
+  vector<int> W = Input(n);
+  int P = Calc(W, k);
+  cout << P << endl;
+  return 0;
+}
+```
+
+This version of the program performs the same task as the original, but it does so in a more efficient manner. The main improvements are the use of `vector::reserve()` to avoid unnecessary reallocations and the application of binary search to find the minimum P value.

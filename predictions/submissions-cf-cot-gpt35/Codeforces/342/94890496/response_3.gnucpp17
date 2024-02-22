@@ -1,0 +1,134 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <set>
+#include <climits>
+
+using namespace std;
+
+const int MAXN = 100001;
+
+vector<int> v[MAXN];
+vector<int> ct[MAXN];
+int sub[MAXN], nc, cr, lca[MAXN][21], cpar[MAXN], lv[MAXN], n, m, ans[MAXN];
+
+void dfs(int node, int par, int lvl) {
+    lv[node] = lvl;
+    lca[node][0] = par;
+    for (int a : v[node]) {
+        if (a != par) {
+            dfs(a, node, lvl + 1);
+        }
+    }
+}
+
+void genlca() {
+    for (int i = 1; i <= 20; i++) {
+        for (int j = 1; j <= n; j++) {
+            if (lca[j][i - 1] != -1) {
+                lca[j][i] = lca[lca[j][i - 1]][i - 1];
+            }
+        }
+    }
+}
+
+int getlca(int a, int b) {
+    if (lv[a] > lv[b]) {
+        swap(a, b);
+    }
+    int d = lv[b] - lv[a];
+    while (d > 0) {
+        int x = log2(d);
+        b = lca[b][x];
+        d -= (1 << x);
+    }
+    if (a == b) {
+        return a;
+    }
+    for (int i = 20; i >= 0; i--) {
+        if (lca[a][i] != lca[b][i]) {
+            a = lca[a][i];
+            b = lca[b][i];
+        }
+    }
+    return lca[a][0];
+}
+
+int dist(int a, int b) {
+    return lv[a] + lv[b] - 2 * lv[getlca(a, b)];
+}
+
+int dfs(int node, int par) {
+    nc++;
+    sub[node] = 1;
+    for (int a : v[node]) {
+        if (a != par) {
+            sub[node] += dfs(a, node);
+        }
+    }
+    return sub[node];
+}
+
+int getcent(int node, int par) {
+    for (int a : v[node]) {
+        if (a != par && sub[a] > nc / 2) {
+            return getcent(a, node);
+        }
+    }
+    return node;
+}
+
+int decom(int root) {
+    nc = 0;
+    dfs(root, -1);
+    int c = getcent(root, -1);
+    for (int a : v[c]) {
+        v[a].erase(remove(v[a].begin(), v[a].end(), c), v[a].end());
+        int x = decom(a);
+        ct[c].push_back(x);
+        ct[x].push_back(c);
+        cpar[x] = c;
+    }
+    return c;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    
+    cin >> n >> m;
+    for (int i = 1; i < n; i++) {
+        int a, b;
+        cin >> a >> b;
+        v[a].push_back(b);
+        v[b].push_back(a);
+    }
+    
+    for (int i = 0; i <= n; i++) {
+        ans[i] = INT_MAX;
+    }
+    
+    genlca();
+    cr = decom(1);
+    cpar[cr] = -1;
+    ans[1] = 0;
+    
+    while (m--) {
+        int a, b;
+        cin >> a >> b;
+        if (a == 1) {
+            ans[b] = 0;
+            for (int par = cpar[b]; par != -1; par = cpar[par]) {
+                ans[par] = min(ans[par], dist(b, par));
+            }
+        } else {
+            int minDist = INT_MAX;
+            for (int par = b; par != -1; par = cpar[par]) {
+                minDist = min(minDist, ans[par] + dist(b, par));
+            }
+            cout << minDist << "\n";
+        }
+    }
+    
+    return 0;
+}

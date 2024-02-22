@@ -1,0 +1,3 @@
+const int MAX_STRINGS = 12;
+const int MAX_STRING_LENGTH = 5000;
+char e[MAX_STRINGS][MAX_STRING_LENGTH];

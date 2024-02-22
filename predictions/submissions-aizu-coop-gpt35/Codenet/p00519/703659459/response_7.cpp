@@ -1,0 +1,11 @@
+The given code appears to be an implementation of Dijkstra's algorithm to find the shortest path in a graph. However, there are several areas where the code can be optimized for better performance:
+
+1. Unnecessary Includes: The code includes the entire `bits/stdc++.h` library, which is not recommended as it can increase compilation time and memory usage. Instead, include only the necessary headers such as `iostream` and `vector`.
+
+2. Global Arrays: The arrays `c`, `r`, and `d` are declared as global variables and have a fixed size of 6000. This is unnecessary and can lead to inefficient memory usage, especially if the actual input size is smaller. It would be better to declare these arrays inside the `main` function with a dynamic size based on the input.
+
+3. Pass by Reference: The `visited` array in the `dfs` function can be passed by reference instead of by value. This will eliminate the need to copy the array at each recursive call, improving both performance and memory usage.
+
+4. Loop Optimization: The loop in the `dijk` function that finds the minimum distance vertex can be optimized. Currently, it iterates over all vertices, including the ones that have already been visited. This can be improved by maintaining a priority queue or a min heap to track the minimum distance vertex.
+
+5. Unused Variables: The variables `pii` and `ll` are defined but not used in the given code. They can be removed to improve code readability.

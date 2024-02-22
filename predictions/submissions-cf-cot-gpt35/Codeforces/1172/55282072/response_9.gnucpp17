@@ -1,0 +1,83 @@
+#include <cassert>
+#include <iostream>
+#include <vector>
+
+const int MOD = 998244353;
+
+int mod_inv(int a, int m = MOD) {
+  int g = m, r = a, x = 0, y = 1;
+  while (r != 0) {
+    int q = g / r;
+    g %= r;
+    std::swap(g, r);
+    x -= q * y;
+    std::swap(x, y);
+  }
+  return x < 0 ? x + m : x;
+}
+
+int choose(int n, int r) {
+  assert(0 <= r && r <= n);
+  int result = 1;
+  for (int i = 1; i <= r; ++i) {
+    result = (result * (n - i + 1)) % MOD;
+    result = (result * mod_inv(i)) % MOD;
+  }
+  return result;
+}
+
+int main() {
+  std::ios::sync_with_stdio(false);
+  std::cin.tie(nullptr);
+
+  int N, M;
+  std::cin >> N >> M;
+
+  std::vector<int> likes(N);
+  std::vector<int> weights(N);
+  for (int i = 0; i < N; ++i) {
+    std::cin >> likes[i];
+  }
+  for (int i = 0; i < N; ++i) {
+    std::cin >> weights[i];
+  }
+
+  int L = 0, DL = 0;
+  for (int i = 0; i < N; ++i) {
+    if (likes[i]) {
+      L += weights[i];
+    } else {
+      DL += weights[i];
+    }
+  }
+
+  int probability_M = 1;
+  int probability_M_minus_1 = 0;
+  for (int iter = 0; iter < M; ++iter) {
+    int new_probability_M_plus_1 = 0;
+    int new_probability_M_minus_1 = 0;
+    for (int i = -M; i <= M; ++i) {
+      if ((i + iter) % 2 != 0 || std::abs(i) > iter) {
+        continue;
+      }
+      int up = (iter + i) / 2;
+      int down = (iter - i) / 2;
+      if (down > DL) {
+        continue;
+      }
+      int like_probability = ((L + up) * mod_inv(L + DL + i)) % MOD;
+      int dislike_probability = (MOD - like_probability) % MOD;
+      new_probability_M_plus_1 = (new_probability_M_plus_1 + probability_M * like_probability) % MOD;
+      new_probability_M_minus_1 = (new_probability_M_minus_1 + probability_M * dislike_probability) % MOD;
+    }
+    probability_M_plus_1 = new_probability_M_plus_1;
+    probability_M_minus_1 = new_probability_M_minus_1;
+  }
+
+  for (int i = 0; i < N; ++i) {
+    int answer = (weights[i] * choose(likes[i] ? L : DL, 1)) % MOD;
+    std::cout << answer << '\n';
+  }
+
+  return 0;
+}

@@ -1,0 +1,73 @@
+#include <iostream>
+#include <queue>
+#include <string.h>
+#define MAX 64
+using namespace std;
+int w, h, Col, res, tres = 0, temp[MAX], dx[4] = {0, 1, 0, -1}, dy[4] = {1, 0, -1, 0}, V[MAX], timestamp[MAX], ts=1;
+
+void calc(int y, int x) {
+  int i = y * w + x;
+  if (temp[i] == Col) {
+    tres++;
+    temp[i] = 0;
+    for (int r = 0; r < 4; r++)
+      calc(y + dy[r], x + dx[r]);
+  }
+}
+
+void on(int count, int c) {
+  if (count == 5) {
+    memcpy(temp, V, sizeof(V));
+    tres = 0;
+    calc(0, 0);
+    res = max(res, tres);
+    return;
+  }
+  int nc = V[0], Q[MAX], head=0, tail=0, used[MAX];
+  Q[tail++] = 0;
+  timestamp[0]++;
+  while (head<tail) {
+    int now = Q[head++];
+    if (used[now] == ts)
+      continue;
+    used[now] = ts;
+    V[now] = c;
+    for (int r = 0; r < 4; r++) {
+      int ny = now / w + dy[r], nx = now % w + dx[r], ni = ny * w + nx;
+      if (ny < 0 || nx < 0 || ny >= h || nx >= w)
+        continue;
+      if (V[ni] == nc) {
+        Q[tail++] = ni;
+        timestamp[ni]++;
+      }
+    }
+  }
+  if (count != 4)
+    for (int i = 1; i <= 6; i++)
+      on(count + 1, i);
+  else
+    on(count + 1, Col);
+  ts++;
+}
+
+void solve() {
+  res = 0;
+  for (int y = 0; y < h; y++)
+    for (int x = 0; x < w; x++) {
+      scanf("%d", &V[y * w + x]);
+    }
+  for (int i = 1; i <= 6; i++) {
+    if (V[0] != i)
+      on(0, i);
+  }
+  printf("%d\n", res);
+}
+
+int main() {
+  while (scanf("%d%d%d", &h, &w, &Col) != EOF) {
+    if (w == 0)
+      break;
+    solve();
+  }
+  return 0;
+}

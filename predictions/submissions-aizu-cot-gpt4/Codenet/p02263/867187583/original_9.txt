@@ -1,0 +1,73 @@
+Here are some optimizations you can do step by step:
+
+1. Use `std::ios_base::sync_with_stdio(false);` to disable synchronization between the C and C++ standard streams. This can give performance improvements, especially for large input/output operations. However, keep in mind that this should only be used when you're not mixing C and C++ I/O in your program.
+
+2. Use `std::cin` and `std::cout` instead of `scanf()` and `printf()`, as they're generally more efficient and safer.
+
+3. In the push method, you're first incrementing `top_` and then using it as an index to the vector. This can potentially lead to an out-of-bounds error if `top_` is equal to the size of the vector. Instead, assign the value first, then increment `top_`.
+
+4. `atoi()` function doesn't handle errors. Consider using `std::stoi()` instead, as it throws an exception if the conversion cannot be performed.
+
+5. You are checking the first character of the string to decide which operation to perform. Instead, you can use a `switch` statement, which might be faster because compiler optimizations often transform it into a jump table.
+
+6. You are using a char array to hold the input string. If the string is longer than 999 characters, it will cause a buffer overflow. Use `std::string` instead.
+
+Here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <string>
+using namespace std;
+
+class Stack {
+public:
+    Stack(size_t n) : s_(n), top_(0){};
+    
+    bool isEmpty() { return top_ == 0; }
+    bool isFull() { return top_ == s_.size(); }
+    
+    void push(int x) {
+        if (!isFull()) {
+            s_[top_++] = x;
+        }
+    }
+    
+    int pop() {
+        return isEmpty() ? -1 : s_[--top_];
+    }
+
+private:
+    vector<int> s_;
+    size_t top_;
+};
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    
+    string s;
+    Stack stack(110);
+    
+    while (cin >> s) {
+        switch(s[0]) {
+            case '+':
+                stack.push(stack.pop() + stack.pop());
+                break;
+            case '-':
+                stack.push(-stack.pop() + stack.pop());
+                break;
+            case '*':
+                stack.push(stack.pop() * stack.pop());
+                break;
+            default:
+                stack.push(stoi(s));
+                break;
+        }
+    }
+    
+    cout << stack.pop() << '\n';
+    return 0;
+}
+```
+Please note that the behavior of the '-' operation has been changed. In the original code, it was `lhs - rhs` but in the optimized code it's `-rhs + lhs` to avoid an extra pop operation. However, this will only work correctly if the stack operations are guaranteed to not fail. If the pop operation can fail (return -1), you'll need to revert to the original behavior and store the results of the pop operations in temporary variables.

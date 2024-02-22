@@ -1,0 +1,121 @@
+The provided C++ code seems to be clean and efficient. However, there are a few aspects we can optimize:
+
+1. **Avoid unnecessary use of std::vector's**: Vectors are dynamic arrays that can resize themselves automatically when an element is inserted or deleted, with their storage being handled automatically by the container. This can lead to overhead in terms of memory and performance. In this code, it is seen that vectors are used extensively. If the size of the vectors is known beforehand, it is better to use an array, but in this code, it seems that the size is not always known beforehand. In the case of the vector "parent", it is initialized with a size of "log2_n", but it is not clear if the final size will be larger or smaller than this. If the size is known and will not change, it is better to use a statically allocated array.
+
+2. **Using bitwise operations**: The use of bitwise operations is usually faster than arithmetic operations. In this code, there are instances where the bitwise shift operator is used, which is good for performance. But this can be improved further by replacing the division and modulus operations with bitwise operators.
+
+3. **Use of 'auto' keyword**: The use of 'auto' keyword for loop variables can also be optimized, as the type of the variable is known, using 'auto' might induce the overhead of type inference.
+
+4. **Avoid I/O in Loops**: I/O operations are generally slower, so try to minimize them. In this code, the program is continuously performing I/O operations in a loop, which is detrimental to the performance. If possible, take all the I/O operations outside the loop, store them in an array, and then perform operations on them.
+
+Please note that these optimizations may lead to a marginal gain in performance because modern compilers are already quite good at optimizing code. 
+
+Here is the optimized code:
+
+```cpp
+#include "bits/stdc++.h"
+using namespace std;
+
+#define rep(i, a, b) for (int i = (a); i < (b); i++)
+
+using Weight = int;
+
+struct Edge {
+  int s, d;
+  Weight w;
+  Edge(int s, int d, Weight w = 1) : s(s), d(d), w(w){};
+  bool operator<(const Edge &e) const { return w < e.w; }
+};
+
+using Edges = vector<Edge>;
+using Graph = vector<Edges>;
+using Array = vector<Weight>;
+using Matrix = vector<Array>;
+
+struct LowestCommonAncestor {
+  const int n, log2_n;
+  vector<vector<int>> parent;
+  vector<int> depth;
+
+  LowestCommonAncestor(const Graph &g, int root)
+      : n(g.size()), log2_n(log2(n) + 1), parent(log2_n, vector<int>(n)),
+        depth(n) {
+    dfs(g, root, -1, 0);
+    for (int k = 0; k + 1 < log2_n; k++) {
+      for (int v = 0; v < n; v++) {
+        if (parent[k][v] < 0)
+          parent[k + 1][v] = -1;
+        else
+          parent[k + 1][v] = parent[k][parent[k][v]];
+      }
+    }
+  }
+
+  void dfs(const Graph &g, int s, int p, int d) {
+    parent[0][s] = p;
+    depth[s] = d;
+    for (Edge &e : g[s]) {
+      if (e.d == p)
+        continue;
+      dfs(g, e.d, s, d + 1);
+    }
+  }
+
+  int get(int u, int v) {
+    if (depth[u] > depth[v])
+      swap(u, v);
+    for (int k = 0; k < log2_n; k++) {
+      if ((depth[v] - depth[u]) >> k & 1) {
+        v = parent[k][v];
+      }
+    }
+    if (u == v)
+      return u;
+    for (int k = log2_n - 1; k >= 0; k--) {
+      if (parent[k][u] != parent[k][v]) {
+        u = parent[k][u];
+        v = parent[k][v];
+      }
+    }
+    return parent[0][u];
+  }
+};
+
+int main() {
+  cin.tie(0);
+  ios::sync_with_stdio(false);
+  
+  int n;
+  cin >> n;
+  
+  Graph g(n);
+  
+  rep(i, 0, n) {
+    int k;
+    cin >> k;
+    rep(j, 0, k) {
+      int c;
+      cin >> c;
+      g[i].emplace_back(i, c);
+    }
+  }
+  
+  int q;
+  cin >> q;
+  
+  LowestCommonAncestor lca(g, 0);
+  
+  vector<int> u(q), v(q);
+  rep(i, 0, q) {
+    cin >> u[i] >> v[i];
+  }
+  
+  rep(i, 0, q) {
+    cout << lca.get(u[i], v[i]) << endl;
+  }
+  
+  return 0;
+}
+```
+
+This version of the program takes all the I/O operations outside of the loop, storing them in a vector, and then performing operations on them. This should improve the performance of the program.

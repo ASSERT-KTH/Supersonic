@@ -1,0 +1,185 @@
+To optimize the given C/C++ program, we can make the following modifications:
+
+1. Remove unnecessary header files: The program includes the `<bits/stdc++.h>` header, which includes almost all standard library headers. This can lead to longer compilation times and larger executable sizes. Instead, we can include only the necessary standard library headers.
+
+2. Remove unnecessary typedefs: The program defines several typedefs that are not used. We can remove them to simplify the code.
+
+3. Remove unnecessary macros: The program defines several macros that are not used. We can remove them to simplify the code.
+
+4. Use pass-by-reference for large data structures: The `HLD` constructor takes a reference to a vector of vectors, which can be expensive to copy. We can modify the constructor to take a const reference instead.
+
+5. Use const references for read-only variables: The `combine` function takes two read-only parameters, `x` and `y`, but it passes them by value. We can modify the function to take const references instead.
+
+6. Use range-based for loops: The program uses traditional for loops to iterate over vectors. We can use range-based for loops instead, which are more concise and easier to read.
+
+7. Optimize the `combine` function: The `combine` function currently performs several comparisons and assignments. We can optimize it by using a priority queue to store the maximum and minimum elements, which will reduce the number of comparisons and assignments.
+
+8. Optimize the `get` function: The `get` function currently performs two recursive calls to retrieve the left and right subtrees. We can optimize it by using a loop instead of recursion.
+
+Here is the optimized C/C++ program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <queue>
+
+using namespace std;
+
+struct HLD {
+  vector<vector<int>> adj;
+  int n, root, cnt;
+  vector<int> sub, tin, tout, par, head, dep;
+
+  int dfs1(int s, int p, int d) {
+    par[s] = p;
+    dep[s] = d;
+    adj[s].erase(remove(adj[s].begin(), adj[s].end(), p), adj[s].end());
+    for (auto &t : adj[s]) {
+      sub[s] += dfs1(t, s, d + 1);
+      if (sub[adj[s][0]] < sub[t])
+        swap(t, adj[s][0]);
+    }
+    return sub[s];
+  }
+
+  void dfs2(int s, int h) {
+    head[s] = h;
+    tin[s] = cnt++;
+    for (auto t : adj[s]) {
+      dfs2(t, t == adj[s][0] ? h : t);
+    }
+    tout[s] = cnt;
+  }
+
+  HLD(const vector<vector<int>> &g, int rt)
+      : adj(g), n(adj.size()), root(rt), cnt(0), sub(n, 1), tin(n), tout(n),
+        par(n, -1), head(n), dep(n) {
+    dfs1(root, -1, 0);
+    dfs2(root, root);
+  }
+
+  int lca(int a, int b) {
+    while (head[a] != head[b]) {
+      if (dep[head[a]] > dep[head[b]])
+        swap(a, b);
+      b = par[head[b]];
+    }
+    if (dep[a] > dep[b])
+      swap(a, b);
+    return a;
+  }
+};
+
+const int MAXN = 100100;
+
+vector<vector<int>> adj;
+int n, a[MAXN], q;
+
+struct dat {
+  pair<int, int> mx;
+  pair<int, int> mn;
+};
+
+dat zero;
+
+dat combine(const dat& x, const dat& y) {
+  dat res;
+  priority_queue<int> pq;
+  pq.push(x.mx.first);
+  pq.push(x.mx.second);
+  pq.push(y.mx.first);
+  pq.push(y.mx.second);
+  res.mx.first = pq.top(); pq.pop();
+  res.mx.second = pq.top(); pq.pop();
+
+  pq.push(x.mn.first);
+  pq.push(x.mn.second);
+  pq.push(y.mn.first);
+  pq.push(y.mn.second);
+  res.mn.first = pq.top(); pq.pop();
+  res.mn.second = pq.top(); pq.pop();
+
+  return res;
+}
+
+void build(int v, int tl, int tr) {
+  if (tl == tr) {
+    t[v].mn = {tl, n + 1};
+    t[v].mx = {tl, n + 2};
+  } else {
+    int tm = (tl + tr) / 2;
+    build(2 * v, tl, tm);
+    build(2 * v + 1, tm + 1, tr);
+    t[v] = combine(t[2 * v], t[2 * v + 1]);
+  }
+}
+
+dat get(int v, int tl, int tr, int l, int r) {
+  if (l > r)
+    return zero;
+  while (l != tl || r != tr) {
+    int tm = (tl + tr) / 2;
+    if (r <= tm) {
+      v = 2 * v;
+      tr = tm;
+    } else if (l > tm) {
+      v = 2 * v + 1;
+      tl = tm + 1;
+    } else {
+      dat left = get(2 * v, tl, tm, l, min(r, tm));
+      dat right = get(2 * v + 1, tm + 1, tr, max(l, tm + 1), r);
+      return combine(left, right);
+    }
+  }
+  return t[v];
+}
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+  
+  cin >> n >> q;
+  zero.mx = {n + 2, n + 2};
+  zero.mn = {n + 1, n + 1};
+  adj.resize(n + 1);
+  for (int i = 1; i < n; i++) {
+    int x;
+    cin >> x;
+    adj[x - 1].push_back(i);
+  }
+  a[n + 1] = 1000000007;
+  a[n + 2] = 0;
+  HLD hld(adj, 0);
+  for (int i = 0; i < n; i++) {
+    a[i] = hld.tin[i];
+  }
+  build(1, 0, n - 1);
+
+  while (q--) {
+    int l, r;
+    cin >> l >> r;
+    l--;
+    r--;
+    if (r - l < 2) {
+      int ans = r, d = hld.dep[l];
+      if (d < hld.dep[r]) {
+        ans = l;
+        d = hld.dep[r];
+      }
+      cout << ans + 1 << " " << d << endl;
+      continue;
+    }
+    dat cur = get(1, 0, n - 1, l, r);
+    int lc1 = hld.lca(cur.mx.first, cur.mn.second);
+    int lc2 = hld.lca(cur.mx.second, cur.mn.first);
+    if (hld.dep[lc1] > hld.dep[lc2]) {
+      cout << cur.mn.first + 1 << " " << hld.dep[lc1] << endl;
+    } else {
+      cout << cur.mx.first + 1 << " " << hld.dep[lc2] << endl;
+    }
+  }
+
+  return 0;
+}
+```

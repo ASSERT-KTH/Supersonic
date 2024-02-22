@@ -1,0 +1,172 @@
+Analysis:
+- The program reads input values for `N`, `M`, and an array `A` of size 3.
+- It then reads `M` pairs of integers and constructs a directed graph `G` with `N` nodes and `M` edges.
+- The program initializes a 3-dimensional boolean array `dp` of size 101x51x51 and sets `dp[0][i][i]` to true for every `i` in the range [0, N-1].
+- It then iteratively updates the `dp` array using a nested loop structure.
+- After that, the program initializes a boolean array `used` of size 51 and sets `used[N-1]` to true.
+- It enters a loop where it checks for certain conditions and updates the `used` array accordingly.
+- Finally, it outputs the result based on the values in the `used` array.
+
+Potential optimizations:
+1. Remove unnecessary includes: The `#include <bits/stdc++.h>` includes a large number of standard library headers, which can slow down compilation. Instead, we should only include the necessary headers, such as `<iostream>` and `<vector>`.
+2. Avoid using `using namespace std;`: This can lead to naming conflicts and make the code less readable. Instead, we should use the `std::` prefix when referring to standard library functions and types.
+3. Use `std::array` instead of raw arrays: The array `A` can be replaced with a `std::array<int, 3>`. This provides a more modern and safer way to handle arrays in C++.
+4. Optimize the graph representation: The graph `G` can be represented more efficiently using an adjacency matrix instead of an adjacency list. This will reduce the memory usage and improve cache locality, resulting in better performance.
+5. Optimize the `dp` array: The `dp` array has a fixed size of 101x51x51, which is larger than necessary. We can reduce the size of the array to 4x51x51, as the maximum value of `A` is 100 and we only use values from 0 to 3 in the `dp` loop.
+6. Change the loop structure: The loop structure in the `dp` loop can be optimized to reduce the number of iterations. Instead of iterating over all values of `i`, `j`, and `k`, we can iterate over the non-zero values of `dp[i-1][j][k]` and directly update `dp[i][j][to]` for each `to` in `G[k]`.
+7. Optimize the check for `cnt == 3`: The loop structure in the `for` loop can be modified to break early if `cnt` reaches 3, instead of iterating over all values of `k`.
+8. Use a more efficient algorithm: The current implementation has a time complexity of O(N^4) due to nested loops. However, we can improve the algorithm to achieve a time complexity of O(N^3) by using a modified Floyd-Warshall algorithm.
+
+Optimization steps:
+1. Remove unnecessary includes:
+```cpp
+#include <iostream>
+#include <vector>
+```
+
+2. Avoid using `using namespace std;`.
+
+3. Replace the raw array `int A[3]` with a `std::array<int, 3>`:
+```cpp
+std::array<int, 3> A;
+```
+
+4. Optimize the graph representation by using an adjacency matrix instead of an adjacency list:
+```cpp
+std::vector<std::vector<bool>> G(N, std::vector<bool>(N, false));
+```
+This replaces `vector<int> G[51]` with `vector<vector<bool>> G(N, vector<bool>(N, false))`.
+
+5. Optimize the `dp` array:
+```cpp
+std::vector<std::vector<std::vector<bool>>> dp(4, std::vector<std::vector<bool>>(N, std::vector<bool>(N, false)));
+```
+This reduces the size of the `dp` array from 101x51x51 to 4xN^2.
+
+6. Change the loop structure in the `dp` loop:
+```cpp
+for (int i = 1; i < 4; i++) {
+  for (int j = 0; j < N; j++) {
+    for (int k = 0; k < N; k++) {
+      if (dp[i - 1][j][k]) {
+        for (int to = 0; to < N; to++) {
+          if (G[k][to]) {
+            dp[i][j][to] = true;
+          }
+        }
+      }
+    }
+  }
+}
+```
+This replaces the range-based loop `for (int to : G[k])` with a standard loop over all values of `to` from 0 to N-1.
+
+7. Optimize the check for `cnt == 3`:
+```cpp
+if (cnt == 3) {
+  ok = true;
+  idx.push_back(i);
+  break;  // Break early if cnt reaches 3
+}
+```
+This breaks the loop early if `cnt` reaches 3 instead of iterating over all values of `k`.
+
+8. Use a more efficient algorithm based on the modified Floyd-Warshall algorithm:
+```cpp
+for (int k = 0; k < N; k++) {
+  for (int i = 0; i < N; i++) {
+    for (int j = 0; j < N; j++) {
+      dp[0][i][j] |= (dp[0][i][k] && dp[0][k][j]);
+    }
+  }
+}
+```
+This replaces the nested loop structure with a modified Floyd-Warshall algorithm, which has a time complexity of O(N^3).
+
+Optimized code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <array>
+
+int main() {
+  int N, M;
+  std::cin >> N >> M;
+  
+  std::array<int, 3> A;
+  for (int i = 0; i < 3; i++) {
+    std::cin >> A[i];
+  }
+  
+  std::vector<std::vector<bool>> G(N, std::vector<bool>(N, false));
+  for (int i = 0; i < M; i++) {
+    int f, t;
+    std::cin >> f >> t;
+    f--;
+    t--;
+    G[f][t] = true;
+  }
+  
+  std::vector<std::vector<std::vector<bool>>> dp(4, std::vector<std::vector<bool>>(N, std::vector<bool>(N, false)));
+  for (int i = 0; i < N; i++) {
+    dp[0][i][i] = true;
+  }
+  
+  for (int k = 0; k < N; k++) {
+    for (int i = 0; i < N; i++) {
+      for (int j = 0; j < N; j++) {
+        dp[0][i][j] |= (dp[0][i][k] && dp[0][k][j]);
+      }
+    }
+  }
+  
+  std::vector<bool> used(N, false);
+  used[N - 1] = true;
+  
+  for (int ite = 1;; ite++) {
+    bool ok = false;
+    std::vector<int> idx;
+    for (int i = 0; i < N; i++) {
+      if (used[i]) {
+        continue;
+      }
+      
+      int cnt = 0;
+      for (int j = 0; j < 3; j++) {
+        int a = A[j];
+        for (int k = 0; k < N; k++) {
+          if (dp[a][i][k] && used[k]) {
+            cnt++;
+            break;
+          }
+        }
+      }
+      
+      if (cnt == 3) {
+        ok = true;
+        idx.push_back(i);
+        break;
+      }
+    }
+    
+    if (ok) {
+      for (int i : idx) {
+        used[i] = true;
+      }
+      
+      if (used[0]) {
+        std::cout << ite << std::endl;
+        return 0;
+      }
+    } else {
+      break;
+    }
+  }
+  
+  std::cout << "IMPOSSIBLE" << std::endl;
+  return 0;
+}
+```
+
+The optimized code reduces memory usage by using more efficient data structures and improves performance by optimizing the loop structure and algorithm.

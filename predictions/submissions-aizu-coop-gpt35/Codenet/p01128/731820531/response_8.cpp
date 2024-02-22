@@ -1,0 +1,74 @@
+Code Analysis:
+- The code includes a large number of unnecessary header files. Many of these are not used in the code and can be removed to improve compilation time.
+- The code includes several unnecessary macros and typedefs that are not used in the code. These can be removed to simplify the code and improve readability.
+- The code includes many unnecessary functions and operators for printing and converting data types. These can be removed as they are not used in the code.
+- The code includes several unnecessary helper functions for geometric calculations. These functions are not used in the code and can be removed.
+- The code includes unnecessary comments and debugging output that can be removed to improve code readability.
+
+Optimization Strategy:
+1. Remove unnecessary header files: The code includes many unnecessary header files. Removing these files will improve compilation time.
+2. Remove unnecessary macros and typedefs: The code includes several macros and typedefs that are not used in the code. Removing them will simplify the code and improve readability.
+3. Remove unnecessary functions and operators: The code includes many unnecessary functions and operators for printing and converting data types. Removing them will simplify the code.
+4. Remove unnecessary helper functions: The code includes several unnecessary helper functions for geometric calculations. Removing them will simplify the code.
+5. Remove unnecessary comments and debugging output: The code includes unnecessary comments and debugging output. Removing them will improve code readability.
+
+Step-by-Step Explanation:
+1. Remove unnecessary header files: The following header files are not used in the code and can be removed:
+   - <algorithm>
+   - <bitset>
+   - <cassert>
+   - <cfloat>
+   - <climits>
+   - <cmath>
+   - <complex>
+   - <cstdio>
+   - <cstdlib>
+   - <ctime>
+   - <fstream>
+   - <functional>
+   - <iomanip>
+   - <list>
+   - <map>
+   - <memory>
+   - <numeric>
+   - <queue>
+   - <set>
+   - <sstream>
+   - <stack>
+   - <utility>
+   - <vector>
+2. Remove unnecessary macros and typedefs: The following macros and typedefs are not used in the code and can be removed:
+   - rep
+   - foreach
+   - rforeach
+   - all
+   - rall
+   - CL
+   - COPY
+   - ten
+   - bin
+   - erep
+   - revrep
+   - pb
+   - mp
+   - pint
+   - dx
+   - dy
+   - PI
+   - gtype
+   - EPS_FOR_LIB
+   - Point
+   - Circle
+   - G
+   - Convex
+   - Seg
+3. Remove unnecessary functions and operators: The following functions and operators are not used in the code and can be removed:
+   - uniq
+   - to_s
+   - to_T
+   - print_container
+   - operator<< for vector, set, multiset, deque, map, pair
+   - print
+   - print2d
+   - input
+   - fix_pre

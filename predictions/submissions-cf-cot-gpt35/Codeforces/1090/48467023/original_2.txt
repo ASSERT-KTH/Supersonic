@@ -1,0 +1,203 @@
+To optimize the given C/C++ program, we can make the following modifications:
+
+1. Remove unnecessary includes: The program includes the `<bits/stdc++.h>` header which is not necessary. We can remove this include statement.
+
+2. Remove unnecessary typedefs: The program defines typedefs for `li`, `ld`, and `pt` which are not used. We can remove these typedefs.
+
+3. Remove unnecessary operator overloading functions: The program defines `operator<<` functions for `pair` and `vector` which are not used. We can remove these functions.
+
+4. Avoid unnecessary copying of nodes: In the `setVal` function, the program creates a new node for `nt` even when it is not necessary. We can avoid this unnecessary copying of nodes by directly modifying the existing nodes.
+
+5. Avoid unnecessary updates: In the `setVal` function, the program updates the subtree `nt` even when it is not necessary. We can avoid these unnecessary updates by only updating the subtree when needed.
+
+6. Avoid unnecessary calculations: In the `getPos` function, the program calculates `getsum(t, r - l)` even when it is not necessary. We can avoid this unnecessary calculation by only calculating the sum when needed.
+
+7. Avoid unnecessary checks: In the `sub` function, the program checks if `pos < 0` even when it is not necessary. We can avoid this unnecessary check by directly using the value of `pos`.
+
+8. Avoid unnecessary function calls: In the `sub` function, the program calls `setVal` even when it is not necessary. We can avoid this unnecessary function call by directly modifying the existing tree.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+using namespace std;
+
+const int N = 250 * 1000 + 555;
+const int M = 30 * 1000 * 1000 + 555;
+
+struct node {
+  int sum, sval;
+  node *l, *r;
+  node() : sum(0), sval(-1), l(NULL), r(NULL) {}
+  node(int sum, int sval, node *l, node *r)
+      : sum(sum), sval(sval), l(l), r(r) {}
+};
+
+typedef node *tree;
+
+tree nodes[M];
+int szn = 0;
+
+tree getNode(int sum, int sval, tree l, tree r) {
+  assert(szn < M);
+  nodes[szn] = node(sum, sval, l, r);
+  return &nodes[szn++];
+}
+
+inline int getsum(tree t, int len) {
+  if (!t)
+    return 0;
+  if (t->sval != -1)
+    return len * t->sval;
+  return t->sum;
+}
+
+inline int push(tree t) {
+  int pushed = t->sval;
+  t->sval = -1;
+  return pushed;
+}
+
+void upd(tree t, int l1, int l2) {
+  t->sum = getsum(t->l, l1) + getsum(t->r, l2);
+}
+
+tree setVal(tree t, int l, int r, int lf, int rg, int val, int pushed = -1) {
+  if (t == NULL) {
+    return getNode(0, -1, NULL, NULL);
+  }
+
+  if (pushed != -1) {
+    t->sval = pushed;
+  }
+
+  if (l == lf && r == rg) {
+    t->sval = val;
+    return t;
+  }
+
+  int mid = (l + r) >> 1;
+  pushed = push(t);
+
+  if (lf < mid) {
+    t->l = setVal(t->l, l, mid, lf, min(mid, rg), val, pushed);
+  } else if (pushed != -1) {
+    t->l = getNode(t->r->sum, pushed, t->r->l, t->r->r);
+  }
+
+  if (rg > mid) {
+    t->r = setVal(t->r, mid, r, max(lf, mid), rg, val, pushed);
+  } else if (pushed != -1) {
+    t->r = getNode(t->l->sum, pushed, t->l->l, t->l->r);
+  }
+
+  upd(t, mid - l, r - mid);
+  return t;
+}
+
+int getPos(tree t, int l, int r, int lf, int rg) {
+  if (!t)
+    return -1;
+
+  if (l == lf && r == rg) {
+    if (l + 1 == r) {
+      return getsum(t, 1) ? l : -1;
+    }
+    if (getsum(t, r - l) == 0) {
+      return -1;
+    }
+  }
+
+  if (t->sval != -1) {
+    return t->sval > 0 ? rg - 1 : -1;
+  }
+
+  int mid = (l + r) >> 1;
+  int ans = -1;
+
+  if (rg > mid && ans == -1) {
+    ans = max(ans, getPos(t->r, mid, r, max(lf, mid), rg));
+  }
+
+  if (lf < mid && ans == -1) {
+    ans = max(ans, getPos(t->l, l, mid, lf, min(mid, rg)));
+  }
+
+  return ans;
+}
+
+int main() {
+  int n;
+  cin >> n;
+
+  vector<int> dead(n, -2);
+  vector<pair<int, tree>> ps(n);
+
+  int cnt = 0;
+  int maxLen = n + 3;
+
+  for (int i = 0; i < n; i++) {
+    int tp;
+    cin >> tp;
+
+    int a, b;
+    cin >> a;
+
+    if (tp > 1) {
+      cin >> b;
+    }
+
+    a--;
+    b--;
+
+    if (tp == 1) {
+      int id = cnt++;
+      dead[id] = -2;
+      ps[id] = {0, setVal(NULL, 0, maxLen, 0, 1, 1)};
+    } else if (tp == 2) {
+      if (dead[a] < 0) {
+        ps[a].first++;
+      }
+    } else if (tp == 3) {
+      if (dead[a] < 0) {
+        ps[a].second = setVal(ps[a].second, 0, maxLen, ps[a].first, ps[a].first + 1, 0);
+        ps[a].first++;
+      }
+    } else if (tp == 4) {
+      int id = cnt++;
+      dead[id] = -2;
+      ps[id] = ps[a];
+      if (dead[a] >= 0) {
+        dead[id] = i;
+      }
+    } else {
+      if (dead[a] < 0 && dead[b] < 0) {
+        int posA = getPos(ps[a].second, 0, maxLen, 0, ps[b].first + 1);
+        int posB = getPos(ps[b].second, 0, maxLen, 0, ps[a].first + 1);
+
+        if (posA >= 0 && posA < ps[b].first && posB >= 0 && posB < ps[a].first) {
+          ps[a].second = setVal(ps[a].second, 0, maxLen, posA, posA + 1, 0);
+          ps[b].second = setVal(ps[b].second, 0, maxLen, posB, posB + 1, 0);
+
+          if (getsum(ps[a].second, maxLen) == 0) {
+            dead[a] = i;
+          }
+
+          if (getsum(ps[b].second, maxLen) == 0) {
+            dead[b] = i;
+          }
+        }
+      }
+    }
+  }
+
+  cout << cnt << endl;
+  for (int i = 0; i < cnt; i++) {
+    cout << dead[i] + 1 << " ";
+  }
+  cout << endl;
+
+  return 0;
+}
+```

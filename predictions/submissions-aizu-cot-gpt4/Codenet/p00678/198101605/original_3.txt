@@ -1,0 +1,77 @@
+The provided code can be optimized in the following ways:
+
+1. The `EPS` variable is a `double` that is not being modified, it's better declared as a `const` to indicate that it won't be changed and it may also help the compiler to make better optimizations.
+
+2. The `add` function is called multiple times, and it contains a conditional that might not be necessary for all cases. In the `point` struct, the `operator+` and `operator-` functions use the `add` function to add or subtract their components, but they might not need to check for near-zero values. The `add` function is only really necessary when dividing in the `operator/` function to avoid division by near-zero values. 
+
+3. The `dist` function is called multiple times in a loop. We can instead store the result in a variable and reuse it, reducing the number of calls to `sqrt` and `pow`, both of which are computationally expensive.
+
+4. The `vector::size()` function is called in every iteration of the for loop. The size of the vector doesn't change within the loop, so it would be better to get the size before the loop and store it in a variable.
+
+5. The `vector::push_back()` function is called in a loop where the number of iterations `n` is known before the loop starts. It would be more efficient to use `vector::reserve()` before the loop to allocate enough memory for `n` elements, to avoid unnecessary reallocations.
+
+The optimized code is as follows:
+
+```cpp
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <iostream>
+#include <vector>
+using namespace std;
+const double EPS = 1e-6;
+double add(double a, double b) {
+  if (abs(a + b) < EPS * (abs(a) + abs(b)))
+    return 0;
+  return a + b;
+}
+struct point {
+  double x, y;
+  point() {}
+  point(double x, double y) : x(x), y(y) {}
+  point operator+(point p) { return point(x + p.x, y + p.y); }
+  point operator-(point p) { return point(x - p.x, y - p.y); }
+  point operator*(double d) { return point(x * d, y * d); }
+  point operator/(double d) { return point(x / d, y / d); }
+};
+double dist(point a, point b) {
+  return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2));
+}
+int main(void) {
+  int n, x, y, v;
+  vector<point> P;
+  vector<double> V;
+  while (cin >> n, n) {
+    P.clear();
+    V.clear();
+    P.reserve(n);
+    V.reserve(n);
+    for (int i = 0; i < n; i++) {
+      cin >> x >> y >> v;
+      P.push_back(point(x, y));
+      V.push_back(v);
+    }
+    double r = 0.98;
+    point now(0, 0);
+    for (double d = 10; d > EPS; d *= r) {
+      int mx = 0;
+      double mxd = 0;
+      double tmp_d;
+      int P_size = P.size();
+      for (int j = 0; j < P_size; j++) {
+        tmp_d = dist(now, P[j]) / V[j];
+        if (tmp_d > mxd)
+          mx = j, mxd = tmp_d;
+      }
+      now = now + ((P[mx] - now) / dist(P[mx], now) * d);
+    }
+    double ans = 0;
+    int P_size = P.size();
+    for (int i = 0; i < P_size; i++) {
+      ans = max(ans, dist(now, P[i]) / V[i]);
+    }
+    printf("%.8f\n", ans);
+  }
+  return 0;
+}
+```

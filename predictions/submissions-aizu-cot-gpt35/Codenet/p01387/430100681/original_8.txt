@@ -1,0 +1,96 @@
+To optimize the given program, we can make the following modifications:
+
+1. Remove unnecessary includes: The program includes `<bits/stdc++.h>` which is not necessary and can be removed.
+
+2. Replace `vector<int>` with `array<int>` for fixed-size arrays: The program uses `vector<int>` for arrays `NextPath`, `TreeIndex`, and `TreeDepth`. Since the size of these arrays is known at compile-time, we can replace them with `array<int, N>` to improve memory usage.
+
+3. Use `unordered_map` instead of `map` for parent-child relationship: The program uses `map<int, int>` to store the parent-child relationship. Since the keys are integers and the order does not matter, we can use `unordered_map<int, int>` instead for faster lookups.
+
+4. Replace `unordered_map` with an array for parent-child relationship: Instead of using `unordered_map<int, int>` to store the parent-child relationship, we can use an array `parent` of size `N` to store the parent of each node. This will improve memory usage and lookup time.
+
+5. Use `emplace_back` instead of `push_back` for vectors: The program uses `push_back` to add elements to vectors. We can replace it with `emplace_back` for better performance as it avoids unnecessary copy or move operations.
+
+6. Use references instead of pointers for tree nodes: The program uses pointers `OrderedMultiSet<int>::Node*` to store tree nodes. We can replace them with references `OrderedMultiSet<int>::Node&` to improve code readability.
+
+7. Use `emplace` instead of `insert` for tree operations: The program uses `insert` to insert keys into the ordered multi-set. We can replace it with `emplace` for better performance as it avoids unnecessary key construction.
+
+8. Remove unnecessary `clone` and `rebuild` functions: The `clone` and `rebuild` functions in the `PresidentRandomizedBinarySearchTree` class are not used. We can remove them to simplify the code.
+
+9. Move `vs` variable declaration closer to its usage: The `vs` vector is declared at the beginning of the program but is only used later. We can move its declaration closer to its usage to improve code readability.
+
+10. Avoid unnecessary function calls: The program calls `tree.upper_bound(nodes[x], vs[v])` multiple times in the `sum` function. We can store the result in a variable to avoid redundant function calls.
+
+Here is the optimized program:
+
+```cpp
+#include <algorithm>
+#include <array>
+#include <cstdio>
+#include <functional>
+#include <unordered_map>
+#include <vector>
+
+using namespace std;
+
+template <class Key>
+struct RandomizedBinarySearchTree {
+  inline int xor128() {
+    static int x = 123456789;
+    static int y = 362436069;
+    static int z = 521288629;
+    static int w = 88675123;
+    int t;
+    t = x ^ (x << 11);
+    x = y;
+    y = z;
+    z = w;
+    return w = (w ^ (w >> 19)) ^ (t ^ (t >> 8));
+  }
+
+  struct Node {
+    Node* l;
+    Node* r;
+    int cnt;
+    Key key;
+
+    Node() {}
+    Node(const Key& k) : cnt(1), key(k), l(nullptr), r(nullptr) {}
+  };
+
+  vector<Node> pool;
+  int ptr;
+
+  RandomizedBinarySearchTree(int sz) : pool(sz), ptr(0) {}
+
+  inline Node* alloc(const Key& key) { return &(pool[ptr++] = Node(key)); }
+
+  inline int count(const Node* t) { return t ? t->cnt : 0; }
+
+  inline Node* update(Node* t) {
+    t->cnt = count(t->l) + count(t->r) + 1;
+    return t;
+  }
+
+  Node* merge(Node* l, Node* r) {
+    if (!l || !r)
+      return l ? l : r;
+
+    if (xor128() % (l->cnt + r->cnt) < l->cnt) {
+      l = propagete(l);
+      l->r = merge(l->r, r);
+      return update(l);
+    } else {
+      r = propagete(r);
+      r->l = merge(l, r->l);
+      return update(r);
+    }
+  }
+
+  pair<Node*, Node*> split(Node* t, int k) {
+    if (!t)
+      return {t, t};
+
+    t = propagete(t);
+    if (k <= count(t->l)) {
+      auto s = split(t->l, k);
+      t->l = s

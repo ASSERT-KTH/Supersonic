@@ -1,0 +1,113 @@
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+#include <cmath>
+using namespace std;
+
+const int MX = 100005;
+const int BLOCK = 1000;
+
+int cnt[MX], CNT[MX][MX], a[MX], A[MX];
+vector<int> con[MX/BLOCK + 1];
+unordered_map<int, int> m;
+
+int get(int x) {
+  if (!m.count(x)) {
+    int sz = m.size();
+    m[x] = sz;
+  }
+  return m[x];
+}
+
+void upd(int p, int inc) {
+  int v = a[p];
+  int b = p / BLOCK;
+  CNT[b][cnt[v]]--;
+  cnt[v] += inc;
+  CNT[b][cnt[v]]++;
+  if (cnt[v] > 0 && find(con[b].begin(), con[b].end(), cnt[v]) == con[b].end()) {
+    con[b].push_back(cnt[v]);
+  }
+}
+
+int query2(int y) {
+  int b = y / BLOCK;
+  int ans = cnt[a[y]];
+  for (int i = BLOCK * b + 1; i <= y; i++) {
+    if (a[i] == a[y]) {
+      ans++;
+    }
+  }
+  return ans;
+}
+
+int query3(int y) {
+  int mn = query2(y);
+  int ans = 0;
+  int b = y / BLOCK;
+
+  vector<int> ok;
+  for (int i : con[b]) {
+    if (CNT[b][i]) {
+      ok.push_back(i);
+      if (i >= mn) {
+        ans += CNT[b][i];
+      }
+    }
+  }
+  con[b] = ok;
+
+  for (int i = BLOCK * b + 1; i <= y; i++) {
+    cnt[a[i]]++;
+    if (cnt[a[i]] == mn) {
+      ans++;
+    }
+  }
+  for (int i = BLOCK * b + 1; i <= y; i++) {
+    cnt[a[i]]--;
+  }
+
+  return ans;
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  
+  int N;
+  cin >> N;
+  for (int i = 1; i <= N; i++) {
+    cin >> A[i];
+    a[i] = get(A[i]);
+    upd(i, 1);
+  }
+  
+  int M;
+  cin >> M;
+  for (int i = 0; i < M; i++) {
+    int t;
+    cin >> t;
+    if (t == 1) {
+      int v, p;
+      cin >> v >> p;
+      upd(p, -1);
+      A[p] = v;
+      a[p] = get(v);
+      upd(p, 1);
+    } else {
+      int x, y;
+      cin >> x >> y;
+      if (x == 1) {
+        cout << A[y] << endl;
+      } else {
+        if (x % 2 == 0) {
+          cout << query2(y) << endl;
+        } else {
+          cout << query3(y) << endl;
+        }
+      }
+    }
+  }
+
+  return 0;
+}

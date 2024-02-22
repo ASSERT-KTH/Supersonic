@@ -1,0 +1,89 @@
+The program is generally well written, but there are a few areas that can be optimized:
+
+1. Instead of using `std::make_pair` repeatedly to generate pairs, C++11 introduced a more convenient syntax using `{}` for generating pairs directly.
+
+2. In the `dist` function, you are calculating the absolute difference which is a costly operation. But if you are sure that first argument's values are always greater than second argument's values then you can avoid this absolute function. 
+
+3. The `dist` function is called multiple times with the same arguments, which leads to redundant calculations. Instead, you can store the results of these calculations in a map or hash table and retrieve them when needed, which is known as memoization.
+
+4. You're using `vector::push_back` to add elements to the vector, which can be slow because it may cause the vector to reallocate its underlying array. If you know the maximum size of the vector in advance, you can use `vector::reserve` to allocate enough memory at the start.
+
+5. You're using `bits/stdc++.h` which includes a lot of unnecessary header files, slowing down compilation time. Include only those headers which you are using.
+
+6. You're using `using namespace std;` which can lead to name clashes because it imports all names from the `std` namespace into the global namespace.
+
+Here's the optimized code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cmath>
+#include <unordered_map>
+
+#define FAST ios_base::sync_with_stdio(false), cin.tie(0), cout.tie(0);
+#define ll long long
+
+using std::pair;
+using std::vector;
+using std::cin;
+using std::cout;
+using std::max;
+using std::abs;
+
+ll xx, yy, ax, bx, ay, by, xs, ys, t;
+unordered_map<pair<ll, ll>, ll> distCache;
+
+ll dist(pair<ll, ll> a, pair<ll, ll> b) {
+  pair<pair<ll, ll>, pair<ll, ll>> key = {a, b};
+  if (distCache.find(key) == distCache.end())
+    distCache[key] = abs(a.first - b.first) + abs(a.second - b.second);
+  return distCache[key];
+}
+
+pair<ll, ll> next(pair<ll, ll> temp) {
+  return {ax * temp.first + bx, ay * temp.second + by};
+}
+
+int main() {
+  FAST;
+  cin >> xx >> yy >> ax >> ay >> bx >> by >> xs >> ys >> t;
+  pair<ll, ll> temp = {xx, yy}, tx = {xs, ys};
+  vector<pair<ll, ll>> arr;
+  arr.reserve(100000); // assuming the maximum size
+  ll vs = 0, dea = dist(temp, tx);
+  if (dea <= t)
+    arr.push_back(temp);
+  temp = next(temp);
+  vs = dist(tx, temp) > dea ? 2 : 1;
+  while (vs == 1 || (vs == 2 && dist(tx, temp) <= t)) {
+    dea = dist(tx, temp);
+    arr.push_back(temp);
+    temp = next(temp);
+    if (vs == 1 && dea < dist(tx, temp))
+      vs = 2;
+  }
+  ll ans = 0;
+  for (int i = 0; i < arr.size(); i++) {
+    int j = i;
+    ll dus = dist(tx, arr[i]), tx = dus;
+    if (dus <= t) {
+      while (j < arr.size() - 1 && dus <= t) {
+        j++;
+        dus += dist(arr[j], arr[j - 1]);
+      }
+      ans = max(ans, dus <= t ? (ll)j - i + 1 : (ll)j - i);
+      dus = tx;
+      j = i;
+      while (j > 0 && dus <= t) {
+        j--;
+        dus += dist(arr[j], arr[j + 1]);
+      }
+      ans = max(ans, dus <= t ? (ll)i - j + 1 : (ll)i - j);
+    }
+  }
+  cout << ans;
+}
+```
+
+**Note:** The size passed to `vector::reserve` is an assumption here. You must adjust it according to your needs. Also, memoization can increase memory usage, so you should consider this trade-off.

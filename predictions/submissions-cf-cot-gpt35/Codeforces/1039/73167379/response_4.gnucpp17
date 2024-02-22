@@ -1,0 +1,134 @@
+#include <iostream>
+#include <vector>
+#include <deque>
+#include <cmath>
+#include <cassert>
+
+using namespace std;
+
+const int G = 400002;
+int a;
+vector<int> l[G];
+int skok[G], o[G], zam[G], GR[G][2], mxd[G], mxp[G], dp[G][2], sz[G], good[G];
+vector<int> gd, bd;
+
+int CALC(int v, int p, int D) {
+  mxd[v] = 1;
+  sz[v] = 1;
+  int mx = 0, mxx = 0;
+  for (int h : l[v]) {
+    if (h == p) {
+      continue;
+    }
+    int x = CALC(h, v, D + 1);
+    mxd[v] = max(mxd[v], x + 1);
+    sz[v] += sz[h];
+    if (x >= mx) {
+      mxx = mx;
+      mx = x;
+    } else if (x > mxx) {
+      mxx = x;
+    }
+  }
+  mxp[v] = mx + mxx + 1;
+  return mxd[v];
+}
+
+int find_centroid(int v, int p) {
+  int mx = 0, num = -1;
+  for (int h : l[v]) {
+    if (h != p && sz[h] > mx) {
+      mx = sz[h];
+      num = h;
+    }
+  }
+  return mx > a / 2 ? find_centroid(num, v) : v;
+}
+
+void KROLIK(int v) {
+  if (good[v]) {
+    gd.push_back(v);
+  } else {
+    bd.push_back(v);
+  }
+  deque<int> dq = {v};
+  while (!dq.empty()) {
+    int x = dq.front();
+    dq.pop_front();
+    for (int h : l[x]) {
+      if (zam[h] != -1) {
+        continue;
+      }
+      dq.push_back(h);
+      zam[h] = gd.size() + bd.size();
+    }
+  }
+}
+
+void RIP_PAPA(int v, int p) {
+  for (int q = 0; q < l[v].size(); q++) {
+    if (l[v][q] == p) {
+      l[v].erase(l[v].begin() + q);
+      break;
+    }
+  }
+  for (int h : l[v]) {
+    RIP_PAPA(h, v);
+  }
+}
+
+int rnm(int v) {
+  int res = 1;
+  deque<int> dq = {v};
+  while (!dq.empty()) {
+    int x = dq.front();
+    dq.pop_front();
+    for (int h : l[x]) {
+      if (zam[h] != -1) {
+        continue;
+      }
+      dq.push_back(h);
+      zam[h] = res++;
+    }
+  }
+  return res;
+}
+
+void rnm2(int v) {
+  zam[v] = rnm(v);
+  deque<int> dq = {v};
+  while (!dq.empty()) {
+    int x = dq.front();
+    dq.pop_front();
+    for (int h : l[x]) {
+      if (zam[h] != -1 || good[h]) {
+        continue;
+      }
+      dq.push_back(h);
+      zam[h] = rnm(h);
+    }
+  }
+}
+
+int GA(int LEN) {
+  if (o[LEN] != -1) {
+    return o[LEN];
+  }
+  for (int q = a - 1; q >= 0; q--) {
+    if (good[q]) {
+      dp[q][0] = sz[q] / LEN;
+      dp[q][1] = sz[q] % LEN;
+      continue;
+    }
+    dp[q][0] = 0;
+    int d1 = 0, d2 = 0;
+    for (int w : l[q]) {
+      dp[q][0] += dp[w][0];
+      if (dp[w][1] >= d1) {
+        d2 = d1;
+        d1 = dp[w][1];
+      } else {
+        d2 = max(d2, dp[w][1]);
+      }
+    }
+    if (d1 + d2 + 1 < LEN) {

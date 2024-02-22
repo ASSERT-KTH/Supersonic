@@ -1,0 +1,84 @@
+Code Analysis:
+The code is a depth first search function (dfs) that reads a string and reorganizes it, putting digits together and expanding brackets. It then prints the Nth character of the resulting string. The main inefficiencies come from:
+
+1. Use of the '+' operator to append to a string. This operation can be expensive as it creates a new string every time.
+2. Use of substr() function inside a loop. This creates a new string and copies the elements from the original string to the new string, which is inefficient.
+3. Recursively calling dfs on substrings. This creates a new copy of the string for each recursive call, increasing memory usage.
+4. The code is not handling the case when the size of the string is greater than N. It still continues to build the string even though we only need the character at position N.
+
+Optimization Strategy:
+
+1. Use stringstream or reserve space for the string to avoid reallocation.
+2. Avoid creating a new string with substr() inside the loop. Instead, pass the start and end indices to the dfs function.
+3. Pass the string by reference to dfs to avoid creating a new copy of the string for each recursive call.
+4. Stop building the string once its size is greater than N.
+
+Optimized Code Block:
+
+```
+#include <sstream>
+#include <iostream>
+#include <string>
+using namespace std;
+int N;
+stringstream ss;
+string dfs(const string& s, int i, int j) {
+  string r;
+  r.reserve(j-i+1);  // Reserving space
+  long long n = -1;
+  for (; i < j;) {
+    if ('0' <= s[i] && s[i] <= '9') {
+      if (n < 0)
+        n = s[i] - '0';
+      else
+        n = n * 10 + s[i] - '0';
+      i++;
+    } else if (s[i] == '(') {
+      if (n < 0)
+        n = 1;
+      int cnt = 1, k = i + 1;
+      for (; cnt;) {
+        if (s[k] == '(')
+          cnt++;
+        else if (s[k] == ')')
+          cnt--;
+        k++;
+      }
+      string r0 = dfs(s, i + 1, k - 1);
+      for (int _ = 0; _ < n; _++) {
+        r += r0;
+        if (r.size() > N)
+          return r.substr(0, N+1);
+      }
+      n = -1;
+      i = k;
+    } else {
+      if (n < 0)
+        n = 1;
+      r += string(n, s[i]);
+      if (r.size() > N)
+        return r.substr(0, N+1);
+      n = -1;
+      i++;
+    }
+  }
+  return r;
+}
+int main() {
+  for (;;) {
+    string s;
+    cin >> s >> N;
+    if (s == "0")
+      break;
+    string r = dfs(s, 0, s.size());
+    printf("%c\n", r.size() > N ? r[N] : '0');
+  }
+}
+```
+
+In this optimized code, we have:
+
+1. Replaced the '+' operator with the append function for concatenation.
+2. Replaced the substr() function with index parameters for the dfs function.
+3. Changed the dfs function to take the string by reference.
+4. Added checks to stop building the string once its size is greater than N. This avoids unnecessary computation and memory usage.

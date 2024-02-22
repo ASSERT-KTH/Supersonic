@@ -1,0 +1,196 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <algorithm>
+#include <cmath>
+using namespace std;
+
+#define N 200005
+#define ll long long int
+
+vector<int> v[N], diam[N], tour, path;
+int h[N], first[N], stmin[2 * N][20], root;
+int parent[N], dist[N], root1;
+
+void height_initialise(int x, int y) {
+  h[x] = y;
+  for (int node : v[x]) {
+    if (h[node] == 0) {
+      height_initialise(node, y + 1);
+    }
+  }
+}
+
+void distanc(int x, int y) {
+  dist[x] = y;
+  for (int node : v[x]) {
+    if (dist[node] == 0) {
+      distanc(node, y + 1);
+    }
+  }
+}
+
+void euler(int x, int y) {
+  tour.push_back(x);
+  for (int node : v[x]) {
+    if (node != y) {
+      euler(node, x);
+    }
+  }
+  if (y != 0)
+    tour.push_back(y);
+}
+
+void euler_tour() {
+  euler(root, 0);
+  for (int i = 0; i < tour.size(); i++) {
+    if (first[tour[i]] == 0) {
+      first[tour[i]] = i;
+    }
+  }
+}
+
+void sparsemin() {
+  for (int i = 0; i < tour.size(); i++) {
+    stmin[i][0] = tour[i];
+  }
+  for (int j = 1; (1 << j) <= tour.size(); j++) {
+    for (int i = 0; i <= tour.size() - (1 << j); i++) {
+      int x = stmin[i][j - 1];
+      int y = stmin[i + (1 << (j - 1))][j - 1];
+      if (h[x] > h[y]) {
+        stmin[i][j] = y;
+      } else {
+        stmin[i][j] = x;
+      }
+    }
+  }
+}
+
+int spminquery(int l, int r) {
+  int length = r - l + 1;
+  int k = log2(length);
+  int x = stmin[l][k];
+  int y = stmin[l + length - (1 << k)][k];
+  if (h[x] < h[y]) {
+    return x;
+  }
+  return y;
+}
+
+pair<int, vector<int>> bfs(int x, int flag) {
+  queue<int> q;
+  q.push(x);
+  vector<int> path;
+  while (!q.empty()) {
+    x = q.front();
+    q.pop();
+    for (int node : v[x]) {
+      if (parent[node] == 0) {
+        q.push(node);
+        if (flag == 1) {
+          parent[node] = x;
+        }
+      }
+    }
+    path.push_back(x);
+  }
+  return make_pair(x, path);
+}
+
+void diameter() {
+  int x, y, z, j;
+  pair<int, vector<int>> result = bfs(1, 0);
+  x = result.first;
+  result = bfs(x, 1);
+  y = result.first;
+  root1 = y;
+  path = result.second;
+  for (int i = 0; i < path.size(); i++) {
+    diam[i].push_back(path[i]);
+  }
+  root = x;
+  for (int i = 0; i < path.size(); i++) {
+    queue<int> q;
+    q.push(path[i]);
+    while (!q.empty()) {
+      x = q.front();
+      q.pop();
+      for (int node : v[x]) {
+        if (find(path.begin(), path.end(), node) == path.end()) {
+          q.push(node);
+          diam[i].push_back(node);
+        }
+      }
+    }
+  }
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  
+  int n;
+  cin >> n;
+  
+  for (int i = 0; i < n - 1; i++) {
+    int x, y;
+    cin >> x >> y;
+    v[x].push_back(y);
+    v[y].push_back(x);
+  }
+  
+  diameter();
+  height_initialise(root, 0);
+  euler_tour();
+  sparsemin();
+  distanc(root, 0);
+  
+  ll ans = 0;
+  vector<pair<int, int>> an;
+  
+  for (int i = 0; i < path.size() / 2; i++) {
+    for (int j = diam[i].size() - 1; j > 0; j--) {
+      int x = root1;
+      int y = diam[i][j];
+      an.push_back(pair<int, int>(x, y));
+      int l = first[x];
+      int r = first[y];
+      int z = spminquery(min(l, r), max(l, r));
+      z = dist[x] + dist[y] - 2 * dist[z];
+      ans += z;
+    }
+  }
+  
+  for (int i = path.size() / 2; i < path.size(); i++) {
+    for (int j = diam[i].size() - 1; j > 0; j--) {
+      int x = root;
+      int y = diam[i][j];
+      an.push_back(pair<int, int>(x, y));
+      int l = first[x];
+      int r = first[y];
+      int z = spminquery(min(l, r), max(l, r));
+      z = dist[x] + dist[y] - 2 * dist[z];
+      ans += z;
+    }
+  }
+  
+  for (int i = path.size() - 1; i > 0; i--) {
+    int x = root;
+    int y = diam[i][0];
+    an.push_back(pair<int, int>(x, y));
+    int l = first[x];
+    int r = first[y];
+    int z = spminquery(min(l, r), max(l, r));
+    z = dist[x] + dist[y] - 2 * dist[z];
+    ans += z;
+  }
+  
+  cout << ans << endl;
+  
+  for (int i = 0; i < an.size(); i++) {
+    cout << an[i].first << " " << an[i].second << " " << an[i].second << "\n";
+  }
+  
+  return 0;
+}

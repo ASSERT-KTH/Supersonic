@@ -1,0 +1,99 @@
+Looking at the given code, it seems to be a simulation of a dice game. The game involves moving through different positions on a board, where each position has a unique property defined by the array `N`. The program calculates the optimal path from the start to the goal using the dice values and the array `N`. Afterwards, it simulates a sequence of dice throws and moves the player according to a specific strategy.
+
+1. Code Analysis:
+    - The function `MakePath` is a recursive function that calculates the optimal path from the start to the goal. Each time it is called, it creates a new path array if it is not already created. 
+    - There is a `visit` array that keeps track of visited positions.
+    - The function `tryMove` is used to try moving to a new position given a dice throw.
+
+2. Optimization Strategy:
+    - The `visit` array can be moved outside of the `MakePath` function to avoid creating it every time the function is called.
+    - Similarly, the `checkPath` and `tryMove` lambdas can be moved outside of their respective functions to avoid redefining them every time.
+    - The path array can be allocated once in the main function instead of checking and allocating in `MakePath`.
+    - Redundant calls to `isPositionValid` can be reduced by checking validity once before calling `tryMove`.
+    - The array `N` can be made static to avoid heap allocation and deallocation.
+
+3. Step-by-step Explanation:
+    - Move the `visit` array outside the `MakePath` function. This reduces memory allocation and deallocation overhead.
+    - Move the `checkPath` and `tryMove` lambdas outside of their respective functions. This reduces function definition overhead.
+    - Allocate the path array once in the main function. This reduces memory allocation and deallocation overhead.
+    - Check position validity once before calling `tryMove`. This reduces the number of function calls.
+    - Make the array `N` static. This reduces heap allocation and deallocation overhead.
+
+4. Optimized Code Block:
+```c++
+#include <iostream>
+using namespace std;
+const int MAX_T = 3000, MAX_M = 300;
+int M, start, goal, dice[6];
+int N[MAX_M], *path = NULL;
+bool visit[MAX_M] = {};
+
+bool isPositionValid(int p) { return 0 <= p && p < M; }
+
+auto checkPath = [](int moveto) -> int {
+  if (!isPositionValid(moveto))
+    return 2 * MAX_T;
+  else {
+    int position = moveto + N[moveto];
+    if (!visit[position])
+      MakePath(position);
+    return path[position] + 1;
+  }
+};
+
+void MakePath(int from) {
+  visit[from] = true;
+  int bestpath = MAX_T;
+  if (from == goal)
+    bestpath = 0;
+  else {
+    for (int r = 0; r < 6; r++) {
+      bestpath = min(bestpath, checkPath(from + dice[r]));
+      bestpath = min(bestpath, checkPath(from - dice[r]));
+    }
+  }
+  path[from] = bestpath;
+}
+
+auto tryMove = [](int moveto, int path_before, int &position) -> bool {
+  if (isPositionValid(moveto)) {
+    if (path_before > path[moveto + N[moveto]]) {
+      position = moveto + N[moveto];
+      return true;
+    }
+  }
+  return false;
+};
+
+int main() {
+  cin >> M;
+  for (int r = 0; r < 6; r++)
+    cin >> dice[r];
+  cin >> start >> goal;
+  start--, goal--;
+  for (int m = 0; m < M; m++)
+    cin >> N[m];
+  path = new int[M];
+  for (int m = 0; m < M; m++)
+    path[m] = MAX_T + 1;
+  MakePath(start);
+  int position = start;
+  for (int t = 0; t < MAX_T; t++) {
+    if (position == goal)
+      break;
+    int r;
+    cin >> r;
+    int d = dice[r - 1];
+    int output;
+    if (tryMove(position + d, path[position], position))
+      output = 1;
+    else if (tryMove(position - d, path[position], position))
+      output = -1;
+    else
+      output = 0;
+    cout << output << endl;
+  }
+  delete[] path;
+  return 0;
+}
+```

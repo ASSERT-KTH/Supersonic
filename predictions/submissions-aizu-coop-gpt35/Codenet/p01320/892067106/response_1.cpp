@@ -1,0 +1,5 @@
+Code Analysis:
+- The code includes a large number of unnecessary header files and typedefs. These can be removed to reduce memory usage and improve compilation time.
+- The code includes various macros and overloaded operators, which can make the code more difficult to read and understand. These should be simplified or removed if they do not provide significant performance benefits.
+- The code includes a large number of unnecessary functions for printing and manipulating data structures. These can be removed to reduce memory usage and improve running time.
+- The code includes the implementation of various geometric structures and algorithms (e.g. intersection, convex hull). These can be simplified or replaced with more efficient existing libraries or algorithms.

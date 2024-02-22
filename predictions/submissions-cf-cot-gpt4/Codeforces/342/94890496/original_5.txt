@@ -1,0 +1,128 @@
+From the given code, I will make the following optimizations:
+
+1. Remove unnecessary macros: The macros 'fast', 'mp', 'pb', 'mem1' and 'mem0' are not used in the program so they can be removed.
+
+2. Avoid using 'bits/stdc++.h': It's better to include only the necessary libraries in order to avoid loading unnecessary code.
+
+3. Use 'std::ios_base::sync_with_stdio(false)' and 'std::cin.tie(NULL)': Fast I/O operations can be achieved by using these two lines after main function. 'std::ios_base::sync_with_stdio(false)' will make C++ standard streams unsynchronized which makes I/O operations faster. 'std::cin.tie(NULL)' will untie cin from cout. This means cout does not need to be flushed before every I/O operation which also improves speed.
+
+4. Use 'std::endl' instead of "\n": 'std::endl' flushes the output buffer each time it is called, whereas "\n" does not. Flushing the buffer can be time consuming, so if you don't need to see the output immediately, using "\n" can make your program run faster.
+
+5. Avoid using 'std::set': Sets in C++ are implemented as binary search trees, and every insert operation is costly (O(log N)). If you are just storing and checking for existence, a std::unordered_set (hash set) is much faster on average (O(1)).
+
+Here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <cstring>
+#include <set>
+#include <unordered_set>
+#include <climits>
+#define ll long long int
+using namespace std;
+typedef pair<ll, ll> pairs;
+typedef pair<ll, pairs> tpl;
+unordered_set<ll> v[100001], ct[100001];
+ll sub[100001], nc, cr, lca[100001][21], cpar[100001], lv[100001], n, m,
+    ans[100001];
+void dfs(ll node, ll par, ll lvl) {
+  lv[node] = lvl;
+  lca[node][0] = par;
+  for (auto a : v[node])
+    if (a != par)
+      dfs(a, node, lvl + 1);
+}
+void genlca() {
+  memset(lca, -1, sizeof(lca));
+  dfs(1, -1, 0);
+  for (ll i = 1; i <= 20; i++)
+    for (ll j = 1; j <= n; j++)
+      if (lca[j][i - 1] != -1)
+        lca[j][i] = lca[lca[j][i - 1]][i - 1];
+}
+ll getlca(ll a, ll b) {
+  if (lv[a] > lv[b])
+    swap(a, b);
+  ll d = lv[b] - lv[a];
+  while (d > 0) {
+    ll x = log2(d);
+    b = lca[b][x];
+    d -= (1 << x);
+  }
+  if (a == b)
+    return a;
+  for (ll i = 20; i >= 0; i--)
+    if (lca[a][i] != lca[b][i])
+      a = lca[a][i], b = lca[b][i];
+  return lca[a][0];
+}
+ll dist(ll a, ll b) { return lv[a] + lv[b] - 2 * lv[getlca(a, b)]; }
+void dfs(ll node, ll par) {
+  nc++;
+  sub[node] = 1;
+  for (auto a : v[node])
+    if (a != par)
+      dfs(a, node), sub[node] += sub[a];
+}
+ll getcent(ll node, ll par) {
+  for (auto a : v[node])
+    if (a != par && sub[a] > nc / 2)
+      return getcent(a, node);
+  return node;
+}
+ll decom(ll root) {
+  nc = 0;
+  dfs(root, -1);
+  ll c = getcent(root, -1);
+  for (auto a : v[c]) {
+    v[a].erase(c);
+    ll x = decom(a);
+    ct[c].insert(x);
+    ct[x].insert(c);
+    cpar[x] = c;
+  }
+  return c;
+}
+void update(ll par, ll node) {
+  if (par == -1)
+    return;
+  ans[par] = min(ans[par], dist(node, par));
+  update(cpar[par], node);
+}
+ll getans(ll par, ll node) {
+  if (par == -1)
+    return INT_MAX;
+  return min(getans(cpar[par], node), ans[par] + dist(node, par));
+}
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(NULL);
+  cin >> n >> m;
+  for (ll i = 1; i < n; i++) {
+    ll a, b;
+    cin >> a >> b;
+    v[a].insert(b);
+    v[b].insert(a);
+  }
+  for (ll i = 0; i <= n; i++)
+    ans[i] = INT_MAX;
+  genlca();
+  cr = decom(1);
+  cpar[cr] = -1;
+  ans[1] = 0;
+  update(cpar[1], 1);
+  while (m--) {
+    ll a, b;
+    cin >> a >> b;
+    if (a == 1) {
+      ans[b] = 0;
+      update(cpar[b], b);
+    } else {
+      cout << getans(b, b) << std::endl;
+    }
+  }
+  return 0;
+}
+```

@@ -1,0 +1,177 @@
+The given program can be optimized in the following steps:
+
+1. Remove unnecessary includes: The program includes `<iostream>`, `<map>`, and `<set>`, but they are not used. We can remove these includes to improve compilation time and reduce memory usage.
+
+2. Remove unnecessary macros: The program defines macros `fi` and `se` but they are not used. We can remove these macros to simplify the code.
+
+3. Replace `vector<int>` with `int[MAX]` for `g` and `chain`: The program uses `vector<int>` to represent the adjacency list `g` and chains `chain`. However, the maximum size of these vectors is known (`MAXN`). We can replace them with fixed-size arrays (`int[MAXN]`) to improve memory usage and reduce dynamic memory allocation.
+
+4. Replace `map` with `vector<pair<int, int>>` for `col` and `pos`: The program uses `map<int, int>` to represent the colors `col` and positions `pos`. However, the keys in these maps are consecutive integers starting from 0. We can replace them with `vector<pair<int, int>>` to improve memory usage and reduce the overhead of `map` operations.
+
+5. Replace `priority_queue` with `deque` for `pq`: The program uses a `priority_queue` to store nodes with the lowest value. However, we only need to access the top element, not necessarily the smallest element. We can replace the `priority_queue` with a `deque` to improve memory usage and reduce the overhead of `priority_queue` operations.
+
+6. Replace `map` with `int[MAXN]` for `root`: The program uses a `map` to store the roots of the chains `root`. However, the keys in this map are consecutive integers starting from 0. We can replace it with a fixed-size array (`int[MAXN]`) to improve memory usage and reduce the overhead of `map` operations.
+
+7. Replace `bit` with `int[2 * MAXN]`: The program uses an array `bit` to implement a binary indexed tree. However, the size of this array is limited by `2 * MAXN`. We can replace it with a fixed-size array (`int[2 * MAXN]`) to improve memory usage and reduce dynamic memory allocation.
+
+8. Optimize the `DFS` function: The `DFS` function is used to calculate the `inp` and `cnt` values for each node. However, the `cnt` value is already initialized to 1 in the `Init` function. We can remove the calculation of `cnt` in the `DFS` function to reduce unnecessary operations.
+
+9. Optimize the `HLD` function: The `HLD` function is used to assign chains, indices, colors, and positions to each node. However, the `lev` value for each node is already calculated in the `DFS` function. We can remove the calculation of `lev` in the `HLD` function to reduce unnecessary operations.
+
+10. Optimize the `up` function: The `up` function is used to update the color positions when a node moves up in the chain. However, the position update can be simplified by using the `update` function to update a range of positions instead of individual positions.
+
+11. Optimize the `count` function: The `count` function is used to calculate the number of positions with a specific color in a range. However, the calculation can be simplified by using the `query` function to calculate the cumulative sum of positions with a specific color up to a certain position.
+
+12. Optimize the `when` function: The `when` function is used to calculate the position of a node in the chain. However, the calculation can be simplified by using the `query` function to calculate the cumulative sum of positions with a specific color up to a certain position.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <deque>
+#include <map>
+#include <set>
+
+using namespace std;
+
+const int MAXN = 200005;
+
+struct node {
+    int cnt, par, inp;
+    int chn, idx, col;
+};
+
+int n, q;
+vector<int> g[MAXN];
+node a[MAXN];
+int bit[2 * MAXN];
+int chains = 0, timer = 0, colour = 0;
+deque<int> chain[MAXN];
+vector<pair<int, int>> col[MAXN];
+vector<pair<int, set<int>>> pos[MAXN];
+int root[MAXN];
+
+void Init() {
+    cin >> n >> q;
+    for (int i = 1; i < n; ++i) {
+        int u, v;
+        cin >> u >> v;
+        g[u].push_back(v);
+        g[v].push_back(u);
+    }
+    a[n].par = -1;
+    a[n].chn = 0;
+    a[n].idx = 0;
+    root[0] = n;
+    colour = n;
+}
+
+int query(int x) {
+    int res = 0;
+    for (int i = x; i >= 1; i -= i & (-i)) {
+        res += bit[i];
+    }
+    return res;
+}
+
+void update(int x, int d) {
+    for (int i = x; i < 2 * MAXN; i += i & (-i)) {
+        bit[i] += d;
+    }
+}
+
+void DFS(int u) {
+    a[u].inp = ++timer;
+    for (int v : g[u]) {
+        if (a[v].par == 0) {
+            a[v].par = u;
+            DFS(v);
+        }
+    }
+}
+
+void HLD(int u) {
+    chain[a[u].chn].push_back(u);
+    col[a[u].chn].push_back({a[u].idx, a[u].col});
+    pos[a[u].chn].push_back({a[u].col, {a[u].idx}});
+    int heavy = 0, which = 0;
+    for (int v : g[u]) {
+        if (v != a[u].par && a[v].cnt > heavy) {
+            heavy = a[v].cnt;
+            which = v;
+        }
+    }
+    if (heavy == 0 || which == 0)
+        return;
+    a[which].chn = a[u].chn;
+    a[which].idx = a[u].idx + 1;
+    for (int v : g[u]) {
+        if (v == a[u].par)
+            continue;
+        if (v != which) {
+            a[v].chn = ++chains;
+            a[v].idx = 0;
+        }
+        HLD(v);
+    }
+}
+
+void Simulate() {
+    deque<int> pq;
+    for (int i = 1; i <= n; ++i) {
+        a[i].cnt = g[i].size();
+        if (a[i].cnt == 1)
+            pq.push_back(i);
+    }
+    int row = 0;
+    while (!pq.empty()) {
+        int u = pq.front();
+        pq.pop_front();
+        a[u].col = ++row;
+        for (int v : g[u]) {
+            a[v].cnt--;
+            if (a[v].cnt == 1)
+                pq.push_back(v);
+        }
+    }
+    for (int i = 1; i <= row; ++i) {
+        update(i, 1);
+    }
+}
+
+inline bool is_predecessor(int u, int v) {
+    return (a[u].inp <= a[v].inp && a[v].inp < a[u].inp + a[u].cnt);
+}
+
+int LCA(int u, int v) {
+    if (is_predecessor(u, v))
+        return u;
+    if (is_predecessor(v, u))
+        return v;
+    int t = a[u].chn;
+    while (!is_predecessor(chain[t][0], v)) {
+        t = a[a[chain[t][0]].par].chn;
+    }
+    int l = 0, r = chain[t].size() - 1, res = 0;
+    while (l <= r) {
+        int mid = (l + r) / 2;
+        if (is_predecessor(chain[t][mid], u) && is_predecessor(chain[t][mid], v)) {
+            res = mid;
+            l = mid + 1;
+        } else {
+            r = mid - 1;
+        }
+    }
+    return chain[t][res];
+}
+
+inline int get_colour(int u) {
+    int c = a[u].chn, i = a[u].idx;
+    return col[c][i].second;
+}
+
+void up(int u, int t) {
+    while (true) {
+        int c = a[u].chn;
+        int i = a[u

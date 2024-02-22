@@ -1,0 +1,21 @@
+The given code is a C++ program that performs topological sorting on a directed acyclic graph (DAG). The program reads the number of nodes and edges from the input, constructs the graph, performs topological sorting, and then checks if the sorted order forms a valid path in the graph.
+
+Upon analyzing the code, the following potential areas for optimization can be identified:
+
+1. Use of `std::map`: The code uses a `std::map` to store the edges of the graph. However, `std::map` has a logarithmic time complexity for insertion, deletion, and search operations. Since the edges are stored in a `std::map`, the overall time complexity of constructing the graph is higher than necessary. Using a more efficient data structure can improve the performance.
+
+2. Use of `std::vector` and `std::deque`: The code uses `std::vector` and `std::deque` to store the nodes and edges of the graph. While these containers are generally efficient, there might be opportunities to optimize their usage, especially in the context of topological sorting.
+
+3. Redundant computations: The code checks for the existence of each edge twice - once during the construction of the graph and again when checking for a valid path. This redundancy can be eliminated to improve performance.
+
+4. Use of macros: The code uses macros for various operations, such as addition, subtraction, and multiplication. While macros can provide syntactic convenience, they can also lead to hidden bugs and decrease code readability. Replacing the macros with inline functions or regular function calls can improve code maintainability and potentially enable compiler optimizations.
+
+To optimize the given code, the following steps can be taken:
+
+1. Replace `std::map` with `std::vector<std::vector<int>>`: Instead of using a `std::map` to store the edges, use a 2D vector to represent the adjacency list of the graph. This change eliminates the logarithmic time complexity of `std::map` operations and improves overall performance.
+
+2. Replace `std::vector` and `std::deque` with `std::vector`: Since the graph is a directed acyclic graph, using only a `std::vector` to store the nodes and edges is sufficient. This change reduces memory usage and simplifies the code.
+
+3. Eliminate redundant edge checks: Since the edges are already added to the graph during construction, there is no need to check for their existence again when checking for a valid path. This change reduces unnecessary computations and improves performance.
+
+4. Replace macros with inline functions: Replace the macros for addition, subtraction, and multiplication with inline functions. This change improves code readability and enables better compiler optimizations.

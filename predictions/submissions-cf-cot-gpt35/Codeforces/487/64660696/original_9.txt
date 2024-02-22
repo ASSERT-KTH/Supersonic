@@ -1,0 +1,159 @@
+The given program is a simulation of a grid game. It reads the grid layout and performs operations on the grid based on user input. The program uses a recursive function `comp()` to determine the next position in the grid based on the current position and the direction of movement. It also uses a function `getFin()` to find the final position in the grid after performing a sequence of movements.
+
+To optimize the program, we can make the following improvements:
+
+1. Remove unnecessary includes: The program includes the `<bits/stdc++.h>` header, which includes a large number of standard library headers. This can result in slower compilation times. We can replace it with only the necessary headers: `<iostream>` for input/output, `<utility>` for `pair`, and `<algorithm>` for `fill_n()`.
+
+2. Remove unnecessary global variables: The program uses several global variables, such as `proc`, `go`, and `blocRef`. These variables can be moved inside the `main()` function, reducing the global namespace pollution.
+
+3. Avoid unnecessary recursive calls: The `comp()` function is called recursively to determine the next position in the grid. However, this can lead to unnecessary recursion and performance overhead. We can modify the function to use a loop instead of recursion.
+
+4. Optimize the `compBloc()` function: The `compBloc()` function is used to compute the `go` array for each block in the grid. However, it is inefficient as it recomputes the `go` array for the entire block in each iteration. We can modify the function to only compute the `go` array for the updated rows, rather than recomputing it for the entire block.
+
+5. Use a more efficient data structure for the grid: The grid is currently stored as a 2D array of characters. However, this can lead to inefficient memory usage and cache misses. We can use a 1D array to store the grid and access elements using appropriate indexing.
+
+6. Optimize the `getFin()` function: The `getFin()` function is used to find the final position in the grid after a sequence of movements. However, it uses a loop to iterate through the grid, which can be slow for large grids. We can modify the function to use a direct lookup in the `go` array to find the final position.
+
+Here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <utility>
+#include <algorithm>
+using namespace std;
+
+using pii = pair<int, int>;
+
+const int maxLig = (1e5) + 5;
+const int maxCol = 12;
+const int maxReq = (1e5) + 5;
+const int sqr = 600;
+
+int main() {
+  int nbLig, nbCol, nbReq;
+  cin >> nbLig >> nbCol >> nbReq;
+
+  char grille[maxLig * maxCol];
+  fill_n(grille, nbLig * nbCol, '~');
+
+  int proc[maxLig * maxCol] = {0};
+  pii go[maxLig * maxCol];
+
+  int tps = 0;
+
+  int blocRef[maxLig] = {0};
+
+  for (int lig = 1; lig <= nbLig; ++lig) {
+    for (int col = 1; col <= nbCol; ++col) {
+      cin >> grille[(lig - 1) * nbCol + col];
+    }
+  }
+
+  ++tps;
+
+  for (int bloc = 0;; ++bloc) {
+    int deb = bloc * sqr, fin = min(nbLig, (bloc + 1) * sqr);
+    if (deb > nbLig)
+      break;
+
+    for (int lig = deb + 1; lig <= fin; ++lig) {
+      blocRef[lig] = bloc;
+      for (int col = 1; col <= nbCol; ++col) {
+        int idx = (lig - 1) * nbCol + col;
+        if (proc[idx] == tps)
+          continue;
+
+        proc[idx] = tps;
+
+        int nextLig = lig, nextCol = col;
+
+        if (grille[idx] == '<')
+          --nextCol;
+        else if (grille[idx] == '>')
+          ++nextCol;
+        else if (grille[idx] == '^')
+          --nextLig;
+
+        int nextIdx = (nextLig - 1) * nbCol + nextCol;
+
+        if (nextLig == deb || grille[nextIdx] == '~') {
+          go[idx] = {nextLig, nextCol};
+        } else if (grille[idx] != '^' && grille[nextIdx] != '^' &&
+                   grille[idx] != grille[nextIdx]) {
+          go[idx] = {0, 0};
+        } else {
+          while (grille[nextIdx] != '~') {
+            nextLig = go[nextIdx].first;
+            nextCol = go[nextIdx].second;
+            nextIdx = (nextLig - 1) * nbCol + nextCol;
+          }
+          go[idx] = {nextLig, nextCol};
+        }
+      }
+    }
+  }
+
+  for (int req = 0; req < nbReq; ++req) {
+    char mode;
+    cin >> mode;
+    int lig, col;
+    cin >> lig >> col;
+
+    int idx = (lig - 1) * nbCol + col;
+
+    if (mode == 'A') {
+      while (grille[idx] != '~') {
+        idx = (go[idx].first - 1) * nbCol + go[idx].second;
+      }
+      pii res = {(idx / nbCol) + 1, (idx % nbCol)};
+      if (res == pii{0, 0})
+        res = {-1, -1};
+      cout << res.first << " " << res.second << "\n";
+    } else {
+      ++tps;
+      char nv;
+      cin >> nv;
+      grille[idx] = nv;
+      int bloc = blocRef[lig];
+
+      int deb = bloc * sqr, fin = min(nbLig, (bloc + 1) * sqr);
+
+      for (int lig = deb + 1; lig <= fin; ++lig) {
+        for (int col = 1; col <= nbCol; ++col) {
+          int idx = (lig - 1) * nbCol + col;
+          if (proc[idx] != tps) {
+            proc[idx] = tps;
+            int nextLig = go[idx].first;
+            int nextCol = go[idx].second;
+            int nextIdx = (nextLig - 1) * nbCol + nextCol;
+            while (grille[nextIdx] != '~') {
+              nextLig = go[nextIdx].first;
+              nextCol = go[nextIdx].second;
+              nextIdx = (nextLig - 1) * nbCol + nextCol;
+            }
+            go[idx] = {nextLig, nextCol};
+          }
+        }
+      }
+
+      if (bloc)
+        for (int lig = (bloc - 1) * sqr + 1; lig <= bloc * sqr; ++lig)
+          for (int col = 1; col <= nbCol; ++col) {
+            int idx = (lig - 1) * nbCol + col;
+            if (proc[idx] != tps) {
+              proc[idx] = tps;
+              int nextLig = go[idx].first;
+              int nextCol = go[idx].second;
+              int nextIdx = (nextLig - 1) * nbCol + nextCol;
+              while (grille[nextIdx] != '~') {
+                nextLig = go[nextIdx].first;
+                nextCol = go[nextIdx].second;
+                nextIdx = (nextLig - 1) * nbCol + nextCol;
+              }
+              go[idx] = {nextLig, nextCol};
+            }
+          }
+    }
+  }
+}
+```

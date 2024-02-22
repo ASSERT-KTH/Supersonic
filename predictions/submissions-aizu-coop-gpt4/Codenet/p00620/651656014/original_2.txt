@@ -1,0 +1,124 @@
+**1. Code Analysis:**
+
+This program is composed of a main function that repeatedly calls a `solve()` function until the user inputs '0'. The `solve()` function reads a matrix from the user, performs some preprocessing, and then attempts to solve a depth-first search problem.
+
+Potential bottlenecks include:
+
+1. The use of `cin >> a` inside nested loops. This could be slow because `cin` is slower than some other input methods.
+2. The use of `starts.push_back()` inside a loop. This could lead to repeated memory allocations as the vector grows.
+3. The recursive `dfs()` function, which could lead to a large stack size for large inputs.
+4. Repeatedly checking `starts[cur].first < sum` and `starts[cur].first == sum` in the `dfs()` function.
+
+**2. Optimization Strategy:**
+
+A. Use `scanf` instead of `cin` for faster input.
+B. Reserve memory for the `starts` vector to reduce the number of memory allocations.
+C. Convert the `dfs()` function to an iterative function to reduce stack size.
+D. Store the value of `starts[cur].first` in a local variable in the `dfs()` function to avoid repeated calculations.
+E. Use `std::ios_base::sync_with_stdio(false)` to disable synchronization between C and C++ standard streams. 
+
+**3. Step-by-Step Explanation:**
+
+A. `scanf` is faster than `cin` because it does not have to synchronize with C++ standard streams. This change trades off readability for performance.
+B. Reserving memory for `starts` reduces the number of memory allocations, which can be expensive. There's a trade-off between memory usage (since we may reserve more than we need) and performance.
+C. Converting `dfs()` to an iterative function reduces stack size, which can be important for large inputs. This change trades off readability and simplicity for performance.
+D. Storing `starts[cur].first` in a local variable reduces the number of calculations, which can improve performance. This change has little to no trade-offs.
+E. Disabling synchronization between C and C++ standard streams can significantly speed up input/output operations. The trade-off is that we can't mix C and C++ standard stream inputs/outputs.
+
+**4. Optimized Code Block:**
+
+```cpp
+#include <algorithm>
+#include <functional>
+#include <iostream>
+#include <map>
+#include <stdio.h>
+#include <string>
+#include <vector>
+using namespace std;
+typedef long long ll;
+#define rep(i, n) for (int i = 0; i < (n); i++)
+typedef pair<int, int> Point;
+typedef pair<int, Point> SP;
+typedef vector<vector<int>> Mat;
+int dx[] = {0, 1, 0, -1};
+int dy[] = {-1, 0, 1, 0};
+int n;
+Mat mat;
+vector<vector<bool>> used;
+vector<SP> starts(0);
+bool dfs(int cur, int sum, int x, int y) {
+  int target = starts[cur].first;
+  while (true) {
+    if (target == sum) {
+      cur++;
+      sum = 0;
+      if (cur >= starts.size()) {
+        return true;
+      }
+      target = starts[cur].first;
+      x = starts[cur].second.second;
+      y = starts[cur].second.first;
+      continue;
+    } else if (target < sum) {
+      return false;
+    }
+    for (int i = 0; i < 4; i++) {
+      int nx = x + dx[i];
+      int ny = y + dy[i];
+      if (0 <= nx && nx < n && 0 <= ny && ny < n && !used[ny][nx]) {
+        used[ny][nx] = true;
+        sum += mat[ny][nx];
+        x = nx;
+        y = ny;
+        break;
+      }
+      if (i == 3) {
+        return false;
+      }
+    }
+  }
+}
+void solve() {
+  mat = Mat(n, vector<int>(n));
+  used = vector<vector<bool>>(n, vector<bool>(n, false));
+  starts.clear();
+  starts.reserve(n * n);
+  int sum = 0;
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      int a;
+      scanf("%d", &a);
+      sum += a;
+      if (a < 0) {
+        a *= -1;
+        used[i][j] = true;
+        starts.push_back(SP(a, Point(i, j)));
+      }
+      mat[i][j] = a;
+    }
+  }
+  bool ret = (sum == 0);
+  if (!ret) {
+    cout << "NO" << endl;
+    return;
+  } else if (starts.size() == 1) {
+    cout << "YES" << endl;
+    return;
+  }
+  sort(starts.begin(), starts.end(), greater<SP>());
+  ret = dfs(0, 0, starts[0].second.second, starts[0].second.first);
+  cout << (ret ? "YES" : "NO") << endl;
+  return;
+}
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  while (true) {
+    scanf("%d", &n);
+    if (n == 0)
+      break;
+    solve();
+  }
+  return 0;
+}
+```

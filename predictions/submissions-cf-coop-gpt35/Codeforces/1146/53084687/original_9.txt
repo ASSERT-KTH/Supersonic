@@ -1,0 +1,157 @@
+Code Analysis:
+- The code implements a segment tree data structure to perform range updates and queries on an array.
+- The array `a` is read from input and represents the initial values of the array.
+- The segment tree is represented using two arrays `sgt0` and `sgt1`, where `sgt0` is used to store the negative values of `a` and `sgt1` is used to store the positive values of `a`.
+- The segment tree is built using the `build` function, which recursively constructs the segment tree nodes.
+- The `update` function is used to perform range updates on the segment tree. It updates the values of the segment tree nodes based on the given range and value.
+- The `query` function is used to perform range queries on the segment tree. It returns the value of the segment tree node corresponding to the given index.
+- The main function reads the input values, builds the segment trees, and performs the range updates and queries.
+- Finally, it prints the updated array values based on the segment tree queries.
+
+Potential Optimizations:
+1. Memory Optimization: The segment tree is currently represented using two separate arrays `sgt0` and `sgt1`. This can be optimized to use a single array by using negative indices for the negative values of `a`. This will reduce the memory usage and improve cache locality.
+2. Loop Unrolling: The loop in the main function that reads the input values can be unrolled to reduce the number of iterations and improve performance.
+3. Compiler Optimizations: The code can benefit from compiler optimizations such as loop optimization and function inlining. Compiler directives like `#pragma` can be used to provide hints to the compiler to optimize specific parts of the code.
+
+Optimization Steps:
+1. Memory Optimization:
+   - Remove the declaration of `sgt1` array and modify the `build` function to use a single array `sgt` to represent both positive and negative values.
+   - Modify the `update` and `query` functions to handle negative indices properly.
+   - Update the `pushdown` and `pushup` functions to handle the new array representation.
+2. Loop Unrolling:
+   - Unroll the loop in the main function that reads the input values by manually reading two values at a time.
+   - Modify the loop termination condition accordingly.
+3. Compiler Optimizations:
+   - Add compiler directives such as `#pragma` to provide hints to the compiler for loop optimization and function inlining.
+
+Optimized Code:
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+using namespace std;
+const int X = 1e5;
+struct node {
+  int l, r;
+  int lz;
+  int sgn;
+};
+void pushup(node sgt[], int x) {
+  if (sgt[x << 1].sgn == sgt[x << 1 | 1].sgn) {
+    sgt[x].sgn = sgt[x << 1].sgn;
+  } else {
+    sgt[x].sgn = 0;
+  }
+}
+void inv(int &x) { x = x % 2 == 0 ? 2 - x : -x; }
+void pushdown(node sgt[], int x) {
+  if (sgt[x].lz == 2) {
+    sgt[x << 1].sgn = -sgt[x << 1].sgn;
+    sgt[x << 1 | 1].sgn = -sgt[x << 1 | 1].sgn;
+    inv(sgt[x << 1].lz);
+    inv(sgt[x << 1 | 1].lz);
+    ;
+    sgt[x].lz = 0;
+  }
+  if (sgt[x].lz) {
+    sgt[x << 1].sgn = sgt[x].lz;
+    sgt[x << 1 | 1].sgn = sgt[x].lz;
+    sgt[x << 1].lz = sgt[x].lz;
+    sgt[x << 1 | 1].lz = sgt[x].lz;
+    sgt[x].lz = 0;
+  }
+}
+void build(node sgt[], int l, int r, int x) {
+  sgt[x].l = l;
+  sgt[x].r = r;
+  sgt[x].lz = 0;
+  if (l == r) {
+    sgt[x].sgn = 1;
+    return;
+  }
+  int mid = (l + r) >> 1;
+  build(sgt, l, mid, x << 1);
+  build(sgt, mid + 1, r, x << 1 | 1);
+  pushup(sgt, x);
+}
+void update(node sgt[], int l, int r, int x, int val) {
+  if (l <= sgt[x].l && r >= sgt[x].r) {
+    if (val == 2) {
+      inv(sgt[x].sgn);
+      inv(sgt[x].lz);
+    } else {
+      sgt[x].sgn = val;
+      sgt[x].lz = val;
+    }
+    return;
+  }
+  pushdown(sgt, x);
+  int mid = (sgt[x].l + sgt[x].r) >> 1;
+  if (l <= mid) {
+    update(sgt, l, r, x << 1, val);
+  }
+  if (r > mid) {
+    update(sgt, l, r, x << 1 | 1, val);
+  }
+  pushup(sgt, x);
+}
+int query(node sgt[], int a, int x) {
+  if (sgt[x].l == a && sgt[x].r == a) {
+    return sgt[x].sgn;
+  }
+  pushdown(sgt, x);
+  int mid = (sgt[x].l + sgt[x].r) >> 1;
+  return a <= mid ? query(sgt, a, x << 1) : query(sgt, a, x << 1 | 1);
+}
+int main() {
+  int n, q;
+  scanf("%d %d", &n, &q);
+  int a[n];
+  for (int i = 0; i < n; i += 2) {
+    scanf("%d %d", &a[i], &a[i + 1]);
+  }
+  getchar();
+  node sgt[X * 4 + 1];
+  build(sgt, 1, X, 1);
+  while (q--) {
+    char s;
+    int x;
+    scanf("%c %d\n", &s, &x);
+    if (s == '>') {
+      x++;
+      if (x == 0) {
+        x++;
+      }
+      if (x > 0) {
+        update(sgt, x, X, 1, 1);
+        update(sgt, -x, -1, 1, -1);
+      } else {
+        update(sgt, 1, -x, 1, 2);
+        update(sgt, -x + 1, X, 1, 1);
+      }
+    } else {
+      x--;
+      if (x == 0) {
+        x--;
+      }
+      if (x < 0) {
+        update(sgt, -x, X, 1, -1);
+        update(sgt, x, -1, 1, 1);
+      } else {
+        update(sgt, 1, x, 1, 2);
+        update(sgt, x + 1, X, 1, -1);
+      }
+    }
+  }
+  for (int i = 0; i < n; i++) {
+    int r = 0;
+    if (a[i] < 0) {
+      r = query(sgt, -a[i], 1);
+    } else if (a[i] > 0) {
+      r = query(sgt, a[i], 1);
+    }
+    printf("%d%c", a[i] * r, i == n - 1 ? '\n' : ' ');
+  }
+  return 0;
+}
+```

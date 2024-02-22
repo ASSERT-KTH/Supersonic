@@ -1,0 +1,78 @@
+Optimization:
+
+1. Reserve space beforehand for vectors: If we know the size of a vector beforehand, we can reserve the space first. This reduces the time of dynamic memory allocation which happens as we push_back elements into the vector. We can reserve space for vectors `a`, `b`, and `v`.
+
+2. Use `emplace_back` instead of `push_back`: `emplace_back` constructs the element in place and can be faster than `push_back`. We can use this while pushing elements into `v`.
+
+3. Remove unnecessary struct initialization: The default constructor of the struct `QuickFind` is empty and does not do anything. We can remove this to reduce the size of the struct.
+
+4. Remove unnecessary variables: The `map` `q` is unused in the program. We can remove it to save memory.
+
+Here is the optimized version of the program:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+#define int long long
+struct QuickFind {
+  vector<int> r, p;
+  vector<vector<int>> v;
+  QuickFind(int size) { init(size); }
+  void init(int size) {
+    r.resize(size, 0);
+    p.resize(size, 0);
+    v.resize(size);
+    for (int i = 0; i < size; i++) {
+      r[i] = 1, p[i] = i;
+      v[i].reserve(1);
+      v[i].emplace_back(i);
+    }
+  }
+  bool same(int x, int y) { return p[x] == p[y]; }
+  void unite(int x, int y) {
+    x = p[x];
+    y = p[y];
+    if (x == y)
+      return;
+    if (r[x] < r[y])
+      swap(x, y);
+    r[x] += r[y];
+    for (int i = 0; i < (int)v[y].size(); i++) {
+      p[v[y][i]] = x;
+      v[x].emplace_back(v[y][i]);
+    }
+    v[y].clear();
+  }
+};
+signed main() {
+  int n;
+  cin >> n;
+  vector<int> a(n), b(n);
+  for (int i = 0; i < n; i++)
+    cin >> a[i];
+  b = a;
+  sort(b.begin(), b.end());
+  map<int, int> p;
+  for (int i = 0; i < n; i++) {
+    p[a[i]] = i;
+  }
+  QuickFind qf(n);
+  for (int i = 0; i < n; i++)
+    qf.unite(i, p[b[i]]);
+  int ans = 0;
+  for (int i = 0; i < n; i++) {
+    int k = qf.v[i].size();
+    if (qf.p[i] != i || k == 1)
+      continue;
+    int m = a[qf.v[i][0]];
+    int tmp = 0;
+    for (int j = 0; j < k; j++) {
+      tmp += a[qf.v[i][j]];
+      m = min(m, a[qf.v[i][j]]);
+    }
+    ans += min(tmp + m * (k - 2), tmp + m + b[0] * (k + 1));
+  }
+  cout << ans << endl;
+  return 0;
+}
+```

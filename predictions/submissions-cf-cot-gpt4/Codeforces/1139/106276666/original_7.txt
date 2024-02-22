@@ -1,0 +1,116 @@
+The given C++ program is quite optimized. However, there are a few areas where we could make some small improvements to further optimize the program.
+
+Optimization Steps:
+
+1. Avoid using "#include <bits/stdc++.h>" as it includes more libraries than you might need, which can increase compile time. Instead, include only the specific libraries you need, such as <iostream>, <vector>, <algorithm>, etc.
+
+2. Avoid using "using namespace std;". By using the std namespace globally, you can potentially create name conflicts with variables in your program, which can lead to bugs. Instead, use std:: before the standard library functions.
+
+3. Remove the "ios" macro. This macro is not necessary, as it is only used to speed up cin and cout, but it is not used anywhere in the program.
+
+4. Use "constexpr" instead of "#define" for defining constants. constexpr ensures type safety and it is evaluated at compile time.
+
+5. The "make_factor" function can be optimized by reducing the number of push_back operations. Instead of pushing both factors and then removing one if they are the same, check if they are different before pushing the second factor.
+
+After applying these optimization steps, the optimized program looks like this:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <cstring>
+
+typedef long long ll;
+typedef unsigned long long ul;
+constexpr int len = 1e6 + 5;
+constexpr ll mod = 1e9 + 7;
+
+std::vector<ll> adj[len];
+std::vector<int> factor;
+bool vis[len];
+bool prm[len];
+ul n, k;
+ul sm, ans;
+ul pascal_tri[2][(int)105];
+
+ul modpow(ul x, ul n, ul m) {
+  if (n == 0)
+    return 1UL % m;
+  ul u = modpow(x, n / 2, m);
+  u = (u * u) % m;
+  if (n % 2 == 1)
+    u = (u * x) % m;
+  return u;
+}
+
+ul mod_(ll x, ll m) {
+  if (x > 0)
+    return x % m;
+  else
+    return (m - abs(x) % m) % m;
+}
+
+void make_prm() {
+  prm[0] = prm[1] = true;
+  for (int first = 2; first <= len; first++) {
+    if (!prm[first]) {
+      for (int second = 2 * first; second <= len; second += first)
+        prm[second] = true;
+    }
+  }
+}
+
+void make_factor(int n) {
+  for (int i = 1; i * i <= n; i++) {
+    if (n % i == 0) {
+      factor.push_back(i);
+      if (i != n / i)
+        factor.push_back(n / i);
+    }
+  }
+}
+
+void make_pascalTri(int n) {
+  bool f = 0;
+  memset(pascal_tri, 0, sizeof(pascal_tri));
+  for (int i = 0; i <= n; i++) {
+    pascal_tri[f][0] = 1;
+    for (int j = 1; j <= i; j++) {
+      pascal_tri[f][j] = pascal_tri[!f][j] + pascal_tri[!f][j - 1];
+    }
+    f = !f;
+  }
+}
+
+ll dfs(ll n, ll p) {
+  if (vis[n])
+    return 0;
+  vis[n] = true;
+  ll x = 0;
+  for (auto u : adj[n]) {
+    if (u != p)
+      x += dfs(u, n);
+  }
+  return x + 1;
+}
+
+int main() {
+  std::cin >> n >> k;
+  for (ll i = 1; i < n; i++) {
+    ll u, v, x;
+    std::cin >> u >> v >> x;
+    if (x == 0) {
+      adj[u].push_back(v);
+      adj[v].push_back(u);
+    }
+  }
+  for (ll i = 1; i <= n; i++) {
+    if (!vis[i]) {
+      sm += modpow(dfs(i, -1), k, mod);
+      sm = mod_(sm, mod);
+    }
+  }
+  ans = modpow(n, k, mod);
+  std::cout << mod_(ans - sm, mod);
+  return 0;
+}
+```

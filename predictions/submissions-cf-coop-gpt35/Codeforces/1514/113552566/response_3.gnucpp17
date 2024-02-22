@@ -1,0 +1,114 @@
+#include <bits/stdc++.h>
+typedef long long ll;
+typedef long double ld;
+#define FASTIO                                                                 \
+  ios_base::sync_with_stdio(false);                                            \
+  cin.tie(NULL);                                                               \
+  cout.tie(NULL);
+#define PRECISION std::cout << std::fixed << std::setprecision(20);
+using namespace std;
+const int N = 1000000; // Maximum size of the array
+
+struct SegTree {
+  array<int, 4 * N> tree;
+  array<int, N + 1> cumulative;
+  array<int, N> arr;
+  int n;
+  SegTree(int n, array<int, N> _arr) : n(n) {
+    arr = _arr;
+    for (int i = 0; i < n; i++)
+      cumulative[arr[i]]++;
+    for (int i = 1; i <= N; i++)
+      cumulative[i] += cumulative[i - 1];
+    build(0, n - 1, 0);
+  }
+  int merge(int lval, int rval, int sl, int sr) {
+    int cntl = cumulative[lval][sr] - cumulative[lval][sl - 1];
+    int cntr = cumulative[rval][sr] - cumulative[rval][sl - 1];
+    if (cntl >= cntr) {
+      return lval;
+    } else {
+      return rval;
+    }
+  }
+  void build(int ss, int se, int si) {
+    if (ss == se) {
+      tree[si] = arr[ss];
+    } else {
+      int mid = ss + se >> 1;
+      build(ss, mid, 2 * si + 1);
+      build(mid + 1, se, 2 * si + 2);
+      tree[si] = merge(tree[2 * si + 1], tree[2 * si + 2], ss, se);
+    }
+  }
+  int query(int qs, int qe) {
+    int ss = 0, se = n - 1, si = 0, sl = qs, sr = qe;
+    stack<int> st;
+    int result = -1;
+    while (true) {
+      if (ss >= qs && se <= qe) {
+        result = tree[si];
+        if (st.empty())
+          break;
+        si = st.top();
+        st.pop();
+        ss = st.top();
+        st.pop();
+        se = st.top();
+        st.pop();
+      } else {
+        int mid = ss + se >> 1;
+        if (qe <= mid) {
+          st.push(ss);
+          st.push(se);
+          st.push(si);
+          se = mid;
+        } else if (qs >= mid + 1) {
+          st.push(ss);
+          st.push(se);
+          st.push(si);
+          ss = mid + 1;
+        } else {
+          st.push(ss);
+          st.push(se);
+          st.push(si);
+          st.push(mid + 1);
+          st.push(sr);
+          st.push(sl);
+          se = mid;
+        }
+      }
+    }
+    return result;
+  }
+};
+
+void solve() {
+  int n, q;
+  cin >> n >> q;
+  array<int, N> arr;
+  for (int i = 0; i < n; i++)
+    cin >> arr[i];
+  SegTree tree(n, arr);
+  while (q--) {
+    int l, r;
+    cin >> l >> r;
+    l--;
+    r--;
+    int x = tree.query(l, r);
+    int mx = cumulative[x][r] - cumulative[x][l - 1];
+    int len = (r - l + 1);
+    int extra = len - mx;
+    int left = max(0, mx - extra - 1);
+    cout << 1 + left << "\n";
+  }
+}
+
+int main() {
+  FASTIO;
+  PRECISION;
+  int t = 1;
+  for (int i = 1; i <= t; i++) {
+    solve();
+  }
+}

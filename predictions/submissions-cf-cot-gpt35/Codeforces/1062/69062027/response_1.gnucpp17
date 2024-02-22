@@ -1,0 +1,155 @@
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+#include <algorithm>
+#include <stack>
+using namespace std;
+
+struct HLD {
+    vector<vector<int>>& adj;
+    int n, root, cnt;
+    vector<int> sub, par, head, dep;
+    unordered_map<int, int> tin, tout;
+
+    HLD(vector<vector<int>>& g, int rt)
+        : adj(g), n(adj.size()), root(rt), cnt(0), sub(n, 1), par(n, -1), head(n), dep(n) {
+        dfs1(root, -1, 0);
+        dfs2(root, root);
+    }
+
+    int dfs1(int s, int p, int d) {
+        par[s] = p;
+        dep[s] = d;
+        int size = 0;
+        for (auto& t : adj[s]) {
+            if (t == p) continue;
+            size += dfs1(t, s, d + 1);
+            if (sub[adj[s][0]] < sub[t])
+                swap(t, adj[s][0]);
+        }
+        return sub[s] = size + 1;
+    }
+
+    void dfs2(int s, int h) {
+        head[s] = h;
+        tin[s] = cnt++;
+        for (auto t : adj[s]) {
+            if (t == par[s]) continue;
+            dfs2(t, t == adj[s][0] ? h : t);
+        }
+        tout[s] = cnt;
+    }
+
+    int lca(int a, int b) {
+        while (head[a] != head[b]) {
+            if (dep[head[a]] > dep[head[b]])
+                swap(a, b);
+            b = par[head[b]];
+        }
+        if (dep[a] > dep[b])
+            swap(a, b);
+        return a;
+    }
+};
+
+const int MAXN = 100100;
+
+struct dat {
+    pair<int, int> mx;
+    pair<int, int> mn;
+};
+
+dat combine(dat x, dat y) {
+    dat res;
+    unordered_map<int, int> cmp;
+    cmp[x.mx.first] = x.mx.second;
+    cmp[x.mn.first] = x.mn.second;
+    cmp[y.mx.first] = y.mx.second;
+    cmp[y.mn.first] = y.mn.second;
+
+    res.mx.first = max(x.mx.first, y.mx.first);
+    res.mx.second = max(cmp[x.mx.first], cmp[y.mx.first]);
+    res.mn.first = min(x.mn.first, y.mn.first);
+    res.mn.second = min(cmp[x.mn.first], cmp[y.mn.first]);
+
+    return res;
+}
+
+void build(vector<dat>& t, vector<int>& a, int v, int tl, int tr) {
+    if (tl == tr) {
+        t[v].mn = {tl, a.size() + 1};
+        t[v].mx = {tl, a.size() + 2};
+    } else {
+        int tm = (tl + tr) / 2;
+        build(t, a, 2 * v, tl, tm);
+        build(t, a, 2 * v + 1, tm + 1, tr);
+        t[v] = combine(t[2 * v], t[2 * v + 1]);
+    }
+}
+
+dat get(vector<dat>& t, vector<int>& a, int v, int tl, int tr, int l, int r) {
+    if (l > r)
+        return dat();
+    if (l == tl && r == tr)
+        return t[v];
+    int tm = (tl + tr) / 2;
+    return combine(get(t, a, v * 2, tl, tm, l, min(r, tm)),
+        get(t, a, v * 2 + 1, tm + 1, tr, max(l, tm + 1), r));
+}
+
+int main() {
+    ios::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+
+    int n, q;
+    cin >> n >> q;
+
+    vector<vector<int>> adj(n + 1);
+    for (int i = 1; i < n; i++) {
+        int x;
+        cin >> x;
+        adj[x - 1].push_back(i);
+    }
+
+    vector<int> a(n + 3);
+    a[n + 1] = 1000000007;
+    a[n + 2] = 0;
+
+    HLD hld(adj, 0);
+
+    for (int i = 0; i < n; i++) {
+        a[i] = hld.tin[i];
+    }
+
+    vector<dat> t(4 * MAXN);
+    build(t, a, 1, 0, n - 1);
+
+    while (q--) {
+        int l, r;
+        cin >> l >> r;
+        l--;
+        r--;
+
+        if (r - l < 2) {
+            int ans = r, d = hld.dep[l];
+            if (d < hld.dep[r]) {
+                ans = l;
+                d = hld.dep[r];
+            }
+            cout << ans + 1 << " " << d << endl;
+            continue;
+        }
+
+        dat cur = get(t, a, 1, 0, n - 1, l, r);
+        int lc1 = hld.lca(cur.mx.first, cur.mn.second);
+        int lc2 = hld.lca(cur.mx.second, cur.mn.first);
+        if (hld.dep[lc1] > hld.dep[lc2]) {
+            cout << cur.mn.first + 1 << " " << hld.dep[lc1] << endl;
+        } else {
+            cout << cur.mx.first + 1 << " " << hld.dep[lc2] << endl;
+        }
+    }
+
+    return 0;
+}

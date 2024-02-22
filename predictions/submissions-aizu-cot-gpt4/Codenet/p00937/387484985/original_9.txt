@@ -1,0 +1,91 @@
+Here are the possible optimization steps:
+
+1. Reduce unnecessary computation in the nested loops by breaking the loop as soon as a condition is met. In the part of the code where we are searching for a node that can reach all A[j] nodes, if a node is found, we can break the loop early rather than checking all nodes.
+
+2. The vectors G and idx don't need to be resized each time they are used. Instead, they can be cleared with the clear() function.
+
+3. The 'used' array can be initialized to false at the time of declaration. This will save some runtime.
+
+4. The 'dp' array is quite large. If N is small, this is not an issue, but if N is large, this consumes a lot of memory. The 'dp' array is essentially a 3D array, and each value is either true or false. We could use std::bitset instead of bool array, which will use 1 bit instead of 1 byte for each boolean value.
+
+5. #include <bits/stdc++.h> is not a standard header file and it includes quite a lot of files, which increases compilation time. It's better to include only those header files which are actually used.
+
+Now, let's go ahead and implement these optimizations.
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <bitset>
+using namespace std;
+
+const int MAXN = 51;
+const int MAXM = 101;
+int N, M;
+int A[3];
+vector<int> G[MAXN];
+bitset<MAXN> used = 0;
+bitset<MAXM> dp[MAXM][MAXN];
+
+int main() {
+    cin >> N >> M;
+    for (int i = 0; i < 3; i++)
+        cin >> A[i];
+    for (int i = 0; i < M; i++) {
+        int f, t;
+        cin >> f >> t;
+        f--; t--;
+        G[f].push_back(t);
+    }
+    for (int i = 0; i < N; i++)
+        dp[0][i][i] = 1;
+    for (int i = 1; i < MAXM; i++) {
+        for (int j = 0; j < N; j++) {
+            for (int k = 0; k < N; k++) {
+                if (dp[i - 1][j][k]) {
+                    for (int to : G[k]) {
+                        dp[i][j][to] = 1;
+                    }
+                }
+            }
+        }
+    }
+    used[N - 1] = 1;
+    for (int ite = 1;; ite++) {
+        bool ok = false;
+        vector<int> idx;
+        idx.clear();
+        for (int i = 0; i < N; i++) {
+            if (used[i])
+                continue;
+            int cnt = 0;
+            for (int j = 0; j < 3; j++) {
+                int a = A[j];
+                for (int k = 0; k < N; k++) {
+                    if (dp[a][i][k] && used[k]) {
+                        cnt++;
+                        break;
+                    }
+                }
+                if (cnt == 3) {
+                    ok = true;
+                    idx.push_back(i);
+                    break;
+                }
+            }
+        }
+        if (ok) {
+            for (int i : idx) {
+                used[i] = 1;
+            }
+            if (used[0]) {
+                cout << ite << endl;
+                return 0;
+            }
+        } else {
+            break;
+        }
+    }
+    cout << "IMPOSSIBLE" << endl;
+    return 0;
+}
+```

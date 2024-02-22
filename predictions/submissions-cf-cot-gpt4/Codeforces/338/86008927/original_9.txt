@@ -1,0 +1,148 @@
+This program is written in a competitive programming style, which is usually written for problems with known input sizes, and the main focus is on the correctness of the solution and not on the readability of the code. Therefore, it is already quite optimized. However, there are few improvements which can be made:
+
+1. Remove `#include <bits/stdc++.h>`: This is a non-standard header file and includes almost all standard C++ libraries, which increases compilation time. It is better to include only the necessary libraries.
+
+2. Replace `#define` macros with inline functions: Macros are not type-safe and can lead to hard-to-find errors. Inline functions provide the same performance benefit but are type-safe.
+
+3. Avoid using `std::endl`: `std::endl` flushes the output buffer each time it is called, which can lead to a performance hit. It is better to use "\n" instead.
+
+4. Avoid `scanf` and `printf`: These are C functions and slower than their C++ counterparts, `std::cin` and `std::cout`.
+
+Let's apply these optimizations step by step:
+
+```c++
+#include <iostream>
+#include <iomanip>
+#include <vector>
+#include <utility>
+#include <chrono>
+#include <random>
+
+constexpr bool PERVEEVM_LOCAL = false;
+constexpr double PI = atan2(0.0, -1.0);
+constexpr int INF = 0x3f3f3f3f;
+constexpr long long LINF = (long long)2e18;
+constexpr int N = 10100;
+
+std::mt19937 rnd(PERVEEVM_LOCAL ? 238 :
+    std::chrono::high_resolution_clock::now().time_since_epoch().count());
+
+inline void debug(const auto& x) {
+    if (PERVEEVM_LOCAL)
+        std::cerr << (#x) << ":\t" << (x) << std::endl;
+}
+
+long long gcd(long long a, long long b) {
+    return b == 0 ? a : gcd(b, a % b);
+}
+
+long long lcm(long long a, long long b) {
+    long long d = gcd(a, b);
+    a /= d;
+    if (a > LINF / b) {
+        std::cout << "NO\n";
+        exit(0);
+    }
+    return a * b;
+}
+
+long long gcdEx(long long a, long long b, long long &x, long long &y) {
+    if (b == 0) {
+        x = 1;
+        y = 0;
+        return a;
+    }
+    long long x1, y1;
+    long long d = gcdEx(b, a % b, x1, y1);
+    x = y1;
+    y = x1 - y1 * (a / b);
+    return d;
+}
+
+long long binmul(long long a, long long b, long long mod) {
+    if (b == 0) {
+        return 0;
+    }
+    if (b % 2 == 0) {
+        return binmul((a + a) % mod, b / 2, mod);
+    } else {
+        return (binmul(a, b - 1, mod) + a) % mod;
+    }
+}
+
+long long solve(long long r1, long long mod1, long long r2, long long mod2) {
+    long long g = gcd(mod1, mod2);
+    if (r1 % g != r2 % g) {
+        std::cout << "NO\n";
+        exit(0);
+    }
+    long long a = mod1 / g;
+    long long b = (r2 - r1) / g;
+    long long c = mod2 / g;
+    long long x, y;
+    gcdEx(a, c, x, y);
+    x = (x % c + c) % c;
+    long long k = binmul(b, x, c);
+    long long ans = (r1 + k * mod1) % lcm(mod1, mod2);
+    return ans;
+}
+
+long long a[N];
+
+void run() {
+    long long n, m;
+    int k;
+    std::cin >> n >> m >> k;
+    for (int i = 0; i < k; ++i) {
+        std::cin >> a[i];
+    }
+    long long l = a[0];
+    for (int i = 1; i < k; ++i) {
+        l = lcm(l, a[i]);
+    }
+    if (l > n) {
+        std::cout << "NO\n";
+        return;
+    }
+    std::vector<std::pair<long long, long long>> eq(k);
+    for (int i = 0; i < k; ++i) {
+        eq[i].second = a[i];
+        eq[i].first = ((-i) % a[i] + a[i]) % a[i];
+    }
+    long long r1 = eq[0].first;
+    long long mod1 = eq[0].second;
+    for (int i = 1; i < k; ++i) {
+        long long curMod = lcm(mod1, eq[i].second);
+        long long curR = solve(r1, mod1, eq[i].first, eq[i].second);
+        r1 = (curR % curMod + curMod) % curMod;
+        mod1 = curMod;
+    }
+    if (r1 == 0) {
+        r1 += mod1;
+    }
+    if (r1 + k - 1 > m) {
+        std::cout << "NO\n";
+        return;
+    }
+    for (int i = 0; i < k; ++i) {
+        if (gcd(l, r1 + i) != a[i]) {
+            std::cout << "NO\n";
+            return;
+        }
+    }
+    std::cout << "YES\n";
+}
+
+int main() {
+    auto start = std::chrono::high_resolution_clock::now();
+    run();
+    auto end = std::chrono::high_resolution_clock::now();
+    if (PERVEEVM_LOCAL)
+        std::cerr << "Execution time: "
+        << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()
+        << " ms" << std::endl;
+    return 0;
+}
+```
+
+This version of the program includes only the necessary libraries, uses inline functions instead of macros, and replaces `scanf` and `printf` with `std::cin` and `std::cout`.

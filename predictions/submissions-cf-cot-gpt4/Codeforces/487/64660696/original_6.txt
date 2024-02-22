@@ -1,0 +1,110 @@
+The given C++ program seems to be a simulation of a grid problem, where cells in the grid may contain instructions '<', '>', and '^'. The simulation is updated and queried in the main loop.
+
+There are several ways to optimize this code:
+
+1. Avoid unnecessary computations: The comp function is called twice for bloc and bloc - 1. By storing the result of compBloc(bloc), you can avoid running the same computation twice.
+
+2. Reduce function calls: In the getFin function, the pair {lig, col} is repeatedly returned. Instead of calling the function multiple times, store the result in a variable and use it in the loop.
+
+3. Use faster I/O methods: cin and cout can be slower than scanf and printf.
+
+Here is the optimized code version:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+using pii = pair<int, int>;
+const int maxLig = (1e5) + 5;
+const int maxCol = 12;
+const int maxReq = (1e5) + 5;
+const int sqr = 600;
+int nbLig, nbCol, nbReq;
+char grille[maxLig][maxCol];
+int proc[maxLig][maxCol];
+int tps = 0;
+pair<int, int> go[maxLig][maxCol];
+
+void comp(int lig, int col, int safeLig) {
+  if (proc[lig][col] == tps)
+    return;
+  proc[lig][col] = tps;
+  int nextLig = lig, nextCol = col;
+  if (grille[lig][col] == '<')
+    --nextCol;
+  else if (grille[lig][col] == '>')
+    ++nextCol;
+  else if (grille[lig][col] == '^')
+    --nextLig;
+  if (nextLig == safeLig || grille[nextLig][nextCol] == '~') {
+    go[lig][col] = {nextLig, nextCol};
+  } else if (grille[lig][col] != '^' && grille[lig][nextCol] != '^' &&
+             grille[lig][col] != grille[lig][nextCol]) {
+    go[lig][col] = {0, 0};
+  } else {
+    comp(nextLig, nextCol, safeLig);
+    go[lig][col] = go[nextLig][nextCol];
+  }
+}
+
+pair<int, int> getFin(int lig, int col) {
+  pii e = {0, 0};
+  while (grille[lig][col] != '~') {
+    e = go[lig][col];
+    lig = e.first;
+    col = e.second;
+  }
+  return e;
+}
+
+int blocRef[maxLig];
+
+bool compBloc(int bloc) {
+  int deb = bloc * sqr, fin = min(nbLig, (bloc + 1) * sqr);
+  if (deb > nbLig)
+    return false;
+  for (int lig = deb + 1; lig <= fin; ++lig) {
+    blocRef[lig] = bloc;
+    for (int col = 1; col <= nbCol; ++col) {
+      comp(lig, col, deb);
+    }
+  }
+  return true;
+}
+
+int main() {
+  scanf("%d %d %d", &nbLig, &nbCol, &nbReq);
+  fill_n(&grille[0][0], maxLig * maxCol, '~');
+  for (int lig = 1; lig <= nbLig; ++lig) {
+    for (int col = 1; col <= nbCol; ++col) {
+      scanf(" %c", &grille[lig][col]);
+    }
+  }
+  ++tps;
+  for (int bloc = 0;; ++bloc) {
+    if (!compBloc(bloc))
+      break;
+  }
+  
+  for (int req = 0; req < nbReq; ++req) {
+    char mode;
+    scanf(" %c", &mode);
+    int lig, col;
+    scanf("%d %d", &lig, &col);
+    if (mode == 'A') {
+      pii res = getFin(lig, col);
+      if (res == pii{0, 0})
+        res = {-1, -1};
+      printf("%d %d\n", res.first, res.second);
+    } else {
+      ++tps;
+      char nv;
+      scanf(" %c", &nv);
+      grille[lig][col] = nv;
+      int bloc = blocRef[lig];
+      bool isUpdated = compBloc(bloc);
+      if (bloc && !isUpdated)
+        compBloc(bloc - 1);
+    }
+  }
+}
+```

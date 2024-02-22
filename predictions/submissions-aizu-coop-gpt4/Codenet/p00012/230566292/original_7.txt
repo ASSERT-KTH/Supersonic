@@ -1,0 +1,127 @@
+Code Analysis:
+
+This code receives a set of 4 points (A, B, C, and P) from standard input and then checks if point P is in the same relative position (Clockwise, Counter-Clockwise, Online) with respect to the three other points. If it is, the program prints "YES", otherwise it prints "NO". This process continues until there are no more sets of points to process (or EOF is encountered).
+
+Optimization Strategy:
+
+1. Inefficient Data Structures: The complex data structure is used to represent points in 2D. Although this is not inefficient, it may obscure the code a bit. We could use a more common structure like a pair of doubles to represent points. However, since this change won't impact performance significantly, we'll leave it as is.
+
+2. Redundant Computations: The cross and dot product of two points are calculated more than once in the ccwise function. We can compute these values once and store them in variables for later use.
+
+3. Loops or Recursive Calls: There are no recursive calls in this program. The main loop in this program cannot be optimized because it is necessary to process all the test cases.
+
+4. Compiler Optimizations: The compiler can normally handle most of the optimizations. However, we can guide it using pragma directives. For example, we can use `#pragma GCC optimize ("Ofast")` to tell GCC to optimize the code for speed.
+
+Step-by-Step Explanation:
+
+1. Compute cross and dot products once: In the ccwise function, the cross and dot product between points b and c are calculated more than once. We can improve the performance by computing these values once and reusing them in the subsequent conditions.
+
+2. Use of Pragma Directives: We can use `#pragma GCC optimize ("Ofast")` at the start of our code to instruct the compiler to optimize our code for speed. This might give a slight boost in performance.
+
+3. Return values: Instead of returning `!printf("NO\n")` or `!printf("YES\n")` we can print the result and then return a fixed value (like 1 or 0). This can make the code easier to understand.
+
+Optimized Code Block:
+
+```cpp
+#include <algorithm>
+#include <complex>
+#include <cstdio>
+#include <vector>
+using namespace std;
+#pragma GCC optimize ("Ofast")
+
+static const double EPS = 1e-12;
+static const double INF = 1e24;
+using Point = complex<double>;
+using Plane = vector<Point>;
+
+namespace std {
+bool operator<(const Point &a, const Point &b) {
+  return real(a) != real(b) ? real(a) < real(b) : imag(a) < imag(b);
+}
+} // namespace std
+
+double cross_prod(const Point &a, const Point &b) { return imag(conj(a) * b); }
+double dot_prod(const Point &a, const Point &b) { return real(conj(a) * b); }
+
+struct Line : public pair<Point, Point> {
+  Line() {}
+  Line(const Point &a, const Point &b) {
+    first = a;
+    second = b;
+  }
+};
+
+struct LineSeg : public pair<Point, Point> {
+  LineSeg() {}
+  LineSeg(const Point &a, const Point &b) {
+    first = a;
+    second = b;
+  }
+};
+
+struct Circle {
+  Point p;
+  double r;
+  Circle() {}
+  Circle(const Point &p, const double r) : p(p), r(r) {}
+};
+
+enum CCWiseState {
+  ONLINE_FRONT = -2,
+  CLOCKWISE,
+  ON_SEGMENT,
+  COUNTER_CLOCKWISE,
+  ONLINE_BACK,
+};
+
+CCWiseState ccwise(Point a, Point b, Point c) {
+  b -= a;
+  c -= a;
+  double cp = cross_prod(b, c);
+  double dp = dot_prod(b, c);
+  if (cp > 0) {
+    return COUNTER_CLOCKWISE;
+  } else if (cp < 0) {
+    return CLOCKWISE;
+  } else if (dp < 0) {
+    return ONLINE_BACK;
+  } else if (norm(b) < norm(c)) {
+    return ONLINE_FRONT;
+  } else {
+    return ON_SEGMENT;
+  }
+}
+
+bool testcase_ends() {
+  double x, y;
+  if (scanf("%lf %lf", &x, &y) == EOF)
+    return 1;
+  Point A(x, y);
+  scanf("%lf %lf", &x, &y);
+  Point B(x, y);
+  scanf("%lf %lf", &x, &y);
+  Point C(x, y);
+  scanf("%lf %lf", &x, &y);
+  Point P(x, y);
+  CCWiseState tmp = ccwise(A, P, B);
+  if (tmp != ccwise(B, P, C)) {
+    printf("NO\n");
+    return 1;
+  } else if (tmp != ccwise(C, P, A)) {
+    printf("NO\n");
+    return 1;
+  }
+  printf("YES\n");
+  return 0;
+}
+
+int main() {
+  int solved = 0;
+  while (!testcase_ends())
+    ++solved;
+  return !solved;
+}
+```
+
+Note that the real-world performance improvement due to these optimizations may not be significant, as the original code is not particularly inefficient. It's also important to mention that the use of `#pragma GCC optimize ("Ofast")` might not always lead to better performance, it depends on the specificities of the code and the hardware where it runs.

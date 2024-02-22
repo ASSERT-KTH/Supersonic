@@ -1,0 +1,166 @@
+This code appears to be solving a problem involving range queries and updates on a segment tree data structure. However, there are several potential performance bottlenecks and inefficiencies that can be improved. Let's analyze the code step by step and propose optimizations where necessary.
+
+1. **Remove unnecessary includes**: The code includes the entire standard library (`<bits/stdc++.h>`) which is not recommended and can slow down compilation time. Instead, we should include only the necessary headers.
+
+2. **Avoid using macros**: The code uses macros to define some constants and functions. However, macros can make the code harder to read and understand. It's better to use const variables and inline functions whenever possible.
+
+3. **Optimize string conversions**: The code includes several functions for converting different types to strings. These functions are not used in the provided code and can be removed to reduce unnecessary code bloat.
+
+4. **Avoid unnecessary string concatenation**: The `to_string(vector<bool> v)` function uses string concatenation in a loop to convert a vector of bools to a string. This can be optimized by using `std::ostringstream` or `std::stringstream` to build the string more efficiently.
+
+5. **Replace recursive calls with iterative loops**: The `upd` and `qry` functions use recursion to traverse the segment tree. Recursive calls can be expensive in terms of function call overhead. We can optimize these functions by using iterative loops instead of recursion.
+
+6. **Avoid unnecessary array initialization**: The `ans` array is initialized with zeros, but it is not necessary since all elements will be overwritten later in the code. We can remove this initialization to save memory and improve performance.
+
+7. **Avoid unnecessary sorting**: The code sorts the `b` vector, but it's not clear why this sorting is necessary. If sorting is not required, we can remove this step to improve performance.
+
+8. **Avoid unnecessary vector deletions**: The code uses a vector `del` to store indices that need to be deleted from the segment tree. Instead of deleting elements from the vector, which can be expensive, we can use a separate boolean array to mark elements as deleted.
+
+9. **Avoid unnecessary segment tree rebuilds**: The code rebuilds the segment tree multiple times using the `build` function. However, this is not necessary since the tree is not modified between rebuilds. We can remove these unnecessary rebuilds to improve performance.
+
+10. **Avoid unnecessary function calls**: The code calls the `build` function twice for each iteration of the outer loop. We can avoid this by moving the second `build` call outside the loop.
+
+11. **Avoid unnecessary repeated queries**: The code performs the same range queries multiple times within the inner while loop. We can optimize this by storing the results of these queries in variables and reusing them.
+
+12. **Replace `cout` with `printf`**: The code uses `cout` for printing the final results. While `cout` is convenient, it can be slower than `printf` for large outputs. We can replace `cout` with `printf` to improve performance.
+
+Now, let's implement these optimizations step by step in the code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <sstream>
+
+using namespace std;
+
+#define int long long int
+
+const int N = 2e5;
+const int MOD = 1e9 + 7;
+
+int n;
+
+struct node {
+  int mx, mi, lz;
+};
+
+node st[1 << 20];
+
+void apply(int i, int x, int l2, int r2) {
+  st[i].mx -= x;
+  st[i].mi -= x;
+  if (st[i].lz == -MOD)
+    st[i].lz = 0;
+  st[i].lz += x;
+}
+
+void push(int i, int l2, int mid, int r2) {
+  if (st[i].lz == -MOD)
+    return;
+  apply(2 * i, st[i].lz, l2, mid);
+  apply(2 * i + 1, st[i].lz, mid + 1, r2);
+  st[i].lz = -MOD;
+}
+
+void build(int l1, int x, int i = 1, int l2 = 0, int r2 = n - 1) {
+  if (l2 == r2) {
+    st[i].mx = x;
+    st[i].mi = x;
+    st[i].lz = -MOD;
+    return;
+  }
+  int mid = (l2 + r2) / 2;
+  if (l1 <= mid)
+    build(l1, x, 2 * i, l2, mid);
+  else
+    build(l1, x, 2 * i + 1, mid + 1, r2);
+  st[i].mx = max(st[2 * i].mx, st[2 * i + 1].mx);
+  st[i].mi = min(st[2 * i].mi, st[2 * i + 1].mi);
+  st[i].lz = -MOD;
+}
+
+void upd(int l1, int r1, int x, int i = 1, int l2 = 0, int r2 = n - 1) {
+  while (true) {
+    if (l1 <= l2 && r2 <= r1) {
+      apply(i, x, l2, r2);
+      return;
+    }
+    int mid = (l2 + r2) / 2;
+    push(i, l2, mid, r2);
+    if (l1 <= mid)
+      r2 = mid;
+    else
+      l2 = mid + 1;
+    i *= 2;
+    if (r1 > mid) {
+      i += 1;
+      l2 = mid + 1;
+    }
+  }
+}
+
+int qry1(int l1, int r1, int i = 1, int l2 = 0, int r2 = n - 1) {
+  while (true) {
+    if (l1 <= l2 && r2 <= r1) {
+      return st[i].mx;
+    }
+    int mid = (l2 + r2) / 2;
+    push(i, l2, mid, r2);
+    if (l1 <= mid)
+      r2 = mid;
+    else
+      l2 = mid + 1;
+    i *= 2;
+    if (r1 > mid) {
+      i += 1;
+      l2 = mid + 1;
+    }
+  }
+}
+
+int qry2(int l1, int r1, int i = 1, int l2 = 0, int r2 = n - 1) {
+  while (true) {
+    if (l1 <= l2 && r2 <= r1) {
+      return st[i].mi;
+    }
+    int mid = (l2 + r2) / 2;
+    push(i, l2, mid, r2);
+    if (l1 <= mid)
+      r2 = mid;
+    else
+      l2 = mid + 1;
+    i *= 2;
+    if (r1 > mid) {
+      i += 1;
+      l2 = mid + 1;
+    }
+  }
+}
+
+void solve() {
+  int n1;
+  cin >> n1;
+  int arr[n1];
+  vector<pair<int, int>> b;
+  for (int i = 0; i < n1; i++) {
+    cin >> arr[i];
+    b.push_back({arr[i], i});
+  }
+  n = n1 + 1;
+  build(0, 0);
+  sort(b.begin(), b.end());
+  int ans[n1];
+  for (int i = 0; i < n1; i++) {
+    ans[i] = 0;
+  }
+  for (int i = n1 - 1; i >= 0; i--) {
+    vector<int> del;
+    int cur = b[i].first;
+    while (i >= 0 && b[i].first == cur) {
+      int j = b[i].second;
+      int p = qry1(j + 1, j + 1);
+      int q = qry2(0, j);
+      int r = qry1(j + 1, n - 1);
+      del.push_back(b[i].second);
+      ans[j] = (p - q + r - p - 1

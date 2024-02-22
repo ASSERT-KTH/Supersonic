@@ -1,0 +1,160 @@
+Analysis:
+- The code is implementing the Bellman-Ford algorithm to find the shortest path in a weighted directed graph.
+- The code reads input from a file and writes output to a file.
+- The code uses several arrays and vectors to store the input and intermediate results.
+- There are several loops that iterate over these arrays and vectors.
+- The code uses two stacks to store indices and values for optimization purposes.
+
+Potential optimizations:
+1. Replace the use of vectors with fixed-size arrays:
+   - The vectors `heightsOfBlock` and `costsOfBlock` can be replaced with fixed-size arrays, as their sizes do not change after initialization.
+   - This can improve memory usage and reduce overhead associated with dynamic memory allocation.
+
+2. Eliminate unnecessary memory allocations:
+   - The vectors `heightsOfBlock` and `costsOfBlock` are cleared after their values are used. This can be avoided by using fixed-size arrays.
+   - Clearing the vectors requires deallocating memory, which can be time-consuming for large vectors.
+
+3. Use a more efficient data structure for stackPushLeft and stackPushRight:
+   - The use of vectors for `stackPushLeft` and `stackPushRight` requires memory reallocation whenever elements are added or removed.
+   - This can be replaced with a more efficient data structure, such as a linked list or a deque, which has constant-time insertion and deletion at both ends.
+
+4. Optimize the loops:
+   - The loops that iterate over the `heightsOfBlock` and `costsOfBlock` vectors can be optimized by using iterators instead of indexing.
+   - This can avoid the overhead of calculating the size of the vector in each iteration.
+
+5. Enable compiler optimizations:
+   - The code can benefit from enabling compiler optimizations, such as loop unrolling and function inlining.
+   - This can be achieved by using compiler-specific pragmas or command-line options.
+
+Optimization steps:
+1. Replace vectors with fixed-size arrays:
+```cpp
+const int MaxK = 1000; // Maximum value of K
+int heightsOfBlock[NMax][MaxK], costsOfBlock[NMax][MaxK];
+```
+
+2. Eliminate unnecessary memory allocations:
+```cpp
+// Remove the lines:
+heightsOfBlock.clear();
+costsOfBlock.clear();
+```
+
+3. Replace vectors `stackPushLeft` and `stackPushRight` with a deque:
+```cpp
+deque<pair<int, ll>> stackPushLeft, stackPushRight;
+```
+
+4. Optimize the loops by using iterators:
+```cpp
+// Replace the loops:
+for (int j = 0; j < (int)heightsOfBlock[id].size(); ++j) {
+    int h = heightsOfBlock[id][j], c = costsOfBlock[id][j];
+    // ...
+}
+
+// With the following loops:
+for (auto it = heightsOfBlock[id].begin(); it != heightsOfBlock[id].end(); ++it) {
+    int h = *it;
+    int c = costsOfBlock[id][it - heightsOfBlock[id].begin()];
+    // ...
+}
+```
+
+5. Enable compiler optimizations:
+- Depending on the compiler being used, enable appropriate compiler optimizations, such as loop unrolling and function inlining. Consult the compiler documentation for specific options.
+
+Optimized code:
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+#if 1
+#define pv(x) std::cerr << #x << " = " << (x) << "; ", std::cerr.flush()
+#define pn std::cerr << std::endl
+#else
+#define pv(x)
+#define pn
+#endif
+#ifdef INFOARENA
+ifstream in("bellmanford.in");
+ofstream out("bellmanford.out");
+#else
+#define in cin
+#define out cout
+#endif
+using ll = long long;
+using ull = unsigned long long;
+using uint = unsigned int;
+using ld = long double;
+using pii = pair<int, int>;
+using pll = pair<ll, ll>;
+using pld = pair<ld, ld>;
+#define pb push_back
+const double PI =
+    3.14159265358979323846264338327950288419716939937510582097494459230781640628620899862;
+const int inf_int = 1e9 + 5;
+const ll inf_ll = 1e18 + 5;
+const int NMax = 1e7 + 5;
+const int dx[] = {-1, 0, 0, +1}, dy[] = {0, -1, +1, 0};
+const double EPS = 1e-8;
+const int MaxK = 1000; // Maximum value of K
+int height[NMax];
+ll cost[NMax], dp[NMax];
+int main() {
+  int N, M;
+  in >> N >> M;
+  int heightsOfBlock[N + 1][MaxK], costsOfBlock[N + 1][MaxK];
+  for (int i = 1; i <= N; ++i) {
+    int K;
+    in >> K;
+    for (int j = 1; j <= K; ++j) {
+      in >> heightsOfBlock[i][j-1];
+    }
+    for (int j = 1; j <= K; ++j) {
+      in >> costsOfBlock[i][j-1];
+    }
+  }
+  int Q, curr = 0;
+  in >> Q;
+  for (int i = 1; i <= Q; ++i) {
+    int id, mult;
+    in >> id >> mult;
+    for (auto it = heightsOfBlock[id].begin(); it != heightsOfBlock[id].end(); ++it) {
+      int h = *it;
+      int c = costsOfBlock[id][it - heightsOfBlock[id].begin()];
+      height[++curr] = h;
+      cost[curr] = 1LL * mult * c;
+    }
+  }
+  deque<pair<int, ll>> stackPushLeft, stackPushRight;
+  for (int i = 1; i <= M; ++i) {
+    ll minLeft = dp[i - 1];
+    while (stackPushLeft.size() &&
+           i - height[i] + 1 <= stackPushLeft.back().first) {
+      minLeft = min(minLeft, stackPushLeft.back().second);
+      stackPushLeft.pop_back();
+    }
+    dp[i] = minLeft + cost[i];
+    ll valHere = dp[i - 1];
+    minLeft = min(minLeft, valHere);
+    stackPushLeft.push_back({i, minLeft});
+    int idx = -1;
+    while (stackPushRight.size() &&
+           ((idx = stackPushRight.back().first) || true) &&
+           idx + height[idx] - 1 < i) {
+      stackPushRight.pop_back();
+    }
+    if (stackPushRight.size()) {
+      ll dpPlusCost = stackPushRight.back().second;
+      dp[i] = min(dp[i], dpPlusCost);
+    }
+    ll dpPlusCost = dp[i - 1] + cost[i];
+    if (stackPushRight.size()) {
+      dpPlusCost = min(dpPlusCost, stackPushRight.back().second);
+    }
+    stackPushRight.push_back({i, dpPlusCost});
+  }
+  out << dp[M] << '\n';
+  return 0;
+}
+```

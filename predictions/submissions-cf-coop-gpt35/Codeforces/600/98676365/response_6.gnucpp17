@@ -1,0 +1,161 @@
+#include <iostream>
+#include <vector>
+
+typedef long long ll;
+
+class SegTree {
+public:
+  SegTree(int n) : n(n), tot(n) {
+    t.resize(n << 5);
+    cor.resize(n + 1);
+    rt.resize(n + 1);
+    ans.resize(n + 1);
+    G.resize(n + 1);
+  }
+
+  void solve() {
+    read(n);
+    for (int i = 1; i <= n; ++i)
+      read(cor[i]);
+    for (int i = 1, u, v; i < n; ++i) {
+      read(u), read(v);
+      G[u].push_back(v);
+      G[v].push_back(u);
+    }
+    dfs(1, 0);
+    for (int i = 1; i <= n; ++i) {
+      printf("%lld%c", ans[i], " \n"[i == n]);
+    }
+  }
+
+private:
+  int n, tot;
+  std::vector<int> cor, rt;
+  std::vector<ll> ans;
+  std::vector<std::vector<int>> G;
+  std::vector<Seg> t;
+
+  struct Seg {
+    int l, r, v;
+    ll num, sum;
+  };
+
+  void up(int id) {
+    if (t[lson(id)].num > t[rson(id)].num) {
+      t[id].num = t[lson(id)].num;
+      t[id].v = t[lson(id)].v;
+      t[id].sum = t[lson(id)].sum;
+    } else if (t[lson(id)].num < t[rson(id)].num) {
+      t[id].num = t[rson(id)].num;
+      t[id].v = t[rson(id)].v;
+      t[id].sum = t[rson(id)].sum;
+    } else {
+      t[id].num = t[lson(id)].num;
+      t[id].v = t[lson(id)].v;
+      t[id].sum = t[lson(id)].sum + t[rson(id)].sum;
+    }
+  }
+
+  void modify(int &id, int l, int r, int p) {
+    if (!id)
+      id = ++tot;
+    if (l == r) {
+      t[id].num += 1;
+      t[id].sum = l;
+      t[id].v = l;
+      return;
+    }
+
+    std::vector<int> stack;
+    while (true) {
+      int mid = l + r >> 1;
+      if (p <= mid) {
+        stack.push_back(rson(id));
+        id = lson(id);
+        r = mid;
+      } else {
+        stack.push_back(lson(id));
+        id = rson(id);
+        l = mid + 1;
+      }
+      if (l == r) break;
+    }
+
+    t[id].num += 1;
+    t[id].sum = l;
+    t[id].v = l;
+
+    for (int i = stack.size() - 1; i >= 0; --i) {
+      up(stack[i]);
+    }
+  }
+
+  int merge(int a, int b, int l, int r) {
+    if (!a)
+      return b;
+    if (!b)
+      return a;
+    if (l == r) {
+      t[a].v = l;
+      t[a].sum = l;
+      t[a].num += t[b].num;
+      return a;
+    }
+
+    std::vector<int> stack;
+    while (true) {
+      int mid = l + r >> 1;
+      stack.push_back(a);
+      t[a].l = lson(a);
+      t[a].r = rson(a);
+      if (l == mid) {
+        l = mid + 1;
+        a = t[a].r;
+      } else {
+        r = mid;
+        a = t[a].l;
+      }
+      if (!a) break;
+    }
+
+    t[a].num += t[b].num;
+
+    for (int i = stack.size() - 1; i >= 0; --i) {
+      up(stack[i]);
+    }
+
+    return stack[0];
+  }
+
+  void dfs(int u, int fa) {
+    for (auto v : G[u]) {
+      if (v == fa)
+        continue;
+      dfs(v, u);
+      rt[u] = merge(rt[u], rt[v], 1, n);
+    }
+    modify(rt[u], 1, n, cor[u]);
+    ans[u] = t[rt[u]].sum;
+  }
+
+  template <class T>
+  void read(T &x) {
+    int f = 0;
+    x = 0;
+    char ch = getchar();
+    for (; !isdigit(ch); ch = getchar())
+      f |= (ch == '-');
+    for (; isdigit(ch); ch = getchar())
+      x = x * 10 + ch - '0';
+    if (f)
+      x = -x;
+  }
+};
+
+int main() {
+  int _T = 1;
+  while (_T--)
+    SegTree segTree(1e5 + 7);
+    segTree.solve();
+  return 0;
+}

@@ -1,0 +1,89 @@
+Optimization Steps:
+1. Using `#include <bits/stdc++.h>` slows down the compilation process because it includes a lot of unnecessary header files. Instead, we should only include the ones that we need.
+2. We should avoid using `using namespace std;` as it may cause name conflicts.
+3. `ios_base::sync_with_stdio(0);` is not needed in case we are not mixing C and C++ style I/O.
+4. We are iterating through `g[i]` multiple times. We can reduce the number of iterations.
+5. We are using `push_back()` to add elements to a vector which is slower as it checks each time if the memory is enough to add a new element and if not, it allocates a new block of memory, copies all the elements and then adds the new element. We can use `reserve()` to allocate memory once at starting.
+6. We are using `vector<pair<int, int>> ng;` inside `main()`, we can use it globally to save the overhead of memory allocation and deallocation every time inside the loop.
+
+Optimized Program:
+
+```c++
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#define fi first
+#define se second
+const int N = 200200;
+const int mod = 1e9 + 7;
+
+int n, m, k;
+int ban[10][10][10], slf[10][10];
+int used[10], cnt[10][10];
+int res, all;
+std::vector<std::pair<int, int>> v[N], g[N];
+std::vector<std::pair<int, int>> ng;
+int sv[10][10];
+
+void rec(int i) {
+  if (i == k + 1) {
+    res += 1;
+    return;
+  }
+  for (int j = 0; j < i; j++) {
+    if (used[i] & (1 << j) || slf[i][j])
+      continue;
+    for (int h = i + 1; h <= k; h++) {
+      sv[i][h] = used[h];
+      used[h] |= ban[i][j][h];
+    }
+    all += cnt[i][j];
+    rec(i + 1);
+    all -= cnt[i][j];
+    for (int h = i + 1; h <= k; h++) {
+      used[h] = sv[i][h];
+    }
+  }
+}
+
+int main() {
+  std::cin >> n >> m >> k;
+  for (int i = 1; i <= m; i++) {
+    int x, y, z;
+    std::cin >> x >> y >> z;
+    v[x].push_back({z, y});
+  }
+  for (int i = 1; i <= n; i++) {
+    std::sort(v[i].begin(), v[i].end());
+    for (int j = 0; j < v[i].size(); j++) {
+      g[v[i][j].se].push_back({v[i].size(), j});
+    }
+  }
+  for (int i = 1; i <= n; i++) {
+    if (g[i].empty()) {
+      std::cout << 0 << "\n";
+      return 0;
+    }
+    std::sort(g[i].begin(), g[i].end());
+    ng.clear();
+    ng.push_back(g[i][0]);
+    for (int j = 1; j < g[i].size(); j++) {
+      if (g[i][j] == g[i][j - 1]) {
+        slf[g[i][j].fi][g[i][j].se] = true;
+      } else {
+        ng.push_back(g[i][j]);
+      }
+    }
+    g[i].swap(ng);
+    for (int j = 0; j < g[i].size(); j++) {
+      cnt[g[i][j].fi][g[i][j].se] += 1;
+      for (int h = 0; h < g[i].size(); h++)
+        if (h != j) {
+          ban[g[i][j].fi][g[i][j].se][g[i][h].fi] |= (1 << g[i][h].se);
+        }
+    }
+  }
+  rec(1);
+  std::cout << res << "\n";
+}
+```

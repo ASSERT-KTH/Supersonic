@@ -1,0 +1,199 @@
+#include <iostream>
+#include <vector>
+#include <map>
+using namespace std;
+
+const int NMAX = 100001;
+const int BLOCK = 518;
+
+class ColorAssigner {
+private:
+    int n;
+    int a;
+    int b;
+    int depth;
+    vector<vector<int>> adj;
+    vector<int> levelStart;
+    vector<int> levelEnd;
+    vector<int> levelCount;
+    vector<int> levelEquivalence;
+    vector<int> color;
+    vector<int> cnt;
+    vector<int> dp;
+
+public:
+    ColorAssigner(int n, int a, int b) : n(n), a(a), b(b) {
+        adj.resize(n + 1);
+        levelStart.resize(n + 1);
+        levelEnd.resize(n + 1);
+        levelCount.resize(n + 1);
+        levelEquivalence.resize(n + 1);
+        color.resize(n + 1);
+        cnt.resize(n + 1);
+        dp.resize(BLOCK * NMAX, 0);
+        depth = 0;
+    }
+
+    void addEdge(int u, int v) {
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }
+
+    void computeLevels() {
+        dfs(1, 0, 1);
+    }
+
+    void dfs(int node, int p, int level) {
+        levelStart[level] = levelCount[level] + 1;
+        levelCount[level]++;
+        depth = max(depth, level);
+        for (int x : adj[node]) {
+            if (x == p) continue;
+            dfs(x, node, level + 1);
+        }
+        levelEnd[level] = levelCount[level];
+    }
+
+    void computeColors() {
+        cnt[1] = adj[1].size();
+        for (int i = 2; i <= n; i++) {
+            cnt[i] = adj[i].size() - (i != 1);
+        }
+
+        for (int i = 1; i <= depth; i++) {
+            if (levelCount[i] == 0) continue;
+            levelEquivalence[levelCount[i]].push_back(i);
+        }
+
+        int c = 0;
+        dp[0] = 1;
+        for (int i = 1; i <= n; i++) {
+            if (levelEquivalence[i].size() == 0) continue;
+            c++;
+            int val = i;
+            int freq = levelEquivalence[i].size();
+            vector<int> l(i, -1);
+            for (int j = 0; j <= a; j++) {
+                if (dp[(c - 1) * NMAX + j]) {
+                    l[j % val] = j;
+                }
+                int rest = j % val;
+                if (l[rest] != -1 && (j - l[rest]) / val <= freq) {
+                    dp[c * NMAX + j] = 1;
+                }
+            }
+        }
+
+        if (dp[c * NMAX + a]) {
+            vector<int> sol;
+            int cant = a;
+            while (c > 0) {
+                int r = levelEquivalence[cc[c]].back();
+                levelEquivalence[cc[c]].pop_back();
+                c--;
+                while (!dp[c * NMAX + cant]) {
+                    cant -= r;
+                    sol.push_back(r);
+                }
+            }
+
+            for (int x : sol) {
+                for (int y = levelStart[x]; y <= levelEnd[x]; y++) {
+                    color[lvl[y]] = 'a';
+                }
+            }
+        } else {
+            for (int i = 1; i <= depth; i++) {
+                if (levelCount[i] == 0) continue;
+                int sz = levelCount[i];
+                if (sz <= a) {
+                    a -= sz;
+                    for (int j = levelStart[i]; j <= levelEnd[i]; j++) {
+                        color[lvl[j]] = 'a';
+                    }
+                    continue;
+                }
+                if (sz <= b) {
+                    b -= sz;
+                    for (int j = levelStart[i]; j <= levelEnd[i]; j++) {
+                        color[lvl[j]] = 'b';
+                    }
+                    continue;
+                }
+                if (a > b) {
+                    for (int j = levelStart[i]; j <= levelEnd[i]; j++) {
+                        int node = lvl[j];
+                        if (cnt[node] > 0) {
+                            color[node] = 'a';
+                            a--;
+                        }
+                    }
+                    for (int j = levelStart[i]; j <= levelEnd[i]; j++) {
+                        int node = lvl[j];
+                        if (a && color[node] != 'a') {
+                            color[node] = 'a';
+                            a--;
+                        }
+                    }
+                    for (int j = levelStart[i]; j <= levelEnd[i]; j++) {
+                        int node = lvl[j];
+                        if (color[node] != 'a') {
+                            color[node] = 'b';
+                            b--;
+                        }
+                    }
+                } else {
+                    for (int j = levelStart[i]; j <= levelEnd[i]; j++) {
+                        int node = lvl[j];
+                        if (cnt[node] > 0) {
+                            color[node] = 'b';
+                            b--;
+                        }
+                    }
+                    for (int j = levelStart[i]; j <= levelEnd[i]; j++) {
+                        int node = lvl[j];
+                        if (b && color[node] != 'b') {
+                            color[node] = 'b';
+                            b--;
+                        }
+                    }
+                    for (int j = levelStart[i]; j <= levelEnd[i]; j++) {
+                        int node = lvl[j];
+                        if (color[node] != 'b') {
+                            color[node] = 'a';
+                            a--;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    void printResult() {
+        cout << depth + 1 << "\n";
+        for (int i = 1; i <= n; i++) {
+            if (color[i] != 'a') color[i] = 'b';
+            cout << color[i];
+        }
+    }
+};
+
+int main() {
+    int n, x;
+    cin >> n >> x;
+    int a = x;
+    int b = n - x;
+
+    ColorAssigner ca(n, a, b);
+
+    for (int i = 2; i <= n; i++) {
+        cin >> x;
+        ca.addEdge(x, i);
+    }
+
+    ca.computeLevels();
+    ca.computeColors();
+    ca.printResult();
+
+    return 0;
+}

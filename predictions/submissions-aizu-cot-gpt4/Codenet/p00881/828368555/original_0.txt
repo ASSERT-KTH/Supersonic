@@ -1,0 +1,67 @@
+This program is a recursive implementation that performs a depth-first search (DFS) and uses a map to memoize the results to avoid re-computing the same sub-problems. It also uses bit manipulation to manage the 'used' variable.
+
+Below are the steps for optimization:
+
+1. Avoid repeated calls to `make_pair(vi, used)`: The program creates a pair object multiple times in a single function call, which could be avoided by creating it once and re-using it.
+
+2. Use `emplace_back` instead of `push_back`: `emplace_back` creates the object directly in memory, whereas `push_back` creates a temporary object and then moves it into memory.
+
+3. Avoid calling map's `count` and `operator[]`: These two operations can be combined into a single call to `insert`, which returns a pair containing an iterator to the inserted element (or to the element that prevented the insertion) and a bool denoting whether the insertion took place.
+
+4. Use references where possible: This is more of a good practice than an optimization, as it makes it clear that the function does not intend to modify the passed object.
+
+Here's the optimized version of the program:
+
+```cpp
+#include <iostream>
+#include <map>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+map<pair<vector<int>, int>, int> mp;
+string qes[128];
+
+int search(vector<int> &vi, int depth, int used, int m, int n) {
+  auto key = make_pair(vi, used);
+  auto inserted = mp.insert({ key, 0 });
+  if (!inserted.second)
+    return inserted.first->second;
+  if (vi.size() > (1 << (m - depth)))
+    return 100;
+  if (vi.size() == 1)
+    return depth;
+  int res = 100;
+  for (int i = 0; i < m; i++) {
+    if ((used >> i) & 1)
+      continue;
+    vector<int> a, b;
+    for (int j = 0; j < vi.size(); j++) {
+      if (qes[vi[j]][i] == '0')
+        a.emplace_back(vi[j]);
+      else
+        b.emplace_back(vi[j]);
+    }
+    if (a.empty() || b.empty())
+      continue;
+    res = min(res, max(search(a, depth + 1, used | (1 << i), m, n),
+                       search(b, depth + 1, used | (1 << i), m, n)));
+  }
+  return inserted.first->second = res;
+}
+
+int main() {
+  int m, n;
+  while (cin >> m >> n, m) {
+    for (int i = 0; i < n; i++)
+      cin >> qes[i];
+    vector<int> vi(n);
+    for (int i = 0; i < n; i++)
+      vi[i] = i;
+    mp.clear();
+    cout << search(vi, 0, 0, m, n) << endl;
+  }
+}
+```
+Please note that these optimizations may not significantly improve the program's performance, as the major time complexity comes from the recursive function calls. However, they do improve the code's efficiency and readability.

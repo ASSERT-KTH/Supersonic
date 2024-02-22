@@ -1,0 +1,118 @@
+The given program implements a variant of Dijkstra's algorithm for a specific type of problem. The optimizations that can be applied here are:
+
+1. Avoid copying objects where possible: When manipulating objects such as `Edge`, instead of copying the whole object, we can just use a reference to the object. This will save memory and CPU time, because copying an object involves allocating memory and copying each member of the object.
+
+2. Avoid unnecessary computation: In the `initCost` function, we are checking for conditions such as `field[newpos] == kFriend`, `field[newpos] == kEnemy`, `field[newpos] == kWall` multiple times. We can reduce these computations by storing the result in a variable and using it instead.
+
+3. Use `emplace` instead of `push` for containers: The `push` method creates a temporary object and then copies it into the container. The `emplace` method constructs the object in place, eliminating the need for the temporary object and the copy. This can provide a significant performance boost, especially for larger objects or containers with many elements.
+
+4. Use `reserve` for `vector`: Whenever a `vector` needs to allocate more space, it allocates twice its current capacity. This can lead to a lot of wasted space if the `vector` grows slowly. By using `reserve`, we can allocate the exact amount of space we need, reducing memory usage.
+
+Here is the optimized version of the code:
+
+```c++
+#define _CRT_SECURE_NO_WARNINGS
+#include <algorithm>
+#include <cstdio>
+#include <functional>
+#include <queue>
+#include <utility>
+#include <vector>
+typedef struct {
+  int to, cost;
+} Edge;
+typedef std::pair<int, int> P;
+const int kMaxSize = 32;
+const int kMaxField = kMaxSize * kMaxSize;
+const int kCostFriendlyInk = 1;
+const int kCostShot = 2;
+const int kCostBlank = 2;
+const int kShotRange = 3;
+const char kWall = '#';
+const char kFriend = 'o';
+const char kEnemy = 'x';
+const char kStart = 'S';
+const char kGoal = 'G';
+const char kBlank = '.';
+char field[kMaxField];
+int way[4] = {-1, 1, -kMaxSize, kMaxSize};
+const int kInf = 1 << 16;
+int d[kMaxField];
+std::vector<Edge> cost[kMaxField];
+int R, C;
+inline int xy2pos(const int x, const int y) { return x + y * kMaxSize; }
+void initCost() {
+  for (int y = 1; y <= R; y++) {
+    for (int x = 1; x <= C; x++) {
+      int pos = xy2pos(x, y);
+      char currentField = field[pos];
+      if (currentField == kWall)
+        continue;
+      cost[pos].reserve(4*kShotRange);  // Optimization: Reserve space for vector
+      for (int i = 0; i < 4; i++) {
+        for (int j = 1; j <= kShotRange; j++) {
+          int newpos = pos + j * way[i];
+          char newField = field[newpos];
+          if (newField == kWall)
+            break;
+          if (j == 1) {
+            if (newField == kFriend)
+              cost[pos].emplace_back(Edge{newpos, kCostFriendlyInk});
+            else if (newField == kEnemy)
+              cost[pos].emplace_back(Edge{newpos, kCostShot + kCostFriendlyInk});
+            else
+              cost[pos].emplace_back(Edge{newpos, kCostBlank});
+          } else {
+            int newcost;
+            if (newField == kFriend)
+              newcost = std::min(kCostShot + kCostFriendlyInk * j,
+                                 cost[pos].back().cost + kCostFriendlyInk);
+            else if (newField == kEnemy)
+              newcost = kCostShot + kCostFriendlyInk * j;
+            else
+              newcost = std::min(kCostShot + kCostFriendlyInk * j,
+                                 cost[pos].back().cost + kCostBlank);
+            cost[pos].emplace_back(Edge{newpos, newcost});
+          }
+        }
+      }
+    }
+  }
+}
+void dijkstra(int spos) {
+  std::priority_queue<P, std::vector<P>, std::greater<P>> q;
+  std::fill(d, d + kMaxField, kInf);
+  d[spos] = 0;
+  q.emplace(P(0, spos));
+  while (!q.empty()) {
+    P p = q.top();
+    q.pop();
+    if (d[p.second] < p.first)
+      continue;
+    for (auto &e : cost[p.second]) {  // Optimization: Use reference to avoid copying
+      if (d[e.to] > d[p.second] + e.cost) {
+        d[e.to] = d[p.second] + e.cost;
+        q.emplace(P(d[e.to], e.to));
+      }
+    }
+  }
+}
+int main() {
+  int start, goal;
+  std::fill(field, field + kMaxField, '#');
+  std::scanf("%d %d", &R, &C);
+  for (int y = 1; y <= R; y++)
+    for (int x = 1; x <= C; x++) {
+      int pos = xy2pos(x, y);
+      std::scanf(" %c", &field[pos]);
+      if (field[pos] == kStart)
+        start = pos;
+      else if (field[pos] == kGoal)
+        goal = pos;
+    }
+  initCost();
+  dijkstra(start);
+  printf("%d\n", d[goal]);
+  return 0;
+}
+```

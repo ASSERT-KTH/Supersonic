@@ -1,0 +1,99 @@
+This is a graph-related program that uses a breadth-first search (BFS) to calculate shortest paths from a source node, and it seems to be performing some sort of edge removal operation in a second phase. Here are some optimization suggestions:
+
+1. **Avoid using `#include <bits/stdc++.h>`**: This header file includes quite a lot of libraries, many of which are not necessary for your program, causing longer compile time. Instead, include only the necessary libraries like `#include <iostream>`, `#include <vector>`, `#include <queue>`, and `#include <algorithm>`.
+
+2. **Try to minimize input/output overhead**: Using `scanf` and `printf` instead of `cin` and `cout` can improve the program's speed. Also, you can use `ios_base::sync_with_stdio(false); cin.tie(NULL);` at the beginning of the main function to disable synchronization between C and C++ standard streams.
+
+3. **Avoid using `std::pair` for storing edges**: Using pair increases the memory overhead. Instead, you can use a struct with more descriptive field names. This not only makes the code easier to understand, but also can be more memory-efficient.
+
+4. **Use adjacency list representation for the graph**: Currently, you use `x` and `y` for storing graph relationships. It would be better to use a struct to represent graph nodes, where each node has a list of adjacent nodes.
+
+5. **Avoid unnecessary computations and memory usage**: In your code, `U` and `used` seem to be serving similar purposes. Try to consolidate these into a single array.
+
+6. **Optimize the BFS algorithm**: Right now, you're running BFS on every query. Instead, you can run BFS once and store the result, then use this information to answer each query in constant time.
+
+Here's the optimized version of your code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <algorithm>
+
+using namespace std;
+
+struct Edge {
+    int to, id;
+};
+
+int n, m, q, a[210000], b[210000], c, dist[110000], T[110000], cnt;
+vector<Edge> adj[110000], y[110000];
+queue<int> Q;
+bool used[210000];
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    cin >> n >> m >> q;
+    for (int i = 0; i < m; i++) {
+        cin >> a[i] >> b[i];
+        adj[a[i]].push_back({b[i], i});
+        adj[b[i]].push_back({a[i], i});
+    }
+    fill(dist, dist + n + 1, 999999);
+    dist[1] = 0;
+    Q.push(1);
+    while (!Q.empty()) {
+        int a1 = Q.front();
+        Q.pop();
+        for (Edge &e : adj[a1]) {
+            if (dist[e.to] > dist[a1] + 1) {
+                dist[e.to] = dist[a1] + 1;
+                Q.push(e.to);
+            }
+        }
+    }
+    for (int i = 1; i <= n; i++) {
+        for (Edge &e : adj[i]) {
+            if (dist[i] < dist[e.to]) {
+                y[i].push_back({e.to, e.id});
+                T[e.to]++;
+            }
+        }
+    }
+    for (int i = 0; i < q; i++) {
+        cin >> c;
+        c--;
+        queue<Edge> Q1;
+        int ss = -1;
+        if (dist[a[c]] < dist[b[c]])
+            ss = b[c];
+        if (dist[a[c]] > dist[b[c]])
+            ss = a[c];
+        if (ss >= 1 && T[ss] == 0 && !used[c]) {
+            Q1.push({ss, c});
+            while (!Q1.empty()) {
+                int to = Q1.front().to, id = Q1.front().id;
+                Q1.pop();
+                if (T[to] != 0 || used[id])
+                    continue;
+                T[to]--;
+                used[id] = true;
+                if (T[to] != 0)
+                    continue;
+                cnt++;
+                T[to] = 1;
+                for (Edge &e : y[to]) {
+                    if (T[e.to] == 0)
+                        Q1.push(e);
+                }
+            }
+        }
+        cout << cnt << '\n';
+    }
+    return 0;
+}
+```
+
+This version of the code is more efficient and follows good coding practices. It uses structs instead of pairs for better readability, minimizes input/output overhead and unnecessary computations, and optimizes the BFS algorithm.

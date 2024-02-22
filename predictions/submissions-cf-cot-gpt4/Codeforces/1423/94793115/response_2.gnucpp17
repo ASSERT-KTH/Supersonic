@@ -1,0 +1,91 @@
+#include <bits/stdc++.h>
+using namespace std;
+struct SegTree {
+  vector<int> sand, sor, lazy;
+  int n;
+  SegTree(int n_) {
+    n = n_;
+    sand.assign(n * 2, 0);
+    sor.assign(n * 2, 0);
+    lazy.assign(n * 2, 0);
+  }
+  void upd(int id, int v) {
+    sand[id] |= v;
+    sor[id] |= v;
+    lazy[id] |= v;
+  }
+  void push(int id, int il, int ir) {
+    if (lazy[id] == 0)
+      return;
+    upd(il, lazy[id]);
+    upd(ir, lazy[id]);
+    lazy[id] = 0;
+  }
+  void update(int x, int y, int v, int id, int l, int r, int il, int ir) {
+    if (x <= l && r <= y) {
+      upd(id, v);
+      return;
+    }
+    if (x >= r || l >= y)
+      return;
+    int mid = (l + r) >> 1;
+    push(id, il, ir);
+    update(x, y, v, il, l, mid, id + 1, id + 2 * (mid - l));
+    update(x, y, v, ir, mid, r, id + 2 * (mid - l) + 1, id + 2 * (r - mid));
+    sand[id] = sand[il] & sand[ir];
+    sor[id] = sor[il] | sor[ir];
+  }
+  void update(int x, int y, int v) { update(x, y, v, 0, 0, n, 1, 2); }
+  pair<int, int> get(int x, int y, int id, int l, int r, int il, int ir) {
+    if (x <= l && r <= y) {
+      return {sand[id], sor[id]};
+    }
+    if (x >= r || l >= y)
+      return {(1 << 16) - 1, 0};
+    int mid = (l + r) >> 1;
+    push(id, il, ir);
+    auto retl = get(x, y, il, l, mid, id + 1, id + 2 * (mid - l));
+    auto retr = get(x, y, ir, mid, r, id + 2 * (mid - l) + 1, id + 2 * (r - mid));
+    return {retl.first & retr.first, retl.second | retr.second};
+  }
+  pair<int, int> get(int x, int y) { return get(x, y, 0, 0, n, 1, 2); }
+  void print(int id, int l, int r, int il, int ir) {
+    if (r - l < 2) {
+      cout << sand[id] << "\n";
+      return;
+    }
+    int mid = (l + r) >> 1;
+    push(id, il, ir);
+    print(il, l, mid, id + 1, id + 2 * (mid - l));
+    print(ir, mid, r, id + 2 * (mid - l) + 1, id + 2 * (r - mid));
+  }
+  void print() { print(0, 0, n, 1, 2); }
+};
+
+int main() {
+  ios::sync_with_stdio(false); cin.tie(NULL);
+  int k, q;
+  cin >> k >> q;
+  int n = 1 << k, mask = (1 << k) - 1;
+  SegTree low(n), hig(n);
+  vector<tuple<long long, long long, int>> cons;
+  for (int i = 0; i < q; ++i) {
+    long long l, r;
+    int v;
+    cin >> l >> r >> v;
+    int la = l & mask, lb = (l >> k) & mask;
+    int ra = r & mask, rb = (r >> k) & mask;
+    if (lb + 1 < rb) {
+      low.update(0, n, v);
+    } else if (lb < rb) {
+      low.update(la, n, v);
+      low.update(0, ra + 1, v);
+    } else {
+      low.update(la, ra + 1, v);
+    }
+    hig.update(lb, rb + 1, v);
+    cons.emplace_back(l, r, v);
+  }
+  // ...
+  return 0;
+}

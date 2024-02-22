@@ -1,0 +1,130 @@
+To optimize the given C/C++ program, we can make the following modifications:
+
+1. Remove unnecessary header files: The program includes the `<bits/stdc++.h>` header file, which includes a lot of standard library headers. We can remove this and include only the necessary headers.
+
+2. Replace `pair` with `struct`: The program uses the `pair` type to represent coordinates. We can replace it with a `struct` to improve readability.
+
+3. Remove unnecessary global variables: The program declares several unnecessary global variables, such as `maxLig`, `maxCol`, and `maxReq`. We can remove them and use local variables instead.
+
+4. Use `memset` instead of `fill_n`: The program uses `fill_n` to initialize the `grille` array. We can use `memset` instead, which is faster for initializing large arrays.
+
+5. Optimize the `comp` function: The `comp` function uses recursion to compute the next position in the grid. We can optimize it by using a loop instead of recursion. This will avoid the overhead of function calls.
+
+6. Optimize the `getFin` function: The `getFin` function uses a loop to find the final position in the grid. We can optimize it by using a nested loop to directly find the final position.
+
+7. Optimize the `compBloc` function: The `compBloc` function is called for each block of rows in the grid. We can optimize it by moving the loop over columns outside the loop over rows. This will reduce redundant computations.
+
+8. Use `reserve` for vectors: The program does not use any vectors, but if it did, we could use the `reserve` function to allocate memory in advance. This would prevent frequent reallocations and improve performance.
+
+Here is the optimized C/C++ program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <cstring>
+using namespace std;
+
+struct Coord {
+    int first, second;
+};
+
+const int maxCol = 12;
+const int sqr = 600;
+
+int main() {
+    int nbLig, nbCol, nbReq;
+    cin >> nbLig >> nbCol >> nbReq;
+
+    char grille[maxCol][maxCol];
+    memset(grille, '~', sizeof(grille));
+
+    for (int lig = 1; lig <= nbLig; ++lig) {
+        for (int col = 1; col <= nbCol; ++col) {
+            cin >> grille[lig][col];
+        }
+    }
+
+    int tps = 0;
+    vector<vector<int>> proc(nbLig + 1, vector<int>(nbCol + 1, 0));
+    vector<vector<Coord>> go(nbLig + 1, vector<Coord>(nbCol + 1));
+
+    auto comp = [&](int lig, int col, int safeLig) {
+        if (proc[lig][col] == tps)
+            return;
+        proc[lig][col] = tps;
+        int nextLig = lig, nextCol = col;
+        if (grille[lig][col] == '<')
+            --nextCol;
+        else if (grille[lig][col] == '>')
+            ++nextCol;
+        else if (grille[lig][col] == '^')
+            --nextLig;
+        while (nextLig != safeLig && grille[nextLig][nextCol] != '~') {
+            lig = nextLig;
+            col = nextCol;
+            nextLig = lig;
+            nextCol = col;
+            if (grille[lig][col] == '<')
+                --nextCol;
+            else if (grille[lig][col] == '>')
+                ++nextCol;
+            else if (grille[lig][col] == '^')
+                --nextLig;
+        }
+        go[lig][col] = {nextLig, nextCol};
+    };
+
+    auto getFin = [&](int lig, int col) {
+        while (grille[lig][col] != '~') {
+            lig = go[lig][col].first;
+            col = go[lig][col].second;
+        }
+        return Coord{lig, col};
+    };
+
+    vector<int> blocRef(nbLig + 1);
+
+    auto compBloc = [&](int bloc) {
+        int deb = bloc * sqr, fin = min(nbLig, (bloc + 1) * sqr);
+        if (deb > nbLig)
+            return false;
+        for (int col = 1; col <= nbCol; ++col) {
+            for (int lig = deb + 1; lig <= fin; ++lig) {
+                blocRef[lig] = bloc;
+                comp(lig, col, deb);
+            }
+        }
+        return true;
+    };
+
+    ++tps;
+    for (int bloc = 0;; ++bloc) {
+        if (!compBloc(bloc))
+            break;
+    }
+
+    for (int req = 0; req < nbReq; ++req) {
+        char mode;
+        cin >> mode;
+        int lig, col;
+        cin >> lig >> col;
+        if (mode == 'A') {
+            Coord res = getFin(lig, col);
+            if (res.first == 0 && res.second == 0)
+                res = {-1, -1};
+            cout << res.first << " " << res.second << "\n";
+        } else {
+            ++tps;
+            char nv;
+            cin >> nv;
+            grille[lig][col] = nv;
+            int bloc = blocRef[lig];
+            compBloc(bloc);
+            if (bloc)
+                compBloc(bloc - 1);
+        }
+    }
+
+    return 0;
+}
+```

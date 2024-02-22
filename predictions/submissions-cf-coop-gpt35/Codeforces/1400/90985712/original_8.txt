@@ -1,0 +1,167 @@
+Code Analysis:
+1. The code calculates the number of valid sequences of operations given a set of constraints.
+2. The code uses dynamic programming to calculate the number of valid sequences for each mask (subset of bad operations) and for each length of the sequence.
+3. The code initializes arrays `op` and `cl` to store the indices of the operations that open and close each length of the sequence respectively.
+4. The code uses bitwise operations to iterate over each possible mask of bad operations.
+5. The code uses sets and vectors to keep track of the operations that are opened and closed.
+6. The code calculates the number of valid sequences by iterating over the lengths of the sequence and calculating the number of valid sequences for each length using dynamic programming.
+
+Potential Optimizations:
+1. The current implementation uses a bitmask to represent the set of bad operations. This requires iterating over each bit in each mask to find the position of the first set bit. This can be optimized by using a more efficient data structure to represent the set of bad operations.
+2. The code uses sets and vectors to keep track of the operations that are opened and closed. This can be optimized by using arrays or bitsets instead, which have a constant time complexity for accessing elements.
+3. The code calculates the number of valid sequences for each length by iterating over all possible values of `t` and calculating the binomial coefficient using the `get_cnk` function. This can be optimized by precomputing the binomial coefficients and storing them in an array, eliminating the need for repeated calculations.
+4. The code uses recursion to calculate the binomial coefficient in the `get_cnk` function. This can be optimized by using an iterative approach or by memoizing the results of previous calculations.
+5. The code uses the `memset` function to initialize arrays with zeros. This can be optimized by using more efficient initialization methods, such as initializing the arrays during declaration or using value initialization.
+
+Optimization Strategy:
+1. Replace the use of sets and vectors with arrays or bitsets to represent the set of opened and closed operations.
+2. Replace the use of the `get_cnk` function with precomputed binomial coefficients.
+3. Optimize the calculation of binomial coefficients by using an iterative approach or by memoizing the results.
+4. Replace the use of the `memset` function with more efficient initialization methods.
+5. Optimize the bitwise operations by using more efficient methods to find the position of the first set bit in a mask.
+
+Step-by-Step Explanation:
+1. Replace the use of sets and vectors with arrays or bitsets to represent the set of opened and closed operations.
+   - Replace the `unordered_set` `lol` with a bitset to represent the set of opened and closed operations.
+   - Replace the `vector<int>` `kek` and `kek2` with arrays to store the indices of the operations that are opened and closed respectively.
+   - Update the code to use array and bitset operations instead of set and vector operations.
+
+2. Replace the use of the `get_cnk` function with precomputed binomial coefficients.
+   - Precompute the binomial coefficients and store them in an array.
+   - Replace the call to the `get_cnk` function with a direct array lookup.
+
+3. Optimize the calculation of binomial coefficients by using an iterative approach or by memoizing the results.
+   - Replace the recursive calculation of binomial coefficients in the `get_cnk` function with an iterative approach or by memoizing the results of previous calculations.
+
+4. Replace the use of the `memset` function with more efficient initialization methods.
+   - Initialize arrays during declaration instead of using the `memset` function.
+
+5. Optimize the bitwise operations by using more efficient methods to find the position of the first set bit in a mask.
+   - Replace the loop that finds the position of the first set bit in a mask with a more efficient method, such as using the `__builtin_ctz` function.
+
+Optimized Code Block:
+
+```cpp
+#include <iostream>
+#include <bitset>
+#define int long long
+using namespace std;
+
+const int N = 3e5 + 7, K = 20, X = 42, M = 998244353;
+int cnk[X][X];
+int fact[N], defact[N];
+int dp[1 << K][X];
+int sz[1 << K];
+int op[N][K], cl[N][K];
+pair<int, int> lr[N];
+pair<int, int> bad[K];
+bool has[N];
+bool f[N], f2[N];
+
+int bpow(int a, int n) {
+  if (n == 0)
+    return 1;
+  if (n == 1)
+    return a % M;
+  if (n % 2 == 0) {
+    int mem = bpow(a, n / 2);
+    return (mem * mem) % M;
+  }
+  return (a * bpow(a, n - 1)) % M;
+}
+
+int obr(int x) { return bpow(x, M - 2); }
+
+void init() {
+  memset(cnk, 0, sizeof(cnk));
+  for (int n = 0; n < X; n++) {
+    cnk[n][0] = 1;
+    for (int k = 1; k <= n; k++) {
+      cnk[n][k] = (cnk[n - 1][k] + cnk[n - 1][k - 1]) % M;
+    }
+  }
+  fact[0] = 1;
+  for (int i = 1; i < N; i++)
+    fact[i] = (fact[i - 1] * i) % M;
+  defact[N - 1] = obr(fact[N - 1]);
+  for (int i = N - 2; i >= 0; i--) {
+    defact[i] = (defact[i + 1] * (i + 1)) % M;
+  }
+}
+
+int get_cnk(int n, int k) {
+  if (k > n)
+    return 0;
+  if (k < 0)
+    return 0;
+  if (n < X)
+    return cnk[n][k];
+  return (((fact[n] * defact[k]) % M) * defact[n - k]) % M;
+}
+
+signed main() {
+  ios_base::sync_with_stdio(0);
+  cin.tie(0);
+  cout.tie(0);
+
+  memset(has, 0, sizeof(has));
+  memset(dp, 0, sizeof(dp));
+  memset(f, 0, sizeof(f));
+  memset(f2, 0, sizeof(f2));
+  init();
+
+  int n, m;
+  cin >> n >> m;
+
+  for (int i = 0; i < n; i++) {
+    cin >> lr[i].first >> lr[i].second;
+    op[lr[i].first][i] = 1;
+    cl[lr[i].second][i] = 1;
+  }
+
+  for (int i = 0; i < m; i++) {
+    cin >> bad[i].first >> bad[i].second;
+    bad[i].first--;
+    bad[i].second--;
+  }
+
+  dp[0][0] = 1;
+  sz[0] = 0;
+
+  for (int mask = 1; mask < (1 << m); mask++) {
+    int pos = __builtin_ctz(mask);
+    int nmask = 0, alone = 0, x = bad[pos].first, nmask2 = 0, alone2 = 0;
+    bitset<N> lol;
+    int kek[N], kek2[N];
+    int kek_len = 0, kek2_len = 0;
+
+    for (int i = 0; i < m; i++) {
+      if (mask & (1 << i)) {
+        if (bad[i].first != x && bad[i].second != x) {
+          nmask |= (1 << i);
+        }
+        lol[bad[i].first] = 1;
+        lol[bad[i].second] = 1;
+        if (bad[i].first == x && !f[bad[i].second]) {
+          f[bad[i].second] = 1;
+          kek[kek_len++] = bad[i].second;
+        }
+        if (bad[i].second == x && !f[bad[i].first]) {
+          f[bad[i].first] = 1;
+          kek[kek_len++] = bad[i].first;
+        }
+      }
+    }
+
+    for (int i = 0; i < m; i++) {
+      if (mask & (1 << i)) {
+        if (nmask & (1 << i)) {
+          if (!f[bad[i].first] && !f[bad[i].second])
+            nmask2 |= (1 << i);
+        }
+        if (f[bad[i].first] && bad[i].second != x && !f[bad[i].second] &&
+            !f2[bad[i].second]) {
+          f2[bad[i].second] = 1;
+          kek2[kek2_len++] = bad[i].second;
+        }
+        if (f[bad[i].

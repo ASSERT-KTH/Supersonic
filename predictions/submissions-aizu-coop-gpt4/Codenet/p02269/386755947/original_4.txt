@@ -1,0 +1,72 @@
+The code operates on a series of inputs, each consisting of an operation ("i" or a different string) and a string of characters. If the operation is "i", the code converts the string to an integer using a specific encoding and inserts it into a boolean array. If the operation is not "i", the code checks if the converted string is in the array and prints "yes" or "no" accordingly.
+
+1. Code Analysis:
+   The main performance bottlenecks in this code are the array lookup, the string-to-integer conversion, and the string comparison in the conditional statement. The array size is 33554432, which might cause a lot of cache misses. The function `c` is called repeatedly, possibly with the same string, which wastes computation.
+
+2. Optimization Strategy:
+   a. Inefficient data structures: The large boolean array is inefficient and can be replaced with a hash table or set, which can reduce the space cost and speed up the search.
+   b. Redundant computations: The function `c` is called repeatedly for the same string, which is inefficient. We can cache the results to avoid unnecessary computations.
+   c. Loops: The loop in the function `c` can be unrolled to speed up the conversion.
+   d. Compiler optimizations: Use the `-O3` optimization flag when compiling the code.
+
+3. Step-by-Step Explanation:
+   a. Replace the large boolean array with a set: The std::unordered_set in C++ provides constant time complexity on average for search, insert, and delete operations. This change will also reduce the memory usage because only the inserted elements are stored.
+   b. Cache the results of the function `c`: We can use a map to store the results of previous calls to `c`. Before computing `c(str)`, we first check if `str` is in the map.
+   c. Unroll the loop in `c`: This can be done manually or by using the `-funroll-loops` compiler flag. This reduces the overhead of loop control and increases the speed of the conversion.
+   d. Use the `-O3` optimization flag: This enables all optimization flags, including `-funroll-loops`.
+
+4. Optimized Code Block:
+
+```cpp
+#include <unordered_set>
+#include <unordered_map>
+#include <string>
+#include <cstdio>
+using namespace std;
+unordered_set<int> d;
+unordered_map<string, int> cache;
+char k[128];
+
+int c(const char* str) {
+  // Check the cache first
+  auto it = cache.find(str);
+  if(it != cache.end())
+    return it->second;
+
+  // Not in cache, compute it
+  int ans = str[0], i = 1;
+  for (i; str[i] != '\0'; i++) {
+    ans <<= 2;
+    ans += k[str[i]];
+  }
+
+  // Store the result in cache
+  cache[str] = ans;
+  
+  return ans;
+}
+
+int main() {
+  k['A'] = 0;
+  k['C'] = 1;
+  k['G'] = 2;
+  k['T'] = 3;
+  int n;
+  scanf("%d", &n);
+  char s[7], str[12];
+  while (n--) {
+    scanf("%s %s", s, str);
+    if (s[0] == 'i')
+      d.insert(c(str));
+    else
+      puts(d.count(c(str)) ? "yes" : "no");
+  }
+  return 0;
+}
+```
+
+Compile the code with the `-O3` flag to further optimize the performance:
+
+```
+g++ -O3 -o optimize optimize.cpp
+```

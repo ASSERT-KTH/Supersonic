@@ -1,0 +1,211 @@
+The given program is using a suffix array to efficiently check if a string is a substring of another string. Here are the steps to optimize the program:
+
+1. Remove unnecessary includes: The line `#include <bits/stdc++.h>` is not necessary and can be removed.
+
+2. Use a forward declaration for the `suffix_array` class: Instead of defining the `suffix_array` class at the top of the file, we can use a forward declaration to declare the class and define it later. This can help improve compilation time.
+
+3. Avoid unnecessary copying of strings: In the `sa_is` function, the input string `v` is passed by value, which creates a copy of the string. We can pass the string by reference to avoid this unnecessary copy.
+
+4. Avoid unnecessary memory allocations: In the `sa_is` function, the `next_v` vector is created with a fixed size `cur`, which is the number of LMS substrings. However, this vector is resized to `cur` later in the code. We can avoid this unnecessary memory allocation by initializing `next_v` with the correct size from the beginning.
+
+5. Avoid unnecessary memory allocations and copying: In the `sa_is` function, the `re_order` vector is created with a fixed size `next_v.size()`, but it is later resized to `cur`. We can avoid this unnecessary memory allocation and copying by initializing `re_order` with the correct size from the beginning.
+
+6. Avoid unnecessary sorting: The `create_begin_bucket` and `create_end_bucket` functions are used to create buckets for sorting, but the sorted order is not necessary for the current implementation. We can remove these functions and simplify the code.
+
+7. Optimize the binary search: In the `contain` function, the binary search is performed using the `compare` function. We can optimize this by using the `substr` function to extract the substring and compare it directly.
+
+8. Remove unnecessary assertions: The `assert` statement in the `get_min` function can be removed as it is not necessary for the correct functioning of the program.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+class suffix_array;
+
+class sparse_table {
+  std::vector<std::vector<int>> st;
+
+public:
+  void init(std::vector<int> &v) {
+    int b;
+    for (b = 0; (1 << b) < v.size(); b++);
+    st.assign(b, std::vector<int>(1 << b));
+    for (int i = 0; i < v.size(); i++)
+      st[0][i] = v[i];
+    for (int i = 1; i < b; i++) {
+      for (int j = 0; j + (1 << i) <= (1 << b); j++) {
+        st[i][j] = std::min(st[i - 1][j], st[i - 1][j + (1 << (i - 1))]);
+      }
+    }
+  }
+  int get_min(int l, int r) {
+    int b = 32 - __builtin_clz(r - l) - 1;
+    return std::min(st[b][l], st[b][r - (1 << b)]);
+  }
+};
+
+class suffix_array {
+  std::string s;
+  std::vector<int> sa, lcp, rank;
+  sparse_table st;
+
+  void sa_is(std::vector<int> &v, int mv) {
+    if (v.size() == 1) {
+      sa = std::vector<int>(1, 0);
+      return;
+    }
+    std::vector<int> is_l(v.size());
+    std::vector<int> sa(v.size(), -1);
+    auto is_lms = [&](int x) -> bool {
+      return x > 0 && is_l[x - 1] && !is_l[x];
+    };
+    is_l[v.size() - 1] = 0;
+    for (int i = v.size() - 2; i >= 0; i--)
+      is_l[i] = v[i] > v[i + 1] || (v[i] == v[i + 1] && is_l[i + 1]);
+
+    std::vector<int> bucket(mv + 1, 0);
+    for (int i = 0; i < v.size(); i++)
+      bucket[v[i]]++;
+    int sum = 0;
+    for (int i = 0; i < bucket.size(); i++) {
+      bucket[i] += sum;
+      std::swap(sum, bucket[i]);
+    }
+
+    for (int i = 0; i < v.size(); i++)
+      if (is_lms(i))
+        sa[--bucket[v[i]]] = i;
+
+    for (int i = 0; i < v.size(); i++)
+      if (sa[i] > 0 && is_l[sa[i] - 1])
+        sa[bucket[v[sa[i] - 1]]++] = sa[i] - 1;
+
+    for (int i = v.size() - 1; i >= 0; i--)
+      if (sa[i] > 0 && !is_l[sa[i] - 1])
+        sa[--bucket[v[sa[i] - 1]]] = sa[i] - 1;
+
+    int cur = 0;
+    std::vector<int> order(v.size());
+    for (int i = 0; i < v.size(); i++)
+      if (is_lms(i))
+        order[i] = cur++;
+
+    std::vector<int> next_v(cur);
+    cur = -1;
+    int prev = -1;
+    for (int i = 0; i < v.size(); i++) {
+      if (!is_lms(sa[i]))
+        continue;
+      bool diff = false;
+      for (int d = 0; d < v.size(); d++) {
+        if (prev == -1 || v[sa[i] + d] != v[prev + d] ||
+            is_l[sa[i] + d] != is_l[prev + d]) {
+          diff = true;
+          break;
+        } else if (d > 0 && is_lms(sa[i] + d))
+          break;
+      }
+      if (diff) {
+        cur++;
+        prev = sa[i];
+      }
+      next_v[order[sa[i]]] = cur;
+    }
+
+    std::vector<int> re_order(next_v.size());
+    for (int i = 0; i < v.size(); i++)
+      if (is_lms(i))
+        re_order[order[i]] = i;
+
+    std::vector<int> next_sa;
+    sa_is(next_v, cur);
+    create_end_bucket(v, bucket);
+    for (int i = 0; i < sa.size(); i++)
+      sa[i] = -1;
+    for (int i = next_sa.size() - 1; i >= 0; i--)
+      sa[--bucket[v[re_order[next_sa[i]]]]] = re_order[next_sa[i]];
+    induced_sort(v, sa, mv, bucket, is_l);
+    invert_induced_sort(v, sa, mv, bucket, is_l);
+  }
+
+  void create_end_bucket(std::vector<int> &v, std::vector<int> &bucket) {
+    std::fill(bucket.begin(), bucket.end(), 0);
+    for (int i = 0; i < v.size(); i++)
+      bucket[v[i]]++;
+    for (int i = 1; i < bucket.size(); i++)
+      bucket[i] += bucket[i - 1];
+  }
+
+  void induced_sort(std::vector<int> &v, std::vector<int> &sa, int mv,
+                    std::vector<int> &bucket, std::vector<int> &is_l) {
+    create_end_bucket(v, bucket);
+    for (int i = 0; i < v.size(); i++)
+      if (sa[i] > 0 && is_l[sa[i] - 1])
+        sa[bucket[v[sa[i] - 1]]++] = sa[i] - 1;
+  }
+
+  void invert_induced_sort(std::vector<int> &v, std::vector<int> &sa, int mv,
+                           std::vector<int> &bucket, std::vector<int> &is_l) {
+    create_end_bucket(v, bucket);
+    for (int i = v.size() - 1; i >= 0; i--)
+      if (sa[i] > 0 && !is_l[sa[i] - 1])
+        sa[--bucket[v[sa[i] - 1]]] = sa[i] - 1;
+  }
+
+  void construct_lcp() {
+    lcp.resize(s.size());
+    rank.resize(s.size() + 1);
+    int n = s.size();
+    for (int i = 0; i <= n; i++)
+      rank[sa[i]] = i;
+    int h = 0;
+    lcp[0] = 0;
+    for (int i = 0; i < n; i++) {
+      int j = sa[rank[i] - 1];
+      if (h > 0)
+        h--;
+      for (; j + h < n && i + h < n; h++) {
+        if (s[j + h] != s[i + h])
+          break;
+      }
+      lcp[rank[i] - 1] = h;
+    }
+  }
+
+  bool contain(std::string &t) {
+    int lb = 0, ub = s.size();
+    while (ub - lb > 1) {
+      int mid = (lb + ub) / 2;
+      if (s.substr(sa[mid], t.size()) < t)
+        lb = mid;
+      else
+        ub = mid;
+    }
+    return s.substr(sa[ub], t.size()) == t;
+  }
+
+public:
+  suffix_array(std::string &t) {
+    s = t;
+    sa_is(s, *std::max_element(s.begin(), s.end()));
+    construct_lcp();
+  }
+
+  bool contain(std::string &t) {
+    return contain(t);
+  }
+};
+
+int main() {
+  std::string s;
+  std::cin >> s;
+  suffix_array sa(s);
+  int q;
+  std::cin >> q;
+  while (q--) {
+    std::string t;
+    std::cin >> t;
+    std::cout << sa.contain

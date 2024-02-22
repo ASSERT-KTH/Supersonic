@@ -1,0 +1,147 @@
+#include <iostream>
+#include <vector>
+#include <deque>
+#include <map>
+#include <set>
+
+using namespace std;
+
+const int MAXN = 200005;
+
+struct node {
+    int cnt, par, inp;
+    int chn, idx, col;
+};
+
+int n, q;
+vector<int> g[MAXN];
+node a[MAXN];
+int bit[2 * MAXN];
+int chains = 0, timer = 0, colour = 0;
+deque<int> chain[MAXN];
+vector<pair<int, int>> col[MAXN];
+vector<pair<int, set<int>>> pos[MAXN];
+int root[MAXN];
+
+void Init() {
+    cin >> n >> q;
+    for (int i = 1; i < n; ++i) {
+        int u, v;
+        cin >> u >> v;
+        g[u].push_back(v);
+        g[v].push_back(u);
+    }
+    a[n].par = -1;
+    a[n].chn = 0;
+    a[n].idx = 0;
+    root[0] = n;
+    colour = n;
+}
+
+int query(int x) {
+    int res = 0;
+    for (int i = x; i >= 1; i -= i & (-i)) {
+        res += bit[i];
+    }
+    return res;
+}
+
+void update(int x, int d) {
+    for (int i = x; i < 2 * MAXN; i += i & (-i)) {
+        bit[i] += d;
+    }
+}
+
+void DFS(int u) {
+    a[u].inp = ++timer;
+    for (int v : g[u]) {
+        if (a[v].par == 0) {
+            a[v].par = u;
+            DFS(v);
+        }
+    }
+}
+
+void HLD(int u) {
+    chain[a[u].chn].push_back(u);
+    col[a[u].chn].push_back({a[u].idx, a[u].col});
+    pos[a[u].chn].push_back({a[u].col, {a[u].idx}});
+    int heavy = 0, which = 0;
+    for (int v : g[u]) {
+        if (v != a[u].par && a[v].cnt > heavy) {
+            heavy = a[v].cnt;
+            which = v;
+        }
+    }
+    if (heavy == 0 || which == 0)
+        return;
+    a[which].chn = a[u].chn;
+    a[which].idx = a[u].idx + 1;
+    for (int v : g[u]) {
+        if (v == a[u].par)
+            continue;
+        if (v != which) {
+            a[v].chn = ++chains;
+            a[v].idx = 0;
+        }
+        HLD(v);
+    }
+}
+
+void Simulate() {
+    deque<int> pq;
+    for (int i = 1; i <= n; ++i) {
+        a[i].cnt = g[i].size();
+        if (a[i].cnt == 1)
+            pq.push_back(i);
+    }
+    int row = 0;
+    while (!pq.empty()) {
+        int u = pq.front();
+        pq.pop_front();
+        a[u].col = ++row;
+        for (int v : g[u]) {
+            a[v].cnt--;
+            if (a[v].cnt == 1)
+                pq.push_back(v);
+        }
+    }
+    for (int i = 1; i <= row; ++i) {
+        update(i, 1);
+    }
+}
+
+inline bool is_predecessor(int u, int v) {
+    return (a[u].inp <= a[v].inp && a[v].inp < a[u].inp + a[u].cnt);
+}
+
+int LCA(int u, int v) {
+    if (is_predecessor(u, v))
+        return u;
+    if (is_predecessor(v, u))
+        return v;
+    int t = a[u].chn;
+    while (!is_predecessor(chain[t][0], v)) {
+        t = a[a[chain[t][0]].par].chn;
+    }
+    int l = 0, r = chain[t].size() - 1, res = 0;
+    while (l <= r) {
+        int mid = (l + r) / 2;
+        if (is_predecessor(chain[t][mid], u) && is_predecessor(chain[t][mid], v)) {
+            res = mid;
+            l = mid + 1;
+        } else {
+            r = mid - 1;
+        }
+    }
+    return chain[t][res];
+}
+
+inline int get_colour(int u) {
+    int c = a[u].chn, i = a[u].idx;
+    return col[c][i].second;
+}
+
+void up(int u, int t) {
+    while (true) {
+        int c = a[u].chn;

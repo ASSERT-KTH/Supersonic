@@ -1,0 +1,19 @@
+The given code appears to be an implementation of the topological sort algorithm. It takes as input the number of vertices (V) and number of edges (E) in a directed graph, and then reads the edges from standard input. The code then performs a topological sort on the graph and prints the sorted order of vertices.
+
+Upon analyzing the code, here are some potential areas for optimization:
+
+1. Memory Allocation: The code allocates a vector `edge` with a fixed size of 10001. This is unnecessary and can be optimized to allocate memory dynamically based on the number of vertices (V). Similarly, the vector `state` can be initialized with the size of V instead of resizing it later.
+
+2. Unnecessary Loops: The loops used to iterate over the vectors `state` and `ans` can be optimized. Instead of using `state.size()` and `ans.size()` as the loop conditions, we can store these values in a variable outside the loop and use that variable as the loop condition.
+
+3. Redundant Checks: The code checks if `state[i]` is equal to 0 multiple times. This check can be moved inside the loop where `state[i]` is decremented.
+
+4. Efficient Data Structures: The vector `ans` is used to store the topologically sorted vertices. However, using a vector for this purpose can be inefficient due to the frequent insertion of elements at the end. A more efficient data structure like a deque or a linked list can be used instead.
+
+Based on these observations, here is the step-by-step optimization strategy:
+
+1. Replace the fixed size vector `edge` with a dynamically allocated vector based on the number of vertices (V).
+2. Initialize the vector `state` with the size of V instead of resizing it later.
+3. Store the size of `state` and `ans` in variables outside the loops.
+4. Move the check for `state[i] == 0` inside the loop where `state[i]` is decremented.
+5. Replace the vector `ans` with a more efficient data structure like a deque or a linked list.

@@ -1,0 +1,79 @@
+#include <math.h>
+#include <stdio.h>
+
+const double EPS = 1e-4;
+
+double calc(double ra, double rb, double s) {
+  double lb = fabs(ra - rb);
+  double ub = ra + rb;
+  for (int _ = 0; _ < 80; ++_) {
+    double d = (lb + ub) / 2;
+    double tha = acos((ra * ra + d * d - rb * rb) / (2.0 * d * ra));
+    double thb = acos((rb * rb + d * d - ra * ra) / (2.0 * d * rb));
+    double sum = ra * ra * tha + rb * rb * thb - ra * d * sin(tha);
+    if (sum > s) {
+      lb = d;
+    } else {
+      ub = d;
+    }
+  }
+  return ub;
+}
+
+double sq(double x) { return x * x; }
+
+bool judge(double x, double y, double r, double W, double H) {
+  return x - r > -EPS && x + r < W + EPS && y - r > -EPS && y + r < H + EPS;
+}
+
+bool solve(double W, double H, double sa, double sb, double sc, bool reversed) {
+  double ra = sqrt(sa / M_PI);
+  double rb = sqrt(sb / M_PI);
+  double min_WH = std::min(W, H);
+  if (2.0 * ra > min_WH + EPS)
+    return false;
+  if (2.0 * rb > min_WH + EPS)
+    return false;
+  double D = calc(ra, rb, sc);
+  double xa = ra;
+  double ya = ra;
+  double xb_values[] = {ra, rb, W - rb};
+  double yb_values[] = {ra, rb, H - rb};
+  
+  for (int i = 0; i < 3; i++) {
+    double xb = xb_values[i];
+    double dy = sqrt(sq(D) - sq(xa - xb));
+    for (int sign = -1; sign <= 1; sign += 2) {
+      double yb = ya + sign * dy;
+      if (judge(xb, yb, rb, W, H)) {
+        printf("%.9f %.9f %.9f %.9f %.9f %.9f\n", reversed ? xb : xa, reversed ? yb : ya, reversed ? rb : ra, reversed ? xa : xb, reversed ? ya : yb, reversed ? ra : rb);
+        return true;
+      }
+    }
+  }
+
+  for (int i = 0; i < 3; i++) {
+    double yb = yb_values[i];
+    double dx = sqrt(sq(D) - sq(ya - yb));
+    for (int sign = -1; sign <= 1; sign += 2) {
+      double xb = xa + sign * dx;
+      if (judge(xb, yb, rb, W, H)) {
+        printf("%.9f %.9f %.9f %.9f %.9f %.9f\n", reversed ? xb : xa, reversed ? yb : ya, reversed ? rb : ra, reversed ? xa : xb, reversed ? ya : yb, reversed ? ra : rb);
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+int main() {
+  double W, H, sa, sb, sc;
+  while (scanf("%lf %lf %lf %lf %lf", &W, &H, &sa, &sb, &sc) && W > 0) {
+    if (solve(W, H, sa, sb, sc, false))
+      continue;
+    if (solve(W, H, sb, sa, sc, true))
+      continue;
+    printf("impossible\n");
+  }
+  return 0;
+}

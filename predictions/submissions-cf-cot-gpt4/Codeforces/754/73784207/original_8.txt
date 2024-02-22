@@ -1,0 +1,155 @@
+The given program is a C++ program that seems to be a competitive programming solution. It involves a range query problem with a segment tree data structure. The program can be optimized in the following ways:
+
+1. Include only necessary header files: The program includes `bits/stdc++.h` which includes almost all the standard C++ libraries. This is a heavy operation and it might slow down the compile time. Instead, we should include only the libraries that we need.
+
+2. Use of `push_back` vs `emplace_back`: The `push_back` function creates a new object and then copies or moves the data into the vector, while `emplace_back` constructs the data in-place. So, replacing `push_back` with `emplace_back` can avoid unnecessary copy or move operations, and thus can provide a performance boost.
+
+3. Avoid using `endl` to print a new line: `endl` not only inserts a new line, but it also flushes the output stream buffer. If you're printing a lot of lines, it's much more efficient to just print '\n'. 
+
+4. Remove unused variables: Removing unused variables can save memory.
+
+5. Avoid unnecessary copy of objects: In the `for` loop where you are iterating over `v`, you are making a copy of each object with `auto &i : v`. Instead, you should use `const auto &i : v` to avoid creating a copy of each object.
+
+Here is the optimized version of the program with the changes mentioned above:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <set>
+#include <map>
+#include <algorithm>
+#include <climits>
+using namespace std;
+#define F first
+#define S second
+typedef long long ll;
+typedef pair<int, int> pii;
+typedef pair<ll, ll> pll;
+
+const int N = 6e5 + 5;
+vector<pair<pll, int>> v;
+map<ll, int> mp;
+vector<ll> inv_map(N);
+int n, k;
+vector<int> segtree(4 * N, 0), lazy(4 * N, 0);
+
+void update(int x, int y, int val, int node = 0, int l = 0, int r = N - 1) {
+  if (lazy[node] != 0) {
+    segtree[node] += lazy[node];
+    if (l != r) {
+      lazy[2 * node + 1] += lazy[node];
+      lazy[2 * node + 2] += lazy[node];
+    }
+  }
+  lazy[node] = 0;
+  if (l > y || r < x || x > y)
+    return;
+  if (l >= x && r <= y) {
+    lazy[node] += val;
+    if (lazy[node] != 0) {
+      segtree[node] += lazy[node];
+      if (l != r) {
+        lazy[2 * node + 1] += lazy[node];
+        lazy[2 * node + 2] += lazy[node];
+      }
+    }
+    lazy[node] = 0;
+    return;
+  }
+  int mid = (l + r) >> 1;
+  update(x, y, val, 2 * node + 1, l, mid);
+  update(x, y, val, 2 * node + 2, mid + 1, r);
+  segtree[node] = min(segtree[2 * node + 1], segtree[2 * node + 2]);
+}
+
+int query(int x, int y, int node = 0, int l = 0, int r = N - 1) {
+  if (lazy[node] != 0) {
+    segtree[node] += lazy[node];
+    if (l != r) {
+      lazy[2 * node + 1] += lazy[node];
+      lazy[2 * node + 2] += lazy[node];
+    }
+  }
+  lazy[node] = 0;
+  if (l > y || r < x)
+    return INT_MAX - 1;
+  if (l >= x && r <= y) {
+    return segtree[node];
+  }
+  int mid = (l + r) >> 1;
+  return min(query(x, y, 2 * node + 1, l, mid),
+             query(x, y, 2 * node + 2, mid + 1, r));
+}
+
+void solve() {
+  sort(v.begin(), v.end());
+  for (const auto &i : v) {
+    mp[i.F.F] = 0;
+    mp[i.F.S] = 0;
+  }
+  int c = 0;
+  for (auto &i : mp) {
+    inv_map[c] = i.F;
+    i.S = c++;
+  }
+  ll mx = 0, idx = -1;
+  for (int i = 0; i < n; i++) {
+    update(mp[v[i].F.F], mp[v[i].F.S], 1);
+    int scaled_val = mp[v[i].F.F];
+    int tt = -1;
+    int s = scaled_val, e = c;
+    while (s <= e) {
+      int mid = (s + e) >> 1;
+      int val = query(scaled_val, mid);
+      if (val >= k) {
+        tt = mid;
+        s = mid + 1;
+      } else
+        e = mid - 1;
+    }
+    if (tt != -1) {
+      ll temp = inv_map[tt] - v[i].F.F + 1;
+      if (temp > mx) {
+        mx = temp;
+        idx = i;
+      }
+    }
+  }
+  if (idx == -1) {
+    cout << 0 << '\n';
+    for (int i = 1; i <= k; i++)
+      cout << i << ' ';
+    cout << '\n';
+    return;
+  }
+  ll l = v[idx].F.F, r = l + mx - 1;
+  vector<int> ans;
+  for (const auto &i : v) {
+    if (k == 0)
+      break;
+    if (i.F.F <= l && r <= i.F.S) {
+      ans.emplace_back(i.S);
+      k--;
+    }
+  }
+  sort(ans.begin(), ans.end());
+  cout << mx << '\n';
+  for (int i : ans)
+    cout << i << " ";
+  cout << '\n';
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  cout.tie(NULL);
+  
+  cin >> n >> k;
+  for (int i = 1; i <= n; i++) {
+    ll a, b;
+    cin >> a >> b;
+    v.emplace_back(make_pair(a, b), i);
+  }
+  solve();
+}
+```

@@ -1,0 +1,97 @@
+The given program is a solution to the Lowest Common Ancestor (LCA) problem using the Euler tour technique and a Sparse Table data structure. The program first builds the Euler tour path and then constructs the Sparse Table. Finally, it answers multiple LCA queries using the precomputed data.
+
+To optimize the program, we can make the following modifications:
+
+1. Remove unnecessary includes: The program includes the `<bits/stdc++.h>` header, which includes all the standard headers. However, most of them are not needed for this program. We can remove this include and only include the necessary headers.
+
+2. Optimize the data types: The program uses `int` for storing node IDs and depths. However, the number of nodes is limited to `MAXN`, which is defined as 100005. We can use a smaller data type like `short` or `unsigned short` to save memory.
+
+3. Optimize the `path` array size: The `path` array is currently defined with a size of `MAXN << 1`. However, the actual size needed is equal to the number of edges in the graph, which is at most `(num_nodes - 1)`. We can update the size of the `path` array accordingly.
+
+4. Optimize the `ST` array size: The `ST` array is currently defined with a size of `LOGN` by `MAXN << 1`. Since the actual size needed is determined by the number of edges in the graph, we can update the size of the `ST` array accordingly.
+
+5. Use a more efficient algorithm for finding the minimum in the Sparse Table: The current implementation finds the minimum using two `min()` function calls, which can be optimized to a single call.
+
+Here's the optimized version of the program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <algorithm>
+
+typedef std::pair<unsigned short, unsigned short> ii;
+typedef std::vector<unsigned short> vi;
+
+const unsigned short MAXN = 100005;
+const unsigned short LOGN = 17;
+
+unsigned short idx_in_path[MAXN];
+ii path[(MAXN - 1) << 1];
+std::vector<unsigned short> adjList[MAXN];
+unsigned short path_size = 0;
+
+void dfs(unsigned short u, unsigned short depth = 0) {
+  idx_in_path[u] = path_size;
+  path[path_size++] = ii(depth, u);
+  for (unsigned short v : adjList[u]) {
+    dfs(v, depth + 1);
+    path[path_size++] = ii(depth, u);
+  }
+}
+
+ii ST[LOGN][(MAXN - 1) << 1];
+
+void build(unsigned short n) {
+  unsigned short h = std::ceil(std::log2(n + 1));
+  for (unsigned short i = 0; i < n; i++)
+    ST[0][i] = path[i];
+  for (unsigned short i = 1; i < h; i++) {
+    for (unsigned short j = 0; j + (1 << i) <= n; j++) {
+      ST[i][j] = std::min(ST[i - 1][j], ST[i - 1][j + (1 << (i - 1))]);
+    }
+  }
+}
+
+unsigned short lca(unsigned short u, unsigned short v) {
+  unsigned short l = idx_in_path[u], r = idx_in_path[v];
+  if (l > r)
+    std::swap(l, r);
+  r++;
+  unsigned short p = LOGN - 1 - __builtin_clz(r - l);
+  return std::min(ST[p][l], ST[p][r - (1 << p)]).second;
+}
+
+int main() {
+  unsigned short num_nodes;
+  std::cin >> num_nodes;
+  for (unsigned short u = 0; u < num_nodes; u++) {
+    unsigned short num_neighbors;
+    std::cin >> num_neighbors;
+    for (unsigned short i = 0; i < num_neighbors; i++) {
+      unsigned short v;
+      std::cin >> v;
+      adjList[u].push_back(v);
+    }
+  }
+  dfs(0);
+  build(path_size);
+  unsigned short num_queries;
+  std::cin >> num_queries;
+  for (unsigned short i = 0; i < num_queries; i++) {
+    unsigned short u, v;
+    std::cin >> u >> v;
+    std::cout << lca(u, v) << std::endl;
+  }
+  return 0;
+}
+```
+
+Explanation of the optimizations:
+
+1. We removed the unnecessary `#include <bits/stdc++.h>` and included only the necessary headers.
+2. We changed the data types from `int` to `unsigned short` to save memory.
+3. We updated the size of the `path` array to `(MAXN - 1) << 1` to match the actual number of edges in the graph.
+4. We updated the size of the `ST` array to `LOGN` by `(MAXN - 1) << 1` to match the actual number of edges in the graph.
+5. We used a more efficient algorithm for finding the minimum in the Sparse Table by replacing two `min()` function calls with a single call.
+6. We replaced `scanf()` and `printf()` with `std::cin` and `std::cout` for standard input/output operations.

@@ -1,0 +1,71 @@
+1. Code Analysis: This is a program for geometric calculations in 3D space. It includes classes for 3D points, 3D segments, and 3D planes, and various mathematical operations using them. The main() function checks if a segment from point S to point G intersects a given triangle.
+
+2. Optimization Strategy:
+    1. There are no inefficient data structures used in this program. The use of classes and arrays are appropriate for the tasks.
+    2. There's no redundant computation in the code.
+    3. Loops are used minimally and optimally, we don't see any performance gain by optimizing them.
+    4. There are no compiler optimizations or pragma directives used in the original code, these can be introduced to improve performance.
+
+3. Step-by-Step Explanation:
+    1. The equals(a, b) function is used many times, and it involves the computation of fabs(a - b). Fabs is computationally expensive and we can avoid it if a and b are of the same sign. To optimize this, we can add a check to see if a and b are both greater than or less than zero before calling fabs.
+    2. The abs function computes the square root, which is computationally expensive. We can optimize this by computing the square root only when it is necessary. For example, in the Plane3d constructor, we can store the norm of the normal vector instead of its absolute value, and compute the square root only in the distanceP function.
+    3. The operator overloads for ostream can be optimized by removing the creation of temporary strings and writing directly to the stream. 
+    4. The crossproduct and dotproduct calculations are repeated multiple times in the code, and these can be optimized using inline pragma directive which provides hint to the compiler for possible function inlining. This would remove the function call overhead.
+    5. For the math functions like cos, sin, these can be computed once and stored for reuse if the input angle is used multiple times.
+
+4. Optimized Code Block:
+
+```
+// Other parts of the code are not shown, and the shown parts are modified for optimization.
+
+// Optimized equals function
+#define equals(a, b) ((a > 0 == b > 0) && (fabs((a) - (b)) < EPS))
+
+// Optimized abs function
+inline double abs(const Point3d &p) { 
+  static double p_norm = norm(p);
+  return sqrt(p_norm); 
+}
+
+// Optimized Plane3d constructor
+Plane3d(Vector3d a, Vector3d b, Vector3d c) {
+  Vector3d v1 = b - a;
+  Vector3d v2 = c - a;
+  Vector3d tmp = cross(v1, v2);
+  normal_vector = tmp / sqrt(norm(tmp));
+  set_d(a);
+}
+
+#pragma GCC optimize("Ofast")
+#pragma GCC target("avx,avx2,fma")
+
+inline Vector3d cross(const Point3d &a, const Point3d &b) {
+  return Vector3d(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z,
+                  a.x * b.y - a.y * b.x);
+}
+
+#pragma GCC optimize("Ofast")
+#pragma GCC target("avx,avx2,fma")
+
+inline double dot(const Point3d &a, const Point3d &b) {
+  return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+inline Point3d rotateEuler(Point3d p, double alpha, double beta, double gamma) {
+  double cos_alpha = cos(alpha), sin_alpha = sin(alpha);
+  double cos_beta = cos(beta), sin_beta = sin(beta);
+  double cos_gamma = cos(gamma), sin_gamma = sin(gamma);
+
+  return Point3d(
+      (cos_alpha * cos_beta * cos_gamma - sin_alpha * sin_gamma) * p.x +
+          (-cos_alpha * cos_beta * sin_gamma - sin_alpha * cos_gamma) *
+              p.y +
+          (cos_alpha * sin_beta) * p.z,
+      (sin_alpha * cos_beta * cos_gamma + cos_alpha * sin_gamma) * p.x +
+          (-sin_alpha * cos_beta * sin_gamma + cos_alpha * cos_gamma) *
+              p.y +
+          (sin_alpha * sin_beta) * p.z,
+      (-sin_beta * cos_gamma) * p.x + (sin_beta * sin_gamma) * p.y +
+          (cos_beta) * p.z);
+}
+```

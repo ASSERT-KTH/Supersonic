@@ -1,0 +1,74 @@
+## Code Analysis
+The provided C++ code appears to implement the Kahn's algorithm for topological sorting of a Directed Acyclic Graph (DAG). 
+
+The graph's vertices are stored in a vector `edge[5000]`, and the indegree (the number of incoming edges) of each vertex is stored in an array `cnt[5000]`. The `next` vector stores vertices with zero indegree. These vertices are sequentially extracted to form a topological order, which is stored in the `ans` vector. 
+
+## Optimization Strategy
+1. **Inefficient Data Structures:** The vector `next` stores the vertices with zero indegree and is used as a stack. Elements are added to the end and removed from the end. However, vectors are not the most efficient data structure for this operation, as erasing the last element in a vector can cause unnecessary reallocations. A more efficient alternative can be a deque, which has O(1) complexity for removing elements from the end.
+
+2. **Redundant Computations:** The size of `next` vector is recalculated and checked in each iteration of the loop, which is unnecessary. This computation can be avoided by storing the size in a variable.
+
+3. **Loops Optimization:** The loop that iterates over vertices connected to `tar` can be optimized by using iterators instead of indexing.
+
+## Step-by-Step Explanation
+1. **Use Deque Instead of Vector for `next`:** Deque allows efficient removal of elements from either end (constant time complexity), unlike vector where removing from the beginning is costly. However, since we're removing only from the end, the change from vector to deque does not bring significant performance gain, but it does make the use-case more semantically correct.
+   
+2. **Avoid Recalculating Vector Size:** Currently, the size of `next` is recalculated in each iteration, which is an unnecessary computation. We can avoid this by storing the size in a variable and updating it whenever we add or remove elements from `next`.
+
+3. **Use Iterators Instead of Indexing:** When iterating over the `edge[tar]` vector, use iterators instead of indexing. This might provide a slight performance gain.
+
+## Optimized Code Block
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <iostream>
+#include <vector>
+#include <deque>  // Include deque library
+using namespace std;
+#define FOR(i, a, b) for (int i = (a); i < (b); i++)
+#define REP(i, n) FOR(i, 0, n)
+typedef pair<int, int> pii;
+int n, m;
+vector<int> edge[5000];
+int cnt[5000];
+int main() {
+  cin >> n >> m;
+  REP(i, m) {
+    int a, b;
+    scanf("%d %d", &a, &b);
+    a--;
+    b--;
+    edge[a].push_back(b);
+    cnt[b]++;
+  }
+  vector<int> ans;
+  bool flag = false;
+  deque<int> next;  // Change next to deque
+  REP(i, n) if (cnt[i] == 0) next.push_back(i);
+  int nextSize = next.size();  // Store size of next
+  REP(i, n) {
+    int tar = next.back();  // Use back() instead of indexing
+    ans.push_back(tar + 1);
+    next.pop_back();  // Use pop_back() instead of erase()
+    nextSize--;  // Update size of next
+    if (nextSize > 0)
+      flag = true;
+    for(auto &to : edge[tar]) {  // Use range-based for loop
+      if (--cnt[to] == 0) {
+        next.push_back(to);
+        nextSize++;  // Update size of next
+      }
+    }
+  }
+  REP(i, ans.size()) printf("%d\n", ans[i]);
+  if (flag)
+    puts("1");
+  else
+    puts("0");
+  return 0;
+}
+```
+
+## Trade-offs
+The improvements made here will not drastically improve the performance of the code because the original code was already quite efficient. However, these changes make the code more semantically correct and slightly optimize the computation. The trade-off is a slight increase in code complexity due to the need to manually manage the size of the `next` deque.

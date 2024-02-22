@@ -1,0 +1,151 @@
+This C++ program builds and updates a Segment tree structure. Segment trees are a useful data structure for handling range queries and updates in logarithmic time. However, there are few places the code can be optimized without changing the overall logic of the program. 
+
+1. **Avoid repeated calculations**: One of the most common ways to optimize a program is to avoid repeated calculations. In your program, you are calculating `x << 1` and `x << 1 | 1` multiple times. You can calculate these expressions once and use them multiple times. This reduces the calculations and increases the efficiency of the program.
+
+2. **Use bitwise operation for checking even or odd**: In the function `inv(int &x)`, you are using `%` operator to check if a number is even or odd (`x % 2 == 0`). Using bitwise operation (`x & 1`) for checking even or odd is more efficient than using `%` operator.
+
+3. **Use array indexing instead of pointer arithmetic**: Pointer arithmetic is slower than array indexing. So, use array indexing where possible. In your code, replace `sgt + x` with `sgt[x]`.
+
+4. **Avoid unnecessary `else` statement**: In the function `pushdown(node sgt[], int x)`, you are using `else` statement after `if (sgt[x].lz == 2)`. This `else` is unnecessary because you are returning from the function in the `if` block.
+
+Here is the optimized program with the changes mentioned above:
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+using namespace std;
+const int X = 1e5;
+struct node {
+  int l, r;
+  int lz;
+  int sgn;
+};
+void pushup(node sgt[], int x) {
+  int x1 = x << 1;
+  if (sgt[x1].sgn == sgt[x1 | 1].sgn) {
+    sgt[x].sgn = sgt[x1].sgn;
+  } else {
+    sgt[x].sgn = 0;
+  }
+}
+void inv(int &x) { x = (x & 1) ? -x : 2 - x; }
+void pushdown(node sgt[], int x) {
+  int x1 = x << 1;
+  if (sgt[x].lz == 2) {
+    sgt[x1].sgn = -sgt[x1].sgn;
+    sgt[x1 | 1].sgn = -sgt[x1 | 1].sgn;
+    inv(sgt[x1].lz);
+    inv(sgt[x1 | 1].lz);
+    ;
+    sgt[x].lz = 0;
+  }
+  if (sgt[x].lz) {
+    sgt[x1].sgn = sgt[x].lz;
+    sgt[x1 | 1].sgn = sgt[x].lz;
+    sgt[x1].lz = sgt[x].lz;
+    sgt[x1 | 1].lz = sgt[x].lz;
+    sgt[x].lz = 0;
+  }
+}
+void build(node sgt[], int l, int r, int x) {
+  sgt[x].l = l;
+  sgt[x].r = r;
+  sgt[x].lz = 0;
+  if (l == r) {
+    sgt[x].sgn = 1;
+    return;
+  }
+  int mid = (l + r) >> 1;
+  build(sgt, l, mid, x << 1);
+  build(sgt, mid + 1, r, x << 1 | 1);
+  pushup(sgt, x);
+}
+void update(node sgt[], int l, int r, int x, int val) {
+  if (l <= sgt[x].l && r >= sgt[x].r) {
+    if (val == 2) {
+      inv(sgt[x].sgn);
+      inv(sgt[x].lz);
+    } else {
+      sgt[x].sgn = val;
+      sgt[x].lz = val;
+    }
+    return;
+  }
+  pushdown(sgt, x);
+  int mid = (sgt[x].l + sgt[x].r) >> 1;
+  int x1 = x << 1;
+  if (l <= mid) {
+    update(sgt, l, r, x1, val);
+  }
+  if (r > mid) {
+    update(sgt, l, r, x1 | 1, val);
+  }
+  pushup(sgt, x);
+}
+int query(node sgt[], int a, int x) {
+  if (sgt[x].l == a && sgt[x].r == a) {
+    return sgt[x].sgn;
+  }
+  pushdown(sgt, x);
+  int mid = (sgt[x].l + sgt[x].r) >> 1;
+  int x1 = x << 1;
+  return a <= mid ? query(sgt, a, x1) : query(sgt, a, x1 | 1);
+}
+int main() {
+  int n, q;
+  scanf("%d %d", &n, &q);
+  int a[n];
+  for (int i = 0; i < n; i++) {
+    scanf("%d", &a[i]);
+  }
+  getchar();
+  node sgt0[X * 4 + 1], sgt1[X * 4 + 1];
+  build(sgt0, 1, X, 1);
+  build(sgt1, 1, X, 1);
+  while (q--) {
+    char s;
+    int x;
+    scanf("%c %d\n", &s, &x);
+    if (s == '>') {
+      x++;
+      if (x == 0) {
+        x++;
+      }
+      if (x > 0) {
+        update(sgt0, x, X, 1, 1);
+        update(sgt1, x, X, 1, -1);
+      } else {
+        update(sgt0, 1, -x, 1, 2);
+        update(sgt1, 1, -x, 1, 2);
+        update(sgt0, -x + 1, X, 1, 1);
+        update(sgt1, -x + 1, X, 1, -1);
+      }
+    } else {
+      x--;
+      if (x == 0) {
+        x--;
+      }
+      if (x < 0) {
+        update(sgt0, -x, X, 1, -1);
+        update(sgt1, -x, X, 1, 1);
+      } else {
+        update(sgt0, 1, x, 1, 2);
+        update(sgt1, 1, x, 1, 2);
+        update(sgt0, x + 1, X, 1, -1);
+        update(sgt1, x + 1, X, 1, 1);
+      }
+    }
+  }
+  for (int i = 0; i < n; i++) {
+    int r = 0;
+    if (a[i] < 0) {
+      r = query(sgt0, -a[i], 1);
+    } else if (a[i] > 0) {
+      r = query(sgt1, a[i], 1);
+    }
+    printf("%d%c", a[i] * r, i == n - 1 ? '\n' : ' ');
+  }
+  return 0;
+}
+```
+This optimized program should be faster than the original program and use less memory.

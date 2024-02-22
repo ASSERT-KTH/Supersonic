@@ -1,0 +1,155 @@
+To optimize the given C++ program, we can make the following modifications:
+
+1. Remove unnecessary headers: The program includes the `<bits/stdc++.h>` header, which is not recommended as it includes a large number of headers that may not be necessary. We can remove this line and include only the necessary headers.
+
+2. Avoid using `using namespace std;`: This statement imports the entire `std` namespace, which can lead to naming conflicts and make the code less readable. Instead, we can use the `std::` prefix for standard library types and functions.
+
+3. Replace `endl` with `'\n'`: The `endl` manipulator flushes the stream, which can be an expensive operation. Since we only need a newline character, we can replace `endl` with `'\n'` to improve performance.
+
+4. Remove unnecessary output stream operator overloads: The program provides overloaded output stream operators for various containers and types. However, these are not used in the given code, so we can remove them to reduce unnecessary code.
+
+5. Use `vector<bool>` instead of `vector<int>` for `segtree` and `lazy`: The `segtree` and `lazy` vectors are used to store binary values (0 or 1). Using a `vector<bool>` instead of `vector<int>` can reduce memory usage.
+
+6. Replace `INT_MAX` with `std::numeric_limits<int>::max()`: The program compares the result of `query` function with `INT_MAX` to check for an invalid value. Using `std::numeric_limits<int>::max()` provides a more robust way to get the maximum value for an `int`.
+
+7. Avoid unnecessary comparisons in the `update` function: The `update` function checks if `x > y` before performing any updates. Since `x` and `y` are indices, it is safe to assume that `x <= y`. We can remove this check to simplify the code.
+
+8. Use `emplace_back` instead of `push_back` for `v`: The `v` vector is filled with pairs using the `push_back` function. Using `emplace_back` can avoid unnecessary copy or move operations.
+
+9. Avoid unnecessary sorting of `ans` vector: The `ans` vector is sorted at the end of the `solve` function. Since the elements are already in increasing order due to the nature of the problem, we can remove this sorting step.
+
+Here is the optimized C++ program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <map>
+#include <algorithm>
+#include <climits>
+#include <limits>
+
+typedef long long ll;
+typedef std::pair<int, int> pii;
+typedef std::pair<ll, ll> pll;
+
+const int N = 6e5 + 5;
+
+std::vector<std::pair<pll, int>> v;
+std::map<ll, int> mp;
+std::vector<ll> inv_map(N);
+int n, k;
+std::vector<bool> segtree(4 * N, false), lazy(4 * N, false);
+
+void spread(int node, int l, int r) {
+  if (lazy[node]) {
+    segtree[node] = true;
+    if (l != r) {
+      lazy[2 * node + 1] = true;
+      lazy[2 * node + 2] = true;
+    }
+  }
+  lazy[node] = false;
+}
+
+void update(int x, int y, int val, int node = 0, int l = 0, int r = N - 1) {
+  spread(node, l, r);
+  if (l > y || r < x)
+    return;
+  if (l >= x && r <= y) {
+    lazy[node] = true;
+    spread(node, l, r);
+    return;
+  }
+  int mid = (l + r) >> 1;
+  update(x, y, val, 2 * node + 1, l, mid);
+  update(x, y, val, 2 * node + 2, mid + 1, r);
+  segtree[node] = segtree[2 * node + 1] || segtree[2 * node + 2];
+}
+
+int query(int x, int y, int node = 0, int l = 0, int r = N - 1) {
+  spread(node, l, r);
+  if (l > y || r < x)
+    return std::numeric_limits<int>::max() - 1;
+  if (l >= x && r <= y) {
+    return segtree[node] ? 1 : 0;
+  }
+  int mid = (l + r) >> 1;
+  return std::min(query(x, y, 2 * node + 1, l, mid),
+                  query(x, y, 2 * node + 2, mid + 1, r));
+}
+
+void solve() {
+  std::sort(v.begin(), v.end());
+  for (auto &i : v) {
+    mp[i.first.first] = 0;
+    mp[i.first.second] = 0;
+  }
+  int c = 0;
+  for (auto &i : mp) {
+    inv_map[c] = i.first;
+    i.second = c++;
+  }
+  ll mx = 0, idx = -1;
+  for (int i = 0; i < n; i++) {
+    update(mp[v[i].first.first], mp[v[i].first.second], 1);
+    int scaled_val = mp[v[i].first.first];
+    int tt = -1;
+    int s = scaled_val, e = c;
+    while (s <= e) {
+      int mid = (s + e) >> 1;
+      int val = query(scaled_val, mid);
+      if (val >= k) {
+        tt = mid;
+        s = mid + 1;
+      } else
+        e = mid - 1;
+    }
+    if (tt == -1)
+      continue;
+    ll temp = inv_map[tt] - v[i].first.first + 1;
+    if (temp > mx) {
+      mx = temp;
+      idx = i;
+    }
+  }
+  if (idx == -1) {
+    std::cout << 0 << '\n';
+    for (int i = 1; i <= k; i++)
+      std::cout << i << ' ';
+    std::cout << '\n';
+    return;
+  }
+  ll l = v[idx].first.first, r = l + mx - 1;
+  std::vector<int> ans;
+  for (auto &i : v) {
+    if (k == 0)
+      break;
+    if (i.first.first <= l && r <= i.first.second) {
+      ans.push_back(i.second);
+      k--;
+    }
+  }
+  std::cout << mx << '\n';
+  for (int i : ans)
+    std::cout << i << ' ';
+  std::cout << '\n';
+}
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(NULL);
+  std::cout.tie(NULL);
+
+  std::cin >> n >> k;
+  for (int i = 1; i <= n; i++) {
+    ll a, b;
+    std::cin >> a >> b;
+    v.emplace_back(std::make_pair(a, b), i);
+  }
+  solve();
+
+  return 0;
+}
+```
+
+By making these modifications, we have optimized the original program for running time and memory usage.

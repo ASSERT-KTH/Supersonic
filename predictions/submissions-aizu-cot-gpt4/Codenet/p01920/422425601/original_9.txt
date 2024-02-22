@@ -1,0 +1,149 @@
+The given code seems to already be fairly optimized for run-time performance. It uses a sqrt-decomposition data structure for efficient range query operations, which is a common technique in competitive programming.
+
+However, there are still a few possible improvements:
+
+1. **Avoiding unnecessary calculations in the 'query' function**: The 'query' function contains duplicated code for the 'l' and 'r' cases. This code updates the 'bucket_sum' and 'buckets' variables for a given index. However, it does so even if the index is not in the range [l, r]. We can avoid these unnecessary calculations by adding an extra condition to check if the index is in the range [l, r].
+
+2. **Avoiding unnecessary 'push_back' operations in the constructor of 'sqrt_decomp'**: The constructor of 'sqrt_decomp' uses vector's 'push_back' function to add elements to 'buckets'. However, since the size of 'buckets' is known beforehand (it's 'bucket_num'), we can use vector's constructor to allocate the necessary space for 'buckets' in advance, which can potentially improve performance.
+
+3. **Use pre-increment instead of post-increment**: Pre-increment is generally faster than post-increment in C++ because it doesn't need to create a temporary copy of the variable. In this program, we can replace the post-increment operations with pre-increment ones where possible.
+
+Here's an optimized version of the program after applying these improvements:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+#define rep(i, buckets, y) for (int i = (buckets); i < (y); ++i)
+#define debug(buckets) #buckets << "=" << (buckets)
+#ifdef DEBUG
+#define _GLIBCbucketsbuckets_DEBUG
+#define print(buckets)                                                         \
+  std::cerr << debug(buckets) << " (L:" << __LINE__ << ")" << std::endl
+#else
+#define print(buckets)
+#endif
+const int inf = 1e9;
+const int64_t inf64 = 1e18;
+const double eps = 1e-9;
+template <typename T> ostream &operator<<(ostream &os, const vector<T> &vec) {
+  os << "[";
+  for (const auto &v : vec) {
+    os << v << ",";
+  }
+  os << "]";
+  return os;
+}
+using i64 = int64_t;
+struct sqrt_decomp {
+  const int bucket_size = 256;
+  int length, bucket_num;
+  vector<vector<int>> buckets;
+  vector<int> update, bucket_sum;
+  sqrt_decomp(const vector<int> &x)
+      : length(x.size()),
+        bucket_num((x.size() + bucket_size - 1) / bucket_size) {
+    buckets.resize(bucket_num, vector<int>(bucket_size));
+    update.resize(bucket_num);
+    bucket_sum.resize(bucket_num);
+    for (int i = 0; i < x.size(); ++i) {
+      buckets[i / bucket_size][i % bucket_size] = x[i];
+      bucket_sum[i / bucket_size] += x[i];
+      update[i / bucket_size] = 2;
+    }
+  }
+  int sum() {
+    int res = 0;
+    for (int i = 0; i < bucket_num; ++i) {
+      if (update[i] == 2)
+        res += bucket_sum[i];
+      else
+        res += update[i] * buckets[i].size();
+    }
+    return res;
+  }
+  void query(int l, int r, int b) {
+    l = max(0, l);
+    r = min(length - 1, r);
+    while (l % bucket_size != 0 && l <= r) {
+      int bucket_index = l / bucket_size;
+      if (update[bucket_index] < 2) {
+        for (auto &a : buckets[bucket_index])
+          a = update[bucket_index];
+        bucket_sum[bucket_index] =
+            update[bucket_index] * buckets[bucket_index].size();
+        update[bucket_index] = 2;
+      }
+      if(l <= r) {
+        bucket_sum[bucket_index] -= buckets[bucket_index][l % bucket_size];
+        buckets[bucket_index][l % bucket_size] = b;
+        bucket_sum[bucket_index] += b;
+      }
+      ++l;
+    }
+    while ((r + 1) % bucket_size != 0 and l <= r) {
+      int bucket_index = r / bucket_size;
+      if (update[bucket_index] < 2) {
+        for (auto &a : buckets[bucket_index])
+          a = update[bucket_index];
+        bucket_sum[bucket_index] =
+            update[bucket_index] * buckets[bucket_index].size();
+        update[bucket_index] = 2;
+      }
+      if(l <= r) {
+        bucket_sum[bucket_index] -= buckets[bucket_index][r % bucket_size];
+        buckets[bucket_index][r % bucket_size] = b;
+        bucket_sum[bucket_index] += b;
+      }
+      --r;
+    }
+    if (l > r)
+      return;
+    rep(i, l / bucket_size, r / bucket_size + 1) update[i] = b;
+  }
+  int at(int i) {
+    int bucket_index = i / bucket_size;
+    if (update[bucket_index] < 2)
+      return update[bucket_index];
+    else
+      return buckets[bucket_index][i % bucket_size];
+  }
+};
+void solve() {
+  int n, q;
+  string s;
+  cin >> n >> s >> q;
+  vector<int> x1, x2;
+  rep(i, 0, n) {
+    x1.push_back(s[i] - '0');
+    if (i + 1 < n)
+      x2.push_back((s[i] - '0') * (s[i + 1] - '0'));
+  }
+  sqrt_decomp f(x1), g(x2);
+  for (int i = 0; i < q; i++) {
+    int l, r, b;
+    cin >> l >> r >> b;
+    --l;
+    --r;
+    f.query(l, r, b);
+    if (b == 0)
+      g.query(l - 1, r, 0);
+    else {
+      int l_ = l, r_ = r - 1;
+      if (0 <= l - 1 and f.at(l - 1))
+        --l_;
+      if (r + 1 < n and f.at(r + 1))
+        ++r_;
+      g.query(l_, r_, 1);
+    }
+    cout << f.sum() - g.sum() << endl;
+  }
+}
+int main() {
+  std::cin.tie(0);
+  std::ios::sync_with_stdio(false);
+  cout.setf(ios::fixed);
+  cout.precision(10);
+  solve();
+  return 0;
+}
+```

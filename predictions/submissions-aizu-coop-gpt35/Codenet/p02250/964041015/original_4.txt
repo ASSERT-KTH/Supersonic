@@ -1,0 +1,159 @@
+Code Analysis:
+- The code implements a suffix array data structure and uses it to check if a given string is a substring of the original string.
+- The main bottleneck in the code is the construction of the suffix array and the computation of the longest common prefix (LCP) array.
+- The construction of the suffix array is done using the SA-IS algorithm, which has a time complexity of O(n log n), where n is the length of the input string.
+- The computation of the LCP array is done using a sparse table data structure, which has a time complexity of O(n log n), where n is the length of the input string.
+- The code also uses multiple vectors to store intermediate results and temporary data, which can lead to inefficient memory usage.
+
+Optimization Strategy:
+1. Optimize Memory Usage:
+   - The code uses multiple vectors to store intermediate results and temporary data. To optimize memory usage, we can reuse vectors instead of creating new ones in each function call. This can be done by passing vectors as arguments and modifying them in-place instead of creating new vectors.
+   - We can also avoid storing the suffix array and LCP array as member variables in the `suffix_array` class. Instead, we can return them as local variables from the `sa_is` and `construct_lcp` functions.
+
+2. Optimize Construction of Suffix Array:
+   - The `create_begin_bucket` and `create_end_bucket` functions are used to create the bucket array, which is used in the induced sorting steps of the SA-IS algorithm. Currently, these functions iterate over the entire input array multiple times to count the occurrences of each value. This can be optimized by using a counting sort algorithm, which counts the occurrences of each value in a single pass.
+   - The `induced_sort` and `invert_induced_sort` functions perform the induced sorting steps of the SA-IS algorithm. These steps can be optimized by avoiding unnecessary swaps and using a single loop instead of nested loops.
+
+3. Optimize Computation of LCP Array:
+   - The computation of the LCP array is done using a sparse table data structure. However, the sparse table is constructed in a separate class, which adds unnecessary complexity. We can simplify the code by directly computing the LCP array using a simple loop.
+
+4. Compiler Optimizations:
+   - We can enable compiler optimizations by using compiler flags like `-O2` or `-O3`. This allows the compiler to perform various optimizations, such as loop unrolling, function inlining, and instruction reordering.
+
+Step-by-Step Explanation:
+1. Optimize Memory Usage:
+   - Remove the member variables `sa`, `lcp`, and `rank` from the `suffix_array` class.
+   - Modify the `sa_is` function to take the `sa` vector as an argument and return it as a local variable.
+   - Modify the `construct_lcp` function to take the `s` and `sa` vectors as arguments and return the `lcp` vector as a local variable.
+   - Pass vectors as arguments and modify them in-place instead of creating new vectors in the `create_begin_bucket`, `create_end_bucket`, `induced_sort`, and `invert_induced_sort` functions.
+
+2. Optimize Construction of Suffix Array:
+   - Modify the `create_begin_bucket` and `create_end_bucket` functions to use counting sort instead of iterating over the input array multiple times.
+   - Modify the `induced_sort` and `invert_induced_sort` functions to optimize the induced sorting steps of the SA-IS algorithm. Avoid unnecessary swaps and use a single loop instead of nested loops.
+
+3. Optimize Computation of LCP Array:
+   - Remove the `sparse_table` class and directly compute the LCP array using a simple loop in the `construct_lcp` function.
+
+4. Compiler Optimizations:
+   - Add compiler optimizations flags like `-O2` or `-O3` to enable compiler optimizations.
+
+Optimized Code Block:
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+vector<int> create_begin_bucket(vector<int>& v) {
+    int mv = *max_element(v.begin(), v.end());
+    vector<int> bucket(mv + 1, 0);
+    for (int i = 0; i < v.size(); i++)
+        bucket[v[i]]++;
+    int sum = 0;
+    for (int i = 0; i < bucket.size(); i++) {
+        bucket[i] += sum;
+        sum = bucket[i];
+    }
+    return bucket;
+}
+
+vector<int> create_end_bucket(vector<int>& v) {
+    int mv = *max_element(v.begin(), v.end());
+    vector<int> bucket(mv + 1, 0);
+    for (int i = 0; i < v.size(); i++)
+        bucket[v[i]]++;
+    for (int i = 1; i < bucket.size(); i++)
+        bucket[i] += bucket[i - 1];
+    return bucket;
+}
+
+void induced_sort(vector<int>& v, vector<int>& sa, int mv, vector<int>& bucket, vector<int>& is_l) {
+    bucket = create_begin_bucket(v);
+    for (int i = 0; i < v.size(); i++)
+        if (sa[i] > 0 && is_l[sa[i] - 1])
+            sa[bucket[v[sa[i] - 1]]++] = sa[i] - 1;
+}
+
+void invert_induced_sort(vector<int>& v, vector<int>& sa, int mv, vector<int>& bucket, vector<int>& is_l) {
+    bucket = create_end_bucket(v);
+    for (int i = v.size() - 1; i >= 0; i--)
+        if (sa[i] > 0 && !is_l[sa[i] - 1])
+            sa[--bucket[v[sa[i] - 1]]] = sa[i] - 1;
+}
+
+vector<int> sa_is(vector<int> v, int mv) {
+    if (v.size() == 1)
+        return vector<int>(1, 0);
+    vector<int> is_l(v.size());
+    vector<int> sa(v.size(), -1);
+
+    auto is_lms = [&](int x) -> bool {
+        return x > 0 && is_l[x - 1] && !is_l[x];
+    };
+
+    is_l[v.size() - 1] = 0;
+    for (int i = v.size() - 2; i >= 0; i--)
+        is_l[i] = v[i] > v[i + 1] || (v[i] == v[i + 1] && is_l[i + 1]);
+
+    vector<int> bucket = create_end_bucket(v);
+    for (int i = 0; i < v.size(); i++)
+        if (is_lms(i))
+            sa[--bucket[v[i]]] = i;
+
+    induced_sort(v, sa, mv, bucket, is_l);
+    invert_induced_sort(v, sa, mv, bucket, is_l);
+
+    int cur = 0;
+    vector<int> order(v.size());
+    for (int i = 0; i < v.size(); i++)
+        if (is_lms(i))
+            order[i] = cur++;
+
+    vector<int> next_v(cur);
+    cur = -1;
+    int prev = -1;
+    for (int i = 0; i < v.size(); i++) {
+        if (!is_lms(sa[i]))
+            continue;
+        bool diff = false;
+        for (int d = 0; d < v.size(); d++) {
+            if (prev == -1 || v[sa[i] + d] != v[prev + d] || is_l[sa[i] + d] != is_l[prev + d]) {
+                diff = true;
+                break;
+            }
+            else if (d > 0 && is_lms(sa[i] + d))
+                break;
+        }
+        if (diff) {
+            cur++;
+            prev = sa[i];
+        }
+        next_v[order[sa[i]]] = cur;
+    }
+
+    vector<int> re_order(next_v.size());
+    for (int i = 0; i < v.size(); i++)
+        if (is_lms(i))
+            re_order[order[i]] = i;
+
+    vector<int> next_sa = sa_is(next_v, cur);
+    bucket = create_end_bucket(v);
+    for (int i = 0; i < sa.size(); i++)
+        sa[i] = -1;
+    for (int i = next_sa.size() - 1; i >= 0; i--)
+        sa[--bucket[v[re_order[next_sa[i]]]]] = re_order[next_sa[i]];
+
+    induced_sort(v, sa, mv, bucket, is_l);
+    invert_induced_sort(v, sa, mv, bucket, is_l);
+
+    return sa;
+}
+
+vector<int> construct_lcp(string& s, vector<int>& sa) {
+    int n = s.size();
+    vector<int> lcp(n, 0);
+    vector<int> rank(n + 1);
+    for (int i = 0; i <= n; i++)
+        rank[sa[i]] = i;
+    int h = 0;
+    for (int i = 0; i < n; i++) {
+        int j = sa[rank[i] - 1];
+        if (h >

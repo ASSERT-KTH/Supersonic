@@ -1,0 +1,124 @@
+#include <iostream>
+#include <vector>
+#include <unordered_set>
+#include <algorithm>
+#include <cstring>
+using namespace std;
+
+const int N = 62;
+const int mod = 998244353;
+
+struct TrieNode {
+    TrieNode* children[62];
+    bool isEndOfWord;
+
+    TrieNode() {
+        memset(children, 0, sizeof(children));
+        isEndOfWord = false;
+    }
+};
+
+void insert(TrieNode* root, const string& word) {
+    TrieNode* node = root;
+    for (char c : word) {
+        int index = dict(c);
+        if (node->children[index] == nullptr) {
+            node->children[index] = new TrieNode();
+        }
+        node = node->children[index];
+    }
+    node->isEndOfWord = true;
+}
+
+bool search(TrieNode* root, const string& word) {
+    TrieNode* node = root;
+    for (char c : word) {
+        int index = dict(c);
+        if (node->children[index] == nullptr) {
+            return false;
+        }
+        node = node->children[index];
+    }
+    return node != nullptr && node->isEndOfWord;
+}
+
+int dict(char a) {
+    if (isalpha(a)) {
+        if (isupper(a))
+            return a - 'A';
+        return a - 'a' + 26;
+    }
+    return a - '0' + 52;
+}
+
+int add(int a, int b) {
+    return ((a += b) >= mod) ? a - mod : a;
+}
+
+int mul(int a, int b) {
+    return a * 1ll * b % mod;
+}
+
+int play(int i, int j, int k, const vector<vector<vector<int>>>& dp) {
+    int mx = max(max(i, j), k);
+    int mi = min(min(i, j), k);
+    return dp[mx][i ^ j ^ k ^ mx ^ mi][mi];
+}
+
+void solve() {
+    int n;
+    cin >> n;
+
+    vector<vector<vector<int>>> way(10, vector<vector<int>>(N, vector<int>(N, 0)));
+    TrieNode* root = new TrieNode();
+
+    for (int i = 1; i <= n; ++i) {
+        string word;
+        cin >> word;
+        int len = word.length() - 1;
+        insert(root, word);
+        reverse(word.begin(), word.end());
+        insert(root, word);
+    }
+
+    vector<vector<vector<int>>> dp(N, vector<vector<int>>(N, vector<int>(N, 0)));
+    int ans = 0;
+
+    for (int L = 2; L <= 9; ++L) {
+        for (int i = 0; i < 62; ++i) {
+            for (int j = 0; j <= i; ++j) {
+                for (int k = 0; k <= j; ++k) {
+                    dp[i][j][k] = 0;
+                    for (int l = 0; l < 62; ++l) {
+                        int a = (way[L][i][l] * 1ll * way[L][j][l] * way[L][k][l]) % mod;
+                        dp[i][j][k] = add(dp[i][j][k], a);
+                    }
+                }
+            }
+        }
+        for (int i = 0; i < 62; ++i) {
+            for (int j = 0; j <= i; ++j) {
+                for (int k = 0; k < 62; ++k) {
+                    for (int l = 0; l <= k; ++l) {
+                        int a = mul(mul(play(i, k, l, dp), play(j, l, k, dp)),
+                                    mul(play(i, j, k, dp), play(i, l, j, dp)));
+                        if (k != l)
+                            a = add(a, a);
+                        if (i != j)
+                            a = add(a, a);
+                        ans = add(ans, a);
+                    }
+                }
+            }
+        }
+    }
+
+    cout << ans << endl;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(nullptr);
+    solve();
+    return 0;
+}

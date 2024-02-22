@@ -1,0 +1,1 @@
+typedef vector<vector<Edge>> Adj_list;

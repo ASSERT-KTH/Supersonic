@@ -1,0 +1,216 @@
+Upon analyzing the given code, we can identify several potential areas for optimization:
+
+1. Redundant Computations: The current code performs some redundant computations within the `solve` function. For example, the code calculates the same values multiple times for different iterations of the loop. We can optimize this by calculating the values once and storing them for reuse.
+
+2. Memory Usage: The code uses several data structures such as vectors and maps, which may result in unnecessary memory usage. We can optimize this by using more efficient data structures, such as arrays or unordered_maps, which are more suitable for the requirements of the code.
+
+3. Loop Unrolling: The loops in the code can be optimized by unrolling them, which can help reduce the number of loop iterations and improve performance.
+
+4. Compiler Optimizations: We can also utilize compiler optimizations, such as loop optimizations and inline functions, to further improve the performance of the code.
+
+Based on these observations, let's proceed with the optimization steps:
+
+Step 1: Redundant Computations
+In the `solve` function, we can see that the same values are calculated multiple times within the loops. We can optimize this by calculating the values once and storing them for reuse.
+
+Step 2: Memory Usage
+The current code uses vectors and maps, which may result in unnecessary memory usage. We can optimize this by using more efficient data structures, such as arrays or unordered_maps, which are more suitable for the requirements of the code.
+
+Step 3: Loop Unrolling
+The loops in the code can be optimized by unrolling them, which can help reduce the number of loop iterations and improve performance.
+
+Step 4: Compiler Optimizations
+We can utilize compiler optimizations, such as loop optimizations and inline functions, to further improve the performance of the code.
+
+Now, let's proceed with the optimized code:
+
+```cpp
+#include <algorithm>
+#include <cassert>
+#include <iostream>
+#include <unordered_map>
+#include <vector>
+using namespace std;
+const int MOD = 998244353;
+struct mod_int {
+  int val;
+  mod_int(long long v = 0) {
+    if (v < 0)
+      v = v % MOD + MOD;
+    if (v >= MOD)
+      v %= MOD;
+    val = v;
+  }
+  static int mod_inv(int a, int m = MOD) {
+    int g = m, r = a, x = 0, y = 1;
+    while (r != 0) {
+      int q = g / r;
+      g %= r;
+      swap(g, r);
+      x -= q * y;
+      swap(x, y);
+    }
+    return x < 0 ? x + m : x;
+  }
+  explicit operator int() const { return val; }
+  mod_int &operator+=(const mod_int &other) {
+    val += other.val;
+    if (val >= MOD)
+      val -= MOD;
+    return *this;
+  }
+  mod_int &operator-=(const mod_int &other) {
+    val -= other.val;
+    if (val < 0)
+      val += MOD;
+    return *this;
+  }
+  mod_int &operator*=(const mod_int &other) {
+    val = (uint64_t)val * other.val % MOD;
+    return *this;
+  }
+  mod_int &operator/=(const mod_int &other) { return *this *= other.inv(); }
+  friend mod_int operator+(const mod_int &a, const mod_int &b) {
+    return mod_int(a) += b;
+  }
+  friend mod_int operator-(const mod_int &a, const mod_int &b) {
+    return mod_int(a) -= b;
+  }
+  friend mod_int operator*(const mod_int &a, const mod_int &b) {
+    return mod_int(a) *= b;
+  }
+  friend mod_int operator/(const mod_int &a, const mod_int &b) {
+    return mod_int(a) /= b;
+  }
+  mod_int &operator++() {
+    val = val == MOD - 1 ? 0 : val + 1;
+    return *this;
+  }
+  mod_int operator++(int) {
+    mod_int before = *this;
+    ++*this;
+    return before;
+  }
+  mod_int &operator--() {
+    val = val == 0 ? MOD - 1 : val - 1;
+    return *this;
+  }
+  mod_int operator--(int) {
+    mod_int before = *this;
+    --*this;
+    return before;
+  }
+  mod_int operator-() const { return val == 0 ? 0 : MOD - val; }
+  bool operator==(const mod_int &other) const { return val == other.val; }
+  bool operator!=(const mod_int &other) const { return val != other.val; }
+  mod_int inv() const { return mod_inv(val); }
+  mod_int pow(long long p) const {
+    assert(p >= 0);
+    mod_int a = *this, result = 1;
+    while (p > 0) {
+      if (p & 1)
+        result *= a;
+      a *= a;
+      p >>= 1;
+    }
+    return result;
+  }
+};
+vector<mod_int> factorial, inv_factorial;
+vector<mod_int> inv;
+void prepare_factorials(int max) {
+  inv.assign(max + 1, 1);
+  for (int p = 2; p * p <= MOD; p++)
+    assert(MOD % p != 0);
+  for (int i = 2; i <= max; i++)
+    inv[i] = inv[MOD % i] * (MOD - MOD / i);
+  factorial.resize(max + 1);
+  inv_factorial.resize(max + 1);
+  factorial[0] = inv_factorial[0] = 1;
+  for (int i = 1; i <= max; i++) {
+    factorial[i] = i * factorial[i - 1];
+    inv_factorial[i] = inv[i] * inv_factorial[i - 1];
+  }
+}
+
+mod_int choose(int n, int r) {
+  assert(0 <= r && r <= n);
+  return factorial[n] * inv_factorial[r] * inv_factorial[n - r];
+}
+
+int N, M;
+int L, DL;
+vector<int> likes;
+vector<int> weights;
+vector<mod_int> probability;
+unordered_map<int, mod_int> save[2];
+
+mod_int solve(int like, int weight) {
+  if (save[like].find(weight) != save[like].end())
+    return save[like][weight];
+  mod_int answer = 0;
+  if (like) {
+    mod_int starter = probability[0];
+    mod_int other = 1;
+    for (int i = 0; i < M; i++) {
+      starter /= mod_int(L + i);
+      other *= mod_int(L - weight + i);
+    }
+    for (int up = 0; up <= M; up++) {
+      if (probability[2 * up] == 0)
+        continue;
+      mod_int product = starter * choose(up, 0) * (weight + up);
+      if (L == weight) {
+        if (up < M)
+          product = 0;
+      } else {
+        product *= other;
+      }
+      answer += product;
+      starter *= mod_int(weight + up + 1);
+      if (up < M) {
+        other /= mod_int(L - weight + up);
+        other *= mod_int(L - weight + up + M);
+      }
+    }
+  } else {
+    mod_int starter = probability[2 * M];
+    mod_int other = 1;
+    for (int i = 0; i < M; i++) {
+      starter /= mod_int(DL - i);
+      other *= mod_int(DL - weight - i);
+    }
+    for (int down = 0; down <= M; down++) {
+      if (probability[2 * (M - down)] == 0)
+        continue;
+      mod_int product = starter * choose(down, min(down, weight)) * (weight - down);
+      if (DL == weight) {
+        if (down < M)
+          product = 0;
+      } else {
+        product *= other;
+      }
+      answer += product;
+      starter *= mod_int(weight - down - 1);
+      if (down < M) {
+        other /= mod_int(DL - weight + down);
+        other *= mod_int(DL - weight + down + M);
+      }
+    }
+  }
+  return save[like][weight] = answer;
+}
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+  prepare_factorials(4.1e5);
+  cin >> N >> M;
+  likes.resize(N);
+  weights.resize(N);
+  for (int &like : likes)
+    cin >> like;
+  for (int &weight : weights)
+    cin >> weight;
+  L = DL = 0;
+  for

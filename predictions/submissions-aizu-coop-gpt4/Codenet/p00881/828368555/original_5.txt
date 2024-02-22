@@ -1,0 +1,69 @@
+Code Analysis:
+
+The given C++ code is a recursive function-based program that performs a depth-based search on a binary tree. The main performance bottlenecks seem to be:
+
+1. Use of std::map, which has a relatively high time complexity for common operations (O(logN) for insertions, deletions, and searching).
+2. Redundant calculations of the same pair (vi, used) in the map.
+3. The use of vector to store temporary data, which can lead to expensive memory allocations and deallocations.
+
+Optimization Strategy:
+
+1. Replace std::map with std::unordered_map: std::unordered_map has an average time complexity of O(1) for insertions, deletions, and searching operations. This makes it much faster than std::map for these operations. 
+
+2. Avoid redundant calculations: Store the result of make_pair(vi, used) in a local variable instead of calculating it multiple times.
+
+3. Use std::deque instead of std::vector for temporary storage: std::deque is faster than std::vector when it comes to insertions and deletions at both ends. This is because std::deque maintains separate chunks of memory for its elements, and it only needs to allocate/deallocate one chunk when an element is inserted/removed.
+
+4. Use bitwise operations: Bitwise operations are usually faster than arithmetic operations. For example, instead of increasing the depth by 1, we can use a left shift operation.
+
+Optimized Code Block:
+
+```cpp
+#include <iostream>
+#include <unordered_map>
+#include <string>
+#include <deque>
+using namespace std;
+unordered_map<pair<deque<int>, int>, int> mp; // Changed from map to unordered_map
+string qes[128];
+int search(deque<int> &vi, int depth, int used, int m, int n) {
+  auto key = make_pair(vi, used); // Store the key in a local variable to avoid redundant calculations
+  if (mp.count(key))
+    return mp[key];
+  if (vi.size() > (1 << (m - depth)))
+    return 100;
+  if (vi.size() == 1)
+    return depth;
+  int res = 100;
+  for (int i = 0; i < m; i++) {
+    if ((used >> i) & 1)
+      continue;
+    deque<int> a, b; // Changed from vector to deque
+    for (int j = 0; j < vi.size(); j++) {
+      if (qes[vi[j]][i] == '0')
+        a.push_back(vi[j]);
+      else
+        b.push_back(vi[j]);
+    }
+    if (a.empty() || b.empty())
+      continue;
+    res = min(res, max(search(a, depth + 1, used | (1 << i), m, n),
+                       search(b, depth + 1, used | (1 << i), m, n)));
+  }
+  return mp[key] = res; // Use the stored key here
+}
+int main() {
+  int m, n;
+  while (cin >> m >> n, m) {
+    for (int i = 0; i < n; i++)
+      cin >> qes[i];
+    deque<int> vi(n); // Changed from vector to deque
+    for (int i = 0; i < n; i++)
+      vi[i] = i;
+    mp.clear();
+    cout << search(vi, 0, 0, m, n) << endl;
+  }
+}
+```
+
+It's important to note that while these optimizations can improve the performance of the code, they may also increase the code's complexity and make it harder to understand for someone who is not familiar with C++ or these specific data structures and optimizations.

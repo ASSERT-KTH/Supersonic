@@ -1,0 +1,109 @@
+The given C++ program can be optimized by:
+
+1. Reducing the number of redundant memory accesses - Instead of using the array 'vis' to mark if a node is visited, we can use the 'color' array. If the color of a node is -1, it means it's not visited. This removes the need for the 'vis' array.
+
+2. Minimizing the usage of 'std::queue' - Instead of creating a queue and then clearing it, we can create the queue inside the loop where it's used. This way we don't need to clear the queue and it's automatically deallocated when it goes out of scope.
+
+3. Using reserve() for 'std::vector' - When we know the size of the vectors beforehand, we can use the reserve() function to preallocate memory. This reduces the number of reallocations and hence improves the performance.
+
+4. In the main function, we can use emplace_back() function instead of push_back() function for 'std::vector'. This function constructs the element in-place and hence is more efficient.
+
+Here is the optimized version of the code:
+
+```cpp
+#include <algorithm>
+#include <cassert>
+#include <iostream>
+#include <queue>
+#include <vector>
+using namespace std;
+#define rep(i, n) for (int i = 0; i < (int)(n); i++)
+const int B = 200;
+int color[100010], par[100010], depth[100010];
+int top[100010];
+int goUp[100010];
+int n;
+vector<vector<int>> g;
+void decomp(int root) {
+  rep(i, n) color[i] = -1, par[i] = -1;
+  vector<int> tord;
+  tord.reserve(n);
+  {
+    queue<int> q;
+    q.push(root);
+    while (q.size()) {
+      int v = q.front();
+      q.pop();
+      color[v] = 0;
+      tord.push_back(v);
+      for (int c : g[v]) {
+        if (color[c] == -1) {
+          q.push(c);
+          par[c] = v;
+          depth[c] = depth[v] + 1;
+        }
+      }
+    }
+  }
+  int c = 0;
+  for (int u : tord) {
+    if (color[u] != 0)
+      continue;
+    queue<int> q;
+    q.push(u);
+    int k = 0;
+    while (q.size() && k < B) {
+      int v = q.front();
+      q.pop();
+      color[v] = c + 1;
+      goUp[v] = par[u];
+      top[v] = u;
+      k++;
+      for (int c : g[v]) {
+        if (color[c] == 0)
+          q.push(c);
+      }
+    }
+    c++;
+  }
+}
+int solve(int u, int v) {
+  while (color[u] != color[v]) {
+    assert(u != -1 && v != -1);
+    if (depth[top[u]] > depth[top[v]])
+      u = goUp[u];
+    else
+      v = goUp[v];
+  }
+  while (u != v) {
+    assert(u != -1 && v != -1);
+    if (depth[u] > depth[v])
+      u = par[u];
+    else
+      v = par[v];
+  }
+  return u;
+}
+int main() {
+  cin >> n;
+  g.assign(n, {});
+  rep(i, n) {
+    int k;
+    cin >> k;
+    rep(j, k) {
+      int c;
+      cin >> c;
+      g[i].emplace_back(c);
+      par[c] = i;
+    }
+  }
+  decomp(0);
+  int q;
+  cin >> q;
+  rep(i, q) {
+    int u, v;
+    cin >> u >> v;
+    cout << solve(u, v) << endl;
+  }
+}
+```

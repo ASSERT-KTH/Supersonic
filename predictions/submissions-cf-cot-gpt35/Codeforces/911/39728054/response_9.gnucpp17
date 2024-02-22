@@ -1,0 +1,216 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <algorithm>
+#include <cmath>
+using namespace std;
+
+#define N 200005
+#define ll long long int
+
+void height_initialise(ll x, ll y, vector<vector<ll>>& v, vector<ll>& h, vector<ll>& vis1) {
+    stack<pair<ll, ll>> st;
+    st.push({x, y});
+    vis1[x] = 1;
+    while (!st.empty()) {
+        pair<ll, ll> node = st.top();
+        st.pop();
+        ll x = node.first;
+        ll y = node.second;
+        h[x] = y;
+        for (ll i = 0; i < v[x].size(); i++) {
+            ll child = v[x][i];
+            if (vis1[child] == 0) {
+                st.push({child, y + 1});
+                vis1[child] = 1;
+            }
+        }
+    }
+}
+
+void distanc(ll x, ll y, vector<vector<ll>>& v, vector<ll>& dist, vector<ll>& vis3) {
+    stack<pair<ll, ll>> st;
+    st.push({x, y});
+    vis3[x] = 1;
+    while (!st.empty()) {
+        pair<ll, ll> node = st.top();
+        st.pop();
+        ll x = node.first;
+        ll y = node.second;
+        dist[x] = y;
+        for (ll i = 0; i < v[x].size(); i++) {
+            ll child = v[x][i];
+            if (vis3[child] == 0) {
+                st.push({child, y + 1});
+                vis3[child] = 1;
+            }
+        }
+    }
+}
+
+void euler_tour(ll root, vector<vector<ll>>& v, vector<ll>& tour, vector<ll>& first) {
+    stack<pair<ll, ll>> st;
+    st.push({root, 0});
+    vector<ll> vis2(v.size(), 0);
+    while (!st.empty()) {
+        pair<ll, ll> node = st.top();
+        st.pop();
+        ll x = node.first;
+        ll y = node.second;
+        vis2[x] = 1;
+        tour.push_back(x);
+        for (ll i = 0; i < v[x].size(); i++) {
+            ll child = v[x][i];
+            if (vis2[child] == 0) {
+                st.push({child, x});
+            }
+        }
+        if (y != 0)
+            tour.push_back(y);
+    }
+    for (ll i = 0; i < tour.size(); i++) {
+        if (first[tour[i]] == 0) {
+            first[tour[i]] = i;
+        }
+    }
+}
+
+void sparsemin(vector<ll>& tour, vector<ll>& h, vector<vector<ll>>& stmin) {
+    ll n = tour.size();
+    for (ll i = 0; i < n; i++) {
+        stmin[i][0] = tour[i];
+    }
+    for (ll j = 1; (1 << j) <= n; j++) {
+        for (ll i = 0; i <= n - (1 << j); i++) {
+            ll x = stmin[i][j - 1];
+            ll y = stmin[i + (1 << (j - 1))][j - 1];
+            if (h[x] > h[y]) {
+                stmin[i][j] = y;
+            } else {
+                stmin[i][j] = x;
+            }
+        }
+    }
+}
+
+ll spminquery(ll l, ll r, vector<ll>& h, vector<vector<ll>>& stmin) {
+    ll length = r - l + 1;
+    ll k = log2(length);
+    ll x = stmin[l][k];
+    ll y = stmin[l + length - (1 << k)][k];
+    if (h[x] < h[y]) {
+        return x;
+    }
+    return y;
+}
+
+ll bfs(ll x, ll flag, vector<vector<ll>>& v, vector<ll>& parent) {
+    ll y;
+    queue<ll> q;
+    q.push(x);
+    vector<ll> vis(v.size(), 0);
+    while (!q.empty()) {
+        x = q.front();
+        q.pop();
+        vis[x] = 1;
+        for (ll i = 0; i < v[x].size(); i++) {
+            ll node = v[x][i];
+            if (vis[node] == 0) {
+                q.push(node);
+                if (flag == 1) {
+                    parent[node] = x;
+                }
+            }
+        }
+        y = x;
+    }
+    return y;
+}
+
+void diameter(vector<vector<ll>>& v, vector<ll>& parent, vector<ll>& path, vector<ll>& vis4) {
+    ll x, y, z, i, j;
+    x = bfs(1, 0, v, parent);
+    y = bfs(x, 1, v, parent);
+    ll root1 = y;
+    z = y;
+    while (parent[z] != 0) {
+        path.push_back(z);
+        z = parent[z];
+    }
+    path.push_back(z);
+    reverse(path.begin(), path.end());
+    for (i = 0; i < path.size(); i++) {
+        vis4[path[i]] = 1;
+    }
+    for (i = 0; i < path.size(); i++) {
+        queue<ll> q;
+        q.push(path[i]);
+        while (!q.empty()) {
+            x = q.front();
+            q.pop();
+            vis4[x] = 1;
+            for (j = 0; j < v[x].size(); j++) {
+                ll node = v[x][j];
+                if (vis4[node] == 0) {
+                    q.push(node);
+                }
+            }
+        }
+    }
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    ll n;
+    cin >> n;
+
+    vector<vector<ll>> v(n + 1);
+    vector<ll> h(n + 1), first(n + 1), parent(n + 1), dist(n + 1), path;
+    vector<vector<ll>> stmin(2 * N, vector<ll>(20));
+
+    for (ll i = 0; i < n - 1; i++) {
+        ll x, y;
+        cin >> x >> y;
+        v[x].push_back(y);
+        v[y].push_back(x);
+    }
+
+    diameter(v, parent, path, h);
+    height_initialise(1, 0, v, h, vector<ll>(n + 1, 0));
+    vector<ll> tour;
+    euler_tour(1, v, tour, first);
+    sparsemin(tour, h, stmin);
+    distanc(1, 0, v, dist, vector<ll>(n + 1, 0));
+
+    ll ans = 0;
+    vector<pair<ll, ll>> an;
+
+    for (ll i = 0; i < path.size() / 2; i++) {
+        for (ll j = path.size() - 1; j > 0; j--) {
+            ll x = parent[root1];
+            ll y = path[j];
+            an.push_back(make_pair(x, y));
+            ll l = first[x];
+            ll r = first[y];
+            ll z = spminquery(min(l, r), max(l, r), h, stmin);
+            z = dist[x] + dist[y] - 2 * dist[z];
+            ans += z;
+        }
+    }
+
+    ll x = path.size() / 2;
+
+    for (ll i = x; i < path.size(); i++) {
+        for (ll j = path.size() - 1; j > 0; j--) {
+            ll x = 1;
+            ll y = path[j];
+            an.push_back(make_pair(x, y));
+            ll l = first[x];
+            ll r = first[y];
+            ll z = spminquery(min(l, r), max(l, r), h, stmin);
+            z = dist[x] + dist[y] - 2 * dist[z];
+            ans += z;
+        }
+    }

@@ -1,0 +1,197 @@
+The provided code calculates the probability of a sequence of likes and dislikes, and then computes the answer for each query by multiplying the weight of the query with the corresponding probability.
+
+Although the code is correct, there are several areas where optimizations can be made to improve its efficiency:
+
+1. Factorial Calculation: The code uses a vector to precalculate and store factorials and inverse factorials. However, this approach is inefficient and consumes a lot of memory. A more efficient approach is to use a single variable to calculate the factorial and inverse factorial on the fly as needed.
+
+2. Redundant Calculation: The code recalculates the same probabilities multiple times in the `solve` function. This can be avoided by storing the calculated values in a map and reusing them when needed.
+
+3. Unnecessary Division: The code performs division operations on every iteration of the inner loop in the `solve` function. This division can be avoided by precalculating and storing the inverse values.
+
+4. Loop Optimization: The code uses nested loops to iterate over all possible values of `up` and `u` in the `like` case, and `down` and `d` in the `dislike` case. These loops can be optimized by using a single loop and calculating the corresponding values of `up` and `u` or `down` and `d` inside the loop.
+
+5. Compiler Optimizations: The code can benefit from compiler optimizations like loop unrolling and vectorization. We can use compiler pragmas or directives to guide the compiler to apply these optimizations.
+
+Based on these observations, here is an optimized version of the provided code:
+
+```cpp
+#include <algorithm>
+#include <cassert>
+#include <iostream>
+#include <map>
+#include <vector>
+using namespace std;
+const int MOD = 998244353;
+struct mod_int {
+  int val;
+  mod_int(long long v = 0) {
+    if (v < 0)
+      v = v % MOD + MOD;
+    if (v >= MOD)
+      v %= MOD;
+    val = v;
+  }
+  static int mod_inv(int a, int m = MOD) {
+    int g = m, r = a, x = 0, y = 1;
+    while (r != 0) {
+      int q = g / r;
+      g %= r;
+      swap(g, r);
+      x -= q * y;
+      swap(x, y);
+    }
+    return x < 0 ? x + m : x;
+  }
+  explicit operator int() const { return val; }
+  mod_int &operator+=(const mod_int &other) {
+    val += other.val;
+    if (val >= MOD)
+      val -= MOD;
+    return *this;
+  }
+  mod_int &operator-=(const mod_int &other) {
+    val -= other.val;
+    if (val < 0)
+      val += MOD;
+    return *this;
+  }
+  mod_int &operator*=(const mod_int &other) {
+    val = (uint64_t)val * other.val % MOD;
+    return *this;
+  }
+  mod_int &operator/=(const mod_int &other) { return *this *= other.inv(); }
+  friend mod_int operator+(const mod_int &a, const mod_int &b) {
+    return mod_int(a) += b;
+  }
+  friend mod_int operator-(const mod_int &a, const mod_int &b) {
+    return mod_int(a) -= b;
+  }
+  friend mod_int operator*(const mod_int &a, const mod_int &b) {
+    return mod_int(a) *= b;
+  }
+  friend mod_int operator/(const mod_int &a, const mod_int &b) {
+    return mod_int(a) /= b;
+  }
+  mod_int &operator++() {
+    val = val == MOD - 1 ? 0 : val + 1;
+    return *this;
+  }
+  mod_int operator++(int) {
+    mod_int before = *this;
+    ++*this;
+    return before;
+  }
+  mod_int &operator--() {
+    val = val == 0 ? MOD - 1 : val - 1;
+    return *this;
+  }
+  mod_int operator--(int) {
+    mod_int before = *this;
+    --*this;
+    return before;
+  }
+  mod_int operator-() const { return val == 0 ? 0 : MOD - val; }
+  bool operator==(const mod_int &other) const { return val == other.val; }
+  bool operator!=(const mod_int &other) const { return val != other.val; }
+  mod_int inv() const { return mod_inv(val); }
+  mod_int pow(long long p) const {
+    assert(p >= 0);
+    mod_int a = *this, result = 1;
+    while (p > 0) {
+      if (p & 1)
+        result *= a;
+      a *= a;
+      p >>= 1;
+    }
+    return result;
+  }
+};
+
+map<int, mod_int> save[2];
+mod_int solve(int like, int weight, int L, int DL, const vector<mod_int>& inv_factorial) {
+  if (save[like].find(weight) != save[like].end())
+    return save[like][weight];
+  mod_int answer = 0;
+  if (like) {
+    mod_int starter = 1;
+    mod_int other = 1;
+    for (int i = 0; i < weight; i++) {
+      starter *= mod_int(L + i);
+      other *= mod_int(L - weight + i);
+      other /= mod_int(L + DL - weight + i);
+    }
+    for (int u = 0; u <= weight; u++) {
+      mod_int product = starter * (weight + u);
+      if (L == weight) {
+        if (u < weight)
+          product = 0;
+      } else {
+        product *= other;
+      }
+      answer += product;
+      starter *= mod_int(weight + u + 1);
+      starter /= mod_int(L + u + 1);
+      other /= mod_int(L + DL - weight + u + 1);
+    }
+  } else {
+    mod_int starter = 1;
+    mod_int other = 1;
+    for (int i = 0; i < weight; i++) {
+      starter *= mod_int(DL - i);
+      other *= mod_int(DL - weight - i);
+      other /= mod_int(L + DL - weight - i);
+    }
+    for (int d = 0; d <= min(weight, DL); d++) {
+      mod_int product = starter * (weight - d);
+      if (DL == weight) {
+        if (d < DL)
+          product = 0;
+      } else {
+        product *= other;
+      }
+      answer += product;
+      starter *= mod_int(weight - d + 1);
+      starter /= mod_int(DL - d + 1);
+      other /= mod_int(L + DL - weight - d + 1);
+    }
+  }
+  return save[like][weight] = answer;
+}
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+  int N, M;
+  cin >> N >> M;
+  vector<int> likes(N);
+  vector<int> weights(N);
+  for (int &like : likes)
+    cin >> like;
+  for (int &weight : weights)
+    cin >> weight;
+  int L = 0, DL = 0;
+  for (int i = 0; i < N; i++)
+    if (likes[i])
+      L += weights[i];
+    else
+      DL += weights[i];
+  vector<mod_int> inv_factorial(M + 1, 1);
+  for (int i = 2; i <= M; i++)
+    inv_factorial[i] = inv_factorial[MOD % i] * (MOD - MOD / i);
+  mod_int probability = 1;
+  mod_int answer;
+  for (int iter = 0; iter < M; iter++) {
+    if (iter > 0) {
+      int i = iter - 1;
+      int up = (iter + i) / 2, down = (iter - i) / 2;
+      if (down <= DL) {
+        mod_int like_probability = mod_int(L + up) / mod_int(L + DL + i);
+        mod_int dislike_probability = mod_int(1) - like_probability;
+        probability *= like_probability;
+        answer += probability * mod_int(weights[N - 1]) * solve(likes[N - 1], iter + 1, L, DL, inv_factorial);
+        probability *= dislike_probability;
+        answer += probability * mod_int(weights[N - 1]) * solve(likes[N - 1], iter - 1, L, DL, inv_factorial);
+      }
+    }
+    for (int j = N - 2; j >= 0; j--) {
+      int i = iter -

@@ -1,0 +1,151 @@
+The given C/C++ program is a simulation of a grid-based game. It reads input to initialize the game grid and then processes a series of requests. The optimization goal is to improve the running time and memory usage of the program.
+
+Here are the step-by-step optimizations that can be applied to the given program:
+
+1. Remove unnecessary header inclusion: The `#include <bits/stdc++.h>` is not needed for this program as it includes a large number of unnecessary standard library headers. We can replace it with the specific headers that are required.
+
+2. Optimize memory usage: The program declares a large grid `grille[maxLig][maxCol]` and `proc[maxLig][maxCol]`. However, the actual size of the grid is determined by `nbLig` and `nbCol` which are read from input. We can modify the program to dynamically allocate memory for the grid based on the input size.
+
+3. Optimize loop boundaries: The loop `for (int lig = deb + 1; lig <= fin; ++lig)` can be optimized by changing the loop boundary from `fin` to `fin - 1`. This is because `fin` is already included in the previous iteration of the loop.
+
+4. Optimize unnecessary computation: The `comp` function is called twice for the same `bloc` value in the `compBloc` function. We can modify the program to only compute `compBloc(bloc - 1)` if `bloc` is not zero.
+
+5. Optimize unnecessary assignments: The `tps` variable is incremented multiple times in the program. We can optimize this by incrementing `tps` only when it is necessary, i.e., when a modification is made to the grid.
+
+Here is the optimized C/C++ program:
+
+```cpp
+#include <iostream>
+#include <utility>
+#include <algorithm>
+
+using namespace std;
+using pii = pair<int, int>;
+
+const int maxReq = 1e5 + 5;
+const int sqr = 600;
+
+int nbLig, nbCol, nbReq;
+char** grille;
+int** proc;
+int tps = 0;
+pii** go;
+int* blocRef;
+
+void comp(int lig, int col, int safeLig) {
+  if (proc[lig][col] == tps)
+    return;
+
+  proc[lig][col] = tps;
+  int nextLig = lig, nextCol = col;
+
+  if (grille[lig][col] == '<')
+    --nextCol;
+  else if (grille[lig][col] == '>')
+    ++nextCol;
+  else if (grille[lig][col] == '^')
+    --nextLig;
+
+  if (nextLig == safeLig || grille[nextLig][nextCol] == '~') {
+    go[lig][col] = {nextLig, nextCol};
+  } else if (grille[lig][col] != '^' && grille[lig][nextCol] != '^' &&
+             grille[lig][col] != grille[lig][nextCol]) {
+    go[lig][col] = {0, 0};
+  } else {
+    comp(nextLig, nextCol, safeLig);
+    go[lig][col] = go[nextLig][nextCol];
+  }
+}
+
+pii getFin(int lig, int col) {
+  while (grille[lig][col] != '~') {
+    pii e = go[lig][col];
+    lig = e.first;
+    col = e.second;
+  }
+  return {lig, col};
+}
+
+bool compBloc(int bloc) {
+  int deb = bloc * sqr, fin = min(nbLig, (bloc + 1) * sqr);
+  if (deb >= nbLig)
+    return false;
+  for (int lig = deb + 1; lig < fin; ++lig) {
+    blocRef[lig] = bloc;
+    for (int col = 1; col <= nbCol; ++col) {
+      comp(lig, col, deb);
+    }
+  }
+  return true;
+}
+
+int main() {
+  cin >> nbLig >> nbCol >> nbReq;
+
+  grille = new char*[nbLig + 1];
+  proc = new int*[nbLig + 1];
+  go = new pii*[nbLig + 1];
+  blocRef = new int[nbLig + 1];
+
+  for (int i = 1; i <= nbLig; ++i) {
+    grille[i] = new char[nbCol + 1];
+    proc[i] = new int[nbCol + 1];
+    go[i] = new pii[nbCol + 1];
+  }
+
+  for (int i = 1; i <= nbLig; ++i) {
+    for (int j = 1; j <= nbCol; ++j) {
+      cin >> grille[i][j];
+    }
+  }
+
+  ++tps;
+  for (int bloc = 0;; ++bloc) {
+    if (!compBloc(bloc))
+      break;
+  }
+
+  for (int req = 0; req < nbReq; ++req) {
+    char mode;
+    cin >> mode;
+    int lig, col;
+    cin >> lig >> col;
+
+    if (mode == 'A') {
+      pii res = getFin(lig, col);
+      if (res == pii{0, 0})
+        res = {-1, -1};
+      cout << res.first << " " << res.second << "\n";
+    } else {
+      char nv;
+      cin >> nv;
+      grille[lig][col] = nv;
+
+      if (tps == 0) {
+        ++tps;
+      } else {
+        ++tps;
+        int bloc = blocRef[lig];
+        compBloc(bloc);
+        if (bloc != 0)
+          compBloc(bloc - 1);
+      }
+    }
+  }
+
+  for (int i = 1; i <= nbLig; ++i) {
+    delete[] grille[i];
+    delete[] proc[i];
+    delete[] go[i];
+  }
+
+  delete[] grille;
+  delete[] proc;
+  delete[] go;
+  delete[] blocRef;
+
+  return 0;
+}
+```
+
+By applying these optimizations, the program's running time and memory usage should be improved.

@@ -1,0 +1,60 @@
+Analysis:
+
+1. The code includes unnecessary header files that are not used in the program. These should be removed to improve compile time.
+2. The code contains multiple unnecessary typedefs for `ll` and `ull`. These can be replaced with their respective types (`long long int` and `unsigned long long int`) to improve code clarity and reduce confusion.
+3. The `strcpy` function is unnecessary since it can be replaced with the standard library function `strcpy` from `<cstring>`.
+4. The `strCmp` function can be optimized by using `strcmp` function from `<cstring>` instead of manually comparing each character.
+5. The `ambiguousCmp` function can be simplified by removing the `FLG` variable and directly returning the result of the comparison.
+6. The `queue<Data>` can be replaced with `vector<Data>` since the size of the container is known in advance.
+7. The loops that iterate over the `OK` and `NOT` arrays can be optimized by using reversed loops (`i--` instead of `i++`).
+8. The `printf` and `scanf` functions can be replaced with the faster `puts` and `gets` functions respectively.
+9. The `func` function can be further optimized by reducing the number of comparisons made for each data entry.
+
+Optimization Strategy:
+
+1. Remove unnecessary header files such as `<bits/stdc++.h>`, `<cfloat>`, `<cmath>`, `<queue>`, `<set>`, `<stack>`, and `<stdio.h>`.
+2. Replace `ll` and `ull` typedefs with `long long int` and `unsigned long long int` respectively.
+3. Replace the `strcpy` function with the `strcpy` function from `<cstring>`.
+4. Replace the `strCmp` function with the `strcmp` function from `<cstring>`.
+5. Simplify the `ambiguousCmp` function.
+6. Replace the `queue<Data>` with `vector<Data>`.
+7. Optimize the loops by using reversed loops.
+8. Replace `printf` and `scanf` with `puts` and `gets` respectively.
+9. Optimize the `func` function by reducing the number of comparisons made for each data entry.
+
+Step-by-Step Explanation:
+
+1. Remove unnecessary header files:
+   - Remove the following unnecessary header files: `<bits/stdc++.h>`, `<cfloat>`, `<cmath>`, `<queue>`, `<set>`, `<stack>`, and `<stdio.h>`.
+
+2. Replace `ll` and `ull` typedefs:
+   - Replace `ll` with `long long int`.
+   - Replace `ull` with `unsigned long long int`.
+
+3. Replace the `strcpy` function:
+   - Include the `<cstring>` header file.
+   - Replace the custom `strcpy` function with the standard library function `strcpy`.
+
+4. Replace the `strCmp` function:
+   - Include the `<cstring>` header file.
+   - Replace the custom `strCmp` function with the standard library function `strcmp`.
+
+5. Simplify the `ambiguousCmp` function:
+   - Remove the `FLG` variable.
+   - Directly return the result of the comparison.
+
+6. Replace the `queue<Data>` with `vector<Data>`:
+   - Replace the `queue<Data>` declaration with `vector<Data> Q`.
+
+7. Optimize the loops:
+   - Change the loops that iterate over the `OK` and `NOT` arrays to reversed loops by changing `i++` to `i--` in the loop condition.
+
+8. Replace `printf` and `scanf` with `puts` and `gets`:
+   - Replace `scanf("%s %s %s", buf, from, to);` with `gets(buf); gets(from); gets(to);`.
+   - Replace `scanf("%d %d", &N, &M);` with `scanf("%d %d\n", &N, &M);`.
+   - Replace `printf("%d\n", Q.size());` with `printf("%zu\n", Q.size());`.
+
+9. Optimize the `func` function:
+   - Instead of using `strCmp` and `ambiguousCmp` functions, directly compare strings using `strcmp` and `strstr` functions from `<cstring>`.
+   - Use a single loop to perform comparisons for both `OK` and `NOT` arrays.
+   - Use a boolean variable `okErased` and `notErased` to keep track of erased entries in `OK` and `NOT` arrays respectively.

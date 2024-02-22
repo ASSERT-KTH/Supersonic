@@ -1,0 +1,83 @@
+Let's break down the optimization process into steps:
+
+**Code Analysis**
+
+The code implements a custom hash table, which maps string sequences of characters (representing DNA sequences) to numeric keys, and provides functions to insert elements and check their existence in the table.
+
+Potential areas for optimization include:
+1. The `getnum` function uses multiple if-else statements and can be optimized.
+2. The `getkey` function has a for loop with constant re-calculation of `p` at each iteration.
+3. Redundant memory usage in `H[M][L]`.
+4. Multiple calls to `strcmp` and `strlen` in `insert` and `find` functions.
+5. Inefficient handling of commands in the `main` function.
+
+**Optimization Strategy**
+
+1. Refactor `getnum` to use a switch statement or map for faster lookups.
+2. Pre-compute the power of 5 values in `getkey`.
+3. Use `std::unordered_map` in C++ STL instead of custom hash table to reduce memory usage and improve performance.
+4. Reduce calls to `strcmp` and `strlen` by storing the result and reusing it.
+5. Use if-else or switch statement for handling commands in `main`.
+
+**Step-by-Step Explanation and Optimized Code Block**
+
+1. The `getnum` function can be optimized by using a switch statement instead of multiple if-else statements. The switch statement has better performance as it uses a jump table internally.
+
+    ```cpp
+    int getnum(char ch) {
+        switch (ch) {
+            case 'A': return 1;
+            case 'C': return 2;
+            case 'G': return 3;
+            case 'T': return 4;
+            default: return 0;
+        }
+    }
+    ```
+   
+2. The `getkey` function is calculating powers of 5 in each iteration, which is not efficient. We can pre-calculate these values using a lookup table.
+
+    ```cpp
+    int pow5[L] = {1, 5, 25, 125, 625, 3125, 15625, 78125, 390625, 1953125, 9765625, 48828125, 244140625, 1220703125};
+    long long getkey(char word[]) {
+        int sum = 0, i;
+        for (i = 0; word[i]; i++) {
+            sum += pow5[i] * getnum(word[i]);
+        }
+        return sum;
+    }
+    ```
+   
+3. Instead of using a custom hash table, we can use `std::unordered_map` which is a built-in hash table available in C++ STL. It provides constant time insert and find operations on average.
+
+    ```cpp
+    unordered_map<string, bool> H;
+    ```
+   
+4. We can reduce calls to `strcmp` and `strlen` by storing the result and reusing it.
+
+    ```cpp
+    int insert(char str[]) {
+        if (H[str]) {
+            return 0;
+        } else {
+            H[str] = true;
+            return 1;
+        }
+    }
+    int find(char str[]) {
+        return H[str];
+    }
+    ```
+   
+5. We can use an if-else statement to handle commands in `main` function.
+
+    ```cpp
+    if (com[0] == 'i') {
+        insert(word);
+    } else if (com[0] == 'f') {
+        cout << (find(word) ? "yes" : "no") << endl;
+    }
+    ```
+
+The updated code is more efficient, uses less memory, and is easier to read and maintain. 

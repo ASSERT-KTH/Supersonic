@@ -1,0 +1,85 @@
+This code implements a dynamic programming algorithm, which can be a heavy task considering the 3-dimensional structure of the `dp` array and the nested loops.
+
+Let's analyze the code to see where we can improve its performance.
+
+1. **Code Analysis:**
+
+   - The code fills up a dynamic programming table `dp` which is of size 150x150x2.
+   - Each time a new input comes, it iterates through all the cells of the `dp` table to make them `false`.
+   - After that, it calculates the `dp` table based on the given input array and at the same time tries to find the maximum `ans`.
+   - For each `cur` (current index of the input array), it checks all possible `L` and `M` values, and updates the `dp` table and `ans` accordingly.
+   - Finally, it again iterates through the `dp` table to reset the values based on the `cur`.
+
+2. **Optimization Strategy:**
+
+   - **Inefficient Data Structures**: Here, the `dp` array can be considered inefficient because we're only using two layers at a time, but space for 150 layers is allocated. We can use only two 2D arrays instead of a 3D array.
+   - **Redundant Computations**: There are redundant iterations over the `dp` array to reset its values. We can eliminate these by resetting only the relevant cells.
+   - **Loops**: The nested loops iterating through all possible `L` and `M` combinations can be optimized. We only need to check the cells that have been marked `true` in the previous step.
+   - **Compiler Optimizations**: Compiler optimizations like `-O2` or `-O3` can be used to further optimize the code.
+
+3. **Step-by-Step Explanation:**
+
+   - **Inefficient Data Structures**: We can replace the 3D `dp` array by using two 2D arrays. This will significantly reduce the memory usage. Since we only need to keep track of the current and previous steps, two layers are enough.
+   - **Redundant Computations**: Instead of resetting the entire `dp` table, we can keep track of which cells have been marked `true` in a given step, and only reset those cells. This can be achieved by maintaining a list of marked cells for each step.
+   - **Loops**: To avoid unnecessary iteration over the entire `dp` table, we can maintain a list of cells that have been marked `true` in the previous step. Instead of iterating over all cells, we can iterate only over these cells.
+   - **Compiler Optimizations**: Compiler optimizations can help improve performance. Pass `-O2` or `-O3` flag during compilation to enable these optimizations.
+
+4. **Optimized Code Block:**
+
+```cpp
+#include <algorithm>
+#include <iostream>
+#include <vector>
+#define REP(i, s, n) for (int i = s; i < n; i++)
+#define MAX 150
+using namespace std;
+bool dp[2][MAX][MAX];
+vector<pair<int, int>> marked[MAX];
+int main() {
+  int T;
+  while (cin >> T) {
+    while (T--) {
+      int N;
+      cin >> N;
+      int input[N];
+      REP(i, 0, N) cin >> input[i];
+      if (N <= 2) {
+        cout << input[N - 1] << endl;
+        continue;
+      }
+      int ans = input[N - 1];
+      REP(cur, 1, N - 1) {
+        for (auto &cell : marked[cur & 1]) dp[cur & 1][cell.first][cell.second] = false;
+        marked[cur & 1].clear();
+        dp[cur & 1][input[cur - 1]][input[cur]] = true;
+        marked[cur & 1].push_back({input[cur - 1], input[cur]});
+        int R = input[cur + 1];
+        for (auto &cell : marked[!(cur & 1)]) {
+          int L = cell.first, M = cell.second;
+          if (!dp[!(cur & 1)][L][M]) continue;
+          if (M == 0) {
+            if (cur + 2 < N) {
+              dp[(cur + 1) & 1][M][R] = true;
+              marked[(cur + 1) & 1].push_back({M, R});
+            } else
+              ans = max(ans, R);
+          } else {
+            if (cur + 2 < N) {
+              dp[(cur + 1) & 1][M][R] = true;
+              marked[(cur + 1) & 1].push_back({M, R});
+              dp[(cur + 1) & 1][M - 1][R + L] = true;
+              marked[(cur + 1) & 1].push_back({M - 1, R + L});
+            } else {
+              ans = max(ans, R + L);
+            }
+          }
+        }
+      }
+      cout << ans << endl;
+    }
+  }
+  return 0;
+}
+```
+
+In this optimized version, we have replaced the 3D array with two 2D arrays, eliminated redundant iterations over the `dp` array, and optimized the nested loops. This should provide a significant boost in performance and reduction in memory usage.

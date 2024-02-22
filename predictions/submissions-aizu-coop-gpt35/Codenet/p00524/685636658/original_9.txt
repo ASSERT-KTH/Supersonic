@@ -1,0 +1,181 @@
+Upon analyzing the code, there are several potential areas for optimization:
+
+1. Memory usage: The code uses several data structures, such as vectors, sets, maps, and priority queues, that can be optimized for memory usage.
+
+2. Redundant computations: There are some redundant computations in the code that can be eliminated to improve performance.
+
+3. Loop optimization: The code contains nested loops, which can be optimized to reduce the number of iterations.
+
+4. Compiler optimizations: The code can benefit from compiler optimizations such as loop unrolling and function inlining.
+
+Based on these observations, here is an optimization strategy:
+
+1. Replace the `vector` data structure with a more memory-efficient alternative. Since the number of elements in the vectors `G` and `gg` is known in advance, we can use arrays instead of vectors to save memory.
+
+2. Eliminate redundant computations by removing unnecessary conditional statements and function calls.
+
+3. Optimize the nested loops by reducing the number of iterations and minimizing memory accesses.
+
+4. Use compiler optimizations, such as loop unrolling and function inlining, to improve performance.
+
+Now, let's go through each optimization step in detail:
+
+Step 1: Replace `vector` with arrays
+- Replace the `vector` data structure with arrays for `G` and `gg`.
+- Since the number of elements in `G` and `gg` is known in advance, we can allocate memory for them using arrays.
+- This will reduce the memory usage compared to using vectors.
+
+Step 2: Eliminate redundant computations
+- Remove the conditional statement `if (h < max_h[v])` in the `while` loop.
+- The `while` loop already checks if `h` is less than `max_h[v]`, so the extra conditional check is redundant.
+- By removing this condition, we can reduce the number of conditional checks in each iteration of the loop.
+
+Step 3: Optimize nested loops
+- Optimize the nested loops in the `rep` loop by reducing the number of iterations and minimizing memory accesses.
+- Instead of using the `rep` loop, we can use a simple `for` loop to iterate over the elements of `G`.
+- This will eliminate the need to access the elements of `G` using the index `i`.
+
+Step 4: Use compiler optimizations
+- Enable compiler optimizations, such as loop unrolling and function inlining, to improve performance.
+- Add compiler-specific optimization flags or pragma directives to hint the compiler to optimize certain parts of the code.
+- For example, in GCC, you can use the `-O3` flag to enable aggressive optimizations.
+
+Now, let's apply these optimizations to the code:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+using ll = long long;
+#define rep(i, n) for (int(i) = 0; (i) < (int)(n); ++(i))
+#define all(x) (x).begin(), (x).end()
+#define pb push_back
+#define fi first
+#define se second
+using pi = pair<int, int>;
+using P = pair<ll, int>;
+struct edge {
+  int to;
+  ll cost;
+};
+const int V = 100000;
+const int VV = 1000000;
+const ll INF = LLONG_MAX / 3;
+edge G[V][2], gg[VV][2];
+set<int> height[V];
+int n, m;
+ll X;
+int H[V];
+int v2id[V][2];
+int max_h[V] = {};
+ll d[VV];
+int main() {
+  scanf(" %d %d %lld", &n, &m, &X);
+  rep(i, n) scanf(" %d", &H[i]);
+  rep(i, m) {
+    int a, b, t;
+    scanf(" %d %d %d", &a, &b, &t);
+    --a;
+    --b;
+    G[a][0] = {b, t};
+    G[b][0] = {a, t};
+  }
+  int ct = 1;
+  priority_queue<pi> que;
+  que.push(pi(X, 0));
+  v2id[0][X] = 0;
+  max_h[0] = X;
+  height[0].insert(X);
+  while (!que.empty()) {
+    pi p = que.top();
+    que.pop();
+    int v = p.se, h = p.fi;
+    for (const auto &e : G[v]) {
+      int bh = h;
+      int nh = h - e.cost;
+      if (nh < 0)
+        continue;
+      if (nh > H[e.to]) {
+        bh = H[e.to] + e.cost;
+        nh = H[e.to];
+      }
+      if (nh > max_h[e.to]) {
+        if (!v2id[e.to][bh]) {
+          v2id[e.to][bh] = ct++;
+          height[v].insert(bh);
+        }
+        if (!v2id[e.to][nh]) {
+          v2id[e.to][nh] = ct++;
+          height[e.to].insert(nh);
+        }
+        int uu = v2id[v][bh], vv = v2id[e.to][nh];
+        gg[uu][0] = {vv, e.cost};
+        max_h[e.to] = nh;
+        que.push(pi(max_h[e.to], e.to));
+      }
+    }
+  }
+  rep(i, n) {
+    for (const auto &e : G[i]) {
+      if (H[i] < e.cost)
+        continue;
+      if (!v2id[i][e.cost]) {
+        v2id[i][e.cost] = ct++;
+        height[i].insert(e.cost);
+      }
+      if (!v2id[e.to][0]) {
+        v2id[e.to][0] = ct++;
+        height[e.to].insert(0);
+      }
+      int uu = v2id[i][e.cost];
+      int vv = v2id[e.to][0];
+      gg[uu][0] = {vv, e.cost};
+    }
+  }
+  if (!v2id[n - 1][H[n - 1]]) {
+    v2id[n - 1][H[n - 1]] = ct++;
+    height[n - 1].insert(H[n - 1]);
+  }
+  rep(i, n) {
+    int S = height[i].size();
+    auto itr = height[i].begin();
+    rep(j, S - 1) {
+      auto nx = itr;
+      ++nx;
+      int uu = v2id[i][*itr];
+      int vv = v2id[i][*nx];
+      int dist = *nx - *itr;
+      gg[uu][0] = {vv, dist};
+      gg[vv][0] = {uu, dist};
+      itr = nx;
+    }
+  }
+  int start = v2id[0][X];
+  int goal = v2id[n - 1][H[n - 1]];
+  fill(d, d + VV, INF);
+  d[start] = 0;
+  priority_queue<P, vector<P>, greater<P>> pq;
+  pq.push(pi(0, start));
+  while (!pq.empty()) {
+    P now = pq.top();
+    pq.pop();
+    int v = now.se;
+    if (now.fi > d[v])
+      continue;
+    for (const auto &e : gg[v]) {
+      if (d[e.to] > d[v] + e.cost) {
+        d[e.to] = d[v] + e.cost;
+        pq.push(pi(d[e.to], e.to));
+      }
+    }
+  }
+  ll ans = d[goal];
+  if (ans == INF)
+    ans = -1;
+  printf("%lld\n", ans);
+  return 0;
+}
+```
+
+This optimized code reduces memory usage by replacing vectors with arrays and eliminates redundant computations. Additionally, the nested loops are optimized to reduce the number of iterations and minimize memory accesses. Compiler optimizations such as loop unrolling and function inlining are encouraged to further improve performance.
+
+Please note that the optimized code provided above is a result of the analysis and proposed optimizations. It has not been tested and may require further adjustments or debugging.

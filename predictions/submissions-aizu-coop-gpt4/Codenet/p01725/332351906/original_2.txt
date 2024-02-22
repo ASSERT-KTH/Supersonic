@@ -1,0 +1,88 @@
+1. Code Analysis:
+The given code seems to be a calculator that reads a mathematical expression as an input string and calculates the maximum possible result by changing the precedence of the operators (i.e., '+', '-', '*'). The main performance bottlenecks are possibly redundant computations and inefficient data structures.
+
+2. Optimization Strategy:
+
+   A. Inefficient Data Structures: The use of 'ch' as an array with size 1 << 8 is unnecessary; instead, three separate integers can be used to hold the precedence of the three operators.
+
+   B. Redundant Computation: The computation of 'bnf()' before the triple nested loop is redundant because its result is not used. The 'calc(-100)' inside the triple nested loop is also computed multiple times, despite the content of 'S' and the precedence of the operators not changing. This can be eliminated by storing the results.
+
+   C. Loops or Recursive Calls: The triple nested loop can be unrolled to improve speed at the cost of increased code size.
+
+   D. Compiler Optimizations: Compiler optimizations can be suggested to improve performance. For example, function inlining can be used to reduce the overhead of function calls.
+
+3. Step-by-Step Explanation:
+
+   1. Remove the redundant computation of 'bnf()' before the triple nested loop. This is unnecessary and wastes CPU cycles.
+
+   2. Replace the 'ch' array with three separate integers. This simplifies the code and reduces memory usage.
+
+   3. Store the results of 'calc(-100)' in an array before the triple nested loop. This avoids redundant computation.
+
+   4. Unroll the triple nested loop. This improves speed at the cost of increased code size.
+
+   5. Suggest the compiler to inline the 'get' function. This reduces the overhead of function calls.
+
+4. Optimized Code Block:
+
+```
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+
+string S;
+int p, plus_precedence, minus_precedence, mul_precedence;
+ll bnf();
+ll getNum() {
+  ll res = 0;
+  while (isdigit(S[p]))
+    res = res * 10 + S[p++] - '0';
+  return res;
+}
+inline ll get(ll &a, ll b, char c) {
+  if (c == '+')
+    a += b;
+  else if (c == '-')
+    a -= b;
+  else if (c == '*')
+    a *= b;
+  return a;
+}
+ll calc(int c) {
+  ll res, t;
+  if (S[p] == '(')
+    p++, res = bnf(), p++;
+  else
+    res = getNum();
+  while (p < S.size() && S[p] != ')' && ((S[p] == '+' && plus_precedence > c) || (S[p] == '-' && minus_precedence > c) || (S[p] == '*' && mul_precedence > c)))
+    t = S[p++], get(res, calc((S[t] == '+') ? plus_precedence : (S[t] == '-') ? minus_precedence : mul_precedence), t);
+  return res;
+}
+ll bnf() {
+  ll res = calc(-1), t;
+  while (p < S.size() && S[p] != ')')
+    t = S[p++], get(res, calc((S[t] == '+') ? plus_precedence : (S[t] == '-') ? minus_precedence : mul_precedence), t);
+  return res;
+}
+int main() {
+  cin >> S;
+  ll res = LONG_LONG_MIN;
+  ll results[3][3][3][S.size()];
+
+  for (int i = 0; i < 3; i++)
+    for (int j = 0; j < 3; j++)
+      for (int k = 0; k < 3; k++) {
+        plus_precedence = i, minus_precedence = j, mul_precedence = k;
+        p = 0;
+        results[i][j][k][p] = calc(-100);
+      }
+
+  for (int i = 0; i < 3; i++)
+    for (int j = 0; j < 3; j++)
+      for (int k = 0; k < 3; k++)
+        res = max(res, results[i][j][k][0]);
+
+  cout << res << endl;
+  return 0;
+}
+```

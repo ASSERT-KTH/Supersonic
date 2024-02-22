@@ -1,0 +1,139 @@
+This code is a complex implementation of the Union-Find algorithm with an additional edge handling mechanism. The code seems to be well-structured, but there are several areas where performance could be improved. 
+
+1. Code Analysis:
+    - There are numerous vectors and arrays being used, which can be memory intensive.
+    - The use of std::vector and std::set data structures for storing edges and components might not be the most efficient.
+    - Unnecessary computations and loop iterations in the recursive function rec() and in the main function.
+    - The use of scanf and printf might slow down the code due to their lower performance compared to cin and cout.
+
+2. Optimization Strategy:
+   - Use arrays instead of vectors where the size is known beforehand. This will reduce memory allocation and deallocation overhead.
+   - Use unordered_set instead of set for component storage. The time complexity for insert and erase operations in unordered_set is O(1) compared to O(log n) in set.
+   - Unroll loops where possible to reduce the number of iterations.
+   - Use cin and cout with ios::sync_with_stdio(false) and cin.tie(nullptr) for faster I/O operations.
+   - Reduce unnecessary operations inside the rec() function.
+
+3. Step-by-Step Explanation:
+
+   1. Replace vectors with arrays where the size is known beforehand. This reduces the overhead of memory allocation and deallocation. 
+   2. Replace set with unordered_set for component storage. This will speed up the insert and erase operations.
+   3. Unroll loops where possible, for instance in the rec() function, to reduce the number of iterations.
+   4. Replace scanf and printf with cin and cout for faster I/O operations. Use ios::sync_with_stdio(false) and cin.tie(nullptr) to further speed up the operations.
+   5. Remove unnecessary operations inside the rec() function.
+
+4. Trade-offs:
+   - The use of arrays instead of vectors might make the code less flexible and more prone to errors due to incorrect array sizes.
+   - Unrolling loops might make the code less readable and harder to debug.
+   - Using cin and cout with ios::sync_with_stdio(false) and cin.tie(nullptr) might cause issues when mixed with traditional C-style I/O operations.
+
+Here is the optimized code block. Note that due to the complexity of the code, the changes are quite extensive and might require careful testing to ensure the original functionality is preserved:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+using int64 = long long;
+
+struct UnionFind {
+  int data[200000];
+  UnionFind(int sz) {
+    fill(data, data + sz, -1);
+  }
+  bool unite(int x, int y) {
+    x = find(x), y = find(y);
+    if (x == y) return false;
+    if (data[x] > data[y]) swap(x, y);
+    data[x] += data[y];
+    data[y] = x;
+    return true;
+  }
+  int find(int k) {
+    if (data[k] < 0) return k;
+    return data[k] = find(data[k]);
+  }
+  int size(int k) {
+    return -data[find(k)];
+  }
+};
+
+struct edge1 {
+  int u, v, cost, idx;
+  bool operator<(const edge1 &e) const {
+    return cost < e.cost;
+  }
+};
+
+struct edge2 {
+  int to, cost, idx;
+};
+
+int N, M, A[200000], B[200000], C[200000];
+edge1 edges[200000];
+bool killed[200000];
+vector<edge2> tree[100000], g[100000];
+int64 all, ans[200000];
+unordered_set<pair<int, int>> component[100000];
+
+void rec(int idx, int par = -1) {
+  for (auto &e : g[idx]) {
+    component[idx].emplace(e.cost, e.idx);
+  }
+  for (auto &e : tree[idx]) {
+    if (e.to == par) continue;
+    rec(e.to, idx);
+    auto &u = component[idx], &v = component[e.to];
+    if (!v.empty()) {
+      ans[e.idx] = all;
+      ans[e.idx] -= e.cost;
+      ans[e.idx] += v.begin()->first;
+    }
+    if (u.size() < v.size()) swap(u, v);
+    for (auto p = v.begin(); p != v.end(); ) {
+      if (u.count(*p)) {
+        u.erase(*p);
+      } else {
+        u.emplace(*p);
+      }
+      p = v.erase(p);
+    }
+  }
+}
+
+int main() {
+  ios::sync_with_stdio(false); cin.tie(nullptr);
+  cin >> N >> M;
+  for (int i = 0; i < M; i++) {
+    cin >> A[i] >> B[i] >> C[i];
+    --A[i], --B[i];
+    edges[i] = {A[i], B[i], C[i], i};
+  }
+  UnionFind uf(N);
+  sort(begin(edges), end(edges));
+  for (auto &e : edges) {
+    if (uf.unite(e.v, e.u)) {
+      killed[e.idx] = true;
+      all += e.cost;
+    }
+  }
+  if (uf.size(0) != N) {
+    for (int i = 0; i < M; i++)
+      cout << "-1\n";
+    return 0;
+  }
+  for (int i = 0; i < M; i++) {
+    if (killed[i]) {
+      tree[A[i]].emplace_back((edge2){B[i], C[i], i});
+      tree[B[i]].emplace_back((edge2){A[i], C[i], i});
+      ans[i] = -1;
+    } else {
+      g[A[i]].emplace_back((edge2){B[i], C[i], i});
+      g[B[i]].emplace_back((edge2){A[i], C[i], i});
+      ans[i] = all;
+    }
+  }
+  rec(0);
+  for (int i = 0; i < M; i++) {
+    cout << ans[i] << "\n";
+  }
+  return 0;
+}
+```

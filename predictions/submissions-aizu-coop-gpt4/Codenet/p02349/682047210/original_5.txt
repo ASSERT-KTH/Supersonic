@@ -1,0 +1,97 @@
+The provided C++ program is a Lazy Segment Tree implementation. This data structure is used for range query problems, wherein you need to find (or update) the sum (or max, min, etc.) of a range of elements in an array. The 'lazy' part means that updates are deferred until they are absolutely necessary. This makes range updates more efficient.
+
+There are a few areas in the code where optimization can be applied:
+
+1. **Use of `std::bits/stdc++.h` and `using namespace std`:** While this isn't a performance issue, it's a bad practice. `std::bits/stdc++.h` is a GCC extension that includes most C++ libraries, which can lead to longer compile time. `using namespace std` can lead to name conflicts.
+
+2. **Redundant computations in recursion:** In functions `add` and `getSum`, there are repeated calculations of `(l + r) / 2`. This can be computed once and reused.
+
+3. **Lazy propagation in `eval` function:** Currently, the lazy value is being divided by two and propagated to children nodes. This assumes that the children always exist in pairs, which may not be the case (e.g., at the end of the array). Instead, you can propagate the whole value and handle the division in the `add` function.
+
+4. **Use of template for Monoid:** If only integers are used as Monoids, replacing the template with a specific type could result in more efficient code. However, this reduces the reusability of the code and should be considered based on the specific use case.
+
+5. **Compiler optimizations:** Compiler optimization flags can be used to optimize the code further. The `-O2` or `-O3` flags can be used when compiling the code to enable all optimization.
+
+Here's the optimized code:
+
+```cpp
+#include <iostream>
+#include <vector>
+typedef long long ll;
+
+struct LazySegmentTree {
+private:
+  int N;
+  std::vector<ll> node, lazy;
+
+public:
+  LazySegmentTree(int sz = 0) { init(sz); }
+  void init(int sz) {
+    N = 1;
+    while (N < sz)
+      N <<= 1;
+    node.resize(2 * N - 1, 0);
+    lazy.resize(2 * N - 1, 0);
+  }
+
+  void eval(int k, int l, int r) {
+    if (lazy[k] != 0) {
+      node[k] += lazy[k];
+      if (k < N - 1) {
+        lazy[2 * k + 1] += lazy[k];
+        lazy[2 * k + 2] += lazy[k];
+      }
+      lazy[k] = 0;
+    }
+  }
+
+  void add(int a, int b, ll x) { add(a, b, x, 0, 0, N); }
+  void add(int a, int b, ll x, int k, int l, int r) {
+    eval(k, l, r);
+    if (b <= l || r <= a)
+      return;
+    if (a <= l && r <= b) {
+      lazy[k] += x * (r - l);
+      eval(k, l, r);
+    } else {
+      int m = (l + r) / 2;
+      add(a, b, x, 2 * k + 1, l, m);
+      add(a, b, x, 2 * k + 2, m, r);
+      node[k] = node[2 * k + 1] + node[2 * k + 2];
+    }
+  }
+
+  ll getSum(int a, int b) { return getSum(a, b, 0, 0, N); }
+  ll getSum(int a, int b, int k, int l, int r) {
+    if (b <= l || r <= a)
+      return 0;
+    eval(k, l, r);
+    if (a <= l && r <= b)
+      return node[k];
+    int m = (l + r) / 2;
+    ll vl = getSum(a, b, 2 * k + 1, l, m);
+    ll vr = getSum(a, b, 2 * k + 2, m, r);
+    return vl + vr;
+  }
+};
+
+int main() {
+  int n, q;
+  std::cin >> n >> q;
+  LazySegmentTree seg(n);
+  for (int i = 0; i < q; i++) {
+    int c;
+    std::cin >> c;
+    if (c == 0) {
+      ll s, t, x;
+      std::cin >> s >> t >> x;
+      seg.add(s - 1, t, x);
+    } else {
+      int s;
+      std::cin >> s;
+      std::cout << seg.getSum(s - 1, s) << std::endl;
+    }
+  }
+  return 0;
+}
+```

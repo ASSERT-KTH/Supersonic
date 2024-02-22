@@ -1,0 +1,129 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <chrono>
+
+#define fastIO                                                                 \
+  std::ios_base::sync_with_stdio(false);                                       \
+  std::cin.tie(0);                                                             \
+  std::cout.tie(0)
+
+const int K = 10100; // Maximum value of k
+
+using ll = long long;
+
+ll gcd(ll a, ll b) {
+  if (b == 0) {
+    return a;
+  }
+  return gcd(b, a % b);
+}
+
+ll lcm(ll a, ll b) {
+  ll d = gcd(a, b);
+  a /= d;
+  if (a > std::numeric_limits<ll>::max() / b) {
+    std::cout << "NO" << std::endl;
+    exit(0);
+  }
+  return a * b;
+}
+
+ll gcdEx(ll a, ll b, ll &x, ll &y) {
+  if (b == 0) {
+    x = 1;
+    y = 0;
+    return a;
+  }
+  ll x1, y1;
+  ll d = gcdEx(b, a % b, x1, y1);
+  x = y1;
+  y = x1 - y1 * (a / b);
+  return d;
+}
+
+ll binmul(ll a, ll b, ll mod) {
+  if (b == 0) {
+    return 0;
+  }
+  if (b % 2 == 0) {
+    return binmul((a + a) % mod, b / 2, mod);
+  } else {
+    return (binmul(a, b - 1, mod) + a) % mod;
+  }
+}
+
+ll solve(ll r1, ll mod1, ll r2, ll mod2) {
+  ll g = gcd(mod1, mod2);
+  if (r1 % g != r2 % g) {
+    std::cout << "NO" << std::endl;
+    exit(0);
+  }
+  ll a = mod1 / g;
+  ll b = (r2 - r1) / g;
+  ll c = mod2 / g;
+  ll x, y;
+  gcdEx(a, c, x, y);
+  x = (x % c + c) % c;
+  ll k = binmul(b, x, c);
+  ll ans = (r1 + k * mod1) % lcm(mod1, mod2);
+  return ans;
+}
+
+void run() {
+  ll n, m;
+  int k;
+  std::cin >> n >> m >> k;
+  ll a[K];
+  for (int i = 0; i < k; ++i) {
+    std::cin >> a[i];
+  }
+  ll l = a[0];
+  for (int i = 1; i < k; ++i) {
+    l = lcm(l, a[i]);
+  }
+  if (l > n) {
+    std::cout << "NO" << std::endl;
+    return;
+  }
+  ll eq[K][2]; // C-style array to store pairs
+  for (int i = 0; i < k; ++i) {
+    eq[i][1] = a[i];
+    eq[i][0] = ((-i) % a[i] + a[i]) % a[i];
+  }
+  ll r1 = eq[0][0];
+  ll mod1 = eq[0][1];
+  for (int i = 1; i < k; ++i) {
+    ll curMod = lcm(mod1, eq[i][1]);
+    ll curR = solve(r1, mod1, eq[i][0], eq[i][1]);
+    r1 = (curR % curMod + curMod) % curMod;
+    mod1 = curMod;
+  }
+  if (r1 == 0) {
+    r1 += mod1;
+  }
+  if (r1 + k - 1 > m) {
+    std::cout << "NO" << std::endl;
+    return;
+  }
+  for (int i = 0; i < k; ++i) {
+    if (gcd(l, r1 + i) != a[i]) {
+      std::cout << "NO" << std::endl;
+      return;
+    }
+  }
+  std::cout << "YES" << std::endl;
+}
+
+int main(void) {
+  auto start = std::chrono::high_resolution_clock::now();
+  fastIO;
+  run();
+  auto end = std::chrono::high_resolution_clock::now();
+  std::cerr << "Execution time: "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(end -
+                                                                     start)
+                   .count()
+            << " ms" << std::endl;
+  return 0;
+}

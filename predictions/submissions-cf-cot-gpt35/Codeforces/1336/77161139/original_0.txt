@@ -1,0 +1,72 @@
+Optimization steps:
+
+1. Avoid unnecessary includes: The program includes several unnecessary headers (`<algorithm>`, `<ios>`, `<iostream>`). Remove these includes to reduce compilation time and memory usage.
+
+2. Avoid using `using namespace std;`: Using the entire `std` namespace can lead to naming conflicts. Instead, explicitly specify the namespace for each standard library component that is used.
+
+3. Pass `adj` and `depth` by reference: The functions `compute_depth` and `compute_below` currently pass `adj` and `depth` vectors by value. This creates unnecessary copies of these vectors. Instead, pass them by reference to avoid unnecessary memory allocation and copying.
+
+4. Avoid unnecessary calls to `std::sort`: The program sorts the `score` vector using `std::sort` after computing the scores. However, we only need the top `k` elements of the sorted vector. Instead of sorting the entire vector, we can use a partial sort algorithm (`std::partial_sort`) to sort only the first `k` elements.
+
+5. Use `std::accumulate` with iterators: The program currently uses `std::accumulate` with `score.begin()` and `score.begin() + k` to calculate the sum of the top `k` elements. Instead, we can use `std::accumulate` with iterators to directly specify the range of elements to accumulate.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <numeric>
+#include <vector>
+
+void compute_depth(int u, int p, std::vector<std::vector<int>>& adj, std::vector<int>& depth) {
+  for (int v : adj[u]) {
+    if (v != p) {
+      depth[v] = depth[u] + 1;
+      compute_depth(v, u, adj, depth);
+    }
+  }
+}
+
+void compute_below(int u, int p, std::vector<std::vector<int>>& adj, std::vector<int>& below) {
+  for (int v : adj[u]) {
+    if (v != p) {
+      compute_below(v, u, adj, below);
+      below[u] += below[v] + 1;
+    }
+  }
+}
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(nullptr);
+
+  int n, k;
+  std::cin >> n >> k;
+
+  std::vector<std::vector<int>> adj(n);
+  for (int i = 0; i < n - 1; ++i) {
+    int u, v;
+    std::cin >> u >> v;
+    --u;
+    --v;
+    adj[u].push_back(v);
+    adj[v].push_back(u);
+  }
+
+  std::vector<int> depth(n);
+  compute_depth(0, -1, adj, depth);
+
+  std::vector<int> below(n);
+  compute_below(0, -1, adj, below);
+
+  std::vector<int> score(n);
+  for (int i = 0; i < n; ++i) {
+    score[i] = depth[i] - below[i];
+  }
+
+  std::partial_sort(score.begin(), score.begin() + k, score.end(), std::greater<int>());
+
+  std::cout << std::accumulate(score.begin(), score.begin() + k, 0ll) << '\n';
+
+  return 0;
+}
+```

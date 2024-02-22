@@ -1,0 +1,88 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <random>
+#include <chrono>
+
+template <typename A, typename B>
+std::ostream &operator<<(std::ostream &os, const std::pair<A, B> &p) {
+  return os << '(' << p.first << ", " << p.second << ')';
+}
+
+void dbg_out() { std::cout << std::endl; }
+
+template <typename Head, typename... Tail> void dbg_out(Head H, Tail... T) {
+  std::cout << ' ' << H;
+  dbg_out(T...);
+}
+
+#ifdef WA_DEBUG
+#define dbg(...) std::cout << "(" << #__VA_ARGS__ << "):", dbg_out(__VA_ARGS__)
+#else
+#define dbg(...)
+#endif
+
+using ll = long long;
+const int mod = 1e9 + 7;
+const int inf = 0x3f3f3f3f;
+const int maxn = 1e5 + 10;
+
+int main() {
+#ifndef WA_DEBUG
+  std::ios::sync_with_stdio(false);
+#endif
+  int n, m, p;
+  std::cin >> n >> m >> p;
+  std::vector<ll> a(n + 1);
+  for (int i = 1; i <= n; ++i) {
+    for (int j = 0; j < m; ++j) {
+      char c;
+      std::cin >> c;
+      if (c == '1')
+        a[i] += (1ll << j);
+    }
+  }
+  std::vector<int> id(n + 1);
+  std::iota(id.begin(), id.end(), 0);
+  std::shuffle(id.begin() + 1, id.end(), std::mt19937(std::chrono::steady_clock::now().time_since_epoch().count()));
+  long long ans = 0;
+  int num = 0;
+  for (int i = 1; i <= std::min(200, n); ++i) {
+    std::vector<int> one;
+    for (int j = 0; j < m; ++j) {
+      if ((a[id[i]] >> j) & 1)
+        one.push_back(j);
+    }
+    std::vector<int> dp(1 << one.size());
+    for (int j = 1; j <= n; ++j) {
+      int tmp = 0;
+      for (int k = 0; k < one.size(); ++k) {
+        if ((a[j] >> one[k]) & 1)
+          tmp += (1 << k);
+      }
+      dp[tmp]++;
+    }
+    for (int j = 0; j < one.size(); ++j) {
+      for (int k = 0; k < (1 << one.size()); ++k) {
+        if (k & (1 << j))
+          dp[k ^ (1 << j)] += dp[k];
+      }
+    }
+    for (int k = 0; k < (1 << one.size()); ++k) {
+      int popcount_k = __builtin_popcount(k);
+      if (dp[k] >= (n + 1) / 2 && popcount_k > num) {
+        num = popcount_k;
+        ans = 0;
+        for (int j = 0; j < one.size(); ++j) {
+          if (k & (1 << j))
+            ans += (1ll << one[j]);
+        }
+      }
+    }
+  }
+  for (int i = 0; i < m; ++i) {
+    std::cout << ((ans >> i) & 1);
+  }
+  std::cout << '\n';
+  return 0;
+}

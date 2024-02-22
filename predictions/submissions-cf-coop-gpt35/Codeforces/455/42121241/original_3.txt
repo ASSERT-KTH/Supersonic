@@ -1,0 +1,334 @@
+The given code is a C++ program that performs various operations on a data structure called `dat`. The `dat` structure consists of a deque `A` and a map `M`, and it also has a pointer to another `dat` structure called `next`. The program reads an integer `n` from the input, sets the static variable `dat::n` to the ceiling of the square root of `n` multiplied by 4, and then reads `n` integers into the `dat` structure.
+
+After that, the program reads an integer `m` from the input and performs `m` operations. Each operation is specified by an integer `op` followed by some additional parameters. Depending on the value of `op`, the program either calls the `insert` and `erase` methods of the `dat` structure, or it calls the `count` method and prints the result.
+
+The main performance bottlenecks in the code are:
+
+1. Inefficient data structures: The use of a deque and a map in the `dat` structure can lead to slow performance due to frequent memory allocations and deallocations, as well as cache misses.
+
+2. Redundant computations: The `count` method performs redundant computations by iterating over the elements of the deque `A` multiple times.
+
+3. Inefficient loop iterations: The loops in the `split` and `merge` methods iterate over the elements of the deque `A` using the `size()` method, which has a time complexity of O(N) in the worst case.
+
+To optimize the code, we can take the following steps:
+
+1. Replace the deque and map in the `dat` structure with more efficient data structures.
+
+2. Optimize the `count` method to avoid redundant computations.
+
+3. Optimize the `split` and `merge` methods to avoid unnecessary loop iterations.
+
+4. Use compiler optimizations and pragmas to hint the compiler to optimize certain parts of the code.
+
+Now, let's go through each optimization step in detail.
+
+Step 1: Replace the deque and map
+The deque and map in the `dat` structure can be replaced with more efficient data structures. Since the `dat` structure is essentially a list of integers with fast insertion and deletion at arbitrary positions, we can replace the deque with a vector. The map can be replaced with a vector of pairs, where the first element of each pair represents the integer value and the second element represents the count of that value.
+
+Here is the optimized code block after replacing the deque and map:
+
+```cpp
+struct dat {
+  static int n;
+  vector<int> A;
+  vector<pair<int, int>> M;
+  dat* next = nullptr;
+
+  // ... rest of the code
+};
+```
+
+Step 2: Optimize the `count` method
+The `count` method currently iterates over the elements of the deque `A` multiple times to count the occurrences of a given value. This can be optimized by iterating over the vector `M` instead, which stores the unique elements and their counts.
+
+Here is the optimized `count` method:
+
+```cpp
+int count(int p, int x) const {
+  if (p > size()) {
+    int ans = 0;
+    for (const auto& pair : M) {
+      if (pair.first == x) {
+        ans += pair.second;
+      }
+    }
+    return ans + next->count(p - size(), x);
+  }
+
+  int ans = 0;
+  for (int i = 0; i < p; i++) {
+    if (A[i] == x) {
+      ans++;
+    }
+  }
+  return ans;
+}
+```
+
+Step 3: Optimize the `split` and `merge` methods
+The `split` and `merge` methods currently iterate over the elements of the deque `A` using the `size()` method, which has a time complexity of O(N) in the worst case. This can be optimized by keeping track of the size of the deque `A` separately and using it in the loop conditions.
+
+Here is the optimized `split` method:
+
+```cpp
+void split() {
+  if (A.size() < n << 1) {
+    return;
+  }
+  dat* tmp = new dat;
+  while (A.size() > n) {
+    tmp->push_front(pop_back());
+  }
+  tmp->next = next;
+  next = tmp;
+}
+
+```
+
+Here is the optimized `merge` method:
+
+```cpp
+void merge() {
+  if (next == nullptr || A.size() + next->A.size() > n) {
+    return;
+  }
+  dat* tmp = next;
+  while (next->A.size() > 0) {
+    push_back(tmp->pop_front());
+  }
+  next = tmp->next;
+  delete tmp;
+}
+```
+
+Step 4: Use compiler optimizations and pragmas
+To further optimize the code, we can use compiler optimizations and pragmas to hint the compiler to optimize certain parts of the code. For example, we can use the `__attribute__((optimize("unroll-loops")))` pragma to hint the compiler to unroll loops, which can improve performance in some cases.
+
+Here is the optimized code block with the pragma directive:
+
+```cpp
+int main() {
+  // ... code omitted for brevity
+
+#pragma GCC optimize("unroll-loops")
+  for (scanf("%d", &m); m > 0; m--) {
+    // ... rest of the code
+  }
+}
+```
+
+This pragma directive tells the GCC compiler to unroll loops, which can improve performance in some cases.
+
+Here is the complete optimized code:
+
+```cpp
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <vector>
+using namespace std;
+
+struct dat {
+  static int n;
+  vector<int> A;
+  vector<pair<int, int>> M;
+  dat* next = nullptr;
+
+  int count(int p, int x) const {
+    if (p > size()) {
+      int ans = 0;
+      for (const auto& pair : M) {
+        if (pair.first == x) {
+          ans += pair.second;
+        }
+      }
+      return ans + next->count(p - size(), x);
+    }
+
+    int ans = 0;
+    for (int i = 0; i < p; i++) {
+      if (A[i] == x) {
+        ans++;
+      }
+    }
+    return ans;
+  }
+
+  void insert(int p, int x) {
+    if (p > size()) {
+      next->insert(p - size(), x);
+      return;
+    }
+    A.insert(A.begin() + p, x);
+    bool found = false;
+    for (auto& pair : M) {
+      if (pair.first == x) {
+        pair.second++;
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      M.emplace_back(x, 1);
+    }
+    split();
+  }
+
+  int erase(int p) {
+    if (size() < p) {
+      return next->erase(p - size());
+    }
+    int x = A[p - 1];
+    A.erase(A.begin() + p - 1);
+    for (auto it = M.begin(); it != M.end(); ++it) {
+      if (it->first == x) {
+        it->second--;
+        if (it->second == 0) {
+          M.erase(it);
+        }
+        break;
+      }
+    }
+    merge();
+    return x;
+  }
+
+  void push_back(int x) {
+    A.push_back(x);
+    bool found = false;
+    for (auto& pair : M) {
+      if (pair.first == x) {
+        pair.second++;
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      M.emplace_back(x, 1);
+    }
+  }
+
+  void push_front(int x) {
+    A.insert(A.begin(), x);
+    bool found = false;
+    for (auto& pair : M) {
+      if (pair.first == x) {
+        pair.second++;
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      M.emplace_back(x, 1);
+    }
+  }
+
+  int pop_back() {
+    int x = A.back();
+    A.pop_back();
+    for (auto it = M.begin(); it != M.end(); ++it) {
+      if (it->first == x) {
+        it->second--;
+        if (it->second == 0) {
+          M.erase(it);
+        }
+        break;
+      }
+    }
+    return x;
+  }
+
+  int pop_front() {
+    int x = A.front();
+    A.erase(A.begin());
+    for (auto it = M.begin(); it != M.end(); ++it) {
+      if (it->first == x) {
+        it->second--;
+        if (it->second == 0) {
+          M.erase(it);
+        }
+        break;
+      }
+    }
+    return x;
+  }
+
+  int size() const { return A.size(); }
+
+  void split() {
+    if (A.size() < n << 1) {
+      return;
+    }
+    dat* tmp = new dat;
+    while (A.size() > n) {
+      tmp->push_front(pop_back());
+    }
+    tmp->next = next;
+    next = tmp;
+  }
+
+  void merge() {
+    if (next == nullptr || A.size() + next->A.size() > n) {
+      return;
+    }
+    dat* tmp = next;
+    while (next->A.size() > 0) {
+      push_back(tmp->pop_front());
+    }
+    next = tmp->next;
+    delete tmp;
+  }
+
+  void print() const {
+    for (int x : A) {
+      fprintf(stderr, "%3d", x);
+    }
+    if (next == nullptr) {
+      fprintf(stderr, "\n");
+    } else {
+      next->print();
+    }
+  }
+};
+
+int dat::n;
+
+int main() {
+  int n, m, last = 0;
+  scanf("%d", &n);
+  dat::n = ceil(sqrt(n << 2));
+  dat* D = new dat;
+  dat* cur = D;
+  for (int i = 0; i < n; i++) {
+    if (cur->size() >= dat::n) {
+      cur->next = new dat;
+      cur = cur->next;
+    }
+    int x;
+    scanf("%d", &x);
+    cur->push_back(x);
+  }
+#pragma GCC optimize("unroll-loops")
+  for (scanf("%d", &m); m > 0; m--) {
+    int op, l, r, k;
+    scanf("%d", &op);
+    scanf(op == 1 ? "%d%d" : "%d%d%d", &l, &r, &k);
+    l = (l + last - 1) % n + 1;
+    r = (r + last - 1) % n + 1;
+    k = (k + last - 1) % n + 1;
+    if (l > r) {
+      swap(l, r);
+    }
+    if (op == 1) {
+      D->insert(l - 1, D->erase(r));
+    } else {
+      l = D->count(l - 1, k);
+      r = D->count(r, k);
+      printf("%d\n", last = r - l);
+    }
+  }
+  return 0;
+}
+```
+
+This optimized code should improve the efficiency of the original program by using more efficient data structures, avoiding redundant computations, and optimizing loop iterations.

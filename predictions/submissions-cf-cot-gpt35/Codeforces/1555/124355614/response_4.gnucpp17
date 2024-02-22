@@ -1,0 +1,68 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <limits>
+
+using ll = long long;
+
+void makepush(std::vector<int>& t, std::vector<int>& push, int v, int tl, int tr) {
+  if (push[v] != 0) {
+    push[v * 2] += push[v];
+    push[v * 2 + 1] += push[v];
+    t[v * 2] += push[v];
+    t[v * 2 + 1] += push[v];
+    push[v] = 0;
+  }
+}
+
+void add(std::vector<int>& t, std::vector<int>& push, int v, int tl, int tr, int l, int r, int x) {
+  if (l > r)
+    return;
+  if (push[v] != 0)
+    makepush(t, push, v, tl, tr);
+  if (tl == l && tr == r) {
+    t[v] += x;
+    push[v] += x;
+    return;
+  }
+  int tm = (tl + tr) / 2;
+  add(t, push, v * 2, tl, tm, l, std::min(r, tm), x);
+  add(t, push, v * 2 + 1, tm + 1, tr, std::max(l, tm + 1), r, x);
+  t[v] = std::min(t[v * 2], t[v * 2 + 1]);
+}
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(nullptr);
+  std::cout.tie(nullptr);
+
+  int n, m;
+  std::cin >> n >> m;
+  std::vector<std::pair<int, std::pair<int, int>>> s;
+  for (int i = 0; i < n; i++) {
+    int l, r, w;
+    std::cin >> l >> r >> w;
+    s.push_back({ w, { l, r } });
+  }
+  std::sort(s.begin(), s.end(), [&](const std::pair<int, std::pair<int, int>>& x,
+                                     const std::pair<int, std::pair<int, int>>& y) {
+    return x.first < y.first;
+  });
+
+  std::vector<int> t(4 * m), push(4 * m);
+  int ptr = -1, ans = std::numeric_limits<int>::max();
+  for (int i = 0; i < n; i++) {
+    if (i > 0)
+      add(t, push, 1, 1, m, s[i - 1].second.first, s[i - 1].second.second - 1, -1);
+    while (ptr + 1 < n && t[1] == 0) {
+      ++ptr;
+      add(t, push, 1, 1, m, s[ptr].second.first, s[ptr].second.second, 1);
+    }
+    if (t[1] != 0)
+      ans = std::min(ans, s[ptr].first - s[i].first);
+  }
+
+  std::cout << ans;
+
+  return 0;
+}

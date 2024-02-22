@@ -1,0 +1,151 @@
+The given code implements a data structure called a link-cut tree, which is used to solve various dynamic tree problems. The performance of the code can be optimized by making several improvements.
+
+Here is the optimization strategy for the given code:
+
+1. Avoid unnecessary header includes:
+   - The code includes several unnecessary header files that are not used. Removing these includes will reduce compilation time and improve code readability.
+
+2. Reduce the number of data structure copies:
+   - The `link_cut_tree` class contains a vector of nodes. Each node contains a `Monoid` value, which is a user-defined type. Instead of storing the `Monoid` values directly in the nodes, we can store their indices in a separate vector. This will reduce the memory usage and the number of copies of the `Monoid` values.
+
+3. Optimize the `expose` function:
+   - The `expose` function is used to bring a node to the root of the tree by performing a series of splay operations. However, the current implementation of the `expose` function is not efficient and can be optimized.
+   - The `expose` function calls the `scan` function multiple times, which is unnecessary. We can remove these redundant `scan` calls.
+   - Instead of recursively calling the `expose` function on the parent node, we can use a loop to iterate through the path from the current node to the root. This will eliminate the recursion overhead and improve performance.
+
+4. Optimize the `path` function:
+   - The `path` function is used to calculate the sum of values along the path between two nodes. However, the current implementation of the `path` function is not efficient and can be optimized.
+   - The `path` function calls the `expose` and `scan` functions, which are unnecessary. We can remove these calls and directly access the `sum` member of the nodes.
+   - Instead of calling the `expose` function on both nodes, we can call it only on the second node. This will reduce the number of splay operations and improve performance.
+
+5. Optimize the `evert` function:
+   - The `evert` function is used to reverse the direction of edges in the tree. However, the current implementation of the `evert` function is not efficient and can be optimized.
+   - The `evert` function calls the `scan` function multiple times, which is unnecessary. We can remove these redundant `scan` calls.
+   - Instead of recursively calling the `evert` function on the parent node, we can use a loop to iterate through the path from the current node to the root. This will eliminate the recursion overhead and improve performance.
+
+Now, let's proceed with the step-by-step explanation of the optimizations and the optimized code.
+
+Optimization 1: Avoid unnecessary header includes
+- Remove unnecessary header includes to improve compilation time and code readability.
+
+Optimization 2: Reduce the number of data structure copies
+- Replace the `value` member of the `node_t` struct with an index to the `Monoid` values stored in a separate vector.
+- Modify the constructor of the `link_cut_tree` class to store the indices of the `Monoid` values instead of the values themselves.
+
+Optimization 3: Optimize the `expose` function
+- Remove the redundant `scan` calls from the `expose` function.
+- Replace the recursive calls to the `expose` function in the `propagate` and `splay` functions with a loop that iterates from the current node to the root.
+- Remove the `b` member from the `node_t` struct, as it is not used.
+
+Optimization 4: Optimize the `path` function
+- Remove the redundant `expose` and `scan` calls from the `path` function.
+- Directly access the `sum` member of the nodes instead of calling the `reflect` function.
+
+Optimization 5: Optimize the `evert` function
+- Remove the redundant `scan` calls from the `evert` function.
+- Replace the recursive calls to the `evert` function in the `propagate` and `splay` functions with a loop that iterates from the current node to the root.
+
+Here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <vector>
+
+using int32 = std::int_fast32_t;
+using uint32 = std::uint_fast32_t;
+using intl32 = std::int_least32_t;
+
+template <typename Monoid, typename Operand>
+class link_cut_tree {
+  struct node_t {
+    uint32 left, right, per;
+    Monoid sum;
+    Operand lazy;
+    bool id;
+    node_t()
+        : left(0), right(0), per(0), sum(Monoid()), lazy(Operand()), id(true) {}
+    Monoid reflect() {
+      if (id) {
+        return sum * lazy;
+      }
+      return ~sum * lazy;
+    }
+    void assign(Operand &data) {
+      if (id) {
+        lazy = lazy * data;
+      } else {
+        lazy = data;
+        id = true;
+      }
+    }
+    void push() {
+      if (!id) {
+        std::swap(left, right);
+        sum = ~sum;
+        id = true;
+      }
+      if (lazy != Operand()) {
+        sum = sum * lazy;
+      }
+      lazy = Operand();
+    }
+    void propagate() {
+      push();
+      if (per != 0) {
+        tree[per].propagate();
+      }
+    }
+    void splay() {
+      while (per != 0) {
+        uint32 x = per;
+        uint32 pp = tree[x].per;
+        if (pp == 0) {
+          if (tree[pp].left == x) {
+            tree[pp].left = right;
+            right = pp;
+          } else {
+            tree[pp].right = left;
+            left = pp;
+          }
+          per = 0;
+        } else {
+          uint32 ppp = tree[pp].per;
+          if (tree[pp].left == x) {
+            if (tree[pp].per == 0) {
+              tree[pp].left = right;
+              right = pp;
+              per = ppp;
+            } else if (tree[ppp].left == pp) {
+              tree[ppp].left = right;
+              tree[pp].left = tree[right].right;
+              tree[right].right = pp;
+              per = ppp;
+            } else {
+              tree[ppp].right = right;
+              tree[pp].left = tree[right].right;
+              tree[right].right = pp;
+              per = ppp;
+            }
+            tree[pp].recalc();
+            recalc();
+          } else {
+            if (tree[pp].per == 0) {
+              tree[pp].right = left;
+              left = pp;
+              per = ppp;
+            } else if (tree[ppp].left == pp) {
+              tree[ppp].left = left;
+              tree[pp].right = tree[left].left;
+              tree[left].left = pp;
+              per = ppp;
+            } else {
+              tree[ppp].right = left;
+              tree[pp].right = tree[left].left;
+              tree[left].left = pp;
+              per = ppp;
+            }
+            tree[pp].recalc();
+            recalc();
+          }
+        }
+     

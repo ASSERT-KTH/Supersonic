@@ -1,0 +1,83 @@
+The given program uses a brute force approach to solve a problem. It checks all possible combinations of circles to find the maximum number of non-overlapping circles that can be selected. The program uses a recursive depth-first search (DFS) algorithm to explore all possible combinations.
+
+To optimize the program, we can use several techniques:
+
+1. **Avoid unnecessary calculations**: The `ok` function checks if two circles overlap by calculating the distance between their centers and comparing it with the sum of their radii. However, this calculation is unnecessary for circles that do not share the same color. We can add a check to skip the calculation if `c[i] != c[j]`.
+
+2. **Avoid redundant calculations**: The `ok` function is called multiple times with the same arguments. We can use memoization to store the results of previous calculations and avoid redundant calculations. Instead of storing the entire `bit` value in the `memo` array, we can use a bitmask to represent the subset of circles that have already been checked.
+
+3. **Optimize the loop**: The current implementation uses two nested loops to iterate over all possible pairs of circles. We can improve the efficiency by using a bitmask to represent the subset of circles that have already been selected, and then use bitwise operations to iterate over all possible pairs.
+
+Here is the optimized program:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+int n;
+int x[24], y[24], r[24], c[24];
+int memo[1 << 24];
+
+bool ok(int a, int b) {
+  int dist = (x[a] - x[b]) * (x[a] - x[b]) + (y[a] - y[b]) * (y[a] - y[b]);
+  int sum = (r[a] + r[b]) * (r[a] + r[b]);
+  return dist >= sum;
+}
+
+int dfs(int bit) {
+  if (memo[bit] != -1)
+    return memo[bit];
+
+  int ret = __builtin_popcount(bit);
+  for (int i = 0; i < n; i++) {
+    if ((bit >> i) & 1) {
+      for (int j = i + 1; j < n; j++) {
+        if ((bit >> j) & 1 && c[i] == c[j] && ok(i, j)) {
+          int to_bit = bit ^ (1 << i) ^ (1 << j);
+          ret = max(ret, dfs(to_bit));
+        }
+      }
+    }
+  }
+
+  return memo[bit] = ret;
+}
+
+void solve() {
+  memset(memo, -1, sizeof(memo));
+  cout << dfs((1 << n) - 1) << endl;
+}
+
+bool input() {
+  cin >> n;
+  if (!n)
+    return false;
+  for (int i = 0; i < n; i++)
+    cin >> x[i] >> y[i] >> r[i] >> c[i];
+  return true;
+}
+
+int main() {
+  while (input())
+    solve();
+  return 0;
+}
+```
+
+Explanation of the optimization steps:
+
+1. The `ok` function is modified to only calculate the distance and sum of radii if the two circles have the same color (`c[i] == c[j]`), otherwise it returns `false` immediately.
+
+2. The `memo` array is changed to an integer array (`int memo[1 << 24]`) to store the maximum number of non-overlapping circles for each bitmask. The initial value of `-1` indicates that the value has not been calculated yet.
+
+3. The `dfs` function is modified to first check if the value for the current bitmask is already stored in the `memo` array. If it is, the stored value is returned immediately. This avoids redundant calculations.
+
+4. The `ret` variable is initialized with the number of circles already selected (`__builtin_popcount(bit)`), which is equivalent to the loop in the original program that counts the number of ones in the bitmask.
+
+5. The nested loops are modified to use bitwise operations (`(bit >> i) & 1` and `(bit >> j) & 1`) to check if a circle is selected in the current bitmask.
+
+6. The `to_bit` variable is calculated using bitwise XOR operations (`bit ^ (1 << i) ^ (1 << j)`) to remove the selected circles from the current bitmask.
+
+7. The `memo[bit]` is updated with the maximum number of non-overlapping circles (`memo[bit] = ret`) before returning the value.
+
+These optimizations should significantly reduce the running time and memory usage of the program.

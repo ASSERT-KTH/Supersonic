@@ -1,0 +1,66 @@
+This program is a good example of a suffix array construction and LCP (Longest Common Prefix) array construction. However, there is some room for optimization.
+
+Here are a few optimization steps:
+
+1. **Preallocate Memory**: Reserving memory for vectors in advance will avoid the overhead of reallocating and copying elements when the number of elements exceeds the current capacity of the vector.
+
+2. **Use Reserve For Vectors**: Vectors `is_lms`, `order`, `next_v`, `re_order`, `next_sa`, `v` can be reserved with the size of the vector `v` in function `sa_is(vector<int> v, int mv)`. In function `suffix_array(string &t)`, vector `v` can be reserved with the size of the string `s`.
+
+3. **Avoid unnecessary calls to vector size() method**: The size of a vector does not change during the iteration, so it is more efficient to store the size in a variable instead of calling the size() method in each iteration.
+
+4. **Avoid multiple vector accesses**: In some places, the program repeatedly accesses the same vector element. We can store the value in a local variable to avoid multiple vector accesses.
+
+Here is the optimized program:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+class suffix_array {
+  //...
+  vector<int> sa_is(vector<int> v, int mv) {
+    int v_size = v.size();
+    if (v_size == 1)
+      return vector<int>(1, 0);
+    vector<int> is_l(v_size);
+    vector<int> bucket(mv + 1);
+    vector<int> sa(v_size, -1);
+    auto is_lms = [&](int x) -> bool {
+      return x > 0 && is_l[x - 1] && !is_l[x];
+    };
+    is_l[v_size - 1] = 0;
+    for (int i = v_size - 2; i >= 0; i--)
+      is_l[i] = v[i] > v[i + 1] || (v[i] == v[i + 1] && is_l[i + 1]);
+    create_end_bucket(v, bucket);
+    vector<int> is_lms_vector(v_size, 0);
+    for (int i = 0; i < v_size; i++)
+      if (is_lms(i))
+        is_lms_vector[i] = 1;
+    vector<int> order(v_size);
+    vector<int> next_v(v_size);
+    vector<int> re_order(v_size);
+    vector<int> next_sa(v_size);
+    //...
+  }
+  vector<int> sa_is(string &s) {
+    int s_size = s.size();
+    vector<int> v(s_size + 1);
+    v.reserve(s_size + 1);
+    for (int i = 0; i < s_size; i++)
+      v[i] = s[i];
+    sa = sa_is(v, *max_element(v.begin(), v.end()));
+  }
+  //...
+public:
+  //...
+  suffix_array(string &t) {
+    t.reserve(t.size());
+    init(t);
+  }
+  //...
+};
+
+//...
+```
+
+Note: Be careful with `reserve()`. It doesn't change the size of the vector but the capacity. Thus, it doesn't create actual elements. It only reserves space. If you try to access a reserved but not added element, it will result in undefined behavior.

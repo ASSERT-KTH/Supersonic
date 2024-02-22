@@ -1,0 +1,12 @@
+The given code is a simple program that reads a number 'n' from the user and then reads 'n' pairs of strings: a command ('i' or 'q') and a word. 
+If the command is 'i', it inserts the word into a map. If the command is 'q', it checks if the word exists in the map and prints "yes" or "no" accordingly.
+
+To optimize this code, we can focus on the following areas:
+
+1. Reduce memory usage: The current implementation uses a `map` to store the words. However, since we only need to check the existence of words, we can use a more memory-efficient data structure like a `set`. A `set` stores unique elements in a sorted order, which is suitable for our use case.
+
+2. Improve lookup time: The `map` data structure has a lookup time complexity of O(log n), but a `set` has a lookup time complexity of O(1). By using a `set`, we can significantly improve the lookup time.
+
+3. Avoid unnecessary string copying: The current implementation reads the command and word into separate string variables. However, we can directly read them into a pair of `char` arrays to avoid unnecessary string copying.
+
+4. Optimize input/output operations: The current implementation uses the `cin` and `cout` for input/output operations. These operations can be slow, especially when reading large inputs or printing large outputs. To optimize this, we can use the `scanf` and `printf` functions from the C standard library, which are generally faster.

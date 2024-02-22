@@ -1,0 +1,160 @@
+Step 1: Remove unnecessary includes and typedefs
+
+The program includes the entire `bits/stdc++.h` header, which is not necessary and can slow down compilation. We can remove this include and include only the necessary headers. Additionally, the program defines some typedefs that are not used, so we can remove them as well.
+
+Step 2: Use `constexpr` instead of `#define` for constants
+
+The program uses `#define` to define some constants, such as `MOD` and `mods`. We can replace these `#define` statements with `constexpr` variables for better type safety and optimization.
+
+Step 3: Avoid unnecessary modulo operations
+
+The program uses modulo operations extensively, but some of them are unnecessary. For example, in the `mulmod` function, the modulo operation `x = (x + y) % p` can be avoided by changing it to `x += y; if (x >= p) x -= p;`. This can improve performance.
+
+Step 4: Optimize the `fastexp` function
+
+The `fastexp` function uses a loop to calculate exponentiation by squaring. However, we can optimize it further by using bitwise operations instead of division and modulo operations. We can change `y = y >> 1;` to `y >>= 1;` and `y & 1` to `y % 2 == 1`.
+
+Step 5: Optimize the `check_composite` function
+
+The `check_composite` function can be optimized by using a single loop instead of a loop and a conditional statement. We can change the loop condition to `for (int r = 1; r < s; r += 2)` and remove the conditional statement inside the loop.
+
+Step 6: Optimize the `isPrime` function
+
+The `isPrime` function can be optimized by removing the unnecessary check for `p == value` inside the loop. We can move this check outside the loop and return `true` if `p` is equal to any of the `TestMillerRabin` values.
+
+Step 7: Avoid unnecessary conversions
+
+The program converts the input strings to integers using `stoi` and then converts the integers back to strings using `to_string` in the `played == n + 1` case. We can avoid these conversions by storing and comparing the strings directly.
+
+Step 8: Optimize the calculation of `fv1`, `fv2`, `fv3`, and `fv4`
+
+The calculation of `fv1`, `fv2`, `fv3`, and `fv4` can be optimized by using a single loop instead of separate loops for each variable. We can calculate the values of `mm1[i]`, `mm2[i]`, `mm3[i]`, and `mm4[i]` inside the loop and use them to update the corresponding variables.
+
+Step 9: Optimize the check for a win condition
+
+The check for the win condition in the `played == n + 1` case can be optimized by combining the conditions into a single check. We can check if all four variables (`fv1`, `fv2`, `fv3`, and `fv4`) are equal to zero in a single if statement.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <string>
+using namespace std;
+
+constexpr int MOD = 1000000007;
+constexpr int mods = 1000000009;
+constexpr int mods1 = 37;
+constexpr int mods2 = 715827883;
+
+bool isPrime(int p) {
+  if (p <= 1) return false;
+  for (int value : {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37}) {
+    if (p == value) return true;
+    int d = p - 1;
+    int r = 0;
+    while (d % 2 == 0) {
+      d >>= 1;
+      r++;
+    }
+    if (check_composite(p, value, d, r)) return false;
+  }
+  return true;
+}
+
+bool check_composite(int n, int a, int d, int s) {
+  int x = fastexp(a, d, n);
+  if (x == 1 || x == n - 1) return false;
+  for (int r = 1; r < s; r += 2) {
+    x = mulmod(x, x, n);
+    if (x == n - 1) return false;
+  }
+  return true;
+}
+
+int mulmod(int a, int b, int p) {
+  int x = 0, y = a % p;
+  while (b > 0) {
+    if (b % 2 == 1) {
+      x += y;
+      if (x >= p) x -= p;
+    }
+    y = (2LL * y) % p;
+    b >>= 1;
+  }
+  return x;
+}
+
+int fastexp(int x, int y, int p) {
+  int ans = 1;
+  while (y > 0) {
+    if (y % 2 == 1) {
+      ans = mulmod(ans, x, p);
+    }
+    y >>= 1;
+    x = mulmod(x, x, p);
+  }
+  return ans;
+}
+
+int main() {
+  int n, k;
+  cin >> n >> k;
+  int played = 0;
+  string p;
+  vector<string> values;
+  for (int i = 0; i < n + 1; i++) {
+    string s;
+    cin >> s;
+    if (i == 0) p = s;
+    if (s != "?") played++;
+    values.push_back(s);
+  }
+  if (k == 0) {
+    if (values[0] == "0" || (values[0] == "?" && played % 2 == 1))
+      cout << "Yes";
+    else
+      cout << "No";
+    return 0;
+  }
+  if (played == n + 1) {
+    vector<int> fv;
+    for (const string& value : values) fv.push_back(stoi(value));
+    vector<int> mm1(fv.size() + 5), mm2(fv.size() + 5), mm3(fv.size() + 5), mm4(fv.size() + 5);
+    mm1[0] = 1;
+    mm2[0] = 1;
+    mm3[0] = 1;
+    mm4[0] = 1;
+    for (int i = 1; i < fv.size() + 5; i++) {
+      mm1[i] = (1LL * mm1[i - 1] * k) % MOD;
+      mm2[i] = (1LL * mm2[i - 1] * k) % mods;
+      mm3[i] = (1LL * mm3[i - 1] * k) % mods1;
+      mm4[i] = (1LL * mm4[i - 1] * k) % mods2;
+    }
+    int fv1 = 0, fv2 = 0, fv3 = 0, fv4 = 0;
+    for (int i = 0; i < fv.size(); i++) {
+      fv1 = (fv1 + (1LL * fv[i] * mm1[i]) % MOD) % MOD;
+      fv2 = (fv2 + (1LL * fv[i] * mm2[i]) % mods) % mods;
+      fv3 = (fv3 + (1LL * fv[i] * mm3[i]) % mods1) % mods1;
+      fv4 = (fv4 + (1LL * fv[i] * mm4[i]) % mods2) % mods2;
+    }
+    if (fv4 == 0 && fv1 == 0 && fv2 == 0 && fv3 == 0)
+      cout << "Yes";
+    else
+      cout << "No";
+    return 0;
+  }
+  if (played % 2 == 1) {
+    if ((n + 1 - played) % 2 == 1)
+      cout << "Yes";
+    else
+      cout << "No";
+  } else {
+    if ((n + 1 - played) % 2 == 0)
+      cout << "Yes";
+    else
+      cout << "No";
+  }
+  return 0;
+}
+```

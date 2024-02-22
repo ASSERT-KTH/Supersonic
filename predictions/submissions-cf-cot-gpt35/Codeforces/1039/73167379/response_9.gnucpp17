@@ -1,0 +1,113 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cmath>
+
+using namespace std;
+
+const int MAXN = 400002;
+
+int a;
+vector<int> l[MAXN], gd, bd;
+int sz[MAXN], good[MAXN], o[MAXN];
+
+int findCentroid(int v, int p) {
+    int MX = 0, num = -1;
+    for (int h : l[v]) {
+        if (h != p && sz[h] > MX) {
+            MX = sz[h];
+            num = h;
+        }
+    }
+    return MX > a / 2 ? findCentroid(num, v) : v;
+}
+
+void dfs(int v, int p, int D) {
+    sz[v] = 1;
+    for (int h : l[v]) {
+        if (h == p) {
+            continue;
+        }
+        dfs(h, v, D + 1);
+        sz[v] += sz[h];
+    }
+    good[v] = sz[v] <= a / 2;
+}
+
+int countNodes(int v, int p) {
+    int cnt = 1;
+    for (int h : l[v]) {
+        if (h != p && good[h]) {
+            cnt += countNodes(h, v);
+        }
+    }
+    return cnt;
+}
+
+void decompose(int v, int p) {
+    if (good[v]) {
+        gd.push_back(v);
+    } else {
+        bd.push_back(v);
+    }
+    for (int h : l[v]) {
+        if (!good[h]) {
+            decompose(h, v);
+        }
+    }
+}
+
+void solve() {
+    cin >> a;
+
+    for (int q = 1; q <= a; q++) {
+        l[q].clear();
+    }
+
+    for (int q = 0; q < a - 1; q++) {
+        int x, y;
+        cin >> x >> y;
+        l[x].push_back(y);
+        l[y].push_back(x);
+    }
+
+    dfs(1, -1, 1);
+    int centroid = findCentroid(1, -1);
+
+    decompose(centroid, -1);
+    reverse(bd.begin(), bd.end());
+
+    int diam = countNodes(centroid, -1);
+    o[1] = a;
+    o[diam] = 1;
+
+    for (int i = 2; i <= min(a - 1, static_cast<int>(sqrt(a * log2(a)) / 2)); i++) {
+        o[i] = countNodes(centroid, i);
+    }
+
+    for (int i = 2; i <= a; i++) {
+        if (o[i] == 0) {
+            int j = i + i;
+            while (j <= a) {
+                if (o[j] == 0) {
+                    o[j] = i;
+                }
+                j += i;
+            }
+        }
+    }
+
+    for (int i = 1; i <= a; i++) {
+        cout << max(0, o[i]) << "\n";
+    }
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(nullptr);
+    cout.tie(nullptr);
+
+    solve();
+
+    return 0;
+}

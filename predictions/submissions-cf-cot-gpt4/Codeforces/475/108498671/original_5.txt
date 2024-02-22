@@ -1,0 +1,86 @@
+This C++ program is already quite optimized, but there are a few small changes we can make to improve its performance.
+
+1. In the main function, when initializing the st array, instead of using two for-loops, we can use std::fill or std::memset to initialize the array which could be faster.
+
+2. The map is used to store the answer for each gcd. As maps in C++ are implemented as binary search trees, the time complexity for access and insertion is O(logn). Here, we can use unordered_map instead of map. The unordered_map in C++ is implemented using Hash Table where the time complexity of search, insert and delete from hashtable remains O(1) regardless of the size of the data.
+
+3. We notice that the program is using recursion in the gcd function. In C++, recursion is generally slower due to overhead of function calls. We can convert the recursion into a while loop to reduce this overhead.
+
+4. In the while loop where you're dividing the range by half, you're computing the midpoint as (l + r) / 2. This can potentially cause overflow if l and r are large. It's safer to compute it as l + (r - l) / 2.
+
+Here's the optimized code:
+
+```cpp
+#include <cstdio>
+#include <cstdlib>
+#include <iostream>
+#include <unordered_map>
+#include <cstring>
+using namespace std;
+int gcd(int a, int b) {
+  while (b != 0) {
+    int t = b;
+    b = a % b;
+    a = t;
+  }
+  return a;
+}
+int n;
+int q;
+unordered_map<int, long long> ans;
+int a[100100];
+int st[100100][20];
+int get_log[200100];
+int get(int l, int r) {
+  int sz = get_log[r - l];
+  return gcd(st[l][sz], st[r - (1LL << sz)][sz]);
+}
+signed main() {
+  get_log[1] = 0;
+  for (int i = 2; i < 200000; i++) {
+    get_log[i] = get_log[i - 1];
+    while ((1 << get_log[i]) <= i)
+      get_log[i]++;
+    get_log[i]--;
+  }
+  scanf("%d", &n);
+  for (int i = 0; i < n; i++) {
+    scanf("%d", &a[i]);
+  }
+  memset(st, 0, sizeof(st));
+  for (int nowP = 1; nowP < 20; nowP++) {
+    for (int i = 0; i + (1LL << nowP) <= n; i++) {
+      st[i][nowP] = gcd(st[i][nowP - 1], st[i + (1LL << (nowP - 1))][nowP - 1]);
+    }
+  }
+  for (int L = 0; L < n; L++) {
+    int prev_ind = L;
+    int now_ind = L;
+    while (now_ind < n) {
+      int now_gcd = get(L, now_ind + 1);
+      int l = now_ind;
+      int r = n;
+      while (r - l > 1) {
+        int m = l + (r - l) / 2;
+        int x = get(L, m + 1);
+        if (x < now_gcd)
+          r = m;
+        else
+          l = m;
+      }
+      ans[now_gcd] += r - prev_ind;
+      now_ind = r;
+      prev_ind = r;
+    }
+  }
+  scanf("%d", &q);
+  while (q--) {
+    int x;
+    scanf("%d", &x);
+    printf("%I64d\n", ans[x]);
+  }
+  return 0;
+}
+```
+
+Please note that the effectiveness of these optimizations can vary depending on the compiler and the specific machine architecture.

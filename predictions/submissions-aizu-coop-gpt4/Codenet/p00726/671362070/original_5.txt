@@ -1,0 +1,90 @@
+Firstly, let's analyze the provided code to understand its functionality and identify potential areas for optimization.
+
+The program seems to read an encoded string and an integer from standard input. The encoding appears to be a run-length encoding with nested encodings possible. It then expands the encoding and outputs the nth character in the expanded string. If the expanded string has fewer than n characters, it outputs '0'. The encoding expansion is done recursively.
+
+Here are some areas of potential optimization:
+
+1. The code calls `std::atoi(str.substr(i, j).c_str());` to convert a substring into a number. This is inefficient because it creates a temporary substring and then another temporary C-style string. 
+
+2. The code also calls `expand(str.substr(s, e));` recursively, which creates a new temporary string each time. 
+
+3. The `cket` function is used to find the matching closed parenthesis for a given open parenthesis, which is done in linear time.
+
+4. The code uses the variable `n` both as a global variable and as a local variable in `main()`. This is not a performance issue, but it can lead to bugs and code that is difficult to understand and maintain.
+
+Optimization Strategy:
+
+1. Replace the conversion of substrings to integers with a function that directly converts a portion of the string to an integer without creating temporary strings.
+
+2. Replace the recursive call to `expand()` with an iterative approach to avoid creating temporary strings.
+
+3. Use a stack to match parentheses in constant time.
+
+4. Eliminate the global variable `n` and pass it as a parameter where necessary.
+
+Now let's implement these optimizations in the code. Here is the optimized version of the code:
+
+```cpp
+#include <cstdlib>
+#include <iostream>
+#include <string>
+#include <stack>
+
+int str_to_int(const std::string &str, int start, int length) {
+  int result = 0;
+  for (int i = start; i < start + length; ++i) {
+    result = result * 10 + (str[i] - '0');
+  }
+  return result;
+}
+
+char expand(const std::string &str, int &n, std::stack<int> &brackets) {
+  for (int i = 0; i < str.size(); ++i) {
+    if (isdigit(str[i])) {
+      int j = 1;
+      while (isdigit(str[i + j]))
+        j++;
+      int num = str_to_int(str, i, j);
+
+      if (str[i + j] == '(') {
+        brackets.push(i + j);
+        i += j;
+      } else {
+        for (int l = 0; l < num; ++l) {
+          if (n == 0) {
+            return str[i + j];
+          }
+          n--;
+        }
+        i += j;
+      }
+    } else if (str[i] == ')') {
+      if (!brackets.empty()) {
+        int start = brackets.top();
+        brackets.pop();
+        i = start;
+      }
+    } else {
+      if (n == 0) {
+        return str[i];
+      }
+      n--;
+    }
+  }
+  return '0';
+}
+
+int main(void) {
+  while (true) {
+    std::string str;
+    int n;
+    std::cin >> str >> n;
+    if (str == "0" && n == 0)
+      break;
+    std::stack<int> brackets;
+    std::cout << expand(str, n, brackets) << std::endl;
+  }
+  return 0;
+}
+```
+In this code, `str_to_int` function is used to directly convert a portion of a string into an integer, without creating temporary strings. The recursion in the `expand` function is replaced by an iterative approach, using a stack to remember the start of each bracketed section. The global variable `n` is eliminated, and it is instead passed as a parameter to the `expand` function.

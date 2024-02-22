@@ -1,0 +1,140 @@
+#include <iostream>
+#include <vector>
+using namespace std;
+
+struct Node {
+    int sz;
+    int sm, ma;
+};
+
+struct Tree {
+    typedef Tree* NP;
+    NP l, r;
+    Node n;
+
+    Tree() {}
+
+    Tree(int sz, int hev[], int hevsm[], int data[]) : n({sz, hevsm[sz], hevsm[sz]}) {
+        if (sz == 1) {
+            lzdata(data[0]);
+            return;
+        }
+        int sm = hevsm[sz] - hevsm[0];
+        int md = lower_bound(hevsm, hevsm + sz - 1, sm / 2 + hevsm[0]) - hevsm;
+        if (md <= 200200)
+            md = sz / 2;
+        l = new Tree(md, hev, hevsm, data);
+        r = new Tree(sz - md, hev + md, hevsm + md, data + md);
+        n.ma = max({l->n.ma, r->n.ma, l->n.sm + r->n.sm});
+        n.sm = l->n.sm + r->n.sm;
+    }
+
+    void lzdata(int d) {
+        n.ma = n.sm = d * n.sz;
+    }
+
+    void push() {
+        if (n.sz == 1)
+            return;
+        if (n.lzf) {
+            l->lzdata(n.lz);
+            r->lzdata(n.lz);
+            n.lzf = false;
+        }
+    }
+
+    static Node merge(const Node& l, const Node& r) {
+        return {l.sz + r.sz, l.sm + r.sm, max({l.ma, r.ma, l.sm + r.sm})};
+    }
+
+    void set(int a, int b, int x) {
+        if (b <= 0 || n.sz <= a) {
+            return;
+        }
+        push();
+        if (a <= 0 && n.sz <= b) {
+            lzdata(x);
+            return;
+        }
+        l->set(a, b, x);
+        r->set(a - l->n.sz, b - l->n.sz, x);
+        n = merge(l->n, r->n);
+    }
+
+    Node get(int a, int b) {
+        if (b <= 0 || n.sz <= a) {
+            return {0, 0, 0};
+        }
+        push();
+        if (a <= 0 && n.sz <= b) {
+            return n;
+        }
+        return merge(l->get(a, b), r->get(a - l->n.sz, b - l->n.sz));
+    }
+};
+
+struct HLComp_Y {
+    vector<int> g[220100];
+    int sz[220100];
+    int data[220100];
+    Tree* li[220100];
+    int buf[220100];
+    int bufsm[220100];
+    int bufdata[220100];
+
+    void dfs_sz(int p, int b) {
+        sz[p] = 1;
+        for (int d : g[p]) {
+            if (d == b)
+                continue;
+            dfs_sz(d, p);
+            sz[p] += sz[d];
+        }
+    }
+
+    void dfs(int p, int b, int& lc, int& nc) {
+        if (g[p].size() == (b == -1 ? 0 : 1)) {
+            buf[nc] = 1;
+            bufdata[nc] = data[p];
+            bufsm[nc + 1] = bufsm[nc] + buf[nc];
+            li[lc] = new Tree(nc + 1, buf, bufsm, bufdata);
+            return;
+        }
+        int ma = -1, md = -1;
+        for (int d : g[p]) {
+            if (d == b)
+                continue;
+            if (ma < sz[d]) {
+                ma = sz[d];
+                md = d;
+            }
+        }
+        buf[nc] = sz[p] - sz[md];
+        bufdata[nc] = data[p];
+        bufsm[nc + 1] = bufsm[nc] + buf[nc];
+        nc++;
+        dfs(md, p, lc, nc);
+        for (int d : g[p]) {
+            if (d == b)
+                continue;
+            if (d == md)
+                continue;
+            lc++;
+            nc = 0;
+            dfs(d, p, lc, nc);
+        }
+    }
+
+    void init() {
+        bufsm[0] = 0;
+        int lc = 0, nc = 0;
+        dfs_sz(0, -1);
+        dfs(0, -1, lc, nc);
+    }
+
+    int lca_line(int u, int v) {
+        int xl = n2l[u].first;
+        int yl = n2l[v].first;
+        if (ldps[xl] < ldps[yl])
+            swap(xl, yl);
+        while (ldps[xl] > ldps[yl]) {

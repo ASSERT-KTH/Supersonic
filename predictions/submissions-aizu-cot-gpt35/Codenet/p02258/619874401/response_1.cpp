@@ -1,0 +1,19 @@
+#include <algorithm>
+#include <iostream>
+using namespace std;
+static const int MAX = 200000;
+int main() {
+  int R[MAX], n;
+  cin >> n;
+  for (int i = 0; i < n; i++)
+    cin >> R[i];
+  int maxv = R[1] - R[0];
+  int minv = R[0];
+  for (int i = 1; i < n; i++) {
+    int diff = R[i] - minv;
+    maxv = max(maxv, diff);
+    minv = min(minv, R[i]);
+  }
+  cout << maxv << endl;
+  return 0;
+}

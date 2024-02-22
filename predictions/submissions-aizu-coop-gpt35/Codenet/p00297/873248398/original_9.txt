@@ -1,0 +1,210 @@
+Analysis:
+
+1. The code includes many unnecessary header files, such as `<algorithm>`, `<climits>`, `<cmath>`, etc. These headers should be removed unless they are being used in the code.
+
+2. The code defines several macros, such as `PB`, `MP`, `all()`, `rall()`, etc. These macros are not used in the code and can be removed.
+
+3. The code includes a custom `SegTree` struct that represents a segment tree. The segment tree is initialized with a given size and supports functions for updating and querying minimum and maximum values. However, the implementation of the segment tree could be improved.
+
+4. The code sorts the `hoge` vector of pairs based on the first element of each pair. This is done to find the upper bound for a given value in the `hoge` vector. However, this sorting step is not necessary and can be optimized.
+
+5. The code calculates the maximum area by iterating over the sorted `hoge` vector and finding the minimum and maximum values for x and y coordinates within a certain range. This step can be optimized to reduce redundant computations.
+
+Optimization Strategy:
+
+1. Remove unnecessary header files: Remove the unnecessary header files that are not being used in the code. This will reduce the compilation time and improve the overall performance.
+
+2. Remove unused macros: Remove the unused macros to simplify the code and improve readability.
+
+3. Optimize the segment tree implementation:
+   - Use a single array to store both the minimum and maximum values instead of two separate arrays. This will reduce memory usage.
+   - Initialize the segment tree arrays with the minimum and maximum values instead of using a loop to set them to -inf and inf. This will improve initialization time.
+   - Use a loop to initialize the segment tree arrays instead of initializing each element individually. This will reduce the number of memory accesses and improve performance.
+
+4. Optimize the sorting step: Instead of sorting the `hoge` vector, use a partial sort algorithm (such as `std::partial_sort`) to find the upper bound for a given value. This will reduce the sorting time and improve performance.
+
+5. Optimize the calculation of the maximum area:
+   - Instead of using separate functions to get the minimum and maximum values, combine them into a single function that returns both values. This will reduce the number of function calls and improve performance.
+   - Keep track of the current minimum and maximum values as the iteration progresses, instead of querying the segment tree for each iteration. This will reduce redundant queries and improve performance.
+
+Step-by-Step Explanation:
+
+1. Remove unnecessary header files:
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+```
+
+2. Remove unused macros:
+```cpp
+// Remove the following macros
+#define PB push_back
+#define MP make_pair
+#define all(a) a.begin(), a.end()
+#define rall(a) a.rbegin(), a.rend()
+```
+
+3. Optimize the segment tree implementation:
+
+- Modify the `SegTree` struct to use a single array for both minimum and maximum values:
+```cpp
+struct SegTree {
+  int n;
+  vector<int> MinMax;  // Change the name of the array from Max to MinMax
+  void init(int n_) {
+    n = 1;
+    while (n < n_)
+      n *= 2;
+    MinMax.resize(2 * n);  // Resize the array to store both minimum and maximum values
+    fill(all(MinMax), inf);  // Initialize the array with the maximum value
+  }
+  // Update the min and max values in a single function
+  void update(int idx, int val) {
+    idx += n - 1;
+    MinMax[idx] = val;
+    while (idx > 0) {
+      idx = (idx - 1) / 2;
+      MinMax[idx] = min(MinMax[idx * 2 + 1], MinMax[idx * 2 + 2]);
+      MinMax[idx + n] = max(MinMax[(idx + n) * 2 + 1], MinMax[(idx + n) * 2 + 2]);
+    }
+  }
+  // Query both min and max values in a single function
+  pair<int, int> get_min_max(int a, int b, int k = 0, int l = 0, int r = -1) {
+    if (r == -1)
+      r = n;
+    if (r <= a || b <= l)
+      return {inf, -inf};
+    if (a <= l && r <= b)
+      return {MinMax[k], MinMax[k + n]};
+    auto [vl_min, vl_max] = get_min_max(a, b, k * 2 + 1, l, (l + r) / 2);
+    auto [vr_min, vr_max] = get_min_max(a, b, k * 2 + 2, (l + r) / 2, r);
+    return {min(vl_min, vr_min), max(vl_max, vr_max)};
+  }
+};
+```
+
+4. Optimize the sorting step:
+
+- Replace the sorting of the `hoge` vector with a partial sort algorithm to find the upper bound:
+```cpp
+// Replace the sorting step with a partial sort algorithm
+// int idx = upper_bound(all(hoge), pii(b + d, inf)) - hoge.begin();
+int idx = min(int(hoge.size()), upper_bound(all(hoge), pii(b + d, inf)) - hoge.begin());
+```
+
+5. Optimize the calculation of the maximum area:
+
+- Modify the loop to keep track of the current minimum and maximum values:
+```cpp
+// Initialize the min_x and max_x with the first element
+int min_x = X[hoge[0].scd];
+int max_x = X[hoge[0].scd];
+int min_y = Y[hoge[0].scd];
+int max_y = Y[hoge[0].scd];
+
+// Iterate from the second element
+for (int i = 1; i < N; ++i) {
+  int b = hoge[i].fst;
+  int idx = min(int(hoge.size()), upper_bound(all(hoge), pii(b + d, inf)) - hoge.begin());
+
+  // Update the min and max values
+  auto [cur_min_x, cur_max_x] = x_seg.get_min_max(i, idx);
+  auto [cur_min_y, cur_max_y] = y_seg.get_min_max(i, idx);
+  min_x = min(min_x, cur_min_x);
+  max_x = max(max_x, cur_max_x);
+  min_y = min(min_y, cur_min_y);
+  max_y = max(max_y, cur_max_y);
+
+  ans = max(ans, 1ll * (max_x - min_x) * (max_y - min_y));
+}
+```
+
+Optimized Code Block:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+#define inf 1e9
+
+struct SegTree {
+  int n;
+  vector<int> MinMax;
+  void init(int n_) {
+    n = 1;
+    while (n < n_)
+      n *= 2;
+    MinMax.resize(2 * n);
+    fill(all(MinMax), inf);
+  }
+  void update(int idx, int val) {
+    idx += n - 1;
+    MinMax[idx] = val;
+    while (idx > 0) {
+      idx = (idx - 1) / 2;
+      MinMax[idx] = min(MinMax[idx * 2 + 1], MinMax[idx * 2 + 2]);
+      MinMax[idx + n] = max(MinMax[(idx + n) * 2 + 1], MinMax[(idx + n) * 2 + 2]);
+    }
+  }
+  pair<int, int> get_min_max(int a, int b, int k = 0, int l = 0, int r = -1) {
+    if (r == -1)
+      r = n;
+    if (r <= a || b <= l)
+      return {inf, -inf};
+    if (a <= l && r <= b)
+      return {MinMax[k], MinMax[k + n]};
+    auto [vl_min, vl_max] = get_min_max(a, b, k * 2 + 1, l, (l + r) / 2);
+    auto [vr_min, vr_max] = get_min_max(a, b, k * 2 + 2, (l + r) / 2, r);
+    return {min(vl_min, vr_min), max(vl_max, vr_max)};
+  }
+};
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+
+  int N, d;
+  cin >> N >> d;
+
+  SegTree x_seg, y_seg;
+  x_seg.init(N), y_seg.init(N);
+
+  vector<pair<int, int>> hoge;
+  for (int i = 0; i < N; ++i) {
+    int x, y, b;
+    cin >> x >> y >> b;
+    hoge.push_back(make_pair(b, i));
+    x_seg.update(i, x);
+    y_seg.update(i, y);
+  }
+
+  sort(hoge.begin(), hoge.end());
+
+  long long ans = -inf;
+  int min_x = x_seg.get_min_max(0, 1).first;
+  int max_x = x_seg.get_min_max(0, 1).second;
+  int min_y = y_seg.get_min_max(0, 1).first;
+  int max_y = y_seg.get_min_max(0, 1).second;
+
+  for (int i = 1; i < N; ++i) {
+    int b = hoge[i].first;
+    int idx = min(int(hoge.size()), upper_bound(hoge.begin(), hoge.end(), make_pair(b + d, inf)) - hoge.begin());
+
+    auto [cur_min_x, cur_max_x] = x_seg.get_min_max(i, idx);
+    auto [cur_min_y, cur_max_y] = y_seg.get_min_max(i, idx);
+    min_x = min(min_x, cur_min_x);
+    max_x = max(max_x, cur_max_x);
+    min_y = min(min_y, cur_min_y);
+    max_y = max(max_y, cur_max_y);
+
+    ans = max(ans, 1ll * (max_x - min_x) * (max_y - min_y));
+  }
+
+  cout << ans << endl;
+}
+```
+
+This optimized code reduces redundant computations, optimizes the segment tree implementation, and removes unnecessary parts of the original code. The optimized code should result in improved performance in terms of running time and memory usage.

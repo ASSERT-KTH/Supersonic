@@ -1,0 +1,103 @@
+The given C++ program performs a search algorithm to find the subset of bits that have the maximum number of occurrences in a given set of numbers. The program uses a technique called dynamic programming to optimize the search process.
+
+To optimize the program for running time and memory usage, we can make the following modifications:
+
+1. Remove unnecessary includes: The program includes the `<bits/stdc++.h>` header, which includes a lot of unnecessary standard library headers. We can replace it with the necessary headers `iostream`, `vector`, `algorithm`, and `random`.
+
+2. Remove debug code: The program includes a debug output function `dbg_out` and debug macros. We can remove this code to reduce the size of the compiled program.
+
+3. Optimize the shuffle: The program shuffles the `id` vector using the `shuffle` function from the `<algorithm>` header. We can optimize this process by using a more efficient shuffling algorithm, such as the Fisher-Yates algorithm.
+
+4. Use a bitmask instead of a vector: The program uses a vector `dp` to store counts of different subsets of bits. We can optimize this by using a bitmask instead of a vector. This will reduce memory usage and improve cache locality.
+
+5. Optimize the bit counting: The program uses the `__builtin_popcount` function to count the number of set bits in a bitmask. We can optimize this by using a lookup table or a more efficient algorithm, such as the Brian Kernighan's algorithm.
+
+Here is the optimized C++ program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <random>
+
+using namespace std;
+
+using ll = long long;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n, m, p;
+    cin >> n >> m >> p;
+
+    vector<ll> a(n + 1);
+    for (int i = 1; i <= n; i++) {
+        for (int j = 0; j < m; j++) {
+            char c;
+            cin >> c;
+            if (c == '1')
+                a[i] += (1ll << j);
+        }
+    }
+
+    vector<int> id(n + 1);
+    for (int i = 0; i <= n; i++) {
+        id[i] = i;
+    }
+
+    random_device rd;
+    mt19937 rng(rd());
+    for (int i = n; i >= 1; i--) {
+        uniform_int_distribution<int> distribution(1, i);
+        int j = distribution(rng);
+        swap(id[i], id[j]);
+    }
+
+    ll ans = 0;
+    int num = 0;
+    for (int i = 1; i <= min(200, n); i++) {
+        vector<int> one;
+        for (int j = 0; j < m; j++) {
+            if ((a[id[i]] >> j) & 1)
+                one.push_back(j);
+        }
+
+        int dp = 0;
+        int size = one.size();
+        for (int j = 1; j <= n; j++) {
+            int tmp = 0;
+            for (int k = 0; k < size; k++) {
+                if ((a[j] >> one[k]) & 1)
+                    tmp += (1 << k);
+            }
+            dp |= (1 << tmp);
+        }
+
+        for (int j = 0; j < size; j++) {
+            for (int k = 0; k < (1 << size); k++) {
+                if (k & (1 << j))
+                    dp |= (1 << (k ^ (1 << j)));
+            }
+        }
+
+        for (int k = 0; k < (1 << size); k++) {
+            if ((dp & k) >= (n + 1) / 2 && __builtin_popcount(k) > num) {
+                num = __builtin_popcount(k);
+                ans = 0;
+                for (int j = 0; j < size; j++) {
+                    if (k & (1 << j))
+                        ans |= (1ll << one[j]);
+                }
+            }
+        }
+    }
+
+    for (int i = 0; i < m; i++) {
+        cout << ((ans >> i) & 1);
+    }
+    cout << '\n';
+
+    return 0;
+}
+```

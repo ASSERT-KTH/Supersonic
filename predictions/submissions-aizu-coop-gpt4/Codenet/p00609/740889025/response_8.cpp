@@ -1,0 +1,1 @@
+int v[10000][10000];  // Replace vector with fixed-size array

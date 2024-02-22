@@ -1,0 +1,99 @@
+To optimize the given C++ program, we can make the following modifications:
+
+1. Remove unnecessary includes: The program includes the `<bits/stdc++.h>` header, which is not required. We can remove this include statement.
+
+2. Remove unnecessary using statements: The program includes several unnecessary using statements such as `using uint = unsigned int`, `using ld = long double`, `using pii = pair<int, int>`, etc. We can remove these using statements.
+
+3. Avoid using `vector<vector<int>>` and `vector<vector<ll>>` for storing heights and costs: The program uses `vector<vector<int>>` and `vector<vector<ll>>` to store the heights and costs of each block. Instead of using a 2D vector, we can use a single vector of pairs to store both the height and cost values.
+
+4. Avoid using `vector<pair<int, ll>>` for stackPushLeft and stackPushRight: The program uses `vector<pair<int, ll>>` to store the left and right stack values. Instead of using a vector, we can use two variables to store the top elements of the stacks.
+
+5. Remove unnecessary clearing of vectors: The program clears the vectors `heightsOfBlock` and `costsOfBlock` after processing them. Since these vectors are not used later in the program, we can remove the clearing statements.
+
+6. Avoid using `inf_int` and `inf_ll` constants: The program defines constants `inf_int` and `inf_ll` for representing infinity. Instead of using these constants, we can use `numeric_limits<int>::max()` and `numeric_limits<ll>::max()` functions to get the maximum values for integers and long long integers.
+
+7. Remove unnecessary conditional check in the while loop: The program has a while loop with a conditional check `((idx = stackPushRight.back().first) || true)`. This check is unnecessary and can be removed.
+
+8. Avoid using `pb` function for push_back: The program uses the `pb` function for push_back operations. Instead, we can directly use the `push_back` function.
+
+Here is the optimized C++ program:
+
+```cpp
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <limits>
+using namespace std;
+
+const int NMax = 1e7 + 5;
+
+int height[NMax];
+long long cost[NMax], dp[NMax];
+
+int main() {
+    ifstream in("bellmanford.in");
+    ofstream out("bellmanford.out");
+
+    int N, M;
+    in >> N >> M;
+    vector<pair<int, long long>> block(N + 1);
+    for (int i = 1; i <= N; ++i) {
+        int K;
+        in >> K;
+        for (int j = 1; j <= K; ++j) {
+            int h;
+            in >> h;
+            block[i].push_back({h, 0});
+        }
+        for (int j = 1; j <= K; ++j) {
+            long long c;
+            in >> c;
+            block[i][j - 1].second = c;
+        }
+    }
+
+    int Q, curr = 0;
+    in >> Q;
+    for (int i = 1; i <= Q; ++i) {
+        int id, mult;
+        in >> id >> mult;
+        for (auto it : block[id]) {
+            height[++curr] = it.first;
+            cost[curr] = 1LL * mult * it.second;
+        }
+    }
+
+    block.clear();
+    long long stackPushLeft = numeric_limits<long long>::max();
+    long long stackPushRight = numeric_limits<long long>::max();
+    for (int i = 1; i <= M; ++i) {
+        long long minLeft = dp[i - 1];
+        while (i - height[i] + 1 <= stackPushLeft) {
+            minLeft = min(minLeft, stackPushLeft);
+            stackPushLeft = dp[i - height[i]];
+        }
+        dp[i] = minLeft + cost[i];
+        long long valHere = dp[i - 1];
+        minLeft = min(minLeft, valHere);
+        stackPushLeft = minLeft;
+
+        int idx = -1;
+        while ((idx = stackPushRight) && idx + height[idx] - 1 < i) {
+            stackPushRight = 0;
+        }
+        if (stackPushRight) {
+            long long dpPlusCost = stackPushRight;
+            dp[i] = min(dp[i], dpPlusCost);
+        }
+        long long dpPlusCost = dp[i - 1] + cost[i];
+        if (stackPushRight) {
+            dpPlusCost = min(dpPlusCost, stackPushRight);
+        }
+        stackPushRight = dpPlusCost;
+    }
+
+    out << dp[M] << '\n';
+
+    return 0;
+}
+```

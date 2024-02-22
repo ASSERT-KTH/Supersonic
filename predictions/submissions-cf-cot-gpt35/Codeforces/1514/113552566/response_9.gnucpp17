@@ -1,0 +1,108 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+struct SegTree {
+  std::vector<int> tree;
+  const std::vector<int>& arr;
+  std::vector<std::vector<int>> store;
+  int n;
+
+  SegTree(int n, const std::vector<int>& _arr) : n(n), arr(_arr) {
+    tree.resize(4 * n);
+    store.resize(n + 1);
+    for (int i = 0; i < n; i++)
+      store[arr[i]].push_back(i);
+    build();
+  }
+
+  int merge(int lval, int rval, int sl, int sr) {
+    int cntl = std::upper_bound(store[lval].begin(), store[lval].end(), sr) -
+               std::lower_bound(store[lval].begin(), store[lval].end(), sl);
+    int cntr = std::upper_bound(store[rval].begin(), store[rval].end(), sr) -
+               std::lower_bound(store[rval].begin(), store[rval].end(), sl);
+    if (cntl >= cntr) {
+      return lval;
+    } else {
+      return rval;
+    }
+  }
+
+  void build() {
+    for (int i = n - 1; i >= 0; i--) {
+      tree[i] = merge(tree[2 * i + 1], tree[2 * i + 2], i, i);
+    }
+    for (int i = n - 2; i >= 0; i--) {
+      tree[i] = merge(tree[2 * i + 1], tree[2 * i + 2], i, i + 1);
+    }
+  }
+
+  int query(int qs, int qe) {
+    int si = 0, sl = qs, sr = qe;
+    int ss = 0, se = n - 1;
+    int result = tree[si];
+    while (ss < se) {
+      int mid = (ss + se) / 2;
+      if (qs <= mid && qe > mid) {
+        int lval = tree[2 * si + 1];
+        int rval = tree[2 * si + 2];
+        int cntl = std::upper_bound(store[lval].begin(), store[lval].end(), sr) -
+                   std::lower_bound(store[lval].begin(), store[lval].end(), sl);
+        int cntr = std::upper_bound(store[rval].begin(), store[rval].end(), sr) -
+                   std::lower_bound(store[rval].begin(), store[rval].end(), sl);
+        if (cntl >= cntr) {
+          result = lval;
+        } else {
+          result = rval;
+        }
+      }
+      if (qe <= mid) {
+        si = 2 * si + 1;
+        se = mid;
+      } else if (qs > mid) {
+        si = 2 * si + 2;
+        ss = mid + 1;
+      } else {
+        break;
+      }
+    }
+    return result;
+  }
+};
+
+void solve() {
+  int n, q;
+  std::cin >> n >> q;
+  std::vector<int> arr(n);
+  std::vector<std::vector<int>> store(n + 1);
+  for (int i = 0; i < n; i++)
+    std::cin >> arr[i], store[arr[i]].push_back(i);
+  SegTree tree(n, arr);
+  std::vector<int> results(q);
+  for (int i = 0; i < q; i++) {
+    int l, r;
+    std::cin >> l >> r;
+    l--;
+    r--;
+    int x = tree.query(l, r);
+    int mx = std::upper_bound(store[x].begin(), store[x].end(), r) -
+             std::lower_bound(store[x].begin(), store[x].end(), l);
+    int len = (r - l + 1);
+    int extra = len - mx;
+    int left = std::max(0, mx - extra - 1);
+    results[i] = 1 + left;
+  }
+  for (int i = 0; i < q; i++) {
+    std::cout << results[i] << "\n";
+  }
+}
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(NULL);
+  std::cout.tie(NULL);
+  int t = 1;
+  for (int i = 1; i <= t; i++) {
+    solve();
+  }
+}

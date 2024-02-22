@@ -1,0 +1,81 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <climits>
+
+using namespace std;
+
+#define pb push_back
+
+const int MAXV = 61;
+
+int main() {
+    int N;
+    cin >> N;
+
+    vector<int> a(N);
+    for (int i = 0; i < N; i++) {
+        cin >> a[i];
+    }
+
+    vector<int> pri;
+    vector<int> mask(MAXV, 0);
+
+    for (int v = 2; v < MAXV; v++) {
+        bool ok = true;
+        for (int p : pri) {
+            if (v % p == 0) {
+                ok = false;
+                break;
+            }
+        }
+        if (ok) {
+            pri.pb(v);
+        }
+    }
+
+    for (int v = 1; v < MAXV; v++) {
+        for (int i = 0; i < pri.size(); i++) {
+            if (v % pri[i] == 0) {
+                mask[v] |= 1 << i;
+            }
+        }
+    }
+
+    vector<vector<int>> dp(2, vector<int>(1 << pri.size(), INT_MAX));
+    dp[0][0] = -1;
+
+    int curr = 1, prev = 0;
+
+    for (int i = 0; i < N; i++) {
+        for (int m = 0; m < (1 << pri.size()); m++) {
+            if (dp[prev][m] < INT_MAX) {
+                for (int v = 1; v < MAXV; v++) {
+                    if (!(mask[v] & m)) {
+                        int new_m = m ^ mask[v];
+                        int cost = dp[prev][m] + abs(v - a[i]);
+                        if (cost < dp[curr][new_m]) {
+                            dp[curr][new_m] = cost;
+                        }
+                    }
+                }
+            }
+        }
+        swap(curr, prev);
+    }
+
+    vector<int> b(N);
+    int m = min_element(dp[prev].begin(), dp[prev].end()) - dp[prev].begin();
+
+    for (int i = N - 1; i >= 0; i--) {
+        b[i] = dp[prev][m] & 255;
+        m ^= mask[b[i]];
+    }
+
+    for (int i = 0; i < N; i++) {
+        cout << b[i] << " ";
+    }
+    cout << endl;
+
+    return 0;
+}

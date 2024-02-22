@@ -1,0 +1,185 @@
+This code is very complex and it's hard to optimize without changing the logic. However, there are few general practices we can apply:
+
+1) Reduce the scope of variables: Declare variables where they are used. It reduces the chance of mistakenly using them where not needed. In this code, the variable `i` is declared at the top of the main function but it is only used inside for loops, we can declare it inside for loop itself.
+
+2) Avoid using `std::endl`: `std::endl` is slower because it causes a flush operation, which can be a performance bottleneck. In this code `"\n"` is used which is good. 
+
+3) Avoid unnecessary operations: In the last part of the code, the condition `cul[x] != 'a'` and `cul[x] != 'b'` checks are repeated in several places. This can be avoided by assigning `'a'` or `'b'` to `cul[x]` immediately after the decision is made.
+
+4) Use prefix increment: Prefix increment is faster than postfix when the value of the variable itself is not used in the same statement.
+
+5) Remove unnecessary includes: The `#include <bits/stdc++.h>` already includes most of the libraries. Including `<ext/pb_ds/assoc_container.hpp>` and `<ext/pb_ds/tree_policy.hpp>` is not necessary.
+
+Here is the optimized code:
+
+```C++
+#include <bits/stdc++.h>
+#define debug(x) cerr << #x << " " << x << "\n"
+#define debugs(x) cerr << #x << " " << x << " "
+#pragma GCC optimize("Ofast,unroll-loops")
+#pragma GCC target("sse,sse2,sse3,ssse3,sse4,popcnt,abm,mmx,avx,tune=native")
+using namespace std;
+typedef long long ll;
+typedef pair<int, int> pii;
+typedef pair<long double, pii> muchie;
+typedef __gnu_pbds::tree<ll, __gnu_pbds::null_type, less_equal<ll>, __gnu_pbds::rb_tree_tag, __gnu_pbds::tree_order_statistics_node_update> OST;
+const ll NMAX = 100001;
+const ll INF = (1LL << 60);
+const ll HALF = (1LL << 59);
+const ll MOD = 1000000007;
+const ll BLOCK = 518;
+const ll base = 31;
+const ll nr_of_bits = 21;
+const ll LIMIT = 1000;
+int dp[BLOCK][NMAX];
+int cnt[NMAX];
+vector<int> lvl[NMAX];
+vector<int> v[NMAX];
+vector<int> levelecu[NMAX];
+map<int, int> mp;
+map<int, int> l;
+int depth;
+char cul[NMAX];
+int cc[NMAX];
+void DFS(int node, int p, int level) {
+  lvl[level].push_back(node);
+  depth = max(depth, level);
+  for (auto x : v[node]) {
+    if (x == p)
+      continue;
+    DFS(x, node, level + 1);
+  }
+}
+int main() {
+  int n, x;
+  cin >> n >> x;
+  int a = x;
+  int b = n - x;
+  for (int i = 2; i <= n; ++i) {
+    cin >> x;
+    v[x].push_back(i);
+    v[i].push_back(x);
+  }
+  for (int i = 1; i <= n; ++i) {
+    cnt[i] = v[i].size() - (i != 1);
+  }
+  DFS(1, 0, 1);
+  for (int i = 1; i <= n; ++i) {
+    if (lvl[i].size() == 0)
+      continue;
+    levelecu[lvl[i].size()].push_back(i);
+    mp[lvl[i].size()]++;
+  }
+  int c = 0;
+  dp[0][0] = 1;
+  for (auto x : mp) {
+    ++c;
+    cc[c] = x.first;
+    int val = x.first;
+    int freq = x.second;
+    for (int i = 0; i < val; ++i) {
+      l[i] = -1;
+    }
+    for (int i = 0; i <= a; ++i) {
+      if (dp[c - 1][i])
+        l[i % val] = i;
+      int rest = i % val;
+      if (l[rest] != -1 && (i - l[rest]) / val <= freq) {
+        dp[c][i] = 1;
+      }
+    }
+  }
+  if (dp[c][a]) {
+    int cant = a;
+    vector<int> sol;
+    while (c > 0) {
+      pii r = {cc[c], 0};
+      --c;
+      while (!dp[c][cant]) {
+        cant -= r.first;
+        r.second++;
+      }
+      while (r.second--)
+        sol.push_back(r.first);
+    }
+    vector<int> alvl;
+    for (auto x : sol) {
+      alvl.push_back(levelecu[x].back());
+      levelecu[x].pop_back();
+    }
+    for (auto x : alvl) {
+      for (auto y : lvl[x]) {
+        cul[y] = 'a';
+      }
+    }
+    cout << depth << "\n";
+    for (int i = 1; i <= n; ++i) {
+      if (cul[i] != 'a')
+        cul[i] = 'b';
+      cout << cul[i];
+    }
+    return 0;
+  }
+  for (int i = 1; i <= n; ++i) {
+    if (lvl[i].size() == 0)
+      continue;
+    int sz = lvl[i].size();
+    if (sz <= a) {
+      a -= sz;
+      for (auto x : lvl[i])
+        cul[x] = 'a';
+      continue;
+    }
+    if (sz <= b) {
+      b -= sz;
+      for (auto x : lvl[i])
+        cul[x] = 'b';
+      continue;
+    }
+    if (a > b) {
+      for (auto x : lvl[i]) {
+        if (cnt[x] > 0) {
+          cul[x] = 'a';
+          --a;
+        }
+      }
+      for (auto x : lvl[i]) {
+        if (a && cul[x] != 'a') {
+          cul[x] = 'a';
+          --a;
+        }
+      }
+      for (auto x : lvl[i]) {
+        if (cul[x] != 'a') {
+          cul[x] = 'b';
+          --b;
+        }
+      }
+    } else {
+      for (auto x : lvl[i]) {
+        if (cnt[x] > 0) {
+          cul[x] = 'b';
+          --b;
+        }
+      }
+      for (auto x : lvl[i]) {
+        if (b && cul[x] != 'b') {
+          cul[x] = 'b';
+          --b;
+        }
+      }
+      for (auto x : lvl[i]) {
+        if (cul[x] != 'b') {
+          cul[x] = 'a';
+          --a;
+        }
+      }
+    }
+  }
+  cout << depth + 1 << "\n";
+  for (int i = 1; i <= n; ++i) {
+    cout << cul[i];
+  }
+  return 0;
+}
+```

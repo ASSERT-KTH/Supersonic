@@ -1,0 +1,21 @@
+1. Code Analysis:
+    - The program seems to be a simulation of a message filtering process, where 'OK' and 'NOT' rules are applied to incoming messages.
+    - The code makes use of several for loops, with some being nested, which can be computationally expensive.
+    - The 'strCmp' and 'ambiguousCmp' functions are user-defined string comparison functions. They are called multiple times within nested for loops which can be optimised.
+    - The 'strcpy' is a user-defined function to copy strings. This function is also called multiple times within for loops.
+    - The code makes use of arrays to store 'OK' and 'NOT' rules, which may become inefficient if the number of rules is large.
+    - The code scans the message data and applies the 'OK' and 'NOT' rules in separate for loops.
+
+2. Optimization Strategy:
+    1. Use Standard Library Functions: The code has user-defined functions for string copy and comparison which can be replaced with standard library functions like 'strcmp' and 'strcpy' from <cstring>. This can significantly speed up the program as these functions are highly optimised.
+    2. Use Efficient Data Structures: Instead of using arrays to store 'OK' and 'NOT' rules, we can use vectors. Vectors are dynamic arrays provided by the Standard Template Library (STL) in C++. They can change their size automatically when an element is inserted or deleted, with their storage being handled automatically by the container.
+    3. Avoid Redundant Computations: The code applies the 'OK' and 'NOT' rules in separate for loops. We can merge these operations into a single loop to reduce the number of iterations.
+    4. Compiler Optimizations: We can enable compiler optimizations by adding compiler flags like '-O2' or '-O3' which instructs the compiler to perform optimizations on the code like loop unrolling, function inlining etc.
+
+3. Step-by-Step Explanation:
+    1. Replace User-Defined Functions: The user-defined 'strcpy', 'strCmp', and 'ambiguousCmp' functions will be replaced with standard library functions. This is because standard functions are usually optimized at a level that cannot be achieved in user-defined functions.
+    2. Use Vectors: The 'OK' and 'NOT' rules arrays will be replaced with vectors. Vectors are more efficient as they can dynamically resize their capacity as elements are added or removed.
+    3. Merge Operations: The 'OK' and 'NOT' rule applications will be merged into a single for loop. This reduces the total number of iterations, thereby improving performance.
+    4. Compiler Optimizations: Enabling compiler optimizations like '-O2' or '-O3' can further improve the performance of the program.
+    
+Trade-offs: The use of vectors over arrays might increase memory usage slightly due to extra metadata stored by vectors. But this increase is usually negligible and the benefits of using vectors (automatic resizing, ease of insertion and deletion) outweigh the slight increase in memory usage.

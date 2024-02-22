@@ -1,0 +1,15 @@
+The given code generates all possible permutations of a given string `s` and then sorts and prints them. However, the code can be optimized in several ways to improve its efficiency:
+
+1. Remove unnecessary header files: The code includes `<bits/stdc++.h>`, which includes a large number of header files. This can increase compilation time and memory usage. Since the code only requires the `iostream` and `vector` header files, we can remove the unnecessary includes.
+
+2. Avoid using `using namespace std;`: The code uses the `using namespace std;` statement, which brings all the names in the `std` namespace into the global namespace. This can lead to naming conflicts and make the code less readable. It is better to explicitly use the `std` namespace where needed.
+
+3. Optimize the `dfs` function:
+   - Avoid unnecessary copying of the string: The `tmp` variable is created by copying the `t` string, which is unnecessary. Instead, we can directly modify the `t` string.
+   - Use a boolean array instead of an integer array: The `d` array is used to count the occurrences of each character in the prefix string `t`. Since we only need to check if a character has occurred or not, we can use a boolean array instead of an integer array, which reduces the memory usage.
+   - Use a loop instead of recursion: The `dfs` function is implemented recursively, which can lead to a large number of function calls and stack usage. We can optimize it by using a loop instead of recursion. This can also improve cache locality and reduce the function call overhead.
+   - Avoid unnecessary calculations: The `d` array is recalculated in each recursive call, even though it only depends on the prefix string `t` and not on the current index `now`. We can calculate it outside the loop and pass it as a parameter to the `dfs` function.
+
+4. Replace the `sort` function with `std::partial_sort`: The code sorts the generated permutations using the `sort` function. However, we only need the first 5 and last 5 permutations. Instead of sorting the entire vector of permutations, we can use the `std::partial_sort` function to partially sort the vector and get the required permutations in the correct order. This can significantly reduce the sorting time for large input strings.
+
+5. Use `reserve` to preallocate memory: The `vs` vector is used to store the generated permutations. By using the `reserve` function, we can preallocate memory for the vector, avoiding unnecessary reallocations and improving performance.

@@ -1,0 +1,176 @@
+The provided code is an implementation of the Lowest Common Ancestor (LCA) algorithm using the Euler Tour technique. The LCA algorithm finds the lowest common ancestor of two nodes in a tree.
+
+1. Code Analysis:
+   - The code uses an adjacency list representation of the tree.
+   - The Euler Tour technique is used to flatten the tree into a sequence of nodes.
+   - The LCA algorithm is implemented using a sparse table data structure.
+   - The code has a time complexity of O((N + Q) log N), where N is the number of nodes and Q is the number of queries.
+
+2. Optimization Strategy:
+   1. Replace the "bits/stdc++.h" header with the necessary headers to reduce compilation time and avoid unnecessary dependencies.
+   2. Remove the unnecessary global constants and typedefs.
+   3. Optimize the dfs() function to avoid unnecessary function calls and duplicate path entries.
+   4. Use a vector instead of an array for the path and ST data structures to avoid potential buffer overflows.
+   5. Optimize the build() function by using a more efficient algorithm to calculate the height of the sparse table.
+   6. Optimize the lca() function by using the bitwise right shift operator instead of the pow() function.
+   7. Replace the scanf() function with the faster std::cin.
+
+3. Step-by-Step Explanation:
+   1. Replace the "bits/stdc++.h" header with the necessary headers to reduce compilation time and avoid unnecessary dependencies:
+      ```cpp
+      #include <iostream>
+      #include <vector>
+      #include <algorithm>
+      #include <cmath>
+      ```
+   2. Remove the unnecessary global constants and typedefs:
+      ```cpp
+      const int MAXN = 100005;
+      const int LOGN = 20;
+      ```
+   3. Optimize the dfs() function to avoid unnecessary function calls and duplicate path entries:
+      - Remove the unused "depth" parameter from the dfs() function.
+      - Instead of calling the dfs() function twice for each neighbor, combine the two dfs() calls into a single loop.
+      - Instead of appending the same path entry twice for each neighbor, add the path entry only once.
+      - Update the idx_in_path array inside the loop.
+      ```cpp
+      void dfs(int u) {
+        idx_in_path[u] = path_size;
+        path.emplace_back(0, u);
+        path_size++;
+        for (int v : adjList[u]) {
+          dfs(v);
+          path.emplace_back(0, u);
+          path_size++;
+        }
+      }
+      ```
+   4. Use a vector instead of an array for the path and ST data structures to avoid potential buffer overflows:
+      - Replace the array declaration with a vector declaration.
+      - Update the build() function to use vector iterators.
+      ```cpp
+      vector<ii> path;
+      vector<ii> ST[LOGN];
+      ```
+      ```cpp
+      void build(int n) {
+        int h = log2(n + 1);
+        for (int i = 0; i < n; i++)
+          ST[0].emplace_back(path[i]);
+        for (int i = 1; i < h; i++)
+          for (int j = 0; j + (1 << i) <= n; j++)
+            ST[i].emplace_back(min(ST[i - 1][j], ST[i - 1][j + (1 << (i - 1))]));
+      }
+      ```
+   5. Optimize the build() function by using a more efficient algorithm to calculate the height of the sparse table:
+      - Calculate the height of the sparse table using the log2 function instead of the ceil(log2) function.
+      - Remove the unnecessary addition of 1 to the height.
+      ```cpp
+      int h = log2(n);
+      ```
+   6. Optimize the lca() function by using the bitwise right shift operator instead of the pow() function:
+      - Replace the pow() function with the bitwise right shift operator.
+      ```cpp
+      int p = 31 - __builtin_clz(r - l);
+      return min(ST[p][l], ST[p][r - (1 << p)]).se;
+      ```
+   7. Replace the scanf() function with the faster std::cin:
+      - Replace the scanf() function with std::cin.
+      - Use the std::ios_base::sync_with_stdio(false) function to improve input/output performance.
+      - Use the std::cin.tie(NULL) function to untie cin from cout.
+      ```cpp
+      std::ios_base::sync_with_stdio(false);
+      std::cin.tie(NULL);
+      ```
+      ```cpp
+      int num_nodes;
+      std::cin >> num_nodes;
+      for (int u = 0; u < num_nodes; u++) {
+        int num_neighbors;
+        std::cin >> num_neighbors;
+        for (int i = 0; i < num_neighbors; i++) {
+          int v;
+          std::cin >> v;
+          adjList[u].push_back(v);
+        }
+      }
+      ```
+
+4. Optimized Code Block:
+   ```cpp
+   #include <iostream>
+   #include <vector>
+   #include <algorithm>
+   #include <cmath>
+   using namespace std;
+   
+   typedef pair<int, int> ii;
+   typedef vector<int> vi;
+   
+   vector<int> idx_in_path;
+   vector<ii> path;
+   vector<int> adjList[100005];
+   int path_size = 0;
+   
+   void dfs(int u) {
+     idx_in_path[u] = path_size;
+     path.emplace_back(0, u);
+     path_size++;
+     for (int v : adjList[u]) {
+       dfs(v);
+       path.emplace_back(0, u);
+       path_size++;
+     }
+   }
+   
+   vector<ii> ST[20];
+   
+   void build(int n) {
+     int h = log2(n);
+     for (int i = 0; i < n; i++)
+       ST[0].emplace_back(path[i]);
+     for (int i = 1; i < h; i++)
+       for (int j = 0; j + (1 << i) <= n; j++)
+         ST[i].emplace_back(min(ST[i - 1][j], ST[i - 1][j + (1 << (i - 1))]));
+   }
+   
+   int lca(int u, int v) {
+     int l = idx_in_path[u], r = idx_in_path[v];
+     if (l > r)
+       swap(l, r);
+     r++;
+     int p = 31 - __builtin_clz(r - l);
+     return min(ST[p][l], ST[p][r - (1 << p)]).second;
+   }
+   
+   int main() {
+     std::ios_base::sync_with_stdio(false);
+     std::cin.tie(NULL);
+   
+     int num_nodes;
+     cin >> num_nodes;
+     idx_in_path.resize(num_nodes);
+     for (int u = 0; u < num_nodes; u++) {
+       int num_neighbors;
+       cin >> num_neighbors;
+       for (int i = 0; i < num_neighbors; i++) {
+         int v;
+         cin >> v;
+         adjList[u].push_back(v);
+       }
+     }
+   
+     dfs(0);
+     build(path_size);
+   
+     int num_queries;
+     cin >> num_queries;
+     for (int i = 0; i < num_queries; i++) {
+       int u, v;
+       cin >> u >> v;
+       cout << lca(u, v) << endl;
+     }
+   
+     return 0;
+   }
+   ```

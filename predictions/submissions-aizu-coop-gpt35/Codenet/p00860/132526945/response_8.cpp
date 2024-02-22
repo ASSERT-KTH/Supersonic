@@ -1,0 +1,3 @@
+#include <bitset>
+// ...
+std::bitset<1 << 24> vis;

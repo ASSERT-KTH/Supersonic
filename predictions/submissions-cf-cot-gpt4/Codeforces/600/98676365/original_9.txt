@@ -1,0 +1,127 @@
+There are a few areas in the provided code which can be optimized.
+
+1. Avoid using `<bits/stdc++.h>`. This header file includes quite literally the entire standard library. This can lead to increased compile time. Use only necessary header files.
+
+2. Replace `#define` with `inline` functions for `lson` and `rson`. The compiler can optimize `inline` functions.
+
+3. Instead of using `getchar()`, use `scanf` which is faster.
+
+4. Instead of using `printf()`, use `cout` which is faster than `printf` when used with `sync_with_stdio(false)` and `cin.tie(NULL)`.
+
+5. Avoid unnecessary calculations: `l + r >> 1` is computed twice in the `merge` function. You can compute it once and store the result.
+
+6. Use `'\n'` instead of `std::endl`. `std::endl` causes the buffer to flush which slows down the program.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <cstdio>
+
+using namespace std;
+
+typedef long long ll;
+const int maxn = 1e5 + 7;
+
+struct Seg {
+    int l, r, v;
+    ll num, sum;
+} t[maxn << 5];
+
+inline int lson(int id) { return t[id].l; }
+inline int rson(int id) { return t[id].r; }
+
+int n, tot, cor[maxn], rt[maxn];
+ll ans[maxn];
+vector<int> G[maxn];
+
+void up(int id) {
+    if (t[lson(id)].num > t[rson(id)].num) {
+        t[id].num = t[lson(id)].num;
+        t[id].v = t[lson(id)].v;
+        t[id].sum = t[lson(id)].sum;
+    } else if (t[lson(id)].num < t[rson(id)].num) {
+        t[id].num = t[rson(id)].num;
+        t[id].v = t[rson(id)].v;
+        t[id].sum = t[rson(id)].sum;
+    } else {
+        t[id].num = t[lson(id)].num;
+        t[id].v = t[lson(id)].v;
+        t[id].sum = t[lson(id)].sum + t[rson(id)].sum;
+    }
+}
+
+void modify(int &id, int l, int r, int p) {
+    if (!id)
+        id = ++tot;
+    if (l == r) {
+        t[id].num += 1;
+        t[id].sum = l;
+        t[id].v = l;
+        return;
+    }
+    int mid = (l + r) >> 1;
+    if (p <= mid)
+        modify(lson(id), l, mid, p);
+    else
+        modify(rson(id), mid + 1, r, p);
+    up(id);
+}
+
+int merge(int a, int b, int l, int r) {
+    if (!a)
+        return b;
+    if (!b)
+        return a;
+    if (l == r) {
+        t[a].v = l;
+        t[a].sum = l;
+        t[a].num += t[b].num;
+        return a;
+    }
+    int mid = (l + r) >> 1;
+    t[a].l = merge(t[a].l, t[b].l, l, mid);
+    t[a].r = merge(t[a].r, t[b].r, mid + 1, r);
+    up(a);
+    return a;
+}
+
+void dfs(int u, int fa) {
+    for (auto v : G[u]) {
+        if (v == fa)
+            continue;
+        dfs(v, u);
+        merge(u, v, 1, n);
+    }
+    modify(u, 1, n, cor[u]);
+    ans[u] = t[u].sum;
+}
+
+void solve() {
+    scanf("%d", &n);
+    tot = n;
+    for (int i = 1; i <= n; ++i)
+        scanf("%d", &cor[i]);
+    for (int i = 1, u, v; i < n; ++i) {
+        scanf("%d%d", &u, &v);
+        G[u].push_back(v);
+        G[v].push_back(u);
+    }
+    dfs(1, 0);
+    for (int i = 1; i <= n; ++i) {
+        cout << ans[i] << (i == n ? '\n' : ' ');
+    }
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int _T = 1;
+    while (_T--)
+        solve();
+    return 0;
+}
+```
+Please note that the actual impact on the runtime and memory usage of these optimizations may vary depending on the specific inputs to the program and the specific system on which the program is run.

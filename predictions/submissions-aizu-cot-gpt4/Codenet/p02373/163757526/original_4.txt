@@ -1,0 +1,88 @@
+Optimization Steps:
+1. The use of `#include <bits/stdc++.h>` is generally discouraged as it includes a lot of unnecessary headers, which increases compilation time. We should only include necessary headers.
+2. We are using `scanf` and `printf` for input and output. It can be optimized by using fast I/O techniques.
+3. In the `main` function, we're using push_back to add elements to the `adjList`. It's better to reserve space for vectors when the size is known in advance to avoid unnecessary reallocations.
+4. We are using `ceil(log2(n + 1))` to calculate the height of the segment tree, which involves floating point operations. We can replace it with `__builtin_clz` for faster calculation.
+5. The use of macros `fi` and `se` for `first` and `second` is not recommended. It decreases the readability of the code. It is better to use `first` and `second` directly.
+
+Optimized code:
+
+```
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cmath>
+#include <cstring>
+using namespace std;
+
+typedef pair<int, int> ii;
+typedef vector<int> vi;
+const int MAXN = 100005;
+const int LOGN = 20;
+int idx_in_path[MAXN];
+ii path[MAXN << 1];
+vi adjList[MAXN];
+int path_size = 0;
+
+void dfs(int u, int depth = 0) {
+  idx_in_path[u] = path_size;
+  path[path_size++] = ii(depth, u);
+  for (int v : adjList[u]) {
+    dfs(v, depth + 1);
+    path[path_size++] = ii(depth, u);
+  }
+}
+
+ii ST[LOGN][MAXN << 1];
+
+void build(int n) {
+  int h = 31 - __builtin_clz(n);
+  for (int i = 0; i < n; i++)
+    ST[0][i] = path[i];
+  for (int i = 1; i < h; i++)
+    for (int j = 0; j + (1 << i) <= n; j++)
+      ST[i][j] = min(ST[i - 1][j], ST[i - 1][j + (1 << (i - 1))]);
+}
+
+int lca(int u, int v) {
+  int l = idx_in_path[u], r = idx_in_path[v];
+  if (l > r)
+    swap(l, r);
+  r++;
+  int p = 31 - __builtin_clz(r - l);
+  return min(ST[p][l], ST[p][r - (1 << p)]).second;
+}
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+  
+  int num_nodes;
+  cin >> num_nodes;
+  for (int u = 0; u < num_nodes; u++) {
+    int num_neighbors;
+    cin >> num_neighbors;
+    adjList[u].reserve(num_neighbors);
+    for (int i = 0; i < num_neighbors; i++) {
+      int v;
+      cin >> v;
+      adjList[u].push_back(v);
+    }
+  }
+  
+  dfs(0);
+  build(path_size);
+  
+  int num_queries;
+  cin >> num_queries;
+  for (int i = 0; i < num_queries; i++) {
+    int u, v;
+    cin >> u >> v;
+    cout << lca(u, v) << "\n";
+  }
+  
+  return 0;
+}
+```
+
+Please note that the optimizations mentioned here are micro-optimizations and their effect may not be noticeable in the given code, but it is good to keep these in mind for larger codebases.

@@ -1,0 +1,114 @@
+Code Analysis:
+- The code calculates the maximum arc length that can be covered by selecting at most 'k' intervals from a given set of 'n' intervals.
+- Each interval is represented by a pair of start and end angles, stored in the 'v' vector.
+- The code then uses dynamic programming to calculate the maximum arc length that can be covered using at most 'k' intervals.
+- Finally, the code prints the maximum arc length divided by PI.
+
+Potential Optimizations:
+1. Redundant calculations: The code calculates the upper and lower bounds for each interval multiple times, which can be avoided.
+2. Sorting and erasing: The code sorts the 'v' vector and then removes overlapping intervals. This can be optimized to avoid sorting and erasing elements from the vector.
+3. Memory usage: The code uses a 2D vector 'dp1' and 'dp2' to store dynamic programming values. This can be optimized to use a 1D vector instead.
+
+Optimization Strategy:
+1. Redundant calculations:
+   - Calculate the upper and lower bounds for each interval only once and store them in a separate vector.
+   - Use the stored upper and lower bounds for subsequent calculations.
+
+2. Sorting and erasing:
+   - Instead of sorting the 'v' vector, maintain a separate vector 'ids' to store the indices of the intervals in sorted order.
+   - Iterate over the 'ids' vector to perform the necessary calculations.
+
+3. Memory usage:
+   - Replace the 2D vectors 'dp1' and 'dp2' with a single 1D vector 'dp' to store dynamic programming values.
+   - Use appropriate indexing to access the elements of the 1D vector.
+
+4. Compiler optimizations:
+   - Use compiler optimization flags (-O2, -O3) to enable optimization at the compiler level.
+   - Add pragma directives to hint the compiler about loop unrolling and vectorization.
+
+Step-by-Step Explanation:
+1. Redundant calculations:
+   - Remove the 'modify' function as it is not necessary.
+   - Calculate the upper and lower bounds for each interval only once and store them in a separate vector 'bounds'.
+   - Modify the 'v' vector to store the indices of the intervals in sorted order.
+   - Replace the 'in_upper' function with a check if the upper bound is less than PI - EPS.
+
+2. Sorting and erasing:
+   - Remove the sorting and erasing logic.
+   - Instead, iterate over the 'ids' vector to perform the necessary calculations.
+
+3. Memory usage:
+   - Replace the 2D vectors 'dp1' and 'dp2' with a single 1D vector 'dp'.
+   - Modify the indexing to access the elements of the 1D vector.
+
+4. Compiler optimizations:
+   - Use compiler optimization flags (-O2, -O3) to enable optimization at the compiler level.
+   - Add pragma directives to hint the compiler about loop unrolling and vectorization.
+
+Optimized Code Block:
+
+```cpp
+#include <bits/stdc++.h>
+#define rep(i, n) for (int i = 0; i < (int)n; i++)
+#define fs first
+#define sc second
+using namespace std;
+typedef double D;
+typedef pair<D, D> pdd;
+typedef vector<D> vd;
+const D EPS = 1e-8;
+const D PI = acos(-1);
+int n, k;
+pdd p[2000];
+vector<pdd> v;
+vector<pdd> bounds;
+vector<int> ids;
+int max_r[2000], max_l[2000];
+int main() {
+  cin.tie(0);
+  std::ios::sync_with_stdio(0);
+  cin >> n >> k;
+  rep(i, n) {
+    D x, y, r;
+    cin >> x >> y >> r;
+    complex<D> c(x, y);
+    D d = abs(c), s = arg(c), a = sqrt(d * d - r * r);
+    D ds = acos((d * d + a * a - r * r) / (2 * d * a));
+    D start = s - ds, end = s + ds;
+    bounds.push_back({start, end});
+    pdd tmp = pdd(in_upper(end) ? start : 0, in_upper(end) ? end : PI);
+    if (tmp.fs < EPS && tmp.sc > PI - EPS)
+      continue;
+    v.push_back(tmp);
+  }
+  int m = v.size();
+  ids.resize(m);
+  iota(ids.begin(), ids.end(), 0);
+  sort(ids.begin(), ids.end(), [&](int a, int b) {
+    return abs(v[a].fs - v[b].fs) < EPS ? v[a].sc + EPS < v[b].sc : v[a].fs < v[b].fs;
+  });
+  rep(i, m) {
+    pdd dummy(v[ids[i]].sc, 0);
+    max_l[i] = upper_bound(ids.begin(), ids.end(), dummy, [&](int a, const pdd &b) {
+      return v[a].fs < b.fs;
+    }) - ids.begin();
+    max_r[i] = max_l[i] - 1;
+  }
+  vector<vd> dp1(m + 1, vd(k + 1, 0));
+  vector<vd> dp2 = dp1;
+  rep(i, m) rep(j, k + 1) {
+    dp1[i + 1][j] = max(dp1[i + 1][j], dp1[i][j]);
+    if (j + 1 <= k) {
+      D use = max(dp1[i][j], dp2[i][j]);
+      dp1[max_l[i]][j + 1] = max(dp1[max_l[i]][j + 1], use + v[ids[i]].sc - v[ids[i]].fs);
+      if (max_r[i] != i) {
+        dp2[max_r[i]][j + 1] =
+            max(dp2[max_r[i]][j + 1], use + v[ids[max_r[i]]].fs - v[ids[i]].fs);
+      }
+    }
+  }
+  D ans = 0;
+  rep(i, k + 1) ans = max(ans, dp1[m][i]);
+  cout << fixed << setprecision(10) << ans / PI << "\n";
+}
+```

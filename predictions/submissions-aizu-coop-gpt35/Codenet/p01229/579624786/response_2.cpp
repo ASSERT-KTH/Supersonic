@@ -1,0 +1,1 @@
+vector<vector<bool>> dp(MAX, vector<bool>(MAX, false));

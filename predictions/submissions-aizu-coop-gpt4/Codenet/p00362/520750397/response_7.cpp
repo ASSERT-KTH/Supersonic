@@ -1,0 +1,17 @@
+This code appears to be a C++ solution to a competitive programming problem, which involves a variety of operations on a graph. Although the code is brief, it is quite complex and challenging to read due to the heavy use of macros, bitwise operations, and ternary operators. Furthermore, there is no clear variable naming, and comments are missing, making it difficult to understand the problem being solved. 
+
+Here are the potential areas of optimization:
+
+1. **Use of Data Structures**: The map data structure in C++ is not the best choice when it comes to performance, as its time complexity is O(log(n)) for operations like insertions, deletions, and search. If possible, replacing it with a more efficient data structure like unordered_map (which has an average time complexity of O(1) for these operations) can enhance performance.
+
+2. **Loop optimization**: There are several loops in the program, their optimization can lead to an overall improvement in performance.
+
+3. **Variable Naming**: The use of single-letter variable names makes the code hard to understand and maintain. Giving meaningful names to variables could improve readability, and while not a direct performance optimization, it can lead to better maintenance and potential spotting of further optimization opportunities.
+
+4. **Avoid Global Variables**: The use of global variables should be avoided as much as possible. In this code, a lot of variables are defined globally which can lead to unnecessary memory consumption and potential conflicts.
+
+5. **Memory Allocation**: The code uses a large array of size `7 << 15` (approximately 229376), which seems to be larger than necessary. Reducing the size of this array, if possible, can significantly reduce memory usage.
+
+6. **Compiler Optimizations**: Compiler flags can be used to instruct the compiler to optimize the code. For instance, `-O2` or `-O3` flag can be used with g++ compiler for optimization.
+
+7. **Use of Macros**: The code uses macros in a way that makes it hard to understand what's going on. Replacing them with inline functions or constants can improve readability and maintainability.

@@ -1,0 +1,152 @@
+#include <algorithm>
+#include <climits>
+#include <cstdio>
+#include <cstring>
+#include <queue>
+#include <array>
+#include <vector>
+
+const int dx[] = {0, 1, 0, -1};
+const int dy[] = {-1, 0, 1, 0};
+
+int W, H, sx, sy, gx, gy;
+int csize, wsize;
+std::array<int, 3> wx, wy, cx, cy;
+std::array<std::array<char, 16>, 16> field;
+std::array<std::array<std::array<std::array<std::array<std::array<std::array<std::array<char, 9>, 9>, 9>, 9>, 9>, 9>, 9>, 9> DP;
+
+struct state {
+  char x, y;
+  std::array<char, 3> cx, cy;
+  char Sc;
+
+  state(char _x, char _y, const std::array<char, 3>& _cx, const std::array<char, 3>& _cy, char _Sc)
+      : x(_x), y(_y), cx(_cx), cy(_cy), Sc(_Sc) {}
+
+  bool operator==(const state& a) const {
+    return (x == a.x && y == a.y && cx == a.cx && cy == a.cy && Sc == a.Sc);
+  }
+};
+
+bool isdel(char tx, char ty, const std::array<char, 3>& ncx, const std::array<char, 3>& ncy) {
+  if (field[ty][tx] != 'w')
+    return true;
+  for (int i = 0; i < csize; i++) {
+    if (ncx[i] == tx && ncy[i] == ty)
+      return true;
+  }
+  return false;
+}
+
+bool iscontena(char tx, char ty, const std::array<char, 3>& ncx, const std::array<char, 3>& ncy, char Sc) {
+  for (int i = 0; i < csize; i++) {
+    if (ncx[i] == tx && ncy[i] == ty && !(Sc & (1 << i)))
+      return true;
+  }
+  return false;
+}
+
+void BFS(char nx, char ny, const std::array<char, 3>& ncx, const std::array<char, 3>& ncy, char Sc) {
+  std::array<std::array<int, 10>, 10> bfscost;
+  memset(bfscost.data(), -1, sizeof(bfscost));
+  bfscost[ny][nx] = 0;
+  std::queue<std::pair<int, int>> q;
+  q.push(std::make_pair(nx, ny));
+  while (!q.empty()) {
+    int x = q.front().first, y = q.front().second;
+    int cost = bfscost[y][x];
+    q.pop();
+    for (int k = 0; k < 4; k++) {
+      int tx = x + dx[k];
+      int ty = y + dy[k];
+      if (field[ty][tx] == '#' || bfscost[ty][tx] != -1 || iscontena(tx, ty, ncx, ncy, Sc))
+        continue;
+      if (field[ty][tx] == 'w' && !isdel(tx, ty, ncx, ncy))
+        continue;
+      bfscost[ty][tx] = cost + 1;
+      q.push(std::make_pair(tx, ty));
+    }
+  }
+}
+
+void input() {
+  for (int i = 0; i < H; i++) {
+    scanf("%s", field[i].data());
+    for (int j = 0; j < W; j++) {
+      if (field[i][j] == '@')
+        sx = j, sy = i;
+      if (field[i][j] == 'E')
+        gx = j, gy = i;
+      if (field[i][j] == 'w') {
+        wx[wsize] = j, wy[wsize] = i;
+        wsize++;
+      }
+      if (field[i][j] == 'c') {
+        cx[csize] = j, cy[csize] = i;
+        csize++;
+      }
+    }
+  }
+}
+
+int main() {
+  while (scanf("%d%d", &H, &W), H | W) {
+    csize = wsize = 0;
+    DP.fill(std::array<std::array<std::array<std::array<std::array<std::array<std::array<char, 9>, 9>, 9>, 9>, 9>, 9>, 9>());
+    cx.fill(0);
+    cy.fill(0);
+    input();
+    int res = INT_MAX;
+    std::priority_queue<std::pair<int, state>, std::vector<std::pair<int, state>>, std::greater<std::pair<int, state>>> q;
+    q.push(std::make_pair(0, state(sx, sy, cx, cy, 0)));
+    DP[cx[0]][cy[0]][cx[1]][cy[1]][cx[2]][cy[2]][sx][sy] = 0;
+    while (!q.empty()) {
+      int cost = q.top().first;
+      char nx = q.top().second.x, ny = q.top().second.y;
+      char tSc = q.top().second.Sc;
+      std::array<char, 3> ncx, ncy;
+      ncx.fill(0);
+      ncy.fill(0);
+      for (int i = 0; i < csize; i++) {
+        ncx[i] = q.top().second.cx[i];
+        ncy[i] = q.top().second.cy[i];
+      }
+      q.pop();
+      if (res <= cost)
+        break;
+      BFS(nx, ny, ncx, ncy, tSc);
+      if (bfscost[gy][gx] != -1)
+        res = std::min(res, cost + bfscost[gy][gx]);
+      for (int i = 0; i < csize; i++) {
+        if (!(tSc & (1 << i))) {
+          for (int j = 0; j < 4; j++) {
+            int tx = ncx[i] + dx[j];
+            int ty = ncy[i] + dy[j];
+            if (bfscost[ty][tx] == -1)
+              continue;
+            int ttSc = tSc;
+            int dir = (j + 2) % 4;
+            int tcx = ncx[i], tcy = ncy[i];
+            for (;;) {
+              int ay = tcy + dy[dir];
+              int ax = tcx + dx[dir];
+              if (field[ay][ax] == '#' || iscontena(ax, ay, ncx, ncy, tSc))
+                break;
+              tcx += dx[dir];
+              tcy += dy[dir];
+              if (field[ay][ax] == 'w' && !isdel(ax, ay, ncx, ncy)) {
+                ttSc |= 1 << i;
+                break;
+              }
+            }
+            if (tcx == ncx[i] && tcy == ncy[i])
+              continue;
+            std::array<char, 3> ttcx, ttcy;
+            ttcx.fill(0);
+            ttcy.fill(0);
+            for (int k = 0; k < csize; k++) {
+              ttcx[k] = ncx[k];
+              ttcy[k] = ncy[k];
+            }
+            ttcx[i] = tcx;
+            ttcy[i] = tcy;

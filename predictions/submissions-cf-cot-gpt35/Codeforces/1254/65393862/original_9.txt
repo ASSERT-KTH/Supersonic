@@ -1,0 +1,121 @@
+The given program implements a solution to a problem using the Lowest Common Ancestor (LCA) technique. The program takes as input a tree with N nodes and Q queries. Each query can be of three types: type 1, type 2, or type 3.
+
+To optimize the program for running time and memory usage, we can make the following modifications:
+
+1. Remove unnecessary header files: The program includes several unnecessary header files such as `<algorithm>`, `<cassert>`, `<cmath>`, and `<iostream>`. Since these header files are not used in the program, we can remove them to reduce unnecessary compilation time and memory usage.
+
+2. Remove unnecessary `using namespace std;`: The program uses the `using namespace std;` directive, which brings all the names from the `std` namespace into the global scope. This can lead to potential naming conflicts and is generally considered a bad practice. We can remove this directive and use the `std::` prefix for the standard library types and functions.
+
+3. Remove unused constants and structs: The program defines a constant `MOD`, a struct `mod_int`, and a struct `query`. However, these are not used in the program and can be safely removed.
+
+4. Optimize the calculation of `APPLY`: The program calculates the value of `APPLY` as `1.0 * sqrt(N) + 1`. However, since `sqrt(N)` returns a floating-point value, the multiplication and addition operations will also be performed in floating-point. This can be inefficient and may introduce floating-point errors. Instead, we can calculate `APPLY` as `sqrt(N) + 1`, which will be more efficient and accurate.
+
+5. Avoid unnecessary division and multiplication: The program uses the expression `mod_int(1) / N` to calculate the inverse of `N`. However, this can be optimized by precalculating the inverse of `N` outside the loop and reusing it for each query.
+
+6. Avoid unnecessary vector resizing: The program uses the `resize` function to resize the `range_low` vector at each level of the RMQ structure. However, since the size of the vector is known in advance, we can initialize it with the correct size during construction and avoid resizing operations.
+
+7. Avoid unnecessary copying of vectors: The program uses the `values` vector to store the values of the nodes in the tree. However, when updating the values, it creates a copy of the `values` vector in the `updates` vector and performs the updates on the `updates` vector. Instead of creating a copy, we can update the `values` vector directly.
+
+8. Avoid unnecessary iteration over the adjacency list: The program uses a loop to iterate over the adjacency list of each node to update the values in the `updates` vector. However, since the adjacency list is already known, we can directly access the child nodes without iterating over the list.
+
+9. Optimize the calculation of the answer for type 2 queries: The program uses a nested loop to iterate over the pending queries and calculate the answer for type 2 queries. This results in a time complexity of O(Q^2), which can be inefficient for a large number of queries. Instead, we can use a more efficient approach to calculate the answer in O(Q) time complexity.
+
+Based on these optimizations, here is the optimized C++ program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <cmath>
+
+struct RMQ {
+    int n = 0, levels = 0;
+    std::vector<int> values;
+    std::vector<std::vector<int>> range_low;
+
+    RMQ(const std::vector<int>& _values = {}) {
+        if (!_values.empty())
+            build(_values);
+    }
+
+    static int largest_bit(int x) {
+        return 31 - __builtin_clz(x);
+    }
+
+    int better_index(int a, int b) const {
+        return (values[a] < values[b]) ? a : b;
+    }
+
+    void build(const std::vector<int>& _values) {
+        values = _values;
+        n = values.size();
+        levels = largest_bit(n) + 1;
+        range_low.resize(levels);
+        for (int k = 0; k < levels; k++)
+            range_low[k].resize(n - (1 << k) + 1);
+        for (int i = 0; i < n; i++)
+            range_low[0][i] = i;
+        for (int k = 1; k < levels; k++)
+            for (int i = 0; i <= n - (1 << k); i++)
+                range_low[k][i] = better_index(range_low[k - 1][i], range_low[k - 1][i + (1 << (k - 1))]);
+    }
+
+    int query_index(int a, int b) const {
+        assert(0 <= a && a < b && b <= n);
+        int level = largest_bit(b - a);
+        return better_index(range_low[level][a], range_low[level][b - (1 << level)]);
+    }
+
+    int query_value(int a, int b) const {
+        return values[query_index(a, b)];
+    }
+};
+
+struct LCA {
+    int n = 0;
+    std::vector<std::vector<int>> adj;
+    std::vector<int> parent, depth, subtree_size;
+    std::vector<int> euler, first_occurrence;
+    std::vector<int> tour_start, tour_end, tour_list;
+    RMQ rmq;
+
+    LCA(int _n = 0) {
+        init(_n);
+    }
+
+    LCA(const std::vector<std::vector<int>>& _adj) {
+        init(_adj);
+    }
+
+    void init(int _n) {
+        n = _n;
+        adj.assign(n, {});
+        parent.resize(n);
+        depth.resize(n);
+        subtree_size.resize(n);
+        first_occurrence.resize(n);
+        tour_start.resize(n);
+        tour_end.resize(n);
+        tour_list.resize(n);
+    }
+
+    void init(const std::vector<std::vector<int>>& _adj) {
+        init(_adj.size());
+        adj = _adj;
+    }
+
+    void add_edge(int a, int b) {
+        adj[a].push_back(b);
+        adj[b].push_back(a);
+    }
+
+    int tour;
+
+    void dfs(int node, int par) {
+        parent[node] = par;
+        depth[node] = par < 0 ? 0 : depth[par] + 1;
+        subtree_size[node] = 1;
+        first_occurrence[node] = euler.size();
+        euler.push_back(node);
+        tour_list[tour] = node;
+        tour_start[node] = tour++;
+        if (par >=

@@ -1,0 +1,218 @@
+The given program seems to be solving a graph problem. To optimize the program, we can focus on the following areas:
+
+1. Avoid unnecessary includes: There are a lot of unnecessary include statements in the beginning of the program. We can remove them to reduce the compile time and memory usage.
+
+2. Remove unused code: There are some unused functions and variables in the program. We can remove them to simplify the program and reduce memory usage.
+
+3. Optimize the disjoint set implementation: The current implementation of the disjoint set data structure can be optimized further. We can use path compression and union by rank heuristics to improve the efficiency of the data structure.
+
+4. Optimize the graph traversal: The current implementation of the graph traversal can be optimized by using a depth-first search (DFS) algorithm instead of recursion. This can reduce the memory usage and improve the running time of the program.
+
+5. Simplify the logic of the program: There are some unnecessary checks and conditions in the program. We can simplify the logic of the program to improve readability and performance.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <set>
+#include <cstring>
+
+using namespace std;
+
+const int MAXN = 2e5 + 100;
+
+struct DisjointSet {
+    int parent[MAXN], rank[MAXN];
+
+    void make(int u) {
+        parent[u] = u;
+        rank[u] = 0;
+    }
+
+    int find(int u) {
+        if (parent[u] == u)
+            return u;
+        return parent[u] = find(parent[u]);
+    }
+
+    void merge(int u, int v) {
+        u = find(u);
+        v = find(v);
+        if (u == v)
+            return;
+        if (rank[u] < rank[v])
+            parent[u] = v;
+        else if (rank[u] > rank[v])
+            parent[v] = u;
+        else {
+            parent[v] = u;
+            rank[u]++;
+        }
+    }
+};
+
+DisjointSet dsu;
+int deg[MAXN];
+vector<int> g[MAXN], g_MST[MAXN];
+set<pair<int, int>> MST;
+bool chose[MAXN];
+int par[MAXN];
+
+void dfs(int u) {
+    vector<int> stack;
+    stack.push_back(u);
+
+    while (!stack.empty()) {
+        int u = stack.back();
+        stack.pop_back();
+
+        for (int v : g[u]) {
+            if (dsu.find(1) == dsu.find(v))
+                continue;
+            else {
+                dsu.merge(dsu.find(1), dsu.find(v));
+                if (u < v)
+                    MST.insert(make_pair(u, v));
+                else
+                    MST.insert(make_pair(v, u));
+                g_MST[u].push_back(v);
+                g_MST[v].push_back(u);
+                stack.push_back(v);
+            }
+        }
+    }
+}
+
+void build_tree(int u) {
+    for (int v : g_MST[u]) {
+        if (par[v] == -1) {
+            par[v] = u;
+            build_tree(v);
+        }
+    }
+}
+
+int main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+
+    int n, m, k;
+    cin >> n >> m >> k;
+
+    for (int i = 0; i < m; i++) {
+        int u, v;
+        cin >> u >> v;
+        g[u].push_back(v);
+        g[v].push_back(u);
+        deg[u]++;
+        deg[v]++;
+    }
+
+    if (deg[1] < k) {
+        cout << "NO" << endl;
+        return 0;
+    }
+
+    sort(g[1].begin(), g[1].end(), [&](int u, int v) {
+        return (deg[u] < deg[v]) || (deg[u] == deg[v] && u < v);
+    });
+
+    int cnt = 0;
+    for (int v : g[1])
+        if (deg[v] == 1)
+            cnt++;
+
+    if (cnt > k) {
+        cout << "NO" << endl;
+        return 0;
+    }
+
+    for (int v : g[1]) {
+        if (deg[v] == 1) {
+            dsu.merge(dsu.find(1), dsu.find(v));
+            MST.insert(make_pair(1, v));
+            g_MST[1].push_back(v);
+            g_MST[v].push_back(1);
+        } else if (dsu.find(1) != dsu.find(v)) {
+            dsu.merge(dsu.find(1), dsu.find(v));
+            MST.insert(make_pair(1, v));
+            g_MST[1].push_back(v);
+            g_MST[v].push_back(1);
+            chose[v] = true;
+            dfs(v);
+            cnt++;
+            if (cnt == k)
+                break;
+        }
+    }
+
+    for (int u = 2; u <= n; u++) {
+        for (int v : g[u]) {
+            if (u == 1 || v == 1)
+                continue;
+            if (dsu.find(u) != dsu.find(v)) {
+                dsu.merge(dsu.find(u), dsu.find(v));
+                if (u < v)
+                    MST.insert(make_pair(u, v));
+                else
+                    MST.insert(make_pair(v, u));
+                g_MST[u].push_back(v);
+                g_MST[v].push_back(u);
+            }
+        }
+    }
+
+    if (cnt > k || MST.size() < n - 1) {
+        cout << "NO" << endl;
+        return 0;
+    }
+
+    if (cnt == k) {
+        cout << "YES" << endl;
+        for (auto x : MST)
+            cout << x.first << " " << x.second << endl;
+        return 0;
+    }
+
+    int root = 1;
+    memset(par, -1, sizeof(par));
+    par[1] = 1;
+    build_tree(root);
+
+    for (int v : g[1]) {
+        if (!chose[v]) {
+            int p = par[v];
+            if (p == 1)
+                continue;
+            if (v < p)
+                MST.erase(make_pair(v, p));
+            else
+                MST.erase(make_pair(p, v));
+            MST.insert(make_pair(1, v));
+            par[v] = 1;
+            cnt++;
+            if (cnt == k)
+                break;
+        }
+    }
+
+    cout << "YES" << endl;
+    for (auto x : MST)
+        cout << x.first << " " << x.second << endl;
+
+    return 0;
+}
+```
+
+Explanation of the optimization steps:
+
+1. Removed unnecessary includes: Many includes were not used in the program, so I removed them to improve compile time and reduce memory usage.
+
+2. Removed unused code: I removed unused functions and variables to simplify the program and reduce memory usage.
+
+3. Optimized the disjoint set implementation: I used path compression and union by rank heuristics to optimize the disjoint set data structure. This improves the efficiency of find and merge operations.
+
+4. Optimized the graph traversal: I replaced the recursion-based depth-first search (DFS) algorithm with an iterative approach using a stack. This reduces memory usage and improves running time.
+
+5. Simplified the logic of the program: I simplified the logic of the program by removing unnecessary checks and conditions. This improves readability and performance.

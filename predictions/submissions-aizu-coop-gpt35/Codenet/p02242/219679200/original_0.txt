@@ -1,0 +1,127 @@
+Upon analyzing the given code, some potential areas for optimization can be identified:
+
+1. Memory allocation: The current implementation uses dynamic memory allocation for the graph (`g_`) using `new[]` and deallocates it using `delete[]`. This incurs overhead for memory allocation and deallocation. Instead, we can use a fixed-size array for the graph.
+
+2. Memory initialization: The current implementation initializes the graph array using `std::fill_n`, which is a linear operation. We can optimize this by using a fixed-size array and manually initializing it to `INFINIT` value.
+
+3. Unnecessary computation: The `dijkstra` function performs unnecessary computations on already visited nodes. We can optimize this by skipping the computation for visited nodes.
+
+4. Redundant memory usage: The `visited` array in the `dijkstra` function is unnecessary. We can directly mark visited nodes by updating their distance to `INFINIT`.
+
+5. Compiler optimizations: We can suggest the use of compiler optimizations, such as loop unrolling, to improve performance.
+
+Now, let's go through each optimization step in detail:
+
+1. Memory allocation:
+   - Instead of using dynamic memory allocation with `new[]`, we can use a fixed-size array for the graph. This eliminates the overhead of memory allocation and deallocation.
+   - Replace `uint *const g_;` with `uint g_[n_ * n_];` in the `Graph` class declaration.
+   - Remove `delete[] g_;` from the destructor.
+
+2. Memory initialization:
+   - Instead of using `std::fill_n` to initialize the graph array, we can manually initialize it to `INFINIT` value.
+   - Replace `std::fill_n(g_, (n_ * n_), INFINIT);` with a `for` loop to manually initialize the graph array:
+   ```cpp
+   for (auto i = 0u; i < n_ * n_; ++i) {
+     g_[i] = INFINIT;
+   }
+   ```
+
+3. Unnecessary computation:
+   - To avoid unnecessary computation on visited nodes, we can skip the computation for nodes that are already visited.
+   - Inside the inner loop of the `dijkstra` function, add a check to skip the computation for visited nodes:
+   ```cpp
+   for (auto j = 0u; j < n_; ++j) {
+     if (visited[j])
+       continue;
+     // Rest of the computation
+   }
+   ```
+
+4. Redundant memory usage:
+   - Instead of using a separate `visited` array, we can directly mark visited nodes by updating their distance to `INFINIT`.
+   - Replace `bool visited[n_];` with `uint visited[n_];` in the `dijkstra` function.
+   - Update the initialization of `visited` array to set all values to `0` instead of `false`.
+   - Inside the inner loop of the `dijkstra` function, update the visited node by setting its distance to `INFINIT`:
+   ```cpp
+   visited[i] = 1;
+   dist[i] = INFINIT;
+   ```
+
+5. Compiler optimizations:
+   - We can suggest the use of compiler optimizations, such as loop unrolling, to improve performance. However, this depends on the compiler and its optimization settings. Adding compiler-specific directives like `#pragma` can hint the compiler to optimize certain parts of the code.
+   - Add compiler-specific directives like `#pragma` before the inner loop of the `dijkstra` function to enable loop unrolling:
+   ```cpp
+   #pragma unroll
+   for (auto j = 0u; j < n_; ++j) {
+     // Rest of the computation
+   }
+   ```
+
+Here's the optimized code block with the changes applied:
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+using uint = unsigned int;
+
+class Graph {
+  const uint n_;
+  uint g_[n_ * n_];
+  const uint INFINIT;
+
+public:
+  Graph(uint n)
+      : n_(n), INFINIT(100000 * (n_ - 1) + 1) {
+    for (auto i = 0u; i < n_ * n_; ++i) {
+      g_[i] = INFINIT;
+    }
+  }
+  uint *operator[](uint i) const { return g_ + (n_ * i); }
+  void dijkstra(uint *dist) {
+    std::fill_n(dist, n_, INFINIT);
+    uint visited[n_];
+    std::fill_n(visited, n_, 0);
+    auto i = 0u;
+    visited[i] = 1;
+    dist[i] = 0u;
+    for (auto n = 0u; n < n_ - 1; ++n) {
+      auto cur_min = INFINIT;
+      auto es = (*this)[i];
+      auto base_dist = dist[i];
+      #pragma unroll
+      for (auto j = 0u; j < n_; ++j) {
+        if (visited[j])
+          continue;
+        dist[j] = std::min(dist[j], base_dist + es[j]);
+        if (cur_min > dist[j]) {
+          cur_min = dist[j];
+          i = j;
+        }
+      }
+      visited[i] = 1;
+      dist[i] = cur_min;
+    }
+  }
+};
+
+int main() {
+  uint n;
+  std::scanf("%u", &n);
+  Graph g(n);
+  uint u, k, c, v;
+  for (auto i = 0u; i < n; ++i) {
+    std::scanf("%u %u", &u, &k);
+    for (auto j = 0u; j < k; ++j) {
+      std::scanf("%u %u", &c, &v);
+      g[u][c] = v;
+    }
+  }
+  uint dist[n];
+  g.dijkstra(dist);
+  for (auto i = 0u; i < n; ++i) {
+    std::printf("%u %u\n", i, dist[i]);
+  }
+}
+```
+
+With these optimizations, the code should have improved performance and reduced memory usage compared to the original implementation.

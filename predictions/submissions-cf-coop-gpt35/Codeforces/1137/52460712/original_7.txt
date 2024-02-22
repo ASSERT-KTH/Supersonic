@@ -1,0 +1,109 @@
+Code Analysis:
+1. The code uses a depth-first search (DFS) algorithm to find strongly connected components (SCCs) in a directed graph.
+2. It then builds a new graph where each SCC is represented as a node, and edges are added between SCCs if there is an edge between any two nodes in the original graph.
+3. The code uses dynamic programming to calculate the maximum score (dp) for each SCC, based on the sums of the scores of its neighboring SCCs.
+4. The code also reads input values and builds the original graph based on the input.
+
+Optimization Strategy:
+1. Improve Memory Usage: The code uses a 2D array 'open' to represent whether a node is open or closed. This can be optimized by using a bitset instead, as each node only needs one bit to represent its status.
+2. Avoid Redundant Computations: The code calculates the SCCs and the new graph twice. This can be optimized by calculating them only once and storing the results for later use.
+3. Compiler Optimizations: Enable optimizations in the compiler using appropriate compiler flags or pragmas. This can help the compiler perform various optimizations, such as loop unrolling, function inlining, and constant folding.
+
+Step-by-Step Explanation:
+1. Replace 2D Array with Bitset: Replace the 2D array 'open' with a bitset to represent the open/closed status of nodes. This reduces memory usage by a factor of 8, as each bit in the bitset represents the status of one node.
+2. Calculate SCCs and New Graph Once: Calculate the SCCs and the new graph once and store the results for later use. This avoids redundant computations and improves efficiency.
+3. Enable Compiler Optimizations: Enable compiler optimizations by using appropriate compiler flags or pragmas. This allows the compiler to perform various optimizations, such as loop unrolling, function inlining, and constant folding, which can improve performance.
+
+Optimized Code:
+
+```cpp
+#include <algorithm>
+#include <cassert>
+#include <cstdio>
+#include <vector>
+#include <bitset>
+using namespace std;
+const int M = 100000 + 10, N = 50 * M;
+inline void dn(int &x, int y) {
+  if (y < x)
+    x = y;
+}
+char gc() {
+  char c = getchar();
+  if (c != '0' && c != '1')
+    c = getchar();
+  return c;
+}
+int n, m, d;
+bitset<N> open;
+int id(int u, int t) { return (u - 1) * d + t; }
+vector<int> e[N], escc[N];
+int nscc, idscc[N], dfn[N], lowlink[N], clo;
+int stk[N], top;
+bool instk[N];
+void dfscc(int k) {
+  dfn[k] = lowlink[k] = ++clo;
+  instk[stk[top++] = k] = true;
+  for (int &p : e[k]) {
+    if (!dfn[p]) dfscc(p), dn(lowlink[k], lowlink[p]);
+    else if (instk[p]) dn(lowlink[k], dfn[p]);
+  }
+  if (lowlink[k] == dfn[k]) {
+    ++nscc;
+    while (top && stk[top] != k) {
+      instk[stk[--top]] = false;
+      idscc[stk[top]] = nscc;
+    }
+  }
+}
+void getSCC(int n) {
+  for (int k = 1; k <= n; ++k)
+    if (!dfn[k]) dfscc(k);
+  for (int k = 1; k <= n; ++k) {
+    for (int &p : e[k]) {
+      if (idscc[k] != idscc[p]) escc[idscc[k]].push_back(idscc[p]);
+    }
+  }
+}
+int ops[N];
+int dp[N];
+bool vis[N];
+int dfsdp(int k) {
+  if (vis[k]) return dp[k];
+  for (auto p : escc[k])
+    dp[k] = max(dp[k], dfsdp(p));
+  dp[k] += ops[k];
+  vis[k] = 1;
+  return dp[k];
+}
+int main() {
+  scanf("%d%d%d", &n, &m, &d);
+  for (int i = 1; i <= m; ++i) {
+    int u, v;
+    scanf("%d%d", &u, &v);
+    for (int j = 1; j <= d; ++j)
+      e[id(u, j)].push_back(id(v, j % d + 1));
+  }
+  
+  for (int i = 1; i <= n; ++i) {
+    for (int j = 1; j <= d; ++j)
+      open[id(i, j)] = (gc() - '0');
+  }
+  
+  getSCC(n * d);
+  for (int i = 1; i <= n; ++i) {
+    int tmp[50], ntmp = 0;
+    for (int j = 1; j <= d; ++j)
+      if (open[id(i, j)])
+        tmp[ntmp++] = idscc[id(i, j)];
+    sort(tmp, tmp + ntmp);
+    ntmp = unique(tmp, tmp + ntmp) - tmp;
+    for (int j = 0; j < ntmp; ++j)
+      ++ops[tmp[j]];
+  }
+  printf("%d", dfsdp(idscc[id(1, 1)]));
+  return 0;
+}
+```
+
+The optimized code reduces memory usage by using a bitset instead of a 2D array, avoids redundant computations by calculating SCCs and the new graph only once, and suggests enabling compiler optimizations to further improve performance.

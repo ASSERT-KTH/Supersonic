@@ -1,0 +1,127 @@
+This code is a C++ program that uses the technique of square root decomposition to perform range queries. The range queries are of two types: 
+
+1. **Sum query**: Calculate the sum of elements in a range.
+2. **Update query**: Update all elements in a range to a given value.
+
+The program reads input for a sequence of characters ('0' or '1'), the number of queries, and the parameters for each query. For each query, the program uses square root decomposition to efficiently perform the update and sum operations and prints the result of the sum operation.
+
+Here is the optimized version of the code:
+
+```C++
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+const int bucket_size = 256;
+
+struct sqrt_decomp {
+  int length, bucket_num;
+  vector<vector<int>> buckets;
+  vector<int> update, bucket_sum;
+
+  sqrt_decomp(const vector<int> &x)
+      : length(x.size()),
+        bucket_num((x.size() + bucket_size - 1) / bucket_size),
+        buckets(bucket_num),
+        update(bucket_num, 2),
+        bucket_sum(bucket_num, 0) {
+    for (int i = 0; i < x.size(); ++i) {
+      buckets[i / bucket_size].push_back(x[i]);
+      bucket_sum[i / bucket_size] += x[i];
+    }
+  }
+
+  int sum() {
+    int res = 0;
+    for (int i = 0; i < bucket_num; ++i) {
+      res += (update[i] == 2) ? bucket_sum[i] : update[i] * buckets[i].size();
+    }
+    return res;
+  }
+
+  void query(int l, int r, int b) {
+    l = max(0, l);
+    r = min(length - 1, r);
+    while (l % bucket_size != 0 && l <= r) {
+      int bucket_index = l / bucket_size;
+      if (update[bucket_index] < 2) {
+        fill(buckets[bucket_index].begin(), buckets[bucket_index].end(), update[bucket_index]);
+        bucket_sum[bucket_index] = update[bucket_index] * buckets[bucket_index].size();
+        update[bucket_index] = 2;
+      }
+      bucket_sum[bucket_index] = bucket_sum[bucket_index] - buckets[bucket_index][l % bucket_size] + b;
+      buckets[bucket_index][l % bucket_size] = b;
+      ++l;
+    }
+    while (l <= r) {
+      int bucket_index = r / bucket_size;
+      if (update[bucket_index] < 2) {
+        fill(buckets[bucket_index].begin(), buckets[bucket_index].end(), update[bucket_index]);
+        bucket_sum[bucket_index] = update[bucket_index] * buckets[bucket_index].size();
+        update[bucket_index] = 2;
+      }
+      bucket_sum[bucket_index] = bucket_sum[bucket_index] - buckets[bucket_index][r % bucket_size] + b;
+      buckets[bucket_index][r % bucket_size] = b;
+      --r;
+    }
+    for (int i = l / bucket_size; i <= r / bucket_size; ++i) update[i] = b;
+  }
+
+  int at(int i) {
+    int bucket_index = i / bucket_size;
+    return (update[bucket_index] < 2) ? update[bucket_index] : buckets[bucket_index][i % bucket_size];
+  }
+};
+
+void solve() {
+  int n, q;
+  string s;
+  cin >> n >> s >> q;
+  vector<int> x1(n), x2(n-1);
+  for (int i = 0; i < n; i++) {
+    x1[i] = s[i] - '0';
+    if (i < n - 1)
+      x2[i] = (s[i] - '0') * (s[i + 1] - '0');
+  }
+  sqrt_decomp f(x1), g(x2);
+  for (int i = 0; i < q; i++) {
+    int l, r, b;
+    cin >> l >> r >> b;
+    l--;
+    r--;
+    f.query(l, r, b);
+    if (b == 0)
+      g.query(l - 1, r, 0);
+    else {
+      int l_ = l, r_ = r - 1;
+      if (l > 0 && f.at(l - 1)) --l_;
+      if (r < n - 1 && f.at(r + 1)) ++r_;
+      g.query(l_, r_, 1);
+    }
+    cout << f.sum() - g.sum() << '\n';
+  }
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  cout.tie(NULL);
+  solve();
+  return 0;
+}
+```
+
+**Optimizations:**
+
+1. **Removed unused headers and macros:** The `<bits/stdc++.h>` header file and some macros were not in use, so they were removed to reduce compile time.
+
+2. **Replaced the `for` loop by `std::fill`:** This function is faster because it can take advantage of specific hardware instructions. 
+
+3. **Removed unnecessary `std::vector::resize()`:** The `buckets`, `update`, and `bucket_sum` vectors were resized unnecessarily. The size was already provided in the constructor.
+
+4. **Used `'\n'` instead of `std::endl`:** `std::endl` flushes the output buffer each time, which can slow down the program. It's better to use `'\n'` and let the buffer flush naturally.
+
+5. **Used `ios_base::sync_with_stdio(false)`:** This disables the synchronization between the C and C++ standard streams. When it's turned off, the C++ streams are allowed to have their own independent buffers, which can make I/O operations faster. 
+
+6. **Used `cin.tie(NULL)` and `cout.tie(NULL)`:** This unties `cin` from `cout`. By default, `cin` is tied to `cout` to ensure a sensible order of reads and writes. When they are tied, any input or output operation on `cin` forces the `cout` buffer to be flushed. This can cause unnecessary overhead when we don't need to write anything to `cout` before reading from `cin`.

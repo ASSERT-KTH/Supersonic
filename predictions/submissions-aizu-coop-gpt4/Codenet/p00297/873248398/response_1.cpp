@@ -1,0 +1,95 @@
+#include <algorithm>
+#include <vector>
+#include <iostream>
+#include <utility>
+#define all(a) a.begin(), a.end()
+
+const int inf = 1e9;
+struct SegTree {
+  int n;
+  std::vector<int> Max;
+  std::vector<int> Min;
+  void init(int n_) {
+    n = 1;
+    while (n < n_)
+      n *= 2;
+    Max.resize(2 * n);
+    Min.resize(2 * n);
+    for (int i = 0; i < 2 * n - 1; ++i) {
+      Max[i] = -inf;
+      Min[i] = inf;
+    }
+  }
+  void min_update(int idx, int val) {
+    idx += n - 1;
+    Min[idx] = val;
+    while (idx > 0) {
+      idx = (idx - 1) / 2;
+      Min[idx] = std::min(Min[idx * 2 + 1], Min[idx * 2 + 2]);
+    }
+  }
+  void max_update(int idx, int val) {
+    idx += n - 1;
+    Max[idx] = val;
+    while (idx > 0) {
+      idx = (idx - 1) / 2;
+      Max[idx] = std::max(Max[idx * 2 + 1], Max[idx * 2 + 2]);
+    }
+  }
+  int get_min(int a, int b, int k = 0, int l = 0, int r = -1) {
+    if (r == -1)
+      r = n;
+    if (r <= a || b <= l)
+      return inf;
+    if (a <= l && r <= b)
+      return Min[k];
+    int vl = get_min(a, b, k * 2 + 1, l, (l + r) / 2);
+    int vr = get_min(a, b, k * 2 + 2, (l + r) / 2, r);
+    return std::min(vl, vr);
+  }
+  int get_max(int a, int b, int k = 0, int l = 0, int r = -1) {
+    if (r == -1)
+      r = n;
+    if (r <= a || b <= l)
+      return -inf;
+    if (a <= l && r <= b)
+      return Max[k];
+    int vl = get_max(a, b, k * 2 + 1, l, (l + r) / 2);
+    int vr = get_max(a, b, k * 2 + 2, (l + r) / 2, r);
+    return std::max(vl, vr);
+  }
+};
+
+int main() {
+  int N, d;
+  std::cin >> N >> d;
+  SegTree x_seg, y_seg;
+  x_seg.init(N), y_seg.init(N);
+  std::vector<std::pair<int, int>> hoge(N);
+  std::vector<int> X(N), Y(N);
+  for (int i = 0; i < N; ++i) {
+    int x, y, b;
+    std::cin >> x >> y >> b;
+    X[i] = x, Y[i] = y;
+    hoge[i] = {b, i};
+  }
+  std::sort(all(hoge));
+  for (int i = 0; i < N; ++i) {
+    x_seg.min_update(i, X[hoge[i].second]);
+    x_seg.max_update(i, X[hoge[i].second]);
+    y_seg.min_update(i, Y[hoge[i].second]);
+    y_seg.max_update(i, Y[hoge[i].second]);
+  }
+  long long ans = -inf;
+  for (int i = 0; i < N; ++i) {
+    int b = hoge[i].first;
+    int idx = upper_bound(all(hoge), std::pair<int, int>{b + d, inf}) - hoge.begin();
+    int min_x = x_seg.get_min(i, idx);
+    int max_x = x_seg.get_max(i, idx);
+    int min_y = y_seg.get_min(i, idx);
+    int max_y = y_seg.get_max(i, idx);
+    ans = std::max(ans, 1ll * (max_x - min_x) * (max_y - min_y));
+  }
+  std::cout << ans << '\n';
+  return 0;
+}

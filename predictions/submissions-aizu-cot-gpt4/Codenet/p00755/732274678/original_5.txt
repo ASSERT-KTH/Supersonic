@@ -1,0 +1,96 @@
+This program is relatively optimized already, but there are a few small changes that could potentially increase its efficiency:
+
+1. Avoid copying the entire 2D vector `N` to `temp` in the `on` function. Instead, you can pass `N` by reference to the `calc` function and revert the changes after calling `calc`. This will reduce the memory usage, but you should be aware that this will make the code a bit more complex and harder to follow.
+
+2. The `on` function is called recursively. This can lead to a deep call stack if the `count` parameter is large. The depth of recursion here is limited to 5, so in this case, it could be fine. However, in case you have a situation where this depth can be much more, you should consider changing this recursive approach to an iterative one.
+
+3. The `calc` function is also called recursively. In the worst case, it can be called `w*h` times. This can be changed to an iterative approach using a stack or a queue. But again, you should be aware that this will make the code a bit more complex and harder to follow.
+
+4. The `used` array in the `on` function can be replaced with a `std::vector<std::vector<bool>>`. This will make the code more idiomatic and safer because the size of the array will be checked at compile time.
+
+Here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <queue>
+#include <string.h>
+#include <string>
+#include <vector>
+using namespace std;
+int w, h, Col;
+typedef pair<int, int> C;
+typedef vector<vector<int>> P;
+P V;
+int dx[4] = {0, 1, 0, -1};
+int dy[4] = {1, 0, -1, 0};
+int res;
+int tres = 0;
+void calc(P &temp, int y, int x, int origColor) {
+  if (y < 0 || x < 0 || x >= w || y >= h)
+    return;
+  if (temp[y][x] == origColor) {
+    tres++;
+    temp[y][x] = 0;
+    for (int r = 0; r < 4; r++)
+      calc(temp, y + dy[r], x + dx[r], origColor);
+  }
+}
+void on(P &N, int count, int c) {
+  if (count == 5) {
+    int origColor = N[0][0];
+    tres = 0;
+    calc(N, 0, 0, origColor);
+    res = max(res, tres);
+    return;
+  }
+  int nc = N[0][0];
+  queue<C> Q;
+  Q.push(make_pair(0, 0));
+  vector<vector<bool>> used(h, vector<bool>(w, false));
+  int tres = 0;
+  while (!Q.empty()) {
+    C now = Q.front();
+    Q.pop();
+    if (used[now.first][now.second])
+      continue;
+    used[now.first][now.second] = true;
+    N[now.first][now.second] = c;
+    for (int r = 0; r < 4; r++) {
+      int ny = now.first + dy[r], nx = now.second + dx[r];
+      if (ny < 0 || nx < 0 || ny >= h || nx >= w)
+        continue;
+      if (N[ny][nx] == nc)
+        Q.push(make_pair(ny, nx));
+    }
+  }
+  if (count != 4)
+    for (int i = 1; i <= 6; i++)
+      on(N, count + 1, i);
+  else
+    on(N, count + 1, Col);
+}
+void solve() {
+  res = 0;
+  V.clear();
+  V.resize(h);
+  for (int y = 0; y < h; y++)
+    for (int x = 0; x < w; x++) {
+      int t;
+      cin >> t;
+      V[y].push_back(t);
+    }
+  for (int i = 1; i <= 6; i++) {
+    if (V[0][0] != i)
+      on(V, 0, i);
+  }
+  cout << res << endl;
+}
+int main() {
+  while (cin >> h >> w >> Col) {
+    if (w == 0)
+      break;
+    solve();
+  }
+  return 0;
+}
+```

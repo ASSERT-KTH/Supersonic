@@ -1,0 +1,95 @@
+1. Code Analysis:
+
+This program appears to be a recursive string expansion program. It reads in a string and an integer `n`. The string can contain digits and parentheses to denote repetitions. It then expands the string and prints the `n`th character in the expanded string. If `n` is larger than the length of the expanded string, it returns '0'. 
+
+For example, if the input string is "3(ab)" and `n` is 4, the expanded string would be "ababab" and the fourth character in this string is 'a', which is the output. 
+
+From a performance perspective, there are several potential bottlenecks:
+
+- The `expand` function is called recursively which can lead to a stack overflow for large inputs. 
+- The string is being passed by value to the `expand` function, which can be expensive for large strings. 
+- The function `std::atoi(str.substr(i, j).c_str())` is used to convert a substring to an integer which is inefficient due to unnecessary string copying and C-string conversion.
+- The function `cket` is used to find the matching closing parenthesis for a given opening parenthesis which can be optimized.
+
+2. Optimization Strategy:
+
+A. Use references for string parameter passing: Instead of passing the string by value to the `expand` function, we can pass it by reference to avoid unnecessary copying of the string.
+
+B. Use `std::stoi` instead of `std::atoi(str.substr(i, j).c_str())`: `std::stoi` directly converts a string to an integer without the need for creating a new string or a C-string.
+
+C. Inline `cket` function: Instead of having a separate function to find the matching closing parenthesis, we can include this functionality directly in the `expand` function.
+
+D. Avoid unnecessary substring creation: Instead of creating a new substring for each recursive call to `expand`, we can pass the starting and ending indices of the substring to the function.
+
+3. Step-by-Step Explanation:
+
+A. Change `expand(std::string str)` to `expand(const std::string &str)`. This will pass the string by reference, reducing the overhead of copying large strings.
+
+B. Replace `std::atoi(str.substr(i, j).c_str())` with `std::stoi(str.substr(i, j))`. This will convert the string to an integer without creating a new string or converting to a C-string, reducing memory and CPU usage.
+
+C. Instead of calling `cket` in `expand`, we can directly include a loop in `expand` to find the matching closing parenthesis. This reduces the overhead of function calls.
+
+D. Change `expand(str.substr(s, e))` to `expand(str, s, e)`. This avoids creating a new string for each recursive call, reducing memory usage.
+
+4. Optimized Code Block:
+
+```cpp
+#include <cstdlib>
+#include <iostream>
+#include <string>
+
+int n;
+
+char expand(const std::string &str, int s = 0, int e = -1) {
+  if(e == -1) e = str.size();
+  for (int i = s; i < e; ++i) {
+    if (isdigit(str[i])) {
+      int j = 1;
+      while (isdigit(str[i + j]))
+        j++;
+      int num = std::stoi(str.substr(i, j));
+      int s1, e1;
+      if (str[i + j] == '(') {
+        int n = 1;
+        int k = i + j + 1;
+        while(n != 0) {
+          if(str[k] == '(') n++;
+          if(str[k] == ')') n--;
+          k++;
+        }
+        s1 = i + j + 1;
+        e1 = k - 1;
+        i = k - 1;
+      } else {
+        s1 = i + j;
+        e1 = s1 + 1;
+        i = i + j;
+      }
+      for (int l = 0; l < num; ++l) {
+        char a = expand(str, s1, e1);
+        if (a != '0')
+          return a;
+      }
+    } else {
+      if (n == 0) {
+        return str[i];
+      }
+      n--;
+    }
+  }
+  return '0';
+}
+
+int main(void) {
+  while (true) {
+    std::string str;
+    std::cin >> str >> n;
+    if (str == "0" && n == 0)
+      break;
+    std::cout << expand(str) << std::endl;
+  }
+  return 0;
+}
+```
+
+This optimized code should have similar functionality to the original code but with improved performance and reduced memory usage.

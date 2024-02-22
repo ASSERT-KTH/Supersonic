@@ -1,0 +1,165 @@
+Code Analysis:
+- The code uses a breadth-first search algorithm to find the shortest path in a grid.
+- The grid is represented as a 2D vector of integers, where 0 represents an obstacle and any other positive value represents an empty cell.
+- The code uses a struct `aa` to represent a cell in the grid, with x and y coordinates and a turn count.
+- The `getdis` function calculates the shortest distance between two given points in the grid using breadth-first search.
+- The code uses a struct `bb` to represent a state in the search process, with x and y coordinates, a direction, and a turn count.
+- The `Compare` class is used as a custom comparator for the priority queue in the main function.
+- The code initializes a 3D array `memo2` to store the minimum turn counts for each state.
+- The main function reads the input, initializes the necessary data structures, and performs the breadth-first search.
+
+Optimization Strategy:
+1. Avoid unnecessary memory usage:
+   - The `memo` vector in the `getdis` function is used to store the minimum turn counts for each cell. However, it is initialized with a default value of 999999 and never modified again. This means that the initialization step is unnecessary, as the default value is already set. Removing the initialization will save memory and improve performance.
+
+2. Optimize memory access:
+   - The `field` vector represents the grid. However, it is implemented as a vector of vectors, which can result in inefficient memory access due to cache misses. To improve memory access, we can flatten the grid into a 1D vector and use linear indexing to access elements. This will reduce the number of cache misses and improve performance.
+
+3. Use more efficient data structures:
+   - The `queue` data structure in the `getdis` function is used to perform breadth-first search. However, the `queue` implementation has a high constant overhead for inserting and removing elements. We can use a `deque` instead, which provides efficient insertion and removal at both ends. This change will improve the performance of the breadth-first search.
+
+4. Compiler optimizations:
+   - We can suggest the compiler to optimize the code by using compiler-specific pragmas or compiler flags. This can enable the compiler to apply various optimizations, such as loop unrolling, instruction scheduling, and vectorization. However, the specific optimizations will depend on the compiler being used.
+
+Step-by-Step Explanation:
+1. Avoid unnecessary memory usage:
+   - Remove the initialization of the `memo` vector in the `getdis` function, as the default value is already set.
+
+2. Optimize memory access:
+   - Flatten the `field` vector into a 1D vector by changing its declaration to `vector<int> field((H + 2) * (W + 2), true)`.
+   - Modify the code to access elements of the `field` vector using linear indexing instead of 2D indexing. For example, instead of `field[nexty][nextx]`, use `field[nexty * (W + 2) + nextx]`.
+
+3. Use more efficient data structures:
+   - Replace the `queue` data structure in the `getdis` function with a `deque`. Change the declaration to `deque<aa> que;`.
+   - Modify the code to use `push_back` and `pop_front` functions instead of `push` and `pop` functions.
+
+4. Compiler optimizations:
+   - Enable compiler optimizations by adding appropriate pragmas or compiler flags. This step will depend on the compiler being used.
+
+Optimized Code Block:
+
+```cpp
+#include "bits/stdc++.h"
+using namespace std;
+const int dx[4] = {-1, 0, 1, 0};
+const int dy[4] = {0, 1, 0, -1};
+const int dx2[4] = {-1, 0, 2, 1};
+const int dy2[4] = {0, 2, 1, -1};
+struct aa {
+  int x;
+  int y;
+  int turn;
+};
+int getdis(const vector<int> &field, const int fx, const int fy,
+           const int gx, const int gy, const int H, const int W) {
+  int ans = 999999;
+  deque<aa> que;
+  vector<int> memo((H + 2) * (W + 2), 999999);
+  que.push_back(aa{fx, fy, 0});
+  while (!que.empty()) {
+    aa atop(que.front());
+    que.pop_front();
+    if (atop.x == gx && atop.y == gy) {
+      ans = atop.turn;
+      break;
+    }
+    for (int i = 0; i < 4; ++i) {
+      const int nextx = atop.x + dx[i];
+      const int nexty = atop.y + dy[i];
+      if (!field[nexty * (W + 2) + nextx]) {
+        if (atop.turn + 1 < memo[nexty * (W + 2) + nextx]) {
+          memo[nexty * (W + 2) + nextx] = atop.turn + 1;
+          que.push_back(aa{nextx, nexty, atop.turn + 1});
+        }
+      }
+    }
+  }
+  return ans;
+}
+struct bb {
+  int kx;
+  int ky;
+  int opway;
+  int turn;
+};
+class Compare {
+public:
+  bool operator()(const bb &l, const bb &r) { return l.turn > r.turn; }
+};
+int memo2[60][60][4];
+int main() {
+  while (1) {
+    int H, W;
+    cin >> H >> W;
+    if (!H)
+      break;
+    vector<int> field((H + 2) * (W + 2), true);
+    priority_queue<bb, vector<bb>, Compare> que;
+    {
+      int kx = 99, ky = 99;
+      int ox[2];
+      int oy[2];
+      int num = 0;
+      for (int i = 0; i < H; ++i) {
+        string st;
+        cin >> st;
+        for (int j = 0; j < W; ++j) {
+          if (st[j] == 'X') {
+            kx = min(kx, j + 1);
+            ky = min(ky, i + 1);
+            field[(i + 1) * (W + 2) + (j + 1)] = false;
+          } else if (st[j] == 'o') {
+            field[(i + 1) * (W + 2) + (j + 1)] = false;
+          } else if (st[j] == '.') {
+            field[(i + 1) * (W + 2) + (j + 1)] = false;
+            ox[num] = j + 1;
+            oy[num] = i + 1;
+            num++;
+          }
+        }
+      }
+      if (kx == 1 && ky == 1) {
+        cout << 0 << endl;
+        continue;
+      }
+      for (int way = 0; way < 4; ++way) {
+        int amin = 999999;
+        bool ok = true;
+        for (int op = 0; op < 2; ++op) {
+          int atime = 0;
+          for (int lu = 0; lu < 2; ++lu) {
+            const int fx = ox[op ^ lu];
+            const int fy = oy[op ^ lu];
+            int gx = kx + dx2[way];
+            int gy = ky + dy2[way];
+            if (lu == 1) {
+              gx += dx[(way + 1) % 4];
+              gy += dy[(way + 1) % 4];
+            }
+            if (field[gy * (W + 2) + gx])
+              ok = false;
+            for (int ax = 0; ax < 2; ++ax) {
+              for (int ay = 0; ay < 2; ++ay) {
+                field[(ky + ay) * (W + 2) + (kx + ax)] = true;
+              }
+            }
+            atime += getdis(field, fx, fy, gx, gy, H, W);
+            for (int ax = 0; ax < 2; ++ax) {
+              for (int ay = 0; ay < 2; ++ay) {
+                field[(ky + ay) * (W + 2) + (kx + ax)] = false;
+              }
+            }
+          }
+          amin = min(amin, atime);
+        }
+        if (!ok)
+          continue;
+        else {
+          memo2[kx][ky][way] = amin;
+          que.push(bb{kx, ky, way, amin});
+        }
+      }
+    }
+    int ans = -1;
+    while (!que.empty()) {
+      bb atop

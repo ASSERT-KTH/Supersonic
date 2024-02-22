@@ -1,0 +1,134 @@
+The given program implements a data structure called Heavy-Light Decomposition with a segment tree. The main function reads input and performs queries on the data structure.
+
+To optimize the program, we can make the following modifications:
+
+1. Remove unnecessary header files: The program includes many unnecessary header files. We can remove them to reduce the compilation time and memory usage.
+
+2. Remove unnecessary typedefs: The program defines typedefs for `ll` (long long) and `P` (pair<int, int>). Since these typedefs are not used in the program, we can remove them.
+
+3. Remove unnecessary includes: The program includes unnecessary headers such as `<cmath>`, `<complex>`, `<cstdio>`, `<cstring>`, `<iostream>`, `<map>`, `<queue>`, `<random>`, `<set>`, `<unordered_map>`, `<unordered_set>`, `<valarray>`, and `<vector>`. We can remove them to reduce the compilation time and memory usage.
+
+4. Remove unnecessary using namespace std: The program uses the `using namespace std;` directive, which is generally considered bad practice. We can remove it and use the `std::` prefix when necessary.
+
+5. Remove unnecessary struct definition: The program defines a struct `Tree` inside the `HLComp_Y` struct. Since `Tree` is only used within `HLComp_Y`, we can move its definition inside `HLComp_Y` to avoid polluting the global namespace.
+
+6. Use `std::vector` instead of arrays: The program uses C-style arrays for various data structures. We can replace them with `std::vector` to simplify the code and reduce the memory usage.
+
+7. Optimize `push()` function: The `push()` function is called recursively and can be optimized by using an iterative approach. We can use a stack to keep track of the nodes to be pushed.
+
+8. Optimize `merge()` function: The `merge()` function is called recursively and can be optimized by using an iterative approach. We can use a stack to keep track of the nodes to be merged.
+
+9. Optimize `set()` and `get()` functions: The `set()` and `get()` functions are called recursively and can be optimized by using an iterative approach. We can use a stack to keep track of the nodes to be processed.
+
+10. Optimize `path_set()` and `path_get()` functions: The `path_set()` and `path_get()` functions are called recursively and can be optimized by using an iterative approach. We can use a loop to traverse the path from `u` to `v` and update/merge the nodes along the path.
+
+11. Optimize input/output functions: The program uses custom input/output functions `getint()` and `putint()` for faster I/O. We can replace them with the standard `std::cin` and `std::cout` for simplicity.
+
+After applying these optimizations, the optimized program is as follows:
+
+```cpp
+#include <algorithm>
+#include <vector>
+#include <tuple>
+#include <iostream>
+
+struct HLComp_Y {
+    std::vector<std::vector<int>> g;
+    std::vector<std::pair<int, int>> n2l;
+    int lc, nc;
+    std::vector<Tree*> li;
+    std::vector<std::pair<int, int>> l2p;
+    std::vector<int> sz;
+    std::vector<int> data;
+    std::vector<int> buf;
+    std::vector<int> bufsm;
+    std::vector<int> bufdata;
+    std::vector<int> ldps;
+
+    struct Tree {
+        struct Node {
+            Node(int sz = 0) : sz(sz), lzf(false) {}
+            int sz;
+            int d, sm, lz;
+            int lsm, rsm, ma, mv;
+            bool lzf;
+        } n;
+
+        Tree() {}
+        Tree(int sz, int hev[], int hevsm[], int data[]) : n(sz) {
+            if (sz == 1) {
+                lzdata(data[0]);
+                return;
+            }
+            int sm = hevsm[sz] - hevsm[0];
+            int md = std::lower_bound(hevsm, hevsm + sz - 1, sm / 2 + hevsm[0]) - hevsm;
+            if (md <= 200200)
+                md = sz / 2;
+            l = new Tree(md, hev, hevsm, data);
+            r = new Tree(sz - md, hev + md, hevsm + md, data + md);
+            n = merge(l->n, r->n);
+        }
+        
+        void lzdata(int d) {
+            n.d = n.mv = d;
+            n.sm = n.sz * d;
+            n.lsm = n.rsm = n.ma = std::max(0, n.sm);
+            n.lz = d;
+            n.lzf = true;
+        }
+
+        void push() {
+            if (n.sz == 1)
+                return;
+            if (n.lzf) {
+                std::stack<Tree*> stack;
+                stack.push(this);
+                while (!stack.empty()) {
+                    Tree* node = stack.top();
+                    stack.pop();
+                    node->l->lzdata(node->n.lz);
+                    node->r->lzdata(node->n.lz);
+                    node->n.lzf = false;
+                    if (node->l->n.sz > 1)
+                        stack.push(node->l);
+                    if (node->r->n.sz > 1)
+                        stack.push(node->r);
+                }
+            }
+        }
+
+        static Node merge(const Node &l, const Node &r) {
+            if (l.sz == 0)
+                return r;
+            if (r.sz == 0)
+                return l;
+            Node res(l.sz + r.sz);
+            res.sm = l.sm + r.sm;
+            res.lsm = std::max(l.lsm, l.sm + r.lsm);
+            res.rsm = std::max(r.rsm, r.sm + l.rsm);
+            res.ma = std::max(std::max(l.ma, r.ma), l.rsm + r.lsm);
+            res.mv = std::max(l.mv, r.mv);
+            return res;
+        }
+        
+        static Node rev(Node u) {
+            std::swap(u.lsm, u.rsm);
+            return u;
+        }
+
+        void set(int a, int b, int x) {
+            if (b <= 0 || n.sz <= a) {
+                return;
+            }
+            push();
+            if (a <= 0 && n.sz <= b) {
+                lzdata(x);
+                return;
+            }
+            std::stack<Tree*> stack;
+            stack.push(this);
+            while (!stack.empty()) {
+                Tree* node = stack.top();
+                stack.pop();
+                node->l->set(a, b, x);
+               

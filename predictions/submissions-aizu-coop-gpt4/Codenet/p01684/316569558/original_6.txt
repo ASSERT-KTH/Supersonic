@@ -1,0 +1,155 @@
+This C++ program primarily calculates and prints the positions and radii of two circles within a given rectangle, such that the sum of areas of the two circles and the overlapping area matches the given inputs. If such placement is impossible, it prints "impossible".
+
+Here are some steps to optimize the program:
+
+1. Code Analysis:
+    1. Inefficient use of #include <bits/stdc++.h> which includes all standard libraries, many of which are not used in the program.
+    2. Use of the macro REP(i, n) for loop control is unnecessary complexity.
+    3. The solve function has several repetitive code blocks, which can be consolidated to reduce redundancy and improve readability.
+    4. There are multiple calls to the math functions sqrt, acos, and sin which can be optimized.
+    5. Usage of assert statements for debugging purposes can be removed in the final optimized version.
+    6. The usage of printf for output can be replaced with cout for consistency.
+
+2. Optimization Strategy:
+    1. Use only the necessary includes instead of <bits/stdc++.h>.
+    2. Remove the macro REP and replace it with regular for loops.
+    3. Consolidate the repetitive parts of the code into helper functions.
+    4. Make use of precalculated or cached results for costly mathematical operations where possible.
+    5. Remove assert statements.
+    6. Replace printf with cout for consistency.
+
+Let's go through the step-by-step optimization process:
+
+1. Replace #include <bits/stdc++.h> with necessary libraries:
+
+    ```c++
+    #include <iostream>
+    #include <cmath>
+    #include <cassert>
+    ```
+
+2. Remove the macro REP and replace with normal for loops:
+
+    ```c++
+    for (int _ = 0; _ < 80; ++_) {...}
+    ```
+
+3. To reduce code redundancy, separate the common logic in the solve function into a new function, print_results:
+
+    ```c++
+    void print_results(double xa, double ya, double ra, double xb, double yb, double rb, bool reversed) {
+      if (!reversed) {
+        cout << fixed << setprecision(9) << xa << " " << ya << " " << ra << " " << xb << " " << yb << " " << rb << "\n";
+      } else {
+        cout << fixed << setprecision(9) << xb << " " << yb << " " << rb << " " << xa << " " << ya << " " << ra << "\n";
+      }
+    }
+    ```
+
+4. Remove assert statements in the solve function.
+
+5. Precalculate square of radii in the solve function to optimize mathematical operations:
+
+    ```c++
+    double ra_sq = sa / M_PI;
+    double rb_sq = sb / M_PI;
+    double ra = sqrt(ra_sq);
+    double rb = sqrt(rb_sq);
+    ```
+
+6. Replace printf statements with cout in the print_results function for consistency.
+
+Below is the optimized code block:
+
+```c++
+#include <iostream>
+#include <cmath>
+#include <iomanip>
+using namespace std;
+
+const double EPS = 1e-4;
+
+double calc(double ra, double rb, double s) {
+  double lb = abs(ra - rb);
+  double ub = ra + rb;
+  for (int _ = 0; _ < 80; ++_) {
+    double d = (lb + ub) / 2;
+    double tha = acos((ra * ra + d * d - rb * rb) / (2.0 * d * ra));
+    double thb = acos((rb * rb + d * d - ra * ra) / (2.0 * d * rb));
+    double sum = ra * ra * tha + rb * rb * thb - ra * d * sin(tha);
+    if (sum > s) {
+      lb = d;
+    } else {
+      ub = d;
+    }
+  }
+  return ub;
+}
+
+double sq(double x) { return x * x; }
+
+bool judge(double x, double y, double r, double W, double H) {
+  return x - r > -EPS && x + r < W + EPS && y - r > -EPS && y + r < H + EPS;
+}
+
+void print_results(double xa, double ya, double ra, double xb, double yb, double rb, bool reversed) {
+  if (!reversed) {
+    cout << fixed << setprecision(9) << xa << " " << ya << " " << ra << " " << xb << " " << yb << " " << rb << "\n";
+  } else {
+    cout << fixed << setprecision(9) << xb << " " << yb << " " << rb << " " << xa << " " << ya << " " << ra << "\n";
+  }
+}
+
+bool solve(double W, double H, double sa, double sb, double sc, bool reversed) {
+  
+  double ra_sq = sa / M_PI;
+  double rb_sq = sb / M_PI;
+  double ra = sqrt(ra_sq);
+  double rb = sqrt(rb_sq);
+  
+  if (2.0 * ra > min(W, H) + EPS)
+    return false;
+  if (2.0 * rb > min(W, H) + EPS)
+    return false;
+    
+  double D = calc(ra, rb, sc);
+  double xa = ra;
+  double ya = ra;
+  
+  for (double xb : {ra, rb, W - rb}) {
+    double dy = sqrt(sq(D) - sq(xa - xb));
+    for (int sign = -1; sign <= 1; sign += 2) {
+      double yb = ya + sign * dy;
+      if (judge(xb, yb, rb, W, H)) {
+        print_results(xa, ya, ra, xb, yb, rb, reversed);
+        return true;
+      }
+    }
+  }
+  
+  for (double yb : {ra, rb, H - rb}) {
+    double dx = sqrt(sq(D) - sq(ya - yb));
+    for (int sign = -1; sign <= 1; sign += 2) {
+      double xb = xa + sign * dx;
+      if (judge(xb, yb, rb, W, H)) {
+        print_results(xa, ya, ra, xb, yb, rb, reversed);
+        return true;
+      }
+    }
+  }
+  
+  return false;
+}
+
+int main() {
+  double W, H, sa, sb, sc;
+  while (cin >> W >> H >> sa >> sb >> sc && W > 0) {
+    if (solve(W, H, sa, sb, sc, false))
+      continue;
+    if (solve(W, H, sb, sa, sc, true))
+      continue;
+    cout << "impossible" << endl;
+  }
+  return 0;
+}
+```

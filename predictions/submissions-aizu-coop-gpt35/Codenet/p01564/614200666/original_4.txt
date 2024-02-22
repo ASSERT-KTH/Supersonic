@@ -1,0 +1,196 @@
+Code Analysis:
+1. The code uses a custom data structure called LCNode to represent nodes in a Link-Cut Tree.
+2. The LCNode structure contains several member variables, such as pointers to parent, left child, and right child nodes, as well as variables for maintaining the size, value, sum, lazy value, and other properties of the node.
+3. The LCNode structure also contains member functions for performing various operations on the tree, such as node rotations, splaying, exposing, pushing lazy updates, and updating node properties.
+4. The main function reads input values, constructs the Link-Cut Tree, and performs queries on the tree.
+
+Optimization Strategy:
+1. Use a more efficient data structure for representing the Link-Cut Tree. The current implementation uses pointers to represent tree nodes, which can be inefficient in terms of memory usage and cache performance.
+2. Avoid unnecessary computations and memory operations, such as unnecessary copying of LCNode objects.
+3. Optimize the splay operation by avoiding unnecessary rotations and propagating updates efficiently.
+4. Utilize compiler optimizations, such as loop unrolling and optimizing memory access patterns, to further improve performance.
+
+Step-by-Step Explanation:
+1. Replace the current implementation of the Link-Cut Tree with an array-based implementation. This will eliminate the need for dynamic memory allocation and improve cache performance by ensuring that tree nodes are stored contiguously in memory.
+2. Remove the "typedef LCNode *NP" and "typedef int D" declarations. Instead, use "int" directly for node indices and values.
+3. Replace the "p", "l", and "r" member variables of LCNode with "parent", "left_child", and "right_child" arrays. This will allow direct access to parent, left child, and right child nodes using node indices.
+4. Replace the "last" and "last_d" static variables of LCNode with a separate variable "last_node" to represent a null node. This will simplify the implementation and avoid unnecessary memory operations.
+5. Replace the "pos" member function of LCNode with a direct comparison of node indices to determine the position of a node relative to its parent.
+6. Replace the "rot" member function of LCNode with a function that performs a single rotation operation on the tree. Use the "parent", "left_child", and "right_child" arrays to update the tree structure accordingly.
+7. Optimize the "splay" member function of LCNode to avoid unnecessary rotations and propagate updates efficiently. Perform a series of rotations until the node is at the root of the tree. Update the node properties during the splaying process.
+8. Replace the "expose" member function of LCNode with a function that performs the expose operation on the tree. Use a loop to iterate through the path from the node to the root, performing the necessary splay operations and updating the tree structure.
+9. Replace the "push" and "supush" member functions of LCNode with a function that propagates updates efficiently. Use a loop to iterate through the path from the node to the root, updating the lazy values and node properties.
+10. Replace the "lzdata" member function of LCNode with a function that updates the node properties based on the lazy value efficiently. Update the node properties directly without propagating updates to child nodes.
+11. Replace the "update" member function of LCNode with a function that updates the node properties based on the properties of its child nodes. Update the node properties directly without propagating updates to child nodes.
+12. Replace the "revdata" member function of LCNode with a function that reverses the node properties efficiently. Update the node properties directly without propagating updates to child nodes.
+13. Replace the "evert" member function of LCNode with a function that performs the evert operation on the tree efficiently. Use the "expose" function to expose the path from the node to the root, and then reverse the node properties.
+14. In the main function, replace the "scanf" calls with "cin" for input reading and "cout" for output printing. This will improve performance by avoiding the overhead of the C I/O library.
+15. Use a separate array to store the values of the nodes in the Link-Cut Tree. This will avoid the need for dynamic memory allocation and improve cache performance by ensuring that node values are stored contiguously in memory.
+16. Use a separate array to store the parent indices of the nodes in the Link-Cut Tree. This will allow direct access to parent nodes using node indices.
+17. Replace the "evert" and "expose" operations in the main loop with the corresponding optimized operations for the array-based implementation.
+18. Use a separate array to store the lazy values of the nodes in the Link-Cut Tree. This will avoid the need for lazy propagation during the expose operation.
+19. Use a separate array to store the node properties, such as the sum, left sum, right sum, maximum sum, and maximum value. This will avoid the need for recomputing these properties during the expose operation.
+
+Optimized Code Block:
+
+```cpp
+#define NDEBUG
+#include <iostream>
+#include <vector>
+using namespace std;
+typedef long long ll;
+struct LCNode {
+  int parent;
+  int left_child;
+  int right_child;
+  int size;
+  int value;
+  int sum;
+  int left_sum;
+  int right_sum;
+  int max_sum;
+  int max_value;
+  bool reverse;
+  int lazy;
+  LCNode(int v)
+      : parent(-1), left_child(-1), right_child(-1), size(1), value(v), sum(v), left_sum(max(v, 0)), right_sum(max(v, 0)), max_sum(max(v, 0)), max_value(v), reverse(false), lazy(-1) {}
+  LCNode() : size(0), value(-1), max_value(-1) {}
+};
+
+const int MN = 201000;
+LCNode tr[MN];
+int parent[MN];
+int lazy[MN];
+int sum[MN];
+int left_sum[MN];
+int right_sum[MN];
+int max_sum[MN];
+int max_value[MN];
+
+void rot(int x) {
+  int p = parent[x];
+  int g = parent[p];
+  int is_root_p = parent[p] == -1;
+  int is_left_x = x == tr[p].left_child;
+  
+  if (!is_root_p) {
+    if (p == tr[g].left_child) {
+      tr[g].left_child = x;
+    } else {
+      tr[g].right_child = x;
+    }
+  }
+  
+  if (is_left_x) {
+    tr[p].left_child = tr[x].right_child;
+    if (tr[x].right_child != -1) {
+      parent[tr[x].right_child] = p;
+    }
+    tr[x].right_child = p;
+  } else {
+    tr[p].right_child = tr[x].left_child;
+    if (tr[x].left_child != -1) {
+      parent[tr[x].left_child] = p;
+    }
+    tr[x].left_child = p;
+  }
+  
+  parent[p] = x;
+  parent[x] = g;
+  
+  if (!is_root_p) {
+    tr[p].update();
+  }
+  tr[x].update();
+}
+
+void splay(int x) {
+  while (parent[x] != -1) {
+    int p = parent[x];
+    int g = parent[p];
+    
+    if (g != -1) {
+      if ((x == tr[p].left_child) == (p == tr[g].left_child)) {
+        rot(p);
+      } else {
+        rot(x);
+      }
+    }
+    
+    rot(x);
+  }
+}
+
+void expose(int x) {
+  int u = x;
+  int v = -1;
+  
+  while (u != -1) {
+    splay(u);
+    tr[u].reverse_data();
+    tr[u].right_child = v;
+    tr[u].update();
+    v = u;
+    u = parent[u];
+  }
+  
+  splay(x);
+}
+
+void push(int x) {
+  if (tr[x].reverse) {
+    if (tr[x].left_child != -1) {
+      tr[tr[x].left_child].reverse_data();
+    }
+    if (tr[x].right_child != -1) {
+      tr[tr[x].right_child].reverse_data();
+    }
+    tr[x].reverse = false;
+  }
+  if (lazy[x] != -1) {
+    if (tr[x].left_child != -1) {
+      tr[tr[x].left_child].lazy_data(lazy[x]);
+    }
+    if (tr[x].right_child != -1) {
+      tr[tr[x].right_child].lazy_data(lazy[x]);
+    }
+    lazy[x] = -1;
+  }
+}
+
+void reverse_data(int x) {
+  swap(tr[x].left_child, tr[x].right_child);
+  swap(tr[x].left_sum, tr[x].right_sum);
+  tr[x].reverse = !tr[x].reverse;
+}
+
+void lazy_data(int x, int d) {
+  tr[x].value = d;
+  tr[x].sum = tr[x].size * d;
+  tr[x].left_sum = tr[x].right_sum = tr[x].max_sum = max(0, tr[x].sum);
+  tr[x].max_value = d;
+  lazy[x] = d;
+}
+
+void update(int x) {
+  tr[x].size = 1 + (tr[x].left_child != -1 ? tr[tr[x].left_child].size : 0) + (tr[x].right_child != -1 ? tr[tr[x].right_child].size : 0);
+  tr[x].sum = tr[x].value + (tr[x].left_child != -1 ? tr[tr[x].left_child].sum : 0) + (tr[x].right_child != -1 ? tr[tr[x].right_child].sum : 0);
+  tr[x].left_sum = max((tr[x].left_child != -1 ? tr[tr[x].left_child].left_sum : 0), (tr[x].left_child != -1 ? tr[tr[x].left_child].sum : 0) + tr[x].value + (tr[x].right_child != -1 ? tr[tr[x].right_child].left_sum : 0));
+  tr[x].right_sum = max((tr[x].right_child != -1 ? tr[tr[x].right_child].right_sum : 0), (tr[x].right_child != -1 ? tr[tr[x].right_child].sum : 0) + tr[x].value + (tr[x].left_child != -1 ? tr[tr[x].left_child].right_sum : 0));
+  tr[x].max_sum = max((tr[x].left_child != -1 ? tr[tr[x].left_child].right_sum : 0) + tr[x].value + (tr[x].right_child != -1 ? tr[tr[x].right_child].left_sum : 0), max((tr[x].left_child != -1 ? tr[tr[x].left_child].max_sum : 0), (tr[x].right_child != -1 ? tr[tr[x].right_child].max_sum : 0)));
+  tr[x].max_value = max(tr[x].value, max((tr[x].left_child != -1 ? tr[tr[x].left_child].max_value : 0), (tr[x].right_child != -1 ? tr[tr[x].right_child].max_value : 0)));
+}
+
+void evert(int x) {
+  expose(x);
+  reverse_data(x);
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  
+  int n, q;
+  cin >> n >> q;
+  
+  for (int

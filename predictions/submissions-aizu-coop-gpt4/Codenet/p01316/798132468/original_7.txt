@@ -1,0 +1,52 @@
+Here is a plan for optimizing the given program:
+
+1. **Code Analysis:**
+The code is a dynamic programming solution for a problem where it tries to minimize some cost (squared difference of `a[i+1]` and `p`). The main performance bottleneck is in the nested loop structure where the innermost loop iterates `m` times, the middle loop iterates `256` times, and the outer loop iterates `n` times. Thus, the overall complexity is `O(n*m*256)`, which could be expensive if `n` and `m` are large. 
+
+2. **Optimization Strategy:**
+    1. We can optimize the memory usage by using a rolling array for the `dp` array. Because the `dp` value for a state only depends on the previous state, we can reduce the `dp` array's size from `n*256` to `2*256`.
+    2. We can optimize the computation by avoiding unnecessary calculations. If `dp[i][j]` is `INF`, there is no need to calculate for `k`. 
+    3. We can use `std::fill` or `std::memset` for initialization, which can be faster than nested loops.
+
+3. **Step-by-Step Explanation:** 
+    1. **Memory Optimization:** Currently, we are storing all `n*256` states in the `dp` array. However, we only need the previous state's information to compute the current state. Therefore, we can use a rolling array (also known as a sliding window) to store only the current and previous states, reducing the array's size from `n*256` to `2*256`.
+    2. **Computation Optimization:** The code checks whether `dp[i][j]` equals `INF` for every `j` and `k`. If `dp[i][j]` equals `INF`, the whole inner loop for `k` is unnecessary. Therefore, we can add a condition to skip the inner loop when `dp[i][j]` equals `INF`.
+    3. **Initialization Optimization:** The code uses nested loops to initialize the `dp` array. A faster way is to use `std::fill` or `std::memset`.
+
+Here is the optimized code:
+
+```c++
+#include <bits/stdc++.h>
+using namespace std;
+#define r(i, n) for (int i = 0; i < n; i++)
+#define INF 100000000
+int dp[2][256];
+
+int main() {
+  int n, m;
+  while (cin >> n >> m, n) {
+    vector<int> b(m), a(n + 1);
+    r(i, m) cin >> b[i];
+    for (int i = 1; i <= n; i++) cin >> a[i];
+    fill(dp[0], dp[0]+256, INF);  // use std::fill to initialize dp array
+    dp[0][128] = 1;
+    for (int i = 0; i < n; i++) {
+      fill(dp[(i+1)%2], dp[(i+1)%2]+256, INF);  // initialize the next dp array
+      for (int j = 0; j < 256; j++) {
+        if (dp[i%2][j] == INF) continue;  // skip if dp[i][j] equals INF
+        for (int k = 0; k < m; k++) {
+          int p = j + b[k];
+          p = min(255, p);
+          p = max(0, p);
+          dp[(i+1)%2][p] = min(dp[(i+1)%2][p], dp[i%2][j] + (a[i+1] - p) * (a[i+1] - p));
+        }
+      }
+    }
+    int p = *min_element(dp[n%2], dp[n%2]+256);  // use std::min_element to find the minimal value
+    cout << p - 1 << endl;
+  }
+  return 0;
+}
+```
+
+This optimized version of the code still maintains the original logic and output, but it is more efficient in terms of memory usage and computation.

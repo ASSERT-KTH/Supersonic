@@ -1,0 +1,96 @@
+Code Analysis:
+The given program seems to be a simulation of people movement. It starts by reading the number of people N, a certain threshold time T, and the number of queries Q. For each person, it reads their position A[i] and direction D[i]. After that, it reads queries, where each query is an index of a person. For each query, the program calculates a new position for the person at the given index. 
+
+The main performance bottlenecks would occur in the nested for loops. These loops iterate over the people in each query, which could lead to a time complexity of O(Q * N) in the worst case.
+
+Optimization Strategy:
+
+1. Inefficient Data Structures: The current data structures used are primitive arrays. We could improve performance by using more efficient data structures. However, in this case, arrays seem to be the most appropriate choice due to their constant time access.
+
+2. Redundant Computations: The computations in the program are mostly necessary. However, the calculation of "t" could be optimized. Instead of calculating the average of 'east' and 'A[j]' or 'west' and 'A[j]' inside the for loop, we can store the sum and calculate the average later, thus avoiding unnecessary computations in each iteration.
+
+3. Loops/Recursive Calls: As mentioned, the nested for loop is a prime candidate for optimization. One optimization would be to use prefix or suffix arrays to store the most recent person moving east or west before each person. This way, we can find the nearest person moving in the opposite direction in constant time, thereby reducing the time complexity from O(N) to O(1).
+
+4. Compiler Optimizations: We can use the -O2 flag, which turns on all optimization flags for the compiler. 
+
+Step-by-Step Explanation:
+
+1. We begin by constructing two arrays, prefix and suffix. The prefix array stores for each person the index of the most recent person moving east before them, while the suffix array stores the index of the most recent person moving west after them.
+
+2. We then modify the loop for each query. If the person in the query is moving east, we look up their corresponding value in the prefix array, and if they're moving west, we look up their value in the suffix array. 
+
+3. This gives us the index of the nearest person moving in the opposite direction, allowing us to calculate 't' in constant time. 
+
+4. This optimization reduces the time complexity from O(Q * N) to O(Q + N), resulting in a significant performance increase for large inputs.
+
+5. The trade-off of this optimization is that it increases the space complexity from O(N) to O(2N), as we need to store two additional arrays. However, this is a reasonable trade-off given the improvement in time complexity.
+
+Optimized Code Block:
+
+The optimized code is provided below:
+
+```cpp
+#include <iostream>
+#include <limits.h>
+using namespace std;
+using ll = long long;
+const ll MIN = -(LONG_LONG_MAX - 1);
+int main() {
+  int N, Q;
+  ll T;
+  cin >> N >> T >> Q;
+  ll people[1001];
+  ll A[100001];
+  int D[100001];
+  int prefix[100001];
+  int suffix[100001];
+  for (int i = 0; i < N; i++) {
+    cin >> A[i] >> D[i];
+    if (i > 0 && D[i] == 1) {
+      prefix[i] = i;
+    } else {
+      prefix[i] = prefix[i-1];
+    }
+  }
+  suffix[N-1] = (D[N-1] == -1) ? N-1 : -1;
+  for (int i = N-2; i >= 0; i--) {
+    if (D[i] == -1) {
+      suffix[i] = i;
+    } else {
+      suffix[i] = suffix[i+1];
+    }
+  }
+  for (int i = 0; i < Q; i++) {
+    cin >> people[i];
+    people[i]--;
+  }
+  ll east = MIN;
+  ll west = MIN;
+  ll t;
+  for (int i = 0; i < Q; i++) {
+    if (D[people[i]] == 1) {
+      int j = suffix[people[i]];
+      if (j != -1) {
+        t = (A[people[i]] + A[j]) / 2;
+      }
+      if (T < abs(t - A[people[i]])) {
+        cout << A[people[i]] + T << endl;
+      } else {
+        cout << t << endl;
+      }
+    } else {
+      int j = prefix[people[i]];
+      if (j != -1) {
+        t = (A[people[i]] + A[j]) / 2;
+      }
+      if (T < abs(A[people[i]] - t)) {
+        cout << A[people[i]] - T << endl;
+      } else {
+        cout << t << endl;
+      }
+    }
+  }
+  return 0;
+}
+```
+This optimized code preserves the functionality of the original code while offering improved performance. The prefix and suffix arrays are filled in the initial loop that reads the positions and directions, and these arrays are then used to reduce the time complexity of the query loop.

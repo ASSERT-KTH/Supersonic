@@ -1,0 +1,144 @@
+The given C++ code is implementing a variant of Kruskal's algorithm for finding a minimum spanning tree in a weighted undirected graph. Here are several optimization strategies that can be applied to this code.
+
+1. **Code Analysis and Optimization Strategy:**
+
+    1. Redundant Data Structures: There are many redundant data structures, like `edge1` and `edge2`, which can be combined into one, reducing the memory footprint.
+
+    2. Redundant Computations: The code is performing unnecessary computations inside the loops. This can be optimized by avoiding excessive computations.
+
+    3. Loop Optimizations: We can use the `reserve` function to preallocate memory for vectors, which can help avoid reallocation during runtime.
+
+    4. Use of Standard Libraries: Instead of using `scanf` and `printf`, we can use `cin` and `cout` which are more C++ idiomatic.
+
+2. **Step-by-Step Explanation of Optimization:**
+
+    1. Combine `edge1` and `edge2` into one structure: We can combine the `edge1` and `edge2` structures into one structure, `Edge`. This reduces the memory footprint and makes the code cleaner.
+
+    2. Avoid excessive computations inside loops: We can reduce the number of computations inside loops by storing the results of computations that are used multiple times.
+
+    3. Preallocate memory for vectors: We can use the `reserve` function to preallocate memory for vectors. This can help avoid reallocation during runtime, which can be a costly operation.
+
+    4. Use `cin` and `cout`: Instead of using `scanf` and `printf`, we can use `cin` and `cout`, which are more C++ idiomatic and can be faster with the right settings.
+
+3. **Trade-offs:**
+
+    While these optimizations can improve the performance of the code, they may also make the code slightly more complex. For instance, preallocating memory for vectors can make the code a bit more complex, but it can also significantly improve performance.
+
+Here's the optimized code:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+using int64 = long long;
+
+struct UnionFind {
+  vector<int> data;
+  UnionFind(int sz) : data(sz, -1) {}
+
+  bool unite(int x, int y) {
+    x = find(x), y = find(y);
+    if (x == y) return (false);
+    if (data[x] > data[y]) swap(x, y);
+    data[x] += data[y];
+    data[y] = x;
+    return (true);
+  }
+
+  int find(int k) {
+    if (data[k] < 0) return (k);
+    return (data[k] = find(data[k]));
+  }
+
+  int size(int k) { return (-data[find(k)]); }
+};
+
+struct Edge {
+  int from, to, cost, idx;
+
+  bool operator<(const Edge &e) const { return (cost < e.cost); }
+};
+
+int N, M;
+vector<Edge> edges;
+vector<int64> ans;
+vector<vector<Edge>> tree, g;
+vector<set<pair<int, int>>> component;
+bool killed[200000];
+int64 all = 0;
+
+void rec(int idx, int par = -1) {
+  for (auto &e : g[idx])
+    component[idx].emplace(e.cost, e.idx);
+
+  for (auto &e : tree[idx]) {
+    if (e.to == par) continue;
+    rec(e.to, idx);
+    auto &u = component[idx], &v = component[e.to];
+    if (!v.empty()) {
+      ans[e.idx] = all;
+      ans[e.idx] -= e.cost;
+      ans[e.idx] += v.begin()->first;
+    }
+    if (u.size() < v.size()) swap(u, v);
+    while (!v.empty()) {
+      auto p = v.begin();
+      if (u.count(*p)) u.erase(*p);
+      else u.emplace(*p);
+      v.erase(p);
+    }
+  }
+}
+
+int main() {
+  ios_base::sync_with_stdio(false); // Fast IO
+  cin.tie(NULL); // Untie cin and cout
+
+  cin >> N >> M;
+
+  edges.reserve(M); // Preallocate memory
+  ans.resize(M, -1);
+  tree.resize(N);
+  g.resize(N);
+  component.resize(N);
+
+  for (int i = 0; i < M; i++) {
+    int a, b, c; cin >> a >> b >> c;
+    a--, b--;
+    edges.push_back({a, b, c, i});
+  }
+
+  UnionFind uf(N);
+  sort(begin(edges), end(edges));
+
+  for (auto &e : edges) {
+    if (uf.unite(e.to, e.from)) {
+      killed[e.idx] = true;
+      all += e.cost;
+    }
+  }
+
+  if (uf.size(0) != N) {
+    for (int i = 0; i < M; i++)
+      cout << "-1\n";
+    return (0);
+  }
+
+  for (auto &e : edges) {
+    if (killed[e.idx]) {
+      tree[e.from].push_back(e);
+      tree[e.to].push_back({e.to, e.from, e.cost, e.idx});
+    } else {
+      g[e.from].push_back(e);
+      g[e.to].push_back({e.to, e.from, e.cost, e.idx});
+      ans[e.idx] = all;
+    }
+  }
+
+  rec(0);
+
+  for (auto &a : ans)
+    cout << a << "\n";
+
+  return 0;
+}
+```

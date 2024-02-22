@@ -1,0 +1,17 @@
+The provided code is a C++ program that calculates the minimum number of coins needed to make a given amount of money. The program uses dynamic programming to solve the problem. However, there are several areas in the code that can be optimized for performance and memory usage. 
+
+1. Remove unnecessary macros: The code includes several macros that are not used. Removing these macros will simplify the code and improve readability.
+
+2. Avoid unnecessary includes: The code includes the entire `bits/stdc++.h` header, which includes a large number of standard library headers. It is better to include only the necessary headers to reduce compilation time and avoid potential conflicts.
+
+3. Optimize the `calc` function: The `calc` function calculates the number of coins needed to make a given value. Currently, it uses a loop to iterate over the coin values and calculate the number of coins for each value. This can be optimized by using integer division and modulo operations to directly calculate the number of coins for each value.
+
+4. Optimize the coin selection loop: The code uses a loop to select the coins in descending order. However, this can be optimized by using a variable to track the current coin index and incrementing it only when the current coin is exhausted.
+
+5. Optimize the dynamic programming loop: The dynamic programming loop uses a nested loop to iterate over the coin values and the target amount. This can be optimized by using a single loop and using array indices to represent the coin values.
+
+6. Replace `deque` with `vector`: The code uses a `deque` to store the minimum values for each target amount. However, using a `vector` instead of a `deque` can reduce memory overhead and improve cache locality.
+
+7. Use `constexpr` for constant values: The code uses a constant value of 1001001001 in several places. Using `constexpr` instead of a global variable can improve code readability and potentially enable additional optimizations by the compiler.
+
+8. Use `reserve` for `vector` initialization: The code initializes the `dp` vector with a size of 2 * T. Using the `reserve` function instead of direct initialization can improve memory allocation performance.

@@ -1,0 +1,177 @@
+The given program appears to be implementing a graph algorithm using the primal-dual algorithm. To optimize this program, we can make the following modifications:
+
+1. Remove unnecessary includes: The program includes the `<cstdio>`, `<map>`, and `<queue>` libraries, but it seems that they are not used. We can safely remove these includes.
+
+2. Remove unnecessary macros: The program defines a macro `rep(i, n)` for a loop, but it is not used in the code. We can remove this macro.
+
+3. Replace `vector<edge<T, U>> *G` with `vector<vector<edge<T, U>>> &G`: The `add_directed_edge` and `primal_dual` functions both take a pointer to a vector of edges `G`. However, using a reference to the vector instead of a pointer would be more efficient. We can modify the function signatures to use a reference `&` instead of a pointer `*`.
+
+4. Use `emplace_back` instead of `push_back`: The `add_directed_edge` function uses `push_back` to add elements to the vector `G`. However, using `emplace_back` would be more efficient as it avoids unnecessary copies or moves of the elements. We can modify the function to use `emplace_back` instead of `push_back`.
+
+5. Use `reserve` to preallocate memory for vectors: Before adding elements to the vectors `G`, we can use the `reserve` function to preallocate memory. This can improve performance by avoiding frequent reallocations of memory when the vectors grow.
+
+6. Avoid unnecessary copying of `train` objects: The program creates a vector `T` of `train` objects and then copies these objects into the `f` map. Instead of copying the objects, we can directly insert the `train` objects into the map.
+
+7. Use `count` instead of `count()`: In the loop that populates the `f` map, the program uses the `count()` function to check if an element exists in the map. However, using the `count` member function directly would be more efficient.
+
+8. Use `find` instead of `count` and `[]`: In the loop that populates the `f` map, the program uses `count` and `[]` to find the elements in the map. However, using the `find` member function would be more efficient as it performs the search only once.
+
+9. Use `auto` for iterators: In the loop that populates the `f` map, the program uses explicit iterator types. We can use `auto` to let the compiler deduce the iterator type.
+
+10. Avoid duplicate calculations: In the loop that adds edges to the graph, the program calculates `f[i][0][t]` twice. We can calculate it once and store it in a variable to avoid duplicate calculations.
+
+11. Use `emplace` instead of `make_pair` and `push`: In the `augment` function, the program uses `make_pair` and `push` to insert elements into the priority queue. We can use `emplace` instead of `make_pair` and `push` to construct the pair directly in the priority queue.
+
+Optimized program:
+
+```cpp
+#include <vector>
+#include <map>
+#include <queue>
+
+constexpr int V_MAX = 6000;
+constexpr int CAPA_INF = 1 << 29;
+constexpr int COST_INF = 1 << 29;
+
+template <class T, class U>
+struct edge {
+  int v, rev;
+  T capa;
+  U cost;
+  T flow;
+};
+
+template <class T, class U>
+void add_directed_edge(std::vector<std::vector<edge<T, U>>>& G, int u, int v, T capa, U cost) {
+  G[u].emplace_back(edge<T, U>{v, static_cast<int>(G[v].size()), capa, cost, 0});
+  G[v].emplace_back(edge<T, U>{u, static_cast<int>(G[u].size()) - 1, 0, -cost, 0});
+}
+
+template <class T, class U>
+std::pair<T, U> augment(int n, std::vector<std::vector<edge<T, U>>>& G, int s, int t, U* pot) {
+  static int pre[V_MAX];
+  static U d[V_MAX];
+  for (int u = 0; u < n; u++) {
+    d[u] = (u == s ? 0 : COST_INF);
+  }
+  bool ok = false;
+  std::priority_queue<std::pair<U, int>> Q;
+  Q.emplace(0, s);
+  while (!Q.empty()) {
+    int u = Q.top().second;
+    U cost = -Q.top().first;
+    Q.pop();
+    if (cost < d[u])
+      continue;
+    if (u == t)
+      ok = true;
+    for (auto& e : G[u]) {
+      U cost2 = cost + e.cost + pot[u] - pot[e.v];
+      if (e.capa - e.flow > 0 && cost2 < d[e.v]) {
+        d[e.v] = cost2;
+        pre[e.v] = e.rev;
+        Q.emplace(-cost2, e.v);
+      }
+    }
+  }
+  if (!ok)
+    return std::make_pair(0, 0);
+  T water = CAPA_INF;
+  for (int v = t; v != s;) {
+    edge<T, U>& e1 = G[v][pre[v]];
+    edge<T, U>& e2 = G[e1.v][e1.rev];
+    water = std::min(water, e2.capa - e2.flow);
+    v = e1.v;
+  }
+  U cost = 0;
+  for (int v = t; v != s;) {
+    edge<T, U>& e1 = G[v][pre[v]];
+    edge<T, U>& e2 = G[e1.v][e1.rev];
+    e1.flow -= water;
+    e2.flow += water;
+    cost += water * e2.cost;
+    v = e1.v;
+  }
+  for (int u = 0; u < n; u++) {
+    pot[u] += d[u];
+  }
+  return std::make_pair(water, cost);
+}
+
+template <class T, class U>
+std::pair<T, U> primal_dual(int n, std::vector<std::vector<edge<T, U>>>& G, int s, int t) {
+  T ans1 = 0;
+  U ans2 = 0;
+  U pot[V_MAX]{};
+  while (true) {
+    auto tmp = augment(n, G, s, t, pot);
+    if (tmp.first == 0)
+      break;
+    ans1 += tmp.first;
+    ans2 += tmp.second;
+  }
+  return std::make_pair(ans1, ans2);
+}
+
+struct train {
+  int t1, t2, cost;
+};
+
+int main() {
+  for (int n; std::scanf("%d", &n), n;) {
+    std::vector<std::vector<train>> T(n - 1);
+    for (int i = 0; i < n - 1; i++) {
+      int m;
+      std::scanf("%d", &m);
+      T[i].resize(m);
+      for (int j = 0; j < m; j++) {
+        std::scanf("%d%d%d", &T[i][j].t1, &T[i][j].t2, &T[i][j].cost);
+      }
+    }
+    int n_class;
+    std::scanf("%d", &n_class);
+    int V = 0;
+    std::map<int, int> f[100][2];
+    for (int i = 0; i < n - 1; i++) {
+      for (const auto& train : T[i]) {
+        int t1 = train.t1, t2 = train.t2;
+        if (f[i][0].count(t1) == 0)
+          f[i][0][t1] = V++;
+        if (f[i + 1][0].count(t2) == 0)
+          f[i + 1][0][t2] = V++;
+        if (f[i + 1][1].count(t2) == 0)
+          f[i + 1][1][t2] = V++;
+      }
+    }
+    int s = V++;
+    int t = V++;
+    std::vector<std::vector<edge<int, int>>> G(V_MAX);
+    for (auto& vec : G) {
+      vec.reserve(4 * n);
+    }
+    add_directed_edge(G, s, f[0][0].begin()->second, n_class, 0);
+    add_directed_edge(G, f[n - 1][0].rbegin()->second, t, n_class, 0);
+    for (int i = 0; i < n; i++) {
+      for (auto it = f[i][0].begin(); it != f[i][0].end(); ++it) {
+        auto jt = it;
+        ++jt;
+        if (jt != f[i][0].end()) {
+          add_directed_edge(G, it->second, jt->second, n_class, 0);
+        }
+      }
+      for (auto it = f[i][1].begin(); it != f[i][1].end(); ++it) {
+        int t = it->first;
+        add_directed_edge(G, it->second, f[i][0][t], 1, 0);
+      }
+    }
+    for (int i = 0; i < n - 1; i++) {
+      for (const auto& train : T[i]) {
+        add_directed_edge(G, f[i][0][train.t1], f[i + 1][1][train.t2], 1, train.cost);
+      }
+    }
+    auto ans = primal_dual(V, G, s, t);
+    std::printf("%d %d\n", ans.first, ans.second);
+  }
+  return 0;
+}
+```

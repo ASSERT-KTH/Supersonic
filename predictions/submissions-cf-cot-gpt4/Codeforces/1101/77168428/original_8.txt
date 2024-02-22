@@ -1,0 +1,102 @@
+Step 1: Remove unnecessary #define statements
+In this code, we have some #define statements that are not being used like all(x), rall(x), MP, etc. These are not being used anywhere in the code so we can remove these.
+
+Step 2: Avoid using std namespace
+It's a bad practice to use "using namespace std". It can lead to naming conflicts in larger projects.
+
+Step 3: Replace push_back() with emplace_back()
+The push_back() function creates a new object then copies or moves this object into the container, whereas emplace_back() constructs a new object in-place at the end of the container. Therefore, if performance is a concern, using emplace_back() can be more efficient than push_back().
+
+Step 4: Avoid using std::endl
+std::endl not only inserts a newline character, but it also flushes the output buffer, which can be significantly slower than simply inserting a newline character. Use '\n' instead.
+
+Step 5: Use prefix increment (++i) instead of postfix (i++) in loops
+In case of simple data types like int, both prefix and postfix have the same performance. But for complex data types, prefix can be faster because it doesn't need to create a copy of the original value like postfix does.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <map>
+const int N = 2e5 + 100;
+std::vector<int> g[N], val(N), d(N), primes;
+std::map<int, int> dp[N];
+int ans = 0;
+
+std::vector<int> get(int x) {
+  std::vector<int> ret;
+  for (int i = 2; i * i <= x; ++i) {
+    if (x % i == 0) {
+      ret.emplace_back(i);
+      while (x % i == 0)
+        x /= i;
+    }
+  }
+  if (x != 1)
+    ret.emplace_back(x);
+  return ret;
+}
+
+struct max2 {
+  int x = 0, y = 0;
+  void rlx(int z) {
+    if (z >= x)
+      y = x, x = z;
+    else if (z >= y)
+      y = z;
+  }
+  int sum() { return x + y; }
+};
+
+void dfs(int v, int p) {
+  std::vector<int> cur = get(val[v]);
+  std::vector<max2> t(cur.size());
+  for (auto u : g[v]) {
+    if (u == p)
+      continue;
+    dfs(u, v);
+    for (size_t i = 0; i < cur.size(); ++i) {
+      int x = cur[i];
+      if (!dp[u].count(x))
+        continue;
+      t[i].rlx(dp[u][x]);
+    }
+  }
+  for (size_t i = 0; i < cur.size(); ++i) {
+    int x = cur[i];
+    ans = std::max(ans, t[i].sum() + 1);
+    dp[v][x] = t[i].x + 1;
+  }
+}
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(NULL);
+  for (int i = 2; i < N; ++i) {
+    if (d[i] == 0) {
+      d[i] = i;
+      primes.emplace_back(i);
+    }
+    for (auto x : primes) {
+      if (x > d[i] || x * i >= N)
+        break;
+      d[x * i] = x;
+    }
+  }
+  int n;
+  std::cin >> n;
+  for (int i = 0; i < n; ++i)
+    std::cin >> val[i];
+  for (int i = 0, a, b; i < n - 1; ++i) {
+    std::cin >> a >> b;
+    a--;
+    b--;
+    g[a].emplace_back(b);
+    g[b].emplace_back(a);
+  }
+  dfs(0, -1);
+  std::cout << ans << '\n';
+  return 0;
+}
+```

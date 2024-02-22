@@ -1,0 +1,89 @@
+To optimize the given program, we can make the following modifications:
+
+1. Remove unnecessary includes: The program includes `<bits/stdc++.h>` which is a non-standard header and includes all other standard headers. We can remove this include and include only the necessary headers.
+
+2. Remove unnecessary template specialization: The `RandomizedBinarySearchTree` and `PresidentRandomizedBinarySearchTree` classes are template classes, but they are only used with `int` as the template parameter. We can remove the template parameter and specialize these classes for `int` to simplify the code.
+
+3. Avoid unnecessary memory allocations: In the `RandomizedBinarySearchTree` class, the `pool` vector is used to store the nodes of the tree. Instead of allocating new nodes for each operation, we can reuse the existing nodes by maintaining a free list of unused nodes.
+
+4. Avoid unnecessary memory copies: In the `dump` function of the `RandomizedBinarySearchTree` class, the keys of the tree are dumped into a vector and then copied back to the original order. We can avoid this extra copy by using an iterator to directly update the keys in the correct order.
+
+5. Use a more efficient data structure: In the `OrderedMultiSet` class, the `lower_bound` and `upper_bound` functions are implemented using a linear search. We can use a binary search instead to improve the performance.
+
+6. Avoid unnecessary function calls: In the `query` function of the `CentroidPathDecomposition` class, the `tie` function is called multiple times in the loop. We can move these function calls outside the loop to avoid the overhead.
+
+7. Avoid unnecessary template specialization: In the `query` function of the `CentroidPathDecomposition` class, the function object `f` is passed as an argument. Instead of making this function a template parameter, we can use a virtual function to achieve the same effect.
+
+Here is the optimized C++ program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <functional>
+using namespace std;
+
+struct Node {
+    Node* l;
+    Node* r;
+    int cnt;
+    int key;
+    Node() : l(nullptr), r(nullptr), cnt(0), key(0) {}
+};
+
+class RandomizedBinarySearchTree {
+private:
+    vector<Node> pool;
+    int ptr;
+    Node* free_list;
+
+public:
+    RandomizedBinarySearchTree(int sz) : pool(sz), ptr(0), free_list(nullptr) {}
+
+    Node* allocate(int key) {
+        if (free_list) {
+            Node* node = free_list;
+            free_list = free_list->r;
+            node->l = nullptr;
+            node->r = nullptr;
+            node->cnt = 1;
+            node->key = key;
+            return node;
+        }
+        return &(pool[ptr++] = Node{nullptr, nullptr, 1, key});
+    }
+
+    void deallocate(Node* node) {
+        node->r = free_list;
+        free_list = node;
+    }
+
+    Node* merge(Node* l, Node* r) {
+        if (!l || !r) {
+            return l ? l : r;
+        }
+        if (rand() % (l->cnt + r->cnt) < l->cnt) {
+            l->r = merge(l->r, r);
+            l->cnt = (l->l ? l->l->cnt : 0) + (l->r ? l->r->cnt : 0) + 1;
+            return l;
+        } else {
+            r->l = merge(l, r->l);
+            r->cnt = (r->l ? r->l->cnt : 0) + (r->r ? r->r->cnt : 0) + 1;
+            return r;
+        }
+    }
+
+    pair<Node*, Node*> split(Node* t, int k) {
+        if (!t) {
+            return {nullptr, nullptr};
+        }
+        if (k <= (t->l ? t->l->cnt : 0)) {
+            auto s = split(t->l, k);
+            t->l = s.second;
+            t->cnt = (t->l ? t->l->cnt : 0) + (t->r ? t->r->cnt : 0) + 1;
+            return {s.first, t};
+        } else {
+            auto s = split(t->r, k - (t->l ? t->l->cnt : 0) - 1);
+            t->r = s.first;
+            t->cnt = (t->l ? t->l->cnt : 0) + (t->r ? t->r->cnt : 0) + 1;
+            return {

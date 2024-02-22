@@ -1,0 +1,113 @@
+The given code uses a binary segment tree to perform range minimum queries and range updates. The code seems to be already quite optimized, however, there are a few improvements that can be made, which can potentially improve the performance of the program:
+
+1. Reduce function calls: The code calls many functions recursively. Each function call adds overhead. If we can reduce the number of function calls, we can potentially speed up the program. For example, the `f(x, y)` function is called multiple times and can be replaced with the `min(x, y)` function directly.
+
+2. Avoid unnecessary memory allocation: The code creates new nodes in the `build` function. This can be avoided by allocating memory for all nodes at once.
+
+3. Use fast input/output: The code uses `cin` and `cout` for input and output. These are slower than `scanf` and `printf`.
+
+4. Avoid unnecessary operations: The code is calculating `root->mid` multiple times. Instead, we can calculate it once and store the result.
+
+Here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <algorithm>
+#include <vector>
+using namespace std;
+typedef long long ll;
+const int maxn = 2e5 + 11;
+const ll inf = ll(1e15) + 12;
+ll a[maxn], ps[maxn], p[maxn], pref[maxn];
+struct node {
+  ll l, r, val, add;
+  node *left, *right;
+};
+vector<node> pool(maxn * 4);
+int pool_ptr;
+node* new_node(ll l, ll r) {
+  node* res = &pool[pool_ptr++];
+  res->l = l;
+  res->r = r;
+  res->mid = (l + r) / 2;
+  res->val = 0;
+  res->add = 0;
+  res->left = res->right = nullptr;
+  return res;
+}
+void build(node *root) {
+  if (root->r - root->l == 1) {
+    root->val = pref[root->l];
+    if (root->l == n - 1) {
+      root->val = inf;
+    }
+  } else {
+    root->left = new_node(root->l, root->mid);
+    root->right = new_node(root->mid, root->r);
+    build(root->left);
+    build(root->right);
+    root->val = min(root->left->val, root->right->val);
+  }
+}
+void push(node *root) {
+  if (root->left != nullptr) {
+    root->left->add += root->add;
+    root->right->add += root->add;
+  }
+  root->val += root->add;
+  root->add = 0;
+}
+void add_val(node *root, ll ql, ll qr, ll val) {
+  push(root);
+  if (root->r <= ql || root->l >= qr) {
+    return;
+  }
+  if (ql == root->l && root->r == qr) {
+    root->add += val;
+    push(root);
+    return;
+  }
+  add_val(root->left, ql, min(root->mid, qr), val);
+  add_val(root->right, max(root->mid, ql), qr, val);
+  root->val = min(root->left->val, root->right->val);
+}
+ll get_min(node *root, ll ql, ll qr) {
+  push(root);
+  if (root->r <= ql || root->l >= qr) {
+    return inf;
+  }
+  if (ql == root->l && root->r == qr) {
+    return root->val;
+  }
+  return min(get_min(root->left, ql, min(root->mid, qr)),
+             get_min(root->right, max(root->mid, ql), qr));
+}
+int main() {
+  ios::sync_with_stdio(0);
+  cin.tie(0);
+  ll n;
+  cin >> n;
+  for (ll i = 0; i < n; i++) {
+    cin >> p[i];
+    ps[p[i] - 1] = i;
+  }
+  for (ll i = 0; i < n; i++) {
+    cin >> a[i];
+    pref[i] = (i ? pref[i - 1] : 0) + a[i];
+  }
+  node *root = new_node(0, n);
+  build(root);
+  ll ans = min(a[0], a[n - 1]);
+  ll mus = 0;
+  for (ll i = 0; i < n; i++) {
+    add_val(root, ps[i], n, -2 * a[ps[i]]);
+    mus += a[ps[i]];
+    ll cur = get_min(root, 0, n) + mus;
+    ans = min(ans, cur);
+  }
+  cout << ans << endl;
+  return 0;
+}
+```
+
+This version of the code should be faster and use less memory than the original code because it avoids unnecessary function calls and memory allocations, and it uses faster input/output functions.

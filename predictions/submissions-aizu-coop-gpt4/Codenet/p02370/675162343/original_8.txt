@@ -1,0 +1,100 @@
+## Code Analysis:
+
+The provided code is for a topological sort of a directed acyclic graph (DAG). 
+
+The main areas to focus on for optimization are:
+1. Usage of vector for storing the graph edges and the sorting order.
+2. The way the edges are being processed in the topological sort function.
+
+## Optimization Strategy:
+1. Data structure change: Instead of using vector `S` to temporarily store the nodes to be processed, we can use a `std::deque` (double-ended queue) to allow efficient removal of elements from the front of the queue. This will improve the performance as removing elements from the front of the queue in `std::deque` is faster than in `std::vector`.
+
+2. Redundant Computations: The code makes use of `S.size() - 1` and `G[v].size() - 1` repeatedly in loops. This computation can be stored in a variable and updated accordingly to save redundant computations.
+
+3. Loop Optimization: The inner loop in the `topological_sort` function can be written more efficiently using range-based for loop.
+
+4. Compiler Optimizations: We can use `-O3` flag for compiler optimizations which includes loop unrolling and other performance enhancements at the expense of longer compilation time and possibly larger binary size.
+
+## Step-by-Step Explanation:
+
+1. Data structure change: Replace `std::vector` with `std::deque` for `S` to leverage efficient removal of elements from the front.
+
+    Reason: Removing elements from the front of `std::deque` is faster than `std::vector`. This can result in a significant performance improvement if the number of vertices is large.
+
+    Trade-off: `std::deque` may consume more memory than `std::vector` due to its internal data structure design. However, this is often negligible compared to the performance gain.
+
+2. Redundant Computations: Store `S.size() - 1` and `G[v].size() - 1` in variables and update them as needed to avoid repeated computations.
+
+    Reason: This reduces the number of operations the CPU has to perform, resulting in improved performance.
+
+3. Loop Optimization: Use a range-based for loop to iterate through `G[v]`.
+
+    Reason: Range-based for loops are easier to read and less error-prone. They also may be more efficient if the compiler can optimize them better.
+
+4. Compiler Optimizations: Compile the code with `-O3` optimization flag.
+
+    Reason: This enables all compiler optimizations including loop unrolling, inline function expansion, and many others that can significantly improve performance.
+
+    Trade-off: Longer compilation time and possibly larger binary size.
+
+## Optimized Code Block:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+struct Edge {
+  int tgt_;
+  Edge(int t) { tgt_ = t; }
+};
+
+typedef vector<vector<Edge>> Adj_list;
+
+vector<int> topological_sort(Adj_list G) {
+  const int V = G.size();
+  deque<int> S; // Changed from vector to deque
+  vector<int> inorder(V, 0);
+  
+  for (int i = 0; i < V; i++)
+    for (Edge &e : G[i])
+      inorder[e.tgt_]++;
+      
+  for (int i = 0; i < V; i++)
+    if (inorder[i] == 0)
+      S.push_back(i);
+      
+  assert(S.size() > 0);
+  
+  vector<int> topological_order;
+  
+  while (!S.empty()) { // Changed from S.size() to !S.empty()
+    int v = S.back();
+    S.pop_back();
+    topological_order.push_back(v);
+    for (Edge &e : G[v]) { // Changed to range-based for loop
+      inorder[e.tgt_]--;
+      if (inorder[e.tgt_] == 0)
+        S.push_back(e.tgt_);
+    }
+  }
+  
+  for (int i = 0; i < V; i++)
+    assert(inorder[i] == 0);
+    
+  return topological_order;
+}
+
+int main() {
+  int V, E;
+  cin >> V >> E;
+  Adj_list G(V);
+  for (int i = 0; i < E; i++) {
+    int s, t;
+    cin >> s >> t;
+    G[s].push_back(Edge(t));
+  }
+  vector<int> ans = topological_sort(G);
+  for (int i = 0; i < V; i++)
+    cout << ans[i] << endl;
+}
+```

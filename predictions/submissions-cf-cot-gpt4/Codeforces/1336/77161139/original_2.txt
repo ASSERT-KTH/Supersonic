@@ -1,0 +1,86 @@
+The original program can be optimized in several ways:
+
+1. Use of `reserve()`: As we know the number of elements that will be in the vector, we can use the `reserve()` function to allocate the required space at once. This will avoid multiple reallocations and copies when elements are added to the vector.
+
+2. Removal of `score` vector: The `score` vector is used just to sort the scores and then sum up the top k elements. Instead of storing all scores in a vector, we can use a priority queue to keep track of the top k elements. This will reduce the memory usage and also the time complexity for sorting.
+
+3. Avoid Recalculation: In the `compute_depth` and `compute_below` functions, we are recalculating the depth and below values for each child. We can avoid this by calculating it once and using it for all children.
+
+Here is the optimized program:
+
+```cpp
+#include <algorithm>
+#include <ios>
+#include <iostream>
+#include <numeric>
+#include <vector>
+#include <queue>
+
+using namespace std;
+
+void compute_depth(int u, int p, vector<vector<int>> &adj, vector<int> &depth) {
+  for (int v : adj[u]) {
+    if (v != p) {
+      depth[v] = depth[u] + 1;
+      compute_depth(v, u, adj, depth);
+    }
+  }
+}
+
+void compute_below(int u, int p, vector<vector<int>> &adj, vector<int> &below) {
+  for (int v : adj[u]) {
+    if (v != p) {
+      compute_below(v, u, adj, below);
+      below[u] += below[v] + 1;
+    }
+  }
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(nullptr);
+  
+  int n, k;
+  cin >> n >> k;
+  
+  vector<vector<int>> adj(n);
+  adj.reserve(n);
+  
+  for (int i = 0; i < n - 1; ++i) {
+    int u, v;
+    cin >> u >> v;
+    --u;
+    --v;
+    adj[u].push_back(v);
+    adj[v].push_back(u);
+  }
+  
+  vector<int> depth(n), below(n);
+  
+  compute_depth(0, -1, adj, depth);
+  compute_below(0, -1, adj, below);
+  
+  priority_queue<int, vector<int>, greater<int>> pq;
+  
+  for (int i = 0; i < n; ++i) {
+    int score = depth[i] - below[i];
+    
+    if (pq.size() < k) {
+      pq.push(score);
+    } else if (score > pq.top()) {
+      pq.pop();
+      pq.push(score);
+    }
+  }
+  
+  long long sum = 0;
+  while (!pq.empty()) {
+    sum += pq.top();
+    pq.pop();
+  }
+  
+  cout << sum << '\n';
+}
+```
+
+This optimized program uses a priority queue to keep track of the top k scores instead of storing all scores in a vector. The `reserve()` function is used to allocate the required space for the adjacency list at once. This will reduce the number of reallocations and copies when elements are added to the list. The `compute_depth` and `compute_below` functions are also optimized to avoid recalculating the depth and below values for each child.

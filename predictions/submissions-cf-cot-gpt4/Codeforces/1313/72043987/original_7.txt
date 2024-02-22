@@ -1,0 +1,103 @@
+The given program is already quite optimized, but we can make a few changes to improve it further.
+
+1. Reduce the number of includes: All the libraries that are not used in the program are removed to reduce the overhead. 
+2. Replace macros with inline functions: Macros are not type-safe and can lead to problems if not used carefully. It is better to use inline functions instead. 
+3. Use reserve for vectors: If we know the size of a vector before filling it, we can use the reserve function to preallocate memory, which can speed up the program by reducing the number of memory reallocations.
+4. Avoid unnecessary copying in range-based loops: In the printvec, printtree, and printmap functions, the loop variable was copied for each iteration. We can avoid this by taking the loop variable by reference.
+5. Use prefix increment: Prefix increment is generally faster than postfix increment, as it doesn't need to create a copy of the original value.
+
+Here is the optimized version of the code:
+
+```C++
+#include <algorithm>
+#include <iostream>
+#include <map>
+#include <vector>
+using namespace std;
+
+template <class T> inline void printvec(const vector<T> &v) {
+  for (const auto &x : v) {
+    cout << x << " ";
+  }
+  cout << endl;
+}
+
+template <class T> inline void printtree(const vector<vector<T>> &tree) {
+  for (size_t i = 0; i < tree.size(); ++i) {
+    cout << i + 1 << ": ";
+    printvec(tree[i]);
+  }
+}
+
+template <class T, class U> inline void printmap(const map<T, U> &mp) {
+  for (const auto &x : mp) {
+    cout << x.first << "=>" << x.second << endl;
+  }
+}
+
+typedef long long ll;
+typedef pair<ll, ll> P;
+
+inline void solve() {}
+
+int main(int argc, char **argv) {
+  cin.tie(NULL);
+  cout.tie(NULL);
+  ios_base::sync_with_stdio(false);
+  
+  ll n, m, k;
+  cin >> n >> m >> k;
+  
+  vector<vector<ll>> t(2 * n, vector<ll>(3));
+  for (ll i = 0; i < n; ++i) {
+    ll l, r;
+    cin >> l >> r;
+    t[2 * i] = {l, 1, i};
+    t[2 * i + 1] = {r + 1, -1, i};
+  }
+  
+  sort(t.begin(), t.end());
+  vector<ll> states(1 << k, 0);
+  vector<ll> newstates(1 << k, 0);
+  vector<ll> streams;
+  streams.reserve(n);
+  
+  ll sz = 0;
+  ll pi = t[0][2], ni;
+  ll pp = t[0][0], np;
+  
+  for (ll i = 0; i < 2 * n; ++i) {
+    ni = t[i][2];
+    np = t[i][0];
+    if (t[i][1] == -1) {
+      --sz;
+      ll gi = 0;
+      while (streams[gi] != ni) {
+        ++gi;
+      }
+      for (ll b = 0; b < (1 << sz); ++b) {
+        ll exp1 = ((b >> gi) << (gi + 1)) + (b % (1 << gi));
+        ll exp2 = exp1 + (1 << gi);
+        newstates[b] =
+            max(states[exp1] + (__builtin_popcount(exp1) % 2) * (np - pp),
+                states[exp2] + (__builtin_popcount(exp2) % 2) * (np - pp));
+      }
+      states = newstates;
+      streams.erase(streams.begin() + gi);
+    } else {
+      streams.push_back(ni);
+      for (ll b = 0; b < (1 << sz); ++b) {
+        newstates[b] = states[b] + (__builtin_popcount(b) % 2) * (np - pp);
+        newstates[b + (1 << sz)] =
+            states[b] + (__builtin_popcount(b) % 2) * (np - pp);
+      }
+      states = newstates;
+      ++sz;
+    }
+    pi = ni;
+    pp = np;
+  }
+  cout << states[0] << " ";
+  return 0;
+}
+```

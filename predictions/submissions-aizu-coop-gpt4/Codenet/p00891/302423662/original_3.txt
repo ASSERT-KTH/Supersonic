@@ -1,0 +1,124 @@
+This code is a bit difficult to optimize for performance because of the heavy use of nested loops. However, there are still a few places where we can improve the performance:
+
+1. **Avoiding unnecessary vector resizing**: The `used` vector keeps getting resized during runtime as new elements are pushed into it. This can lead to performance overhead as memory reallocation and copying of elements may occur during the resizing. Instead, we can try to estimate the maximum size of the `used` vector upfront and use `reserve()` function to allocate memory beforehand.
+
+2. **Avoiding unnecessary multiplications**: The code uses multiplication in a loop to generate the value of `g`. We can replace this with a single multiplication outside the loop.
+
+3. **Replace recursion with iteration**: Although this code does not use explicit recursion, the function `ppp()` and `ch()` are called multiple times in a loop from the main function. These calls could potentially be replaced with iteration to improve efficiency.
+
+4. **Use faster I/O methods**: The code uses `cin` and `cout` for input and output, which are slower compared to other methods like `scanf` and `printf`.
+
+5. **Avoid using `#include <bits/stdc++.h>`**: This header file includes a lot of unnecessary libraries, which increases the compilation time.
+
+Here's the optimized version of the code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <cstring>
+#define N 3
+using namespace std;
+typedef unsigned long long ull;
+bool im[1010][1010], pa[110][110];
+int w, h, p, ans;
+vector<ull> used;
+ull roll[1001][1001] = {};
+
+void ppp() {
+  ull a = 0;
+  ull g = 1;
+  for (int i = 0; i < p; i++)
+    g *= N;
+  for (int i = 0; i < p; i++)
+    for (int j = 0; j < p; j++)
+      a = a * N + pa[i][j];
+  for (int i = 0; i < used.size(); i++)
+    if (used[i] == a)
+      return;
+  used.push_back(a);
+  for (int j = 0; j < h; j++) {
+    ull b = 0;
+    for (int i = 0; i < p; i++)
+      b = b * N + im[j][i];
+    roll[j][p - 1] = b;
+    for (int i = p; i < w; i++) {
+      b = b * N + im[j][i] - im[j][i - p] * g;
+      roll[j][i] = b;
+    }
+  }
+  for (int j = p - 1; j < w; j++) {
+    ull b = 0, g = 1;
+    ull n = g;
+    for (int i = 0; i < p; i++)
+      b = b * n + roll[i][j];
+    if (b == a)
+      ans++;
+    for (int i = p; i < h; i++) {
+      b = b * n + roll[i][j] - roll[i - p][j] * g;
+      if (b == a)
+        ans++;
+    }
+  }
+}
+
+void ch() {
+  bool npa[110][110];
+  for (int i = 0; i < p; i++)
+    for (int j = 0; j < p; j++)
+      npa[i][j] = pa[j][p - i - 1];
+  memcpy(pa, npa, sizeof(npa));
+}
+
+void ch1() {
+  for (int i = 0; i < p; i++)
+    for (int j = 0; j < p / 2; j++)
+      swap(pa[i][j], pa[i][p - j - 1]);
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  int D[256];
+  for (int i = 'A'; i <= 'Z'; i++)
+    D[i] = i - 'A';
+  for (int i = 'a'; i <= 'z'; i++)
+    D[i] = i - 'a' + 26;
+  for (int i = '0'; i <= '9'; i++)
+    D[i] = i - '0' + 52;
+  D['+'] = 62, D['/'] = 63;
+  while (cin >> w >> h >> p, w) {
+    string s;
+    used.reserve(100); // Assuming maximum size is 100
+    for (int i = 0; i < h; i++) {
+      cin >> s;
+      for (int j = 0; j < s.size(); j++) {
+        int t = D[s[j]];
+        int a = 6;
+        while (a--)
+          im[i][j * 6 + a] = t % 2, t /= 2;
+      }
+    }
+    for (int i = 0; i < p; i++) {
+      cin >> s;
+      for (int j = 0; j < s.size(); j++) {
+        int t = D[s[j]];
+        int a = 6;
+        while (a--)
+          pa[i][j * 6 + a] = t % 2, t /= 2;
+      }
+    }
+    ans = 0;
+    for (int i = 0; i < 4; i++) {
+      ppp();
+      ch1();
+      ppp();
+      ch1();
+      ch();
+    }
+    cout << ans << '\n';
+  }
+  return 0;
+}
+```
+
+These changes should increase the performance of the code. It should be noted that the performance gain is dependent on the specific hardware and compiler used. It is also recommended to profile the code before and after the changes to measure the improvement.

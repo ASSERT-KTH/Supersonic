@@ -1,0 +1,142 @@
+Step 1: Remove unnecessary includes
+
+The program includes the `<bits/stdc++.h>` header, which includes a large number of standard library headers. This can increase the compilation time and may include unnecessary headers. We can remove this line and include only the required headers.
+
+```cpp
+#include <iostream>
+#include <algorithm>
+#include <cstdio>
+```
+
+Step 2: Use `std::cin` and `std::cout` instead of `scanf` and `printf`
+
+The program uses `scanf` and `printf` for input and output. While these functions are efficient, using `std::cin` and `std::cout` from the `<iostream>` header can be more convenient and safer. We can replace `scanf` and `printf` with `std::cin` and `std::cout` respectively.
+
+```cpp
+std::cin >> x >> y >> dis;
+std::cout << (ans == INF ? -1 : ans) << std::endl;
+```
+
+Step 3: Use a more appropriate data type for `INF`
+
+The constant `INF` is defined as `1000000007`, which is a large value. Since the program uses it to represent an infinite value, it is better to use a data type that can represent a larger value, such as `std::numeric_limits<int>::max()`. We can replace `1000000007` with `std::numeric_limits<int>::max()`.
+
+```cpp
+const int INF = std::numeric_limits<int>::max();
+```
+
+Step 4: Optimize the nested loops
+
+The program has multiple nested loops that can be optimized. In the first loop, we can use `memset` to set all elements of `c` to `INF` instead of using a nested loop.
+
+```cpp
+std::memset(c, INF, sizeof(c));
+```
+
+In the second loop, we can optimize the initialization of `f` by using `std::fill` instead of nested loops.
+
+```cpp
+std::fill(&f[0][0][0][0], &f[N][N][N][2], INF);
+```
+
+In the third loop, we can optimize the initialization of `f[i][i][1][0]` and `f[i][i][1][1]` by setting them directly to `0` instead of using a nested loop.
+
+```cpp
+f[i][i][1][0] = 0;
+f[i][i][1][1] = 0;
+```
+
+Step 5: Optimize the min operations
+
+The program uses multiple `min` operations to update the values of `f` in the nested loops. We can optimize these operations by using a temporary variable to store the minimum value and updating `f` only once.
+
+```cpp
+int min_val = std::min(f[i][j][k][0], f[i2][j][k - 1][0] + c[i][i2]);
+min_val = std::min(min_val, f[i2][j][k - 1][1] + c[i][j]);
+min_val = std::min(min_val, f[i2][j][k][0] + c[i][i2]);
+min_val = std::min(min_val, f[i2][j][k][1] + c[i][j]);
+f[i][j][k][0] = min_val;
+```
+
+Similarly, we can optimize the `min` operations in the innermost loop.
+
+```cpp
+int min_val = std::min(f[i][j][k][1], f[i][j2][k - 1][1] + c[j][j2]);
+min_val = std::min(min_val, f[i][j2][k - 1][0] + c[j][i]);
+min_val = std::min(min_val, f[i][j2][k][1] + c[j][j2]);
+min_val = std::min(min_val, f[i][j2][k][0] + c[j][i]);
+f[i][j][k][1] = min_val;
+```
+
+Optimized C++ program:
+
+```cpp
+#include <iostream>
+#include <algorithm>
+#include <cstdio>
+#include <cstring>
+#include <limits>
+
+const int INF = std::numeric_limits<int>::max();
+const int N = 81;
+int n, m, p;
+int c[N][N], f[N][N][N][2];
+
+int main() {
+  std::cin >> n >> p >> m;
+
+  std::memset(c, INF, sizeof(c));
+
+  for (int i = 1, x, y, dis; i <= m; ++i) {
+    std::cin >> x >> y >> dis;
+    c[x][y] = std::min(dis, c[x][y]);
+  }
+
+  std::fill(&f[0][0][0][0], &f[N][N][N][2], INF);
+
+  for (int i = 1; i <= n; ++i) {
+    f[i][i][1][0] = 0;
+    f[i][i][1][1] = 0;
+  }
+
+  for (int d = 1; d < n; ++d) {
+    for (int i = 1; i + d <= n; ++i) {
+      int j = i + d;
+      for (int k = 2; k <= p; ++k) {
+        for (int i2 = i + 1; i2 < j; ++i2) {
+          int min_val = std::min(f[i][j][k][0], f[i2][j][k - 1][0] + c[i][i2]);
+          min_val = std::min(min_val, f[i2][j][k - 1][1] + c[i][j]);
+          min_val = std::min(min_val, f[i2][j][k][0] + c[i][i2]);
+          min_val = std::min(min_val, f[i2][j][k][1] + c[i][j]);
+          f[i][j][k][0] = min_val;
+        }
+        int min_val = std::min(f[i][j][k][0], f[j][j][k - 1][0] + c[i][j]);
+        min_val = std::min(min_val, f[j][j][k][0] + c[i][j]);
+        f[i][j][k][0] = min_val;
+
+        for (int j2 = j - 1; j2 > i; --j2) {
+          int min_val = std::min(f[i][j][k][1], f[i][j2][k - 1][1] + c[j][j2]);
+          min_val = std::min(min_val, f[i][j2][k - 1][0] + c[j][i]);
+          min_val = std::min(min_val, f[i][j2][k][1] + c[j][j2]);
+          min_val = std::min(min_val, f[i][j2][k][0] + c[j][i]);
+          f[i][j][k][1] = min_val;
+        }
+        int min_val = std::min(f[i][j][k][1], f[i][i][k - 1][1] + c[j][i]);
+        min_val = std::min(min_val, f[i][i][k][1] + c[j][i]);
+        f[i][j][k][1] = min_val;
+      }
+    }
+  }
+
+  int ans = INF;
+  for (int i = 1; i <= n; ++i) {
+    for (int j = 1; j <= n; ++j) {
+      ans = std::min(ans, f[i][j][p][0]);
+      ans = std::min(ans, f[i][j][p][1]);
+    }
+  }
+
+  std::cout << (ans == INF ? -1 : ans) << std::endl;
+  return 0;
+}
+```

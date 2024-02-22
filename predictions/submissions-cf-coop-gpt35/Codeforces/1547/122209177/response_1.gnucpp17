@@ -1,0 +1,115 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+typedef long long int ll;
+
+const int mod = 1e9 + 7;
+const int INF = 1e18;
+const int N = 4e5 + 5;
+
+ll gcd(ll a, ll b) {
+    if (b == 0)
+        return a;
+    return gcd(b, a % b);
+}
+
+void build_tree(int* seg_tree, int tree_index, int strt_i, int end_i) {
+    queue<pair<int, int>> q;
+    q.push({tree_index, strt_i});
+    q.push({tree_index, end_i});
+
+    while (!q.empty()) {
+        int cur_tree_index = q.front().first;
+        int cur_strt_i = q.front().second;
+        q.pop();
+        int cur_end_i = q.front().second;
+        q.pop();
+
+        if (cur_strt_i == cur_end_i) {
+            seg_tree[cur_tree_index] = a[cur_strt_i];
+            continue;
+        }
+
+        int mid = (cur_strt_i + cur_end_i) / 2;
+        q.push({cur_tree_index * 2, cur_strt_i});
+        q.push({cur_tree_index * 2 + 1, mid + 1, cur_end_i});
+
+        seg_tree[cur_tree_index] = gcd(seg_tree[cur_tree_index * 2], seg_tree[cur_tree_index * 2 + 1]);
+    }
+}
+
+int query(int* seg_tree, int tree_index, int strt_i, int end_i, int q_strt, int q_end) {
+    if (strt_i > q_end || end_i < q_strt)
+        return 0;
+    if (q_strt <= strt_i && q_end >= end_i)
+        return seg_tree[tree_index];
+    int mid = (strt_i + end_i) / 2;
+    int l = query(seg_tree, 2 * tree_index, strt_i, mid, q_strt, q_end);
+    int r = query(seg_tree, 2 * tree_index + 1, mid + 1, end_i, q_strt, q_end);
+    return gcd(l, r);
+}
+
+int calculate_gcd(int* a, int n) {
+    int g = a[0];
+    for (int i = 1; i < n; i++) {
+        g = gcd(g, a[i]);
+    }
+    return g;
+}
+
+void solve() {
+    int n;
+    cin >> n;
+    int* a = new int[2 * n];
+    for (int i = 0; i < n; i++) {
+        cin >> a[i];
+        a[i + n] = a[i];
+    }
+
+    int* seg_tree = new int[4 * N + 5]();
+    build_tree(seg_tree, 1, 0, 2 * n);
+
+    int g = calculate_gcd(a, n);
+
+    int ans = 0;
+    for (int i = 0; i < n; i++) {
+        if (a[i] == g)
+            continue;
+
+        int r = 2 * n, l = i + 1, temp = INF, cnt = 0;
+        int subarray_length = 0;
+        while (l <= r) {
+            int x = query(seg_tree, 1, 0, 2 * n, l, r);
+            int y = gcd(x, a[i]);
+            if (y == g) {
+                temp = min(temp, subarray_length + cnt);
+                r = l - 1;
+            } else {
+                a[i] = gcd(a[i], x);
+                subarray_length += r - l + 1;
+                l = r + 1;
+            }
+        }
+        ans = max(ans, temp);
+    }
+
+    cout << ans << endl;
+
+    delete[] a;
+    delete[] seg_tree;
+}
+
+int main() {
+    ios::sync_with_stdio(0);
+    cin.tie(0);
+
+    int t;
+    cin >> t;
+    for (int i = 0; i < t; i++) {
+        solve();
+    }
+
+    return 0;
+}

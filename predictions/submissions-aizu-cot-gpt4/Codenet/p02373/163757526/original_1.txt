@@ -1,0 +1,89 @@
+This program is already quite well-optimized, but there are still some minor improvements that can be made:
+
+1. Using an adjacency matrix instead of an adjacency list: If the graph is dense (i.e., there are quite a number of edges), it might be more efficient to use an adjacency matrix instead of an adjacency list. This is because accessing an element in a matrix is faster than traversing a list. However, this will increase memory usage.
+
+2. Reduce function call overhead in the DFS function: Function calls in C++ can be costly, especially in a recursive function like DFS. Instead of calling DFS recursively, you can convert it to iterative with the help of a stack, which will reduce the function call overhead.
+
+3. Avoiding unnecessary calculations: In the build function, the calculation of (1 << i) and (1 << (i - 1)) is repeated in the inner loop. This could be avoided by calculating it once before the inner loop and storing it in a variable.
+
+4. Reducing the size of integer types: If the maximum value of an integer variable does not exceed the limit of int, use int instead of long or long long. This can reduce memory usage and potentially increase speed due to the smaller size of the data type.
+
+5. Use fast I/O methods: Using scanf and printf instead of cin and cout can speed up your I/O operations.
+
+Here's your optimized code:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+#define fi first
+#define se second
+typedef pair<int, int> ii;
+typedef vector<int> vi;
+const int MAXN = 100005;
+const int LOGN = 20;
+int idx_in_path[MAXN];
+ii path[MAXN << 1];
+vi adjList[MAXN];
+int path_size = 0;
+stack<pair<int, int>> dfsStack;
+void dfs(int u, int depth = 0) {
+  dfsStack.push({u, depth});
+  while (!dfsStack.empty()) {
+    tie(u, depth) = dfsStack.top();
+    dfsStack.pop();
+    idx_in_path[u] = path_size;
+    path[path_size++] = ii(depth, u);
+    for (int v : adjList[u]) {
+      dfsStack.push({v, depth + 1});
+      path[path_size++] = ii(depth, u);
+    }
+  }
+}
+ii ST[LOGN][MAXN << 1];
+void build(int n) {
+  int h = ceil(log2(n + 1));
+  for (int i = 0; i < n; i++)
+    ST[0][i] = path[i];
+  for (int i = 1; i < h; i++) {
+    int shift_i = 1 << i;
+    int shift_i_minus_1 = 1 << (i - 1);
+    for (int j = 0; j + shift_i <= n; j++)
+      ST[i][j] = min(ST[i - 1][j], ST[i - 1][j + shift_i_minus_1]);
+  }
+}
+int lca(int u, int v) {
+  int l = idx_in_path[u], r = idx_in_path[v];
+  if (l > r)
+    swap(l, r);
+  r++;
+  int p = 31 - __builtin_clz(r - l);
+  return min(ST[p][l], ST[p][r - (1 << p)]).se;
+}
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  int num_nodes;
+  scanf("%d", &num_nodes);
+  for (int u = 0; u < num_nodes; u++) {
+    int num_neighbors;
+    scanf("%d", &num_neighbors);
+    for (int i = 0; i < num_neighbors; i++) {
+      int v;
+      scanf("%d", &v);
+      adjList[u].push_back(v);
+    }
+  }
+  dfs(0);
+  build(path_size);
+  int num_queries;
+  scanf("%d", &num_queries);
+  for (int i = 0; i < num_queries; i++) {
+    int u, v;
+    scanf("%d%d", &u, &v);
+    printf("%d\n", lca(u, v));
+  }
+  return 0;
+}
+```
+
+Note: These optimizations are based on the assumption that the input size is large and the graph is dense. If the graph is sparse (i.e., not many edges), using an adjacency list is still the better choice.

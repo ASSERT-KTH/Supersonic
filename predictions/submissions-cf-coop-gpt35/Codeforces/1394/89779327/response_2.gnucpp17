@@ -1,0 +1,121 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+const int N = 10;
+
+int n, m, k;
+int*** ban;
+bool** slf;
+int* used;
+int** cnt;
+int res, all;
+std::vector<std::pair<int, int>>* v;
+std::vector<std::pair<int, int>>* g;
+int** sv;
+
+void rec(int i) {
+  if (i == k + 1) {
+    res++;
+    return;
+  }
+  for (int j = 0; j < i; j++) {
+    if (used[i] & (1 << j) || slf[i][j])
+      continue;
+    for (int h = i + 1; h <= k; h++) {
+      sv[i][h] = used[h];
+      used[h] |= ban[i][j][h];
+    }
+    all += cnt[i][j];
+    rec(i + 1);
+    all -= cnt[i][j];
+    for (int h = i + 1; h <= k; h++) {
+      used[h] = sv[i][h];
+    }
+  }
+}
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  std::cin >> n >> m >> k;
+  
+  // Allocate memory for data structures
+  ban = new int**[N];
+  slf = new bool*[N];
+  used = new int[N];
+  cnt = new int*[N];
+  v = new std::vector<std::pair<int, int>>[N];
+  g = new std::vector<std::pair<int, int>>[N];
+  sv = new int*[N];
+  for (int i = 0; i < N; i++) {
+    ban[i] = new int*[N];
+    slf[i] = new bool[N];
+    cnt[i] = new int[N];
+    sv[i] = new int[N];
+    
+    for (int j = 0; j < N; j++) {
+      ban[i][j] = new int[N];
+    }
+  }
+
+  for (int i = 1; i <= m; i++) {
+    int x, y, z;
+    std::cin >> x >> y >> z;
+    v[x].push_back({z, y});
+  }
+
+  for (int i = 1; i <= n; i++) {
+    for (const auto& p : v[i]) {
+      g[p.second].push_back({v[i].size(), p.first});
+    }
+  }
+
+  for (int i = 1; i <= n; i++) {
+    if (g[i].empty()) {
+      std::cout << 0 << "\n";
+      return 0;
+    }
+    std::sort(g[i].begin(), g[i].end());
+    int idx = 0;
+    for (int j = 0; j < g[i].size(); j++) {
+      if (j > 0 && g[i][j] == g[i][j - 1]) {
+        slf[g[i][j].first][g[i][j].second] = true;
+      }
+      else {
+        g[i][idx++] = g[i][j];
+      }
+    }
+    g[i].resize(idx);
+    for (int j = 0; j < g[i].size(); j++) {
+      cnt[g[i][j].first][g[i][j].second]++;
+      for (int h = 0; h < g[i].size(); h++) {
+        if (h != j) {
+          ban[g[i][j].first][g[i][j].second][g[i][h].first] |= (1 << g[i][h].second);
+        }
+      }
+    }
+  }
+  
+  rec(1);
+  std::cout << res << "\n";
+
+  // Deallocate memory
+  for (int i = 0; i < N; i++) {
+    delete[] slf[i];
+    delete[] cnt[i];
+    delete[] sv[i];
+    for (int j = 0; j < N; j++) {
+      delete[] ban[i][j];
+    }
+    delete[] ban[i];
+  }
+  delete[] slf;
+  delete[] cnt;
+  delete[] sv;
+  delete[] ban;
+  delete[] used;
+  delete[] v;
+  delete[] g;
+
+  return 0;
+}

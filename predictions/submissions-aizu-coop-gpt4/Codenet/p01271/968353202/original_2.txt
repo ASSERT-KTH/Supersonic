@@ -1,0 +1,96 @@
+Code Analysis:
+The provided code is a C++ program that uses the Breadth-first search (BFS) algorithm to find a path in a bidirectional 2D grid. The main bottlenecks in the code are:
+
+1. The BFS operation, which can be computationally intensive due to its nature of exploring all the nodes in a graph or a grid.
+2. The use of a 4D array, `visited`, to keep track of visited nodes. This can be memory-intensive, especially for large grids.
+3. The 4D array is being reset with `memset` in each iteration of the main loop. This operation is also computationally expensive.
+
+Optimization Strategy:
+
+1. Data Structures: The 4D array `visited` could be replaced with a more space-efficient data structure. A hash map could be used to store only the visited states.
+2. Redundant Computations: The `memset` operation is not necessary if we use a hash map for the `visited` states.
+3. Loops: The BFS operation is inherently expensive, but the code can be optimized by reducing the number of checks and operations inside the BFS loop.
+
+Here is the step-by-step explanation:
+
+1. Replace the 4D array with a hash map. A hash map will store only the visited states, which is more space-efficient than storing a 4D array of mostly unused states. The hash map also provides constant time complexity for insertions and lookups.
+2. Remove the `memset` operation. If we use a hash map, we can simply clear the map at the start of each iteration instead of using `memset` to reset the entire 4D array.
+3. Inside the BFS loop, we can reduce the number of checks and operations. For example, we can combine the checks for out-of-bound indices and wall cells into a single condition.
+
+Trade-offs:
+The use of a hash map may increase the complexity of the code slightly as compared to a 4D array. However, the improvement in space efficiency and performance is significant, especially for large grid sizes.
+
+Here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <queue>
+#include <unordered_map>
+using namespace std;
+struct po {
+  int lx, ly, rx, ry;
+};
+int w, h;
+string mp[2][51];
+unordered_map<string, bool> visited;
+int dx[4] = {0, 0, 1, -1};
+int dy[4] = {1, -1, 0, 0};
+
+string getHash(po p) {
+  return to_string(p.lx) + to_string(p.ly) + to_string(p.rx) + to_string(p.ry);
+}
+
+bool bfs(int lx, int ly, int rx, int ry) {
+  queue<po> Q;
+  Q.push((po){lx, ly, rx, ry});
+  while (!Q.empty()) {
+    po t = Q.front();
+    Q.pop();
+    int cnt = (mp[0][t.ly][t.lx] == '%') + (mp[1][t.ry][t.rx] == '%');
+    if (cnt == 2)
+      return true;
+    string hash = getHash(t);
+    if (visited[hash] || cnt == 1)
+      continue;
+    visited[hash] = 1;
+    for (int i = 0; i < 4; i++) {
+      int flg = 0;
+      int nlx = t.lx + dx[i], nly = t.ly + dy[i];
+      int nrx = t.rx - dx[i], nry = t.ry + dy[i];
+      if (nlx < 0 || nly < 0 || nlx >= w || nly >= h || mp[0][nly][nlx] == '#')
+        nlx = t.lx, nly = t.ly, flg++;
+      if (nrx < 0 || nry < 0 || nrx >= w || nry >= h || mp[1][nry][nrx] == '#')
+        nrx = t.rx, nry = t.ry, flg++;
+      if (flg == 2)
+        continue;
+      Q.push((po){nlx, nly, nrx, nry});
+    }
+  }
+  return false;
+}
+
+int main() {
+  while (1) {
+    cin >> w >> h;
+    if (!w && !h)
+      break;
+    for (int i = 0; i < h; i++)
+      cin >> mp[0][i] >> mp[1][i];
+    int lx, ly, rx, ry;
+    for (int i = 0; i < h; i++)
+      for (int j = 0; j < w; j++) {
+        if (mp[0][i][j] == 'L')
+          lx = j, ly = i;
+        if (mp[1][i][j] == 'R')
+          rx = j, ry = i;
+      }
+    visited.clear();
+    if (bfs(lx, ly, rx, ry))
+      cout << "Yes" << endl;
+    else
+      cout << "No" << endl;
+  }
+  return 0;
+}
+```
+In the optimized code, a helper function `getHash` is added to generate a unique string for a `po` object. This string is used as the key in the `visited` hash map. The `memset` operation is replaced by `visited.clear()`, which is more efficient. The rest of the code remains the same as the original code.

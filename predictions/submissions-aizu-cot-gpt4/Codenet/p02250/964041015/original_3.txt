@@ -1,0 +1,117 @@
+This program is already pretty optimized. However, there are a few optimizations we can make:
+
+1. We can reduce the number of function calls by inlining small functions. This might increase the size of the binary, but it will reduce the overhead of function calls. In this code, the `is_lms` function is a good candidate for inlining because it is small and called often.
+
+2. We can reduce memory usage by reusing the `bucket` vector. In the original code, the `bucket` vector is created and destroyed multiple times. By reusing the same vector, we can reduce the number of memory allocations and deallocations. This also reduces the overhead of initializing the vector.
+
+3. We can use `reserve` function for vector to allocate memory in advance. This can reduce the number of reallocations and copying data when the vector grows.
+
+Here is the optimized code:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+class suffix_array {
+  inline bool is_lms(int x, vector<int>& is_l) {
+    return x > 0 && is_l[x - 1] && !is_l[x];
+  }
+
+  vector<int> sa_is(vector<int>& v, int mv, vector<int>& bucket, vector<int>& is_l) {
+    int n = v.size();
+    if (n == 1)
+      return vector<int>(1, 0);
+
+    vector<int> sa(n, -1);
+
+    is_l[n - 1] = 0;
+    for (int i = n - 2; i >= 0; i--)
+      is_l[i] = v[i] > v[i + 1] || (v[i] == v[i + 1] && is_l[i + 1]);
+
+    create_end_bucket(v, bucket);
+    for (int i = 0; i < n; i++)
+      if (is_lms(i, is_l))
+        sa[--bucket[v[i]]] = i;
+
+    induced_sort(v, sa, mv, bucket, is_l);
+    invert_induced_sort(v, sa, mv, bucket, is_l);
+
+    int cur = 0;
+    vector<int> order(n);
+    for (int i = 0; i < n; i++)
+      if (is_lms(i, is_l))
+        order[i] = cur++;
+
+    vector<int> next_v(cur);
+    next_v.reserve(n);
+    cur = -1;
+    int prev = -1;
+    for (int i = 0; i < n; i++) {
+      if (!is_lms(sa[i], is_l))
+        continue;
+
+      bool diff = false;
+      for (int d = 0; d < n; d++) {
+        if (prev == -1 || v[sa[i] + d] != v[prev + d] || is_l[sa[i] + d] != is_l[prev + d]) {
+          diff = true;
+          break;
+        }
+        else if (d > 0 && is_lms(sa[i] + d, is_l))
+          break;
+      }
+
+      if (diff) {
+        cur++;
+        prev = sa[i];
+      }
+      next_v[order[sa[i]]] = cur;
+    }
+
+    vector<int> re_order(next_v.size());
+    re_order.reserve(n);
+    for (int i = 0; i < n; i++)
+      if (is_lms(i, is_l))
+        re_order[order[i]]] = i;
+
+    vector<int> next_sa = sa_is(next_v, cur, bucket, is_l);
+    create_end_bucket(v, bucket);
+
+    fill(sa.begin(), sa.end(), -1);
+    for (int i = next_sa.size() - 1; i >= 0; i--)
+      sa[--bucket[v[re_order[next_sa[i]]]]] = re_order[next_sa[i]];
+
+    induced_sort(v, sa, mv, bucket, is_l);
+    invert_induced_sort(v, sa, mv, bucket, is_l);
+
+    return sa;
+  }
+
+  void init(string& t, vector<int>& bucket, vector<int>& is_l) {
+    int n = t.size();
+    vector<int> v(n + 1);
+    for (int i = 0; i < n; i++)
+      v[i] = t[i];
+
+    sa = sa_is(v, *max_element(v.begin(), v.end()), bucket, is_l);
+  }
+
+  // remaining code is unchanged
+};
+signed main() {
+  string s;
+  cin >> s;
+
+  vector<int> bucket(256);
+  vector<int> is_l(s.size() + 1);
+  suffix_array sa(s, bucket, is_l);
+
+  int q;
+  cin >> q;
+  while (q--) {
+    string t;
+    cin >> t;
+    cout << sa.contain(t) << '\n';
+  }
+  return 0;
+}
+```

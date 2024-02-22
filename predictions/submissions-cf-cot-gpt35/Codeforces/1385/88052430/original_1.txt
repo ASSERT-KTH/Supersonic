@@ -1,0 +1,116 @@
+Optimization Steps:
+1. Remove unnecessary header files.
+2. Remove unnecessary namespaces.
+3. Remove unnecessary macros.
+4. Use `vector<bool>` instead of `vector<int>` for the `visited` and `being_visited` arrays to reduce memory usage.
+5. Use `unordered_set` instead of `set` for the `G` graph to improve performance.
+6. Use a `stack` instead of recursion for the DFS traversal to improve performance and reduce memory usage.
+7. Remove the `map` variable and directly use the `TS` array for mapping indices.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <unordered_set>
+#include <stack>
+#include <algorithm>
+
+using namespace std;
+
+bool dfs(int i, vector<bool>& visited, vector<bool>& being_visited,
+         vector<int>& TS, vector<vector<int>>& g) {
+  if (visited[i]) {
+    return false;
+  } else if (being_visited[i]) {
+    return true;
+  } else {
+    being_visited[i] = true;
+    for (auto j : g[i]) {
+      if (dfs(j, visited, being_visited, TS, g))
+        return true;
+    }
+  }
+  being_visited[i] = false;
+  visited[i] = true;
+  TS.push_back(i);
+  return false;
+}
+
+void solve() {
+  int n, m;
+  cin >> n >> m;
+  vector<bool> visited(n + 1, false), being_visited(n + 1, false);
+  vector<int> TS;
+  vector<vector<int>> g(n + 1);
+  vector<unordered_set<int>> G(n + 1);
+  for (int i = 0; i < m; ++i) {
+    int t, x, y;
+    cin >> t >> x >> y;
+    if (t)
+      g[x].push_back(y);
+    G[x].insert(y);
+    G[y].insert(x);
+  }
+  for (int i = 1; i <= n; ++i) {
+    bool ch = true;
+    if (g[i].empty() && !G[i].empty()) {
+      for (auto j : G[i]) {
+        ch &= (!G[j].count(i));
+      }
+    } else {
+      ch = false;
+    }
+    if (ch) {
+      for (auto j : G[i]) {
+        g[i].push_back(j);
+      }
+    }
+  }
+  auto havecycle = [&]() {
+    for (int i = 1; i <= n; ++i) {
+      if (!visited[i]) {
+        stack<int> stk;
+        stk.push(i);
+        being_visited[i] = true;
+        while (!stk.empty()) {
+          int u = stk.top();
+          stk.pop();
+          if (visited[u]) continue;
+          for (auto v : g[u]) {
+            if (being_visited[v]) return true;
+            stk.push(v);
+            being_visited[v] = true;
+          }
+          being_visited[u] = false;
+          visited[u] = true;
+          TS.push_back(u);
+        }
+      }
+    }
+    return false;
+  };
+  if (havecycle()) {
+    cout << "NO" << endl;
+    return;
+  }
+  reverse(TS.begin(), TS.end());
+  cout << "YES" << endl;
+  for (int i = 1; i <= n; ++i) {
+    for (auto j : G[i]) {
+      if (TS[j - 1] < TS[i - 1])
+        cout << j << " " << i << endl;
+    }
+  }
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  cout.tie(NULL);
+  int t;
+  cin >> t;
+  for (; t--; solve())
+    ;
+}
+```

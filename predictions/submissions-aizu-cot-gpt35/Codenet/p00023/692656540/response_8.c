@@ -1,0 +1,36 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(void) {
+  int k, n;
+  double xa, ya, ra, xb, yb, rb;
+  double d[4];
+  
+  scanf("%d\n", &n);
+  int* ans = (int*)malloc(n * sizeof(int));
+  
+  for (k = 0; k < n; k++) {
+    scanf("%lf %lf %lf %lf %lf %lf", &xa, &ya, &ra, &xb, &yb, &rb);
+    d[0] = sqrt((xb - xa) * (xb - xa) + (yb - ya) * (yb - ya));
+    d[1] = ra + rb;
+    d[2] = ra - rb;
+    d[3] = rb - ra;
+    
+    if (d[0] > d[1]) {
+      ans[k] = 0;
+    } else if (d[2] > d[0]) {
+      ans[k] = 2;
+    } else if (d[3] > d[0]) {
+      ans[k] = -2;
+    } else {
+      ans[k] = 1;
+    }
+  }
+  
+  for (k = 0; k < n; k++) {
+    printf("%d\n", ans[k]);
+  }
+  
+  free(ans);
+  return 0;
+}

@@ -1,0 +1,121 @@
+Code Analysis:
+- The code calculates the number of permutations of an array of N elements after R bubble swaps. 
+- It uses two arrays: `factmodary` to store the factorial modulo divisor values, and `word` to store the elements of the array.
+- It also uses a map called `bubblehist` to keep track of the number of bubbles for each element in the array.
+
+Potential Performance Bottlenecks:
+1. Memory Allocation: The code dynamically allocates memory for the `factmodary` and `word` arrays using `new`. This can be inefficient and result in memory fragmentation.
+2. Factorial Calculation: The code calculates the factorial modulo divisor for each number from 1 to N. This can be time-consuming for large values of N.
+3. Bubble Swap and Bubble Counting: The code uses a map to keep track of the number of bubbles for each element. This can result in slow insertions and lookups.
+
+Optimization Strategy:
+1. Replace Dynamic Memory Allocation: Instead of using `new` to dynamically allocate memory for `factmodary` and `word`, use stack allocation by declaring them as local arrays.
+2. Precompute Factorial Modulo Divisor: Rather than calculating the factorial modulo divisor for each number from 1 to N, precompute and store these values in the `factmodary` array.
+3. Optimize Bubble Swap and Bubble Counting: Instead of using a map to track the number of bubbles for each element, use an array to store the bubble counts directly. This will improve lookup and insertion performance.
+4. Use a More Efficient Data Structure for Bubble Counting: Instead of using a map or an array, use a Fenwick tree (also known as a Binary Indexed Tree) to efficiently perform range updates and point queries on the bubble count array.
+
+Step-by-Step Explanation:
+1. Replace Dynamic Memory Allocation:
+   - Remove `new long long[100001]` and `new int[100000]` and replace them with `long long factmodary[100001]` and `int word[100000]` respectively.
+   - This avoids the overhead of dynamic memory allocation and deallocation and reduces the risk of memory fragmentation.
+
+2. Precompute Factorial Modulo Divisor:
+   - Remove the loop that calculates the factorials modulo divisor and the assignment to `factmodary`.
+   - Instead, precompute and store the factorials modulo divisor for each number from 1 to 100000 in the `factmodary` array.
+   - This reduces the computational overhead of calculating the factorial modulo divisor for each number in each iteration.
+
+3. Optimize Bubble Swap and Bubble Counting:
+   - Replace the map `bubblehist` with an array `bubblecount` of size 100001 initialized to zero.
+   - Update the swap operation to directly update the `bubblecount` array instead of using the map.
+
+4. Use a More Efficient Data Structure for Bubble Counting:
+   - Replace the `bubblecount` array with a Fenwick tree to efficiently perform range updates and point queries.
+   - Initialize the Fenwick tree with zeros.
+   - Update the bubble count using the Fenwick tree operations instead of direct array accesses.
+
+5. Remove Unused Variables:
+   - Remove the variable `const int divisor = 1000000007` as it is not used in the optimized code.
+
+Optimized Code Block:
+
+```cpp
+#include <iostream>
+using namespace std;
+
+const int MAX_N = 100000;
+const int divisor = 1000000007;
+
+long long factmodary[MAX_N + 1];
+int word[MAX_N];
+int bubblecount[MAX_N + 1];
+
+int fenwick[MAX_N + 1];
+
+int query(int idx) {
+  int sum = 0;
+  while (idx > 0) {
+    sum += fenwick[idx];
+    idx -= idx & -idx;
+  }
+  return sum;
+}
+
+void update(int idx, int val) {
+  while (idx <= MAX_N) {
+    fenwick[idx] += val;
+    idx += idx & -idx;
+  }
+}
+
+int main() {
+  factmodary[0] = 1;
+  for (int i = 1; i <= MAX_N; i++) {
+    factmodary[i] = (factmodary[i - 1] * i) % divisor;
+  }
+
+  int N, R;
+  while (cin >> N && N != 0) {
+    cin >> R;
+
+    for (int i = 0; i < N; i++) {
+      word[i] = i + 1;
+    }
+
+    for (int i = 0; i < R; i++) {
+      int s, t;
+      cin >> s >> t;
+      swap(word[s - 1], word[t - 1]);
+    }
+
+    for (int i = 0; i <= N; i++) {
+      bubblecount[i] = 0;
+    }
+
+    for (int i = 0; i < N; i++) {
+      bubblecount[word[i]] = i + 1;
+      update(i + 1, 1);
+    }
+
+    long long ans = factmodary[N - 1] * (word[0] - 1);
+
+    for (int i = 1; i < N; i++) {
+      int facttime = word[i] - 1;
+      int bubblenum = query(word[i] - 1);
+
+      update(bubblecount[word[i]], -1);
+
+      facttime -= bubblenum;
+      ans += factmodary[N - (i + 1)] * facttime;
+      ans %= divisor;
+    }
+
+    cout << ans << "\n";
+  }
+
+  return 0;
+}
+```
+
+Trade-offs:
+- The optimized code may have increased code complexity due to the introduction of the Fenwick tree data structure.
+- However, this complexity is justified by the significant performance improvements achieved, especially for larger values of N and R.

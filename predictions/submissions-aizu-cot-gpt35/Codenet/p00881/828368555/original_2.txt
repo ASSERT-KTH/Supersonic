@@ -1,0 +1,68 @@
+Optimization Steps:
+
+1. Remove unnecessary includes: The program includes `<iostream>`, `<map>`, `<string>`, and `<vector>`. However, only `<iostream>` and `<vector>` are used. We can remove the unused includes to improve compile time.
+
+2. Remove unnecessary namespace declaration: The program includes the `using namespace std;` statement. However, only the `std::cin` and `std::cout` functions are used. We can remove the unnecessary namespace declaration to improve compile time and reduce potential naming conflicts.
+
+3. Avoid unnecessary copying of vectors: In the `search` function, the `vi` vector is passed by reference, but it is unnecessarily copied when calling the `search` function recursively. We can pass it by reference to avoid unnecessary copying.
+
+4. Use `unordered_map` instead of `map`: The program uses `map` to store the results of previous calculations. However, using an `unordered_map` can provide faster lookup times, especially when dealing with larger inputs.
+
+5. Use `reserve` for vectors: In the `main` function, the `vi` vector is initialized with the numbers from 0 to n. We can improve memory usage by using the `reserve` function to pre-allocate memory for the vector based on the size of n.
+
+6. Avoid unnecessary pair creation: In the `search` function, the `mp` map is checked for a key every time using `make_pair(vi, used)`. We can avoid creating a new pair every time by using `mp[{vi, used}]` instead.
+
+7. Use `emplace_hint` instead of `operator[]` for insertion: In the `search` function, when storing the result in the `mp` map, we can use `mp.emplace_hint` instead of `mp[make_pair(vi, used)] = res` to avoid unnecessary copying and improve performance.
+
+Optimized Program:
+
+```cpp
+#include <iostream>
+#include <unordered_map>
+#include <vector>
+
+std::vector<std::string> qes(128);
+std::unordered_map<std::pair<std::vector<int>, int>, int> mp;
+
+int search(std::vector<int>& vi, int depth, int used, int m, int n) {
+  auto key = std::make_pair(vi, used);
+  if (mp.count(key))
+    return mp[key];
+  if (vi.size() > (1 << (m - depth)))
+    return 100;
+  if (vi.size() == 1)
+    return depth;
+  int res = 100;
+  for (int i = 0; i < m; i++) {
+    if ((used >> i) & 1)
+      continue;
+    std::vector<int> a, b;
+    for (int j = 0; j < vi.size(); j++) {
+      if (qes[vi[j]][i] == '0')
+        a.push_back(vi[j]);
+      else
+        b.push_back(vi[j]);
+    }
+    if (a.empty() || b.empty())
+      continue;
+    res = std::min(res, std::max(search(a, depth + 1, used | (1 << i), m, n),
+                       search(b, depth + 1, used | (1 << i), m, n)));
+  }
+  return mp.emplace_hint(mp.end(), key, res)->second;
+}
+
+int main() {
+  int m, n;
+  while (std::cin >> m >> n, m) {
+    qes.resize(n);
+    for (int i = 0; i < n; i++)
+      std::cin >> qes[i];
+    std::vector<int> vi;
+    vi.reserve(n);
+    for (int i = 0; i < n; i++)
+      vi.push_back(i);
+    mp.clear();
+    std::cout << search(vi, 0, 0, m, n) << std::endl;
+  }
+}
+```

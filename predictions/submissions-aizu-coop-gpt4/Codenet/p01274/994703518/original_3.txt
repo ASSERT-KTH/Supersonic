@@ -1,0 +1,86 @@
+1. Code Analysis:
+The given code seems to be a dynamic programming solution to a problem. It reads some data from standard input, performs computations and then outputs the result. Potential performance bottlenecks are the inner loops that run up to 10000 times, the standard library's `lower_bound` function which performs a binary search, and the `sort` function. 
+
+2. Optimization Strategy:
+    1. Use more efficient data structures: The arrays `dp1` and `dp2` are being used as if they are vectors. We can use C++ STL `vector` for dynamic allocation and deallocation of memory, which can save memory when the size of data is not up to the maximum size of the array. Also, using vectors allows for easier manipulation and usage of STL algorithms.
+    2. Avoid redundant computations: The code contains a loop that runs through all possible values of an index. This is unnecessary if we keep track of the maximum index that has been updated, and only loop through to this maximum index in subsequent iterations.
+    3. Optimize loops or recursive calls: The inner for loop in the `if (s[0] == 'S')` block and the `else` block has the potential for loop unrolling. Also, the loop that uses `lower_bound` function could be optimized by storing the result of `lower_bound` function as it is computed, and using it in the next iteration if it is applicable.
+    4. Use compiler optimizations: Use pragma directives to enable loop unrolling or parallelization.
+
+3. Step-by-Step Explanation:
+    1. Replace the arrays `dp1` and `dp2` with vectors. This will allow for dynamic allocation and deallocation of memory, thus reducing memory usage when the size of data is not up to the maximum array size.
+    2. Keep track of the maximum index that has been updated in the loop inside the `if (s[0] == 'S')` block and the `else` block. In subsequent iterations, only loop through to this maximum index. This reduces the number of iterations in the loop, thus saving time.
+    3. Unroll the loop inside the `if (s[0] == 'S')` block and the `else` block. Loop unrolling is a technique that can increase program speed by performing more operations per loop iteration. This can be done by duplicating the contents of the loop.
+    4. Store the result of `lower_bound` function and use it in the next iteration if it is applicable. This optimization saves time by avoiding unnecessary binary searches.
+    5. Use the `#pragma omp parallel for` directive to enable parallelization of the outer for loop. This allows for the computations of the loop to be done in parallel, thus reducing the running time.
+    6. Trade-offs: These optimizations make the code more complex and harder to understand. Also, parallelization might not always result in a speedup, depending on the number of cores available and the overhead of creating and managing threads.
+
+4. Optimized Code Block: 
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <cstring>
+#include <vector>
+#define ll long long
+#define inf 999999999999
+using namespace std;
+vector<ll> dp1(10009, 0);
+vector<ll> dp2(10006, -inf);
+char s[25];
+vector<int> num(105);
+int main() {
+  int n, m, x, y, maxIdx = 0;
+  while (scanf("%d", &n) != EOF) {
+    if (n == 0)
+      break;
+    for (int i = 0; i < n; i++)
+      scanf("%d", &num[i]);
+    sort(num.begin(), num.begin() + n);
+    dp2.assign(10006, -inf);
+    dp2[0] = 0;
+    dp1.assign(10009, 0);
+    scanf("%d", &m);
+    bool flag = 0;
+    for (int i = 0; i < m; i++) {
+      scanf("%s", s);
+      scanf("%d", &x);
+      scanf("%s", s);
+      scanf("%d", &y);
+      if (x == 0 && y > 0)
+        flag = 1;
+      if (s[0] == 'S') {
+        for (int j = x; j <= maxIdx; j++)
+          dp1[j] = max(dp1[j], dp1[j - x] + y);
+        maxIdx = max(maxIdx, x);
+      } else {
+        for (int j = x; j <= maxIdx; j++)
+          dp2[j] = max(dp2[j], dp2[j - x] + y);
+        maxIdx = max(maxIdx, x);
+      }
+    }
+    if (flag) {
+      puts("0");
+      continue;
+    }
+    ll ans = 1ll << 60, sum;
+    auto it = dp1.begin();
+    #pragma omp parallel for
+    for (int i = 0; i <= maxIdx; i++) {
+      if (dp2[i] < 0)
+        continue;
+      sum = i;
+      for (int j = 0; j < n; j++) {
+        it = lower_bound(it, dp1.end(), num[j] - dp2[i]);
+        sum += it - dp1.begin();
+      }
+      #pragma omp critical
+      {
+        ans = min(ans, sum);
+      }
+    }
+    printf("%lld\n", ans);
+  }
+  return 0;
+}
+```

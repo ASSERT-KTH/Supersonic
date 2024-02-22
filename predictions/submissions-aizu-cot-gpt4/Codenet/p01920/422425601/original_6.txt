@@ -1,0 +1,145 @@
+This program is already well-optimized in terms of algorithmic complexity, as it uses a square-root bucketing strategy for answering range queries, which is a classic technique in competitive programming. However, there are a few places where the code can be slightly improved for better performance and readability. 
+
+1. Remove `#include <bits/stdc++.h>`. This header file is not standard and it includes a lot of unnecessary headers which can slow down the compilation time.
+
+2. Avoid using `using namespace std;`. It's a bad practice because it can lead to name clashes.
+
+3. The `debug` macro is defined but never used, so it can be removed.
+
+4. The `print` macro is defined but never used, so it can be removed.
+
+5. The constants `inf`, `inf64`, and `eps` are defined but never used, so they can be removed.
+
+6. The global typedef `i64` is defined but never used, so it can be removed.
+
+7. The `<<` operator overload for `vector<T>` is defined but never used, so it can be removed.
+
+8. The `at` function is only used once, so it can be inlined.
+
+9. The `while ((r + 1) % bucket_size != 0 and l <= r)` loop in the `query` function can be replaced by `while (r % bucket_size != bucket_size - 1 and l <= r)`. This change doesn't improve performance but it improves readability.
+
+10. The `sqrt_decomp` struct should have its members private and provide public functions for accessing or manipulating them.
+
+Here is the optimized code:
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using std::cin;
+using std::cout;
+using std::endl;
+using std::vector;
+using std::min;
+using std::max;
+
+struct sqrt_decomp {
+private:
+  const int bucket_size = 256;
+  int length, bucket_num;
+  vector<vector<int>> buckets;
+  vector<int> update, bucket_sum;
+public:
+  sqrt_decomp(const vector<int> &x)
+      : length(x.size()),
+        bucket_num((x.size() + bucket_size - 1) / bucket_size) {
+    buckets.resize(bucket_num);
+    update.resize(bucket_num);
+    bucket_sum.resize(bucket_num);
+    for (int i = 0; i < x.size(); ++i) {
+      buckets[i / bucket_size].push_back(x[i]);
+      bucket_sum[i / bucket_size] += x[i];
+      update[i / bucket_size] = 2;
+    }
+  }
+  int sum() {
+    int res = 0;
+    for (int i = 0; i < bucket_num; ++i) {
+      if (update[i] == 2)
+        res += bucket_sum[i];
+      else
+        res += update[i] * buckets[i].size();
+    }
+    return res;
+  }
+  void query(int l, int r, int b) {
+    l = max(0, l);
+    r = min(length - 1, r);
+    while (l % bucket_size != 0 && l <= r) {
+      int bucket_index = l / bucket_size;
+      if (update[bucket_index] < 2) {
+        for (auto &a : buckets[bucket_index])
+          a = update[bucket_index];
+        bucket_sum[bucket_index] =
+            update[bucket_index] * buckets[bucket_index].size();
+        update[bucket_index] = 2;
+      }
+      bucket_sum[bucket_index] -= buckets[bucket_index][l % bucket_size];
+      buckets[bucket_index][l % bucket_size] = b;
+      bucket_sum[bucket_index] += b;
+      ++l;
+    }
+    while (r % bucket_size != bucket_size - 1 and l <= r) {
+      int bucket_index = r / bucket_size;
+      if (update[bucket_index] < 2) {
+        for (auto &a : buckets[bucket_index])
+          a = update[bucket_index];
+        bucket_sum[bucket_index] =
+            update[bucket_index] * buckets[bucket_index].size();
+        update[bucket_index] = 2;
+      }
+      bucket_sum[bucket_index] -= buckets[bucket_index][r % bucket_size];
+      buckets[bucket_index][r % bucket_size] = b;
+      bucket_sum[bucket_index] += b;
+      --r;
+    }
+    if (l > r)
+      return;
+    for (int i = l / bucket_size; i <= r / bucket_size; ++i) update[i] = b;
+  }
+  int at(int i) {
+    int bucket_index = i / bucket_size;
+    if (update[bucket_index] < 2)
+      return update[bucket_index];
+    else
+      return buckets[bucket_index][i % bucket_size];
+  }
+};
+void solve() {
+  int n, q;
+  string s;
+  cin >> n >> s >> q;
+  vector<int> x1, x2;
+  for (int i = 0; i < n; i++) {
+    x1.push_back(s[i] - '0');
+    if (i + 1 < n)
+      x2.push_back((s[i] - '0') * (s[i + 1] - '0'));
+  }
+  sqrt_decomp f(x1), g(x2);
+  for (int i = 0; i < q; i++) {
+    int l, r, b;
+    cin >> l >> r >> b;
+    l--;
+    r--;
+    f.query(l, r, b);
+    if (b == 0)
+      g.query(l - 1, r, 0);
+    else {
+      int l_ = l, r_ = r - 1;
+      if (0 <= l - 1 and f.at(l - 1))
+        --l_;
+      if (r + 1 < n and f.at(r + 1))
+        ++r_;
+      g.query(l_, r_, 1);
+    }
+    cout << f.sum() - g.sum() << endl;
+  }
+}
+int main() {
+  std::cin.tie(0);
+  std::ios::sync_with_stdio(false);
+  cout.setf(std::ios::fixed);
+  cout.precision(10);
+  solve();
+  return 0;
+}
+```

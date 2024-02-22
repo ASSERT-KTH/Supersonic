@@ -1,0 +1,23 @@
+To optimize the given program, we can make the following modifications:
+
+1. Remove unnecessary includes: The program includes several unnecessary headers such as `<algorithm>`, `<assert.h>`, `<math.h>`, `<set>`, and `<vector>`. These headers are not used in the program and can be removed.
+
+2. Remove unused typedef: The typedef `typedef long long ll;` is not used in the program and can be removed.
+
+3. Use `constexpr` instead of `#define`: Instead of using `#define` for constants like `EPS` and `PI`, we can use `constexpr` to define them as compile-time constants.
+
+4. Use `const` instead of `#define` for macros: Instead of using `#define` for macros like `REP`, `FOR`, and `FOREQ`, we can use `const int` variables to achieve the same functionality.
+
+5. Replace `memset` with default member initializer: The `MEMSET` macro uses `memset` to initialize an array, but we can replace it with a default member initializer to achieve the same initialization.
+
+6. Replace `square` function with `std::pow`: The `square` function can be replaced with `std::pow` to calculate the square of a number.
+
+7. Use `const` references for function arguments: The `dist2` function takes two `Point` objects by value, but it can be optimized by using `const` references instead.
+
+8. Use `find` instead of `lower_bound` and `upper_bound`: The `PlaneSweep` function uses `lower_bound` and `upper_bound` to find the range of points in the set. We can replace this with a single call to `find` by checking if the found point is within the range.
+
+9. Use `emplace` instead of `insert`: The `PlaneSweep` function uses `insert` to insert a point into the set. We can use `emplace` instead to construct the point directly in the set.
+
+10. Use range-based for loops: Instead of using `FORIT` macro for iterating over a container, we can use range-based for loops for cleaner and more efficient code.
+
+11. Use `std::cin` and `std::cout` instead of `scanf` and `printf`: The program uses `scanf` and `printf` for input and output, respectively. We can use `std::cin` and `std::cout` which are more C++-style and provide better type safety.

@@ -1,0 +1,72 @@
+Optimization Steps:
+
+1. The #include <bits/stdc++.h> is generally considered bad practice because it includes a lot of unnecessary libraries which increases the compilation time. We should only include the libraries that we use in the code.
+
+2. The constant N is used as the size of the dp array. However, the array is only filled up to the minimum of N and the damage dealt by the magic (mg[k][i].f). Therefore, we can reduce the size of the dp array to the maximum value of mg[k][i].f, which will save memory.
+
+3. The vector mg[2] stores pairs of damage and cost for each type of magic. However, we only use the damage and cost values in the nested loops. Therefore, we can use two separate arrays to store the damage and cost values, which will make the code more readable and slightly faster because we don't need to create pair objects.
+
+4. The nested loops that calculate the minimum cost for each possible amount of damage are very inefficient. For each magic, we iterate over all possible amounts of damage that can be dealt by the magic. This results in a time complexity of O(m * N), where m is the number of magics and N is the maximum possible damage. We can optimize this by using a priority queue to store the magic with the lowest cost for each amount of damage. This will reduce the time complexity to O(m * log m), which is significantly faster.
+
+5. In the loop that calculates the minimum total cost, we calculate the cost for each possible amount of damage. However, we can stop as soon as we find a cost that is smaller than the current minimum cost, because we know that the cost will only increase for larger amounts of damage.
+
+Optimized Program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <algorithm>
+#include <string>
+#define INF 1e9
+#define N 100000
+using namespace std;
+typedef long long ll;
+
+int main() {
+    int n, m, hp[101];
+    while (cin >> n, n) {
+        for (int i = 0; i < n; i++)
+            cin >> hp[i];
+        vector<int> dmg[2], cost[2];
+        cin >> m;
+        for (int i = 0; i < m; i++) {
+            string name, type;
+            int c, d;
+            cin >> name >> c >> type >> d;
+            if (d)
+                dmg[type == "All"].push_back(d), cost[type == "All"].push_back(c);
+        }
+        int max_dmg = *max_element(dmg[0].begin(), dmg[0].end());
+        max_dmg = max(max_dmg, *max_element(dmg[1].begin(), dmg[1].end()));
+        vector<int> dp[2];
+        for (int i = 0; i < 2; i++) {
+            dp[i].resize(max_dmg + 1, INF);
+            priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
+            for (int j = 0; j < dmg[i].size(); j++)
+                pq.push({cost[i][j], dmg[i][j]});
+            while (!pq.empty()) {
+                auto p = pq.top();
+                pq.pop();
+                dp[i][p.second] = min(dp[i][p.second], p.first);
+                if (p.second < max_dmg)
+                    pq.push({p.first + cost[i][p.second], p.second + dmg[i][p.second]});
+            }
+        }
+        for (int i = 0; i < 2; i++)
+            for (int j = max_dmg; j >= 0; j--)
+                dp[i][j] = min(dp[i][j], dp[i][j + 1]);
+        ll ans = INF;
+        for (int i = 0; i <= max_dmg; i++) {
+            ll cost = dp[1][i];
+            for (int j = 0; j < n; j++)
+                cost += dp[0][max(0, hp[j] - i)];
+            ans = min(ans, cost);
+            if (cost < ans)
+                break;
+        }
+        cout << ans << endl;
+    }
+    return 0;
+}
+```

@@ -1,0 +1,64 @@
+#include <iostream>
+#include <vector>
+#include <functional>
+#include <limits>
+using namespace std;
+
+template <typename T, typename Compare = less<T>>
+vector<T> divide_and_conquer(ll h, ll w, const function<T(ll, ll)> &f,
+                             const Compare &comp = Compare()) {
+  const T inf = numeric_limits<T>::max() / 10;
+  vector<T> dp(h * w, inf);
+  auto index = [&](ll i, ll j) { return i * w + j; };
+  auto get = [&](ll i, ll j) { return dp[index(i, j)]; };
+  auto set = [&](ll i, ll j, T value) { dp[index(i, j)] = value; };
+  for (ll i = 0; i < w; ++i) set(0, i, f(0, i));
+  for (ll i = 1; i < h; ++i) {
+    for (ll j = 0; j < w; ++j) {
+      set(i, j, inf);
+    }
+  }
+  for (ll i = 0; i < h - 1; ++i) {
+    for (ll l = 0, r = l + w; r < w; ++l, ++r) {
+      set(i + 1, r, get(i, l) + f(l + 1, r));
+      for (ll j = l + 1; j <= min(r, w - 1); ++j) {
+        T cost = get(i, j) + f(j + 1, r);
+        if (comp(cost, get(i + 1, r))) {
+          set(i + 1, r, cost);
+        }
+      }
+    }
+  }
+  return dp;
+}
+
+namespace cf438F {
+void solve() {
+  ll N, K;
+  cin >> N >> K;
+  vector<ll> A(N);
+  for (ll i = 0; i < N; ++i) {
+    cin >> A[i];
+    --A[i];
+  }
+  ll L = 0, R = 0, sum = 0;
+  vector<ll> appear(100010);
+  appear[A[0]]++;
+  auto add = [&](ll idx) { sum += appear[A[idx]]++; };
+  auto del = [&](ll idx) { sum -= --appear[A[idx]]; };
+  function<ll(ll, ll)> f = [&](ll l, ll r) {
+    while (L > l) add(--L);
+    while (L < l) del(L++);
+    while (R < r) add(++R);
+    while (R > r) del(R--);
+    return sum;
+  };
+  auto dp = divide_and_conquer(K, N, f);
+  printf("%lld\n", dp[(K - 1) * N + (N - 1)]);
+}
+} // namespace cf438F
+
+signed main(void) {
+  cf438F::solve();
+  return 0;
+}

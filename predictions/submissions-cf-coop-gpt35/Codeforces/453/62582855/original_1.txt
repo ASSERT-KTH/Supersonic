@@ -1,0 +1,160 @@
+The given code is a C++ program that solves a problem using dynamic programming. The program takes an integer N as input, followed by an array of N integers. It then calculates the minimum cost to transform the array into a sequence where each element is a prime number, and outputs this sequence.
+
+Upon analyzing the code, the following potential areas for optimization can be identified:
+
+1. Redundant calculations: The code calculates the mask array for each value in the range [1, MAXV]. However, the mask array does not change throughout the program execution. It would be more efficient to calculate the mask array once and reuse it.
+
+2. Unnecessary memory usage: The dp array is a 2D vector of size (N + 1) x (1 << sz(pri)), where N is the size of the input array and sz(pri) is the size of the prime number array. This can result in significant memory usage, especially for large inputs. It may be possible to optimize the memory usage by using a 2D array instead of a vector.
+
+3. Unoptimized loops: The nested loops used to iterate over the dp array can be optimized to reduce the number of iterations and improve performance.
+
+4. Unnecessary calculations: The program calculates the minimum element of the last row of the dp array using the min_element function. However, the minimum element is only used to determine the starting point for backtracking. Instead of calculating the minimum element, we can keep track of the minimum cost and its index during the loop.
+
+Based on these observations, the following optimization strategy can be formulated:
+
+1. Calculate the mask array outside the main loop and reuse it throughout the program.
+2. Replace the vector dp with a 2D array to reduce memory usage.
+3. Optimize the loops to reduce the number of iterations and improve performance.
+4. Keep track of the minimum cost and its index during the loop instead of using the min_element function.
+
+Now, let's proceed with the step-by-step explanation of the optimization steps and present the optimized code.
+
+Step 1: Calculate the mask array outside the main loop and reuse it throughout the program.
+
+The mask array does not change throughout the program execution. Therefore, we can calculate it once before the main loop and reuse it. This will eliminate the redundant calculations.
+
+```cpp
+vi mask(MAXV);
+FOR(v, 1, MAXV) { 
+  F0R(i, sz(pri)) if (v % pri[i] == 0) mask[v] |= 1 << i; 
+}
+```
+
+Step 2: Replace the vector dp with a 2D array to reduce memory usage.
+
+The dp array is a 2D vector of size (N + 1) x (1 << sz(pri)). We can replace it with a 2D array to reduce memory usage.
+
+```cpp
+const int MAXN = 1000005;
+const int MAXP = 20;
+
+pii dp[MAXN][1 << MAXP];
+```
+
+Step 3: Optimize the loops to reduce the number of iterations and improve performance.
+
+The nested loops used to iterate over the dp array can be optimized to reduce the number of iterations and improve performance. We can iterate over the array in a more efficient manner by starting from the last row and iterating in reverse. This allows us to eliminate the need for the F0Rd loop.
+
+```cpp
+for (int i = N - 1; i >= 0; i--) {
+  for (int m = 0; m < (1 << sz(pri)); m++) {
+    if (dp[i][m].f < INT_MAX) {
+      for (int v = 1; v < MAXV; v++) {
+        if (!(mask[v] & m)) {
+          ckmin(dp[i + 1][m ^ mask[v]], mp(dp[i][m].f + abs(v - a[i]), v));
+        }
+      }
+    }
+  }
+}
+```
+
+Step 4: Keep track of the minimum cost and its index during the loop instead of using the min_element function.
+
+Instead of using the min_element function to calculate the minimum element of the last row of the dp array, we can keep track of the minimum cost and its index during the loop. This eliminates the need for the min_element function and improves performance.
+
+```cpp
+int minCost = INT_MAX;
+int minIndex = -1;
+for (int m = 0; m < (1 << sz(pri)); m++) {
+  if (dp[N][m].f < minCost) {
+    minCost = dp[N][m].f;
+    minIndex = m;
+  }
+}
+
+vi b(N);
+int m = minIndex;
+for (int i = N - 1; i >= 0; i--) {
+  b[i] = dp[i + 1][m].s;
+  m ^= mask[b[i]];
+}
+```
+
+Finally, let's present the complete optimized code:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+#define F0R(i, a) for (int i = 0; i < (a); i++)
+
+using vi = vector<int>;
+using pii = pair<int, int>;
+
+template <typename T>
+void ckmin(T &a, const T &b) { a = min(a, b); }
+
+int main() {
+  const int MAXV = 61;
+  const int MAXN = 1000005;
+  const int MAXP = 20;
+
+  int N;
+  cin >> N;
+  vi a(N);
+  F0R(i, N) cin >> a[i];
+
+  vi pri;
+  for (int v = 2; v < MAXV; v++) {
+    bool ok = true;
+    for (int p : pri) {
+      if (v % p == 0) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok) pri.push_back(v);
+  }
+
+  vi mask(MAXV);
+  for (int v = 1; v < MAXV; v++) {
+    for (int i = 0; i < pri.size(); i++) {
+      if (v % pri[i] == 0) mask[v] |= 1 << i;
+    }
+  }
+
+  pii dp[MAXN][1 << MAXP];
+  for (int i = 0; i <= N; i++) {
+    for (int m = 0; m < (1 << pri.size()); m++) {
+      dp[i][m] = {INT_MAX, -1};
+    }
+  }
+  dp[0][0].first = -1;
+
+  for (int i = 0; i < N; i++) {
+    for (int m = 0; m < (1 << pri.size()); m++) {
+      if (dp[i][m].first < INT_MAX) {
+        for (int v = 1; v < MAXV; v++) {
+          if (!(mask[v] & m)) {
+            ckmin(dp[i + 1][m ^ mask[v]], make_pair(dp[i][m].first + abs(v - a[i]), v));
+          }
+        }
+      }
+    }
+  }
+
+  int minCost = INT_MAX;
+  int minIndex = -1;
+  for (int m = 0; m < (1 << pri.size()); m++) {
+    if (dp[N][m].first < minCost) {
+      minCost = dp[N][m].first;
+      minIndex = m;
+    }
+  }
+
+  vi b(N);
+  int m = minIndex;
+  for (int i = N - 1; i >= 0; i--) {
+    b[i] = dp[i + 1][m].second;
+    m ^= mask

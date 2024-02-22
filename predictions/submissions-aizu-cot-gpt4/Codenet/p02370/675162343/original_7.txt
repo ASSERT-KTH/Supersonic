@@ -1,0 +1,81 @@
+We can perform the following optimizations to this code:
+
+1. Remove the use of `#include <bits/stdc++.h>` and replace it with the specific libraries required by the program. `bits/stdc++.h>` is a GCC specific library that includes most of the standard C++ libraries, and while it's commonly used in competitive programming for convenience, it's generally not recommended for production code due to increased compile time and portability issues.
+
+2. Use initializer lists in the constructor of the `Edge` struct. It is more efficient because it directly initializes the fields of the object, rather than first creating the object and then assigning values.
+
+3. The `topological_sort` function calculates the size of `S` multiple times. We can store the size of `S` in a variable and decrease it by one when we pop an element.
+
+4. Use `ios_base::sync_with_stdio(false); cin.tie(NULL);` at the beginning of the main function to disable the synchronization between the C and C++ standard streams. This can potentially speed up the I/O operations.
+
+5. Reserve space for the `topological_order` vector. As we know the vector will have `V` elements, we can reserve space in advance to prevent reallocations.
+
+6. Use prefix increment operator (++i) instead of postfix (i++) in for loops. Although it doesn't make a significant impact in this case, as a general rule, prefix increment is potentially more efficient than postfix as it avoids unnecessary temporary object creation.
+
+The optimized code looks like this:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <cassert>
+using namespace std;
+
+struct Edge {
+    int tgt_;
+    Edge(int t) : tgt_(t) {}
+};
+
+typedef vector<vector<Edge>> Adj_list;
+
+vector<int> topological_sort(Adj_list G) {
+    const int V = G.size();
+    vector<int> S;
+    vector<int> inorder(V, 0);
+    for (int i = 0; i < V; ++i)
+        for (Edge &e : G[i])
+            inorder[e.tgt_]++;
+            
+    for (int i = 0; i < V; ++i)
+        if (inorder[i] == 0)
+            S.push_back(i);
+    assert(S.size() > 0);
+
+    vector<int> topological_order;
+    topological_order.reserve(V);
+
+    int s_size = S.size();
+    while (s_size) {
+        int v = S[s_size - 1];
+        S.pop_back();
+        --s_size;
+
+        topological_order.push_back(v);
+        for (int i = G[v].size() - 1; i >= 0; --i) {
+            Edge e = G[v][i];
+            if (--inorder[e.tgt_] == 0)
+                S.push_back(e.tgt_), ++s_size;
+        }
+    }
+
+    for (int i = 0; i < V; ++i)
+        assert(inorder[i] == 0);
+    return topological_order;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int V, E;
+    cin >> V >> E;
+    Adj_list G(V);
+    for (int i = 0; i < E; ++i) {
+        int s, t;
+        cin >> s >> t;
+        G[s].push_back(Edge(t));
+    }
+    vector<int> ans = topological_sort(G);
+    for (int i = 0; i < V; ++i)
+        cout << ans[i] << endl;
+}
+```

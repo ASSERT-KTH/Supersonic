@@ -1,0 +1,132 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+struct Sum {
+  int val;
+  Sum() : val(0) {}
+  Sum(int val) : val(val) {}
+  Sum(const Sum& left, const Sum& right) : val(left.val + right.val) {}
+  void update_lazy_with_val(const Sum& val) { this->val = val.val; }
+  void update_val_with_lazy(const Sum& lazy, int left_node, int right_node) {
+    this->val = (right_node - left_node);
+  }
+  bool operator!=(const Sum& other) const {
+    return val != other.val;
+  }
+};
+
+class LazySegmentTree {
+  int n;
+  std::vector<Sum> arr;
+  std::vector<Sum> lazy;
+  
+  void push(int node, int left_node, int right_node) {
+    if (lazy[node] != Sum()) {
+      arr[node].update_val_with_lazy(lazy[node], left_node, right_node);
+      if (right_node - left_node > 1) {
+        lazy[2 * node + 1].update_lazy_with_val(lazy[node]);
+        lazy[2 * node + 2].update_lazy_with_val(lazy[node]);
+      }
+      lazy[node] = Sum();
+    }
+  }
+  
+  Sum query(int node, int left_node, int right_node, int left, int right) {
+    push(node, left_node, right_node);
+    if (right <= left_node || right_node <= left) {
+      return Sum();
+    }
+    if (left <= left_node && right_node <= right) {
+      return arr[node];
+    }
+    int mid = (left_node + right_node) / 2;
+    return Sum(query(2 * node + 1, left_node, mid, left, right),
+               query(2 * node + 2, mid, right_node, left, right));
+  }
+  
+  void update(int node, int left_node, int right_node, int left, int right,
+              const Sum& val) {
+    push(node, left_node, right_node);
+    if (right <= left_node || right_node <= left) {
+      return;
+    }
+    if (left <= left_node && right_node <= right) {
+      lazy[node].update_lazy_with_val(val);
+      push(node, left_node, right_node);
+      return;
+    }
+    int mid = (left_node + right_node) / 2;
+    update(2 * node + 1, left_node, mid, left, right, val);
+    update(2 * node + 2, mid, right_node, left, right, val);
+    arr[node] = Sum(arr[2 * node + 1], arr[2 * node + 2]);
+  }
+
+public:
+  LazySegmentTree(const int& n) : n(n) {
+    arr = std::vector<Sum>(4 * n);
+    lazy = std::vector<Sum>(4 * n);
+  }
+  
+  const Sum& range_query(int l, int r) {
+    return query(0, 0, n, l, r);
+  }
+  
+  const Sum& point_query(int idx) {
+    return range_query(idx, idx + 1);
+  }
+  
+  void range_update(int l, int r, const Sum& val) {
+    update(0, 0, n, l, r, val);
+  }
+  
+  void point_update(int idx, const Sum& val) {
+    range_update(idx, idx + 1, val);
+  }
+};
+
+int m, n, k, t;
+int a[200000];
+int l[200000];
+int r[200000];
+int d[200000];
+bool trapped[200000];
+
+bool is_possible(const LazySegmentTree& stree, int mid) {
+  int min_agility = a[mid];
+  for (int i = 0; i < k; i++) {
+    if (d[i] > min_agility) {
+      stree.range_update(l[i] - 1, r[i], Sum(1));
+    }
+  }
+  int req_time = n + 1 + 2 * stree.range_query(0, n + 1).val;
+  return req_time <= t;
+}
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(0);
+  std::cin >> m >> n >> k >> t;
+  for (int i = 0; i < m; i++) {
+    std::cin >> a[i];
+  }
+  for (int i = 0; i < k; i++) {
+    std::cin >> l[i] >> r[i] >> d[i];
+  }
+  std::sort(a, a + m);
+  int left = 0;
+  int right = m - 1;
+  while (left < right) {
+    int mid = (left + right) / 2;
+    if (is_possible(stree, mid)) {
+      right = mid;
+    } else {
+      left = mid + 1;
+    }
+  }
+  if (!is_possible(stree, left)) {
+    left += 1;
+  }
+  int sent = m - left;
+  std::cout << sent << '\n';
+}

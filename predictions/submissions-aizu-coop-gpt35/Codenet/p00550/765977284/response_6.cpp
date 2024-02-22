@@ -1,0 +1,17 @@
+The given code is a C++ program that performs a series of operations on a graph. It reads input values for the number of nodes, number of edges, and number of queries. It then reads the edges and stores them in the `E` vector. The program uses a breadth-first search (BFS) algorithm to compute the shortest distance between node 0 and all other nodes. It also performs some additional operations based on the queries.
+
+Now, let's analyze the code and identify potential areas for optimization:
+
+1. The `reader` function is used to read integers from input using a fast I/O technique. This function can be optimized further by using `scanf` or `cin` instead of `getchar_unlocked`. Additionally, it can be modified to return the read value instead of modifying a pointer.
+
+2. The `E` vector is used to store the adjacency list representation of the graph. However, the size of this vector is fixed to `100000`, which is the maximum number of nodes. This wastes memory when the actual number of nodes is smaller. We can optimize this by dynamically allocating the vector based on the number of nodes.
+
+3. The `b` and `ok` arrays are used as flags to mark nodes. These arrays have a fixed size of `200000`, which is the maximum number of edges. Similar to the `E` vector, we can optimize these arrays by dynamically allocating them based on the number of edges.
+
+4. The `d` array is used to store the shortest distance from node 0 to each node. It is initialized with `-1` for all nodes and updated during the BFS. However, the `memset` function is used to initialize the array, which is not efficient. We can optimize this by using a loop to initialize the array.
+
+5. The BFS function is called twice with different parameters. We can combine these two calls into a single function and pass the required parameters as arguments.
+
+6. The loop that iterates over the queries starts from the last query and goes backwards. This can be optimized by starting from the first query and going forwards.
+
+7. The `printf` function is used to print the results. We can optimize this by using `puts` instead, as it is faster for printing a single integer.

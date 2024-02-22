@@ -1,0 +1,186 @@
+Code Analysis:
+
+1. The code includes a lot of unnecessary header files. The `bits/stdc++.h` header is not recommended for use in C++ programs as it includes unnecessary files and can slow down the compilation process. It is better to include only the required header files.
+
+2. The code defines several template functions for printing vectors, sets, multisets, pairs, and maps. These functions are not used in the code and can be removed to improve compile time.
+
+3. The code uses a map `mp` to store unique values from the input. However, this map is not necessary as the values can be stored directly in a vector. Additionally, the map is not used after the values are stored, so it can be removed.
+
+4. The code uses a segment tree to perform range updates and queries. However, the segment tree is initialized with a size of `4 * N`, where `N` is the maximum possible value of `n`. This results in a large amount of memory being allocated unnecessarily. The size of the segment tree can be reduced to `4 * c`, where `c` is the number of unique values in the input.
+
+5. The code sorts the input vector `v` before performing calculations. Sorting the vector is not necessary for the given problem, as it does not affect the final result.
+
+6. The code performs a binary search to find the maximum value `tt` such that `query(scaled_val, tt) >= k`. However, the binary search can be optimized by using the `upper_bound` function instead. This function returns an iterator pointing to the first element in the range that is greater than a specified value. By subtracting the iterator from the beginning of the range, we can calculate the index directly without performing a binary search.
+
+Optimization Strategy:
+
+1. Remove unnecessary header files to improve compile time.
+
+2. Remove unused template functions to improve compile time.
+
+3. Replace the map `mp` with a vector `values` to store unique values from the input.
+
+4. Reduce the size of the segment tree to `4 * c` to save memory.
+
+5. Remove the unnecessary sorting of the input vector `v`.
+
+6. Replace the binary search with the `upper_bound` function to find the maximum value `tt`.
+
+Step-by-Step Explanation:
+
+1. Remove unnecessary header files:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+```
+
+2. Remove unused template functions:
+
+```cpp
+// Remove the template functions for printing vectors, sets, multisets, pairs, and maps.
+```
+
+3. Replace the map `mp` with a vector `values`:
+
+```cpp
+vector<ll> values;
+```
+
+4. Reduce the size of the segment tree:
+
+```cpp
+vector<int> segtree(4 * c, 0), lazy(4 * c, 0);
+```
+
+5. Remove the unnecessary sorting of the input vector `v`:
+
+```cpp
+// Remove the line: sort(v.begin(), v.end());
+```
+
+6. Replace the binary search with the `upper_bound` function:
+
+```cpp
+int tt = upper_bound(values.begin() + scaled_val, values.end(), k) - values.begin();
+```
+
+Optimized Code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+void fast() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  cout.tie(NULL);
+}
+
+const int N = 6e5 + 5;
+vector<pair<pair<ll, ll>, int>> v;
+vector<ll> values;
+int n, k;
+vector<int> segtree, lazy;
+
+void spread(int node, int l, int r) {
+  if (lazy[node] != 0) {
+    segtree[node] += lazy[node];
+    if (l != r) {
+      lazy[2 * node + 1] += lazy[node];
+      lazy[2 * node + 2] += lazy[node];
+    }
+  }
+  lazy[node] = 0;
+}
+
+void update(int x, int y, int val, int node = 0, int l = 0, int r = values.size() - 1) {
+  spread(node, l, r);
+  if (l > y || r < x || x > y)
+    return;
+  if (l >= x && r <= y) {
+    lazy[node] += val;
+    spread(node, l, r);
+    return;
+  }
+  int mid = (l + r) >> 1;
+  update(x, y, val, 2 * node + 1, l, mid);
+  update(x, y, val, 2 * node + 2, mid + 1, r);
+  segtree[node] = min(segtree[2 * node + 1], segtree[2 * node + 2]);
+}
+
+int query(int x, int y, int node = 0, int l = 0, int r = values.size() - 1) {
+  spread(node, l, r);
+  if (l > y || r < x)
+    return INT_MAX - 1;
+  if (l >= x && r <= y) {
+    return segtree[node];
+  }
+  int mid = (l + r) >> 1;
+  return min(query(x, y, 2 * node + 1, l, mid),
+             query(x, y, 2 * node + 2, mid + 1, r));
+}
+
+void solve() {
+  for (auto &i : v) {
+    values.push_back(i.first.first);
+    values.push_back(i.first.second);
+  }
+  sort(values.begin(), values.end());
+  values.erase(unique(values.begin(), values.end()), values.end());
+
+  int c = values.size();
+  segtree.resize(4 * c, 0);
+  lazy.resize(4 * c, 0);
+
+  ll mx = 0, idx = -1;
+  for (int i = 0; i < n; i++) {
+    int scaled_val = lower_bound(values.begin(), values.end(), v[i].first.first) - values.begin();
+    update(scaled_val, scaled_val, 1);
+    int tt = upper_bound(values.begin() + scaled_val, values.end(), k) - values.begin();
+    if (tt == -1)
+      continue;
+    ll temp = values[tt] - v[i].first.first + 1;
+    if (temp > mx) {
+      mx = temp;
+      idx = i;
+    }
+  }
+  if (idx == -1) {
+    cout << 0 << endl;
+    for (int i = 1; i <= k; i++)
+      cout << i << ' ';
+    cout << endl;
+    return;
+  }
+  ll l = v[idx].first.first, r = l + mx - 1;
+  vector<int> ans;
+  for (auto &i : v) {
+    if (k == 0)
+      break;
+    if (i.first.first <= l && r <= i.first.second) {
+      ans.push_back(i.second);
+      k--;
+    }
+  }
+  sort(ans.begin(), ans.end());
+  cout << mx << endl;
+  for (int i : ans)
+    cout << i << " ";
+  cout << endl;
+}
+
+int main() {
+  fast();
+  cin >> n >> k;
+  for (int i = 1; i <= n; i++) {
+    ll a, b;
+    cin >> a >> b;
+    v.push_back({{a, b}, i});
+  }
+  solve();
+}
+```

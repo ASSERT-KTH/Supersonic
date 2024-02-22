@@ -1,0 +1,93 @@
+The given code performs a character sequence analysis to find the maximum occurrence of the substring "JOI" in a given input string. However, the code can be optimized for efficiency. Let's analyze and optimize the code step by step.
+
+1. Code Analysis:
+   - The code initializes a character array `x` with a size of 1000005 and fills it with the character 'A'. This is unnecessary since the array is immediately overwritten with user input.
+   - The code uses a series of nested loops to iterate through the input string and count the occurrences of 'J', 'O', and 'I'.
+   - The maximum occurrence of the substring "JOI" is stored in the variable `maxi`.
+   - The code could be improved by removing unnecessary variables and loops.
+
+2. Optimization Strategy:
+   - Replace the unnecessary initialization of the character array `x` with direct user input.
+   - Streamline the loop structure to avoid unnecessary iterations and redundant checks.
+   - Eliminate unnecessary variables like `e` and `f`.
+   - Reduce the number of conditional checks inside the loops.
+   - Use a more efficient algorithm to find the maximum occurrence of the substring "JOI".
+   - Consider utilizing compiler optimizations and pragmas to improve performance.
+
+3. Step-by-Step Explanation:
+
+   - Remove unnecessary initialization of the character array `x`:
+     ```cpp
+     char x[1000005];
+     scanf("%s", x);
+     ```
+
+   - Streamline the loop structure to avoid unnecessary iterations and redundant checks:
+     - Instead of iterating through each character of the input string, we can iterate until the third last character (`leng - 2`) since the substring "JOI" requires at least three characters.
+     - We can eliminate the outermost while loop by using a for loop.
+     - We can also eliminate the inner while loops by using if statements and incrementing the loop variable accordingly.
+
+     ```cpp
+     int leng = strlen(x);
+     for (int a = 0; a < leng - 2; a++) {
+       if (x[a] == 'J' && x[a + 1] == 'O' && x[a + 2] == 'I') {
+         // Increment the counters directly
+         b++;
+         c++;
+         d++;
+         // Update the maximum occurrence
+         maxi = max(maxi, c);
+       }
+     }
+     ```
+
+   - Use a more efficient algorithm to find the maximum occurrence of the substring "JOI":
+     - Instead of updating the maximum occurrence on every match, we can maintain a separate variable to track the current occurrence count and update the maximum occurrence only when necessary.
+     - We can reset the occurrence count when a match is not found.
+     - This approach eliminates the need for variables `b`, `c`, and `d`.
+
+     ```cpp
+     int leng = strlen(x);
+     int current_count = 0;
+     for (int a = 0; a < leng - 2; a++) {
+       if (x[a] == 'J' && x[a + 1] == 'O' && x[a + 2] == 'I') {
+         current_count++;
+         maxi = max(maxi, current_count);
+       } else {
+         current_count = 0; // Reset the occurrence count
+       }
+     }
+     ```
+
+   - Utilize compiler optimizations and pragmas:
+     - Add compiler optimizations flags (`-O2`, `-O3`) during compilation to enable compiler optimizations.
+     - Use pragma directives to provide hints to the compiler. For example, `#pragma GCC optimize("unroll-loops")` can be used to suggest loop unrolling.
+
+4. Optimized Code Block:
+
+   ```cpp
+   #include <algorithm>
+   #include <cstdio>
+   #include <cstring>
+   using namespace std;
+
+   char x[1000005];
+   int maxi = 0;
+
+   int main() {
+     scanf("%s", x);
+     int leng = strlen(x);
+     int current_count = 0;
+     for (int a = 0; a < leng - 2; a++) {
+       if (x[a] == 'J' && x[a + 1] == 'O' && x[a + 2] == 'I') {
+         current_count++;
+         maxi = max(maxi, current_count);
+       } else {
+         current_count = 0; // Reset the occurrence count
+       }
+     }
+     printf("%d\n", maxi);
+     scanf("%*d"); // Discard the last input
+     return 0;
+   }
+   ```

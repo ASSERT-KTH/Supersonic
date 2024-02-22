@@ -1,0 +1,145 @@
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <unordered_map>
+#include <vector>
+using namespace std;
+
+struct dat {
+  static int n;
+  vector<int> A;
+  unordered_map<int, int> M;
+  int splitPos = 0;
+  int splitSize = 0;
+
+  int count(int p, int x) const {
+    if (p > size()) {
+      auto it = M.find(x);
+      if (it == M.end())
+        return next->count(p - size(), x);
+      else
+        return next->count(p - size(), x) + it->second;
+    }
+    int ans = 0;
+    for (int i = splitPos; i < splitPos + p; i++)
+      ans += A[i] == x;
+    return ans;
+  }
+
+  void insert(int p, int x) {
+    if (p > size()) {
+      next->insert(p - size(), x);
+      return;
+    }
+    A.insert(A.begin() + splitPos + p, x);
+    M[x]++;
+    splitSize++;
+    split();
+  }
+
+  int erase(int p) {
+    if (size() < p)
+      return next->erase(p - size());
+    int x = A[splitPos + p - 1];
+    A.erase(A.begin() + splitPos + p - 1);
+    if (--M[x] == 0)
+      M.erase(x);
+    splitSize--;
+    merge();
+    return x;
+  }
+
+  void push_back(int x) {
+    A.push_back(x);
+    M[x]++;
+    splitSize++;
+    split();
+  }
+
+  void push_front(int x) {
+    A.insert(A.begin() + splitPos, x);
+    M[x]++;
+    splitSize++;
+    split();
+  }
+
+  int pop_back() {
+    int x = A.back();
+    A.pop_back();
+    if (--M[x] == 0)
+      M.erase(x);
+    splitSize--;
+    merge();
+    return x;
+  }
+
+  int pop_front() {
+    int x = A[splitPos];
+    A.erase(A.begin() + splitPos);
+    if (--M[x] == 0)
+      M.erase(x);
+    splitSize--;
+    merge();
+    return x;
+  }
+
+  int size() const { return A.size() - splitPos; }
+
+  void split() {
+    if (splitSize < n << 1)
+      return;
+    splitPos += n;
+    splitSize -= n;
+  }
+
+  void merge() {
+    if (next == NULL || splitSize + next->size() > n)
+      return;
+    int prevSize = next->splitSize;
+    next->splitPos -= splitSize;
+    next->splitSize += splitSize;
+    next->merge();
+    splitPos -= next->splitSize;
+    splitSize += next->splitSize;
+    next->splitPos += splitSize;
+    next->splitSize = prevSize;
+  }
+
+  void print() const {
+    for (int i = splitPos; i < splitPos + size(); i++)
+      fprintf(stderr, "%3d", A[i]);
+    if (next == NULL)
+      fprintf(stderr, "\n");
+    else
+      next->print();
+  }
+};
+int dat::n;
+int main() {
+  int n, m, last = 0;
+  scanf("%d", &n);
+  dat::n = ceil(sqrt(n << 2));
+  dat* D = new dat;
+  for (int i = 0; i < n; i++) {
+    int x;
+    scanf("%d", &x);
+    D->push_back(x);
+  }
+  for (scanf("%d", &m); m > 0; m--) {
+    int op, l, r, k;
+    scanf("%d", &op);
+    scanf(op == 1 ? "%d%d" : "%d%d%d", &l, &r, &k);
+    l = (l + last - 1) % n + 1;
+    r = (r + last - 1) % n + 1;
+    k = (k + last - 1) % n + 1;
+    if (l > r)
+      swap(l, r);
+    if (op == 1)
+      D->insert(l - 1, D->erase(r));
+    else {
+      l = D->count(l - 1, k);
+      r = D->count(r, k);
+      printf("%d\n", last = r - l);
+    }
+  }
+}

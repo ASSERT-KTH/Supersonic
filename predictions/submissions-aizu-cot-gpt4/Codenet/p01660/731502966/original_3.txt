@@ -1,0 +1,100 @@
+This program seems to be well structured and efficient. However, there are still a few adjustments that can be made to further optimize it:
+
+1. In the makePath function, the checkPath lambda function is called twice for every iteration of r (from 0 to 6). In these calls, the moveto value could potentially be the same for both the positive and negative dice roll. This means that the calculations within checkPath could be unnecessarily repeated. To avoid this, we can store the result for each moveto value in a local cache and reuse it if the same value is encountered again.
+
+2. The use of the new and delete operators for dynamic memory allocation can be costly in terms of time. To optimize this, we can replace the dynamic arrays N and path with std::vector. std::vector is a dynamic array provided by the C++ Standard Library which manages its own memory efficiently.
+
+3. The initialization of the path array can be optimized by using the std::fill function from the STL instead of a for loop. This function is usually faster than a loop because it leverages low-level implementation details.
+
+4. The variable "position" is passed by reference to the tryMove lambda function and is updated within the function when the if conditions are met. However, it could be more efficient to return the new position from the function and update the position variable in the calling code instead. This way, we avoid passing by reference, which can sometimes be more costly.
+
+Here is the optimized version of your program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+const int MAX_T = 3000, MAX_M = 300;
+int M, start, goal, dice[6];
+vector<int> N;
+bool isPositionValid(int p) { return 0 <= p && p < M; }
+
+vector<int> MakePath(vector<int> path, int from) {
+  static bool visit[MAX_M] = {};
+  static int cache[MAX_M] = {2 * MAX_T};
+  static auto checkPath = [&path](int moveto) -> int {
+    if (!isPositionValid(moveto))
+      return 2 * MAX_T;
+
+    if (cache[moveto] != 2 * MAX_T)
+      return cache[moveto];
+    else {
+      int position = moveto + N[moveto];
+      if (!visit[position])
+        MakePath(path, position);
+      return cache[moveto] = path[position] + 1;
+    }
+  };
+
+  if (path.empty()) {
+    path.resize(M, MAX_T + 1);
+  }
+  visit[from] = true;
+  int bestpath = MAX_T;
+  if (from == goal)
+    bestpath = 0;
+  else {
+    for (int r = 0; r < 6; r++) {
+      bestpath = min(bestpath, checkPath(from + dice[r]));
+      bestpath = min(bestpath, checkPath(from - dice[r]));
+    }
+  }
+  path[from] = bestpath;
+  return path;
+}
+
+int main() {
+  cin >> M;
+  for (int r = 0; r < 6; r++)
+    cin >> dice[r];
+  cin >> start >> goal;
+  start--, goal--;
+  N.resize(M);
+  for (int m = 0; m < M; m++)
+    cin >> N[m];
+  vector<int> path = MakePath({}, start);
+  int position = start;
+  for (int t = 0; t < MAX_T; t++) {
+    if (position == goal)
+      break;
+    int r;
+    cin >> r;
+    int d = dice[r - 1];
+    static auto tryMove = [&path](int moveto, int path_before) -> int {
+      if (isPositionValid(moveto)) {
+        if (path_before > path[moveto + N[moveto]]) {
+          return moveto + N[moveto];
+        }
+      }
+      return -1;
+    };
+    int newPosition = tryMove(position + d, path[position]);
+    int output;
+    if (newPosition != -1) {
+      position = newPosition;
+      output = 1;
+    } else if ((newPosition = tryMove(position - d, path[position])) != -1) {
+      position = newPosition;
+      output = -1;
+    } else {
+      output = 0;
+    }
+    cout << output << endl;
+  }
+  return 0;
+}
+```
+
+Please note that the use of these adjustments may vary based on the specific application and system requirements.

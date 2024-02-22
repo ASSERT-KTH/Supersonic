@@ -1,0 +1,74 @@
+Firstly, let's go over the potential optimizations that can be made to the code:
+
+1. Unnecessary usage of `std::vector::clear()`: The `std::vector::clear()` function deallocates the memory occupied by the vector. However, in this case, the vectors `heightsOfBlock` and `costsOfBlock` will automatically be deallocated once the scope of the main function ends. So, the explicit `clear()` calls are unnecessary and can be removed to save time.
+
+2. Redundant size checking during vector pop: Before popping an element from `stackPushLeft` or `stackPushRight`, the code checks if the vector is not empty. But this check is unnecessary because the while loop condition already ensures that the vector is not empty.
+
+3. Avoiding unnecessary type casting: The code uses `(int)heightsOfBlock[id].size()` to get the size of the vector. However, it's better to store the size in a variable of the correct type (size_t) to avoid unnecessary type casting.
+
+4. Unnecessary usage of the `std::vector::push_back()` function inside the loops: Instead of pushing each element into the vector one by one, we can use the `std::vector::insert()` function to add multiple elements at once. This can potentially save time.
+
+Let's apply these optimizations to the code:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+//Same code...
+
+int main() {
+  int N, M;
+  in >> N >> M;
+  vector<vector<int>> heightsOfBlock(N + 1), costsOfBlock(N + 1);
+  for (int i = 1; i <= N; ++i) {
+    int K;
+    in >> K;
+    heightsOfBlock[i].resize(K); //Resizing the vector instead of pushing back one by one
+    costsOfBlock[i].resize(K);
+    for (int j = 0; j < K; ++j) {
+      in >> heightsOfBlock[i][j];
+    }
+    for (int j = 0; j < K; ++j) {
+      in >> costsOfBlock[i][j];
+    }
+  }
+  int Q, curr = 0;
+  in >> Q;
+  for (int i = 1; i <= Q; ++i) {
+    int id, mult;
+    in >> id >> mult;
+    size_t blockSize = heightsOfBlock[id].size(); //Using size_t to store size
+    for (size_t j = 0; j < blockSize; ++j) {
+      height[++curr] = heightsOfBlock[id][j];
+      cost[curr] = 1LL * mult * costsOfBlock[id][j];
+    }
+  }
+  vector<pair<int, ll>> stackPushLeft, stackPushRight;
+  for (int i = 1; i <= M; ++i) {
+    ll minLeft = dp[i - 1];
+    while (!stackPushLeft.empty() && i - height[i] + 1 <= stackPushLeft.back().first) {
+      minLeft = min(minLeft, stackPushLeft.back().second);
+      stackPushLeft.pop_back();
+    }
+    dp[i] = minLeft + cost[i];
+    ll valHere = dp[i - 1];
+    minLeft = min(minLeft, valHere);
+    stackPushLeft.push_back({i, minLeft});
+    int idx = -1;
+    while (!stackPushRight.empty() && ((idx = stackPushRight.back().first) || true) && idx + height[idx] - 1 < i) {
+      stackPushRight.pop_back();
+    }
+    if (!stackPushRight.empty()) {
+      ll dpPlusCost = stackPushRight.back().second;
+      dp[i] = min(dp[i], dpPlusCost);
+    }
+    ll dpPlusCost = dp[i - 1] + cost[i];
+    if (!stackPushRight.empty()) {
+      dpPlusCost = min(dpPlusCost, stackPushRight.back().second);
+    }
+    stackPushRight.push_back({i, dpPlusCost});
+  }
+  out << dp[M] << '\n';
+  return 0;
+}
+```

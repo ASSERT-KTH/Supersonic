@@ -1,0 +1,56 @@
+#include <algorithm>
+#include <iostream>
+#include <vector>
+typedef long long int ll;
+typedef unsigned long long int ull;
+#define BIG_NUM 2000000000
+#define MOD 1000000007
+#define EPS 0.000000001
+using namespace std;
+struct Info {
+  int mornint_start, morning_end, lunch_start, lunch_end, dinner_start,
+      dinner_end;
+};
+int calc(int hour, int minute) { return 60 * hour + minute; }
+int main() {
+  ios_base::sync_with_stdio(false);  // for faster I/O
+  cin.tie(NULL);
+  int N;
+  cin >> N;
+  Info info[N];
+  vector<int> MORNING, LUNCH, DINNER;
+  int m_st_h, m_st_m, m_ed_h, m_ed_m, l_st_h, l_st_m, l_ed_h, l_ed_m, d_st_h,
+      d_st_m, d_ed_h, d_ed_m;
+  for (int i = 0; i < N; i++) {
+    cin >> m_st_h >> m_st_m >> m_ed_h >> m_ed_m >> l_st_h >> l_st_m >> l_ed_h >> l_ed_m >> d_st_h >> d_st_m >> d_ed_h >> d_ed_m;
+    info[i].mornint_start = calc(m_st_h, m_st_m);
+    info[i].morning_end = calc(m_ed_h, m_ed_m);
+    MORNING.push_back(info[i].mornint_start);
+    MORNING.push_back(info[i].morning_end);
+    info[i].lunch_start = calc(l_st_h, l_st_m);
+    info[i].lunch_end = calc(l_ed_h, l_ed_m);
+    LUNCH.push_back(info[i].lunch_start);
+    LUNCH.push_back(info[i].lunch_end);
+    info[i].dinner_start = calc(d_st_h, d_st_m);
+    info[i].dinner_end = calc(d_ed_h, d_ed_m);
+    DINNER.push_back(info[i].dinner_start);
+    DINNER.push_back(info[i].dinner_end);
+  }
+  int ans = 0, tmp;
+  for (int i = 0; i < N; i++) {
+    auto a = lower_bound(MORNING.begin(), MORNING.end(), info[i].mornint_start);
+    auto b = lower_bound(LUNCH.begin(), LUNCH.end(), info[i].lunch_start);
+    auto c = lower_bound(DINNER.begin(), DINNER.end(), info[i].dinner_start);
+    if (a != MORNING.end() && b != LUNCH.end() && c != DINNER.end()) {
+      tmp = 0;
+      if (info[i].morning_end >= *a && info[i].lunch_end >= *b && info[i].dinner_end >= *c) {
+        tmp++;
+      }
+      if (tmp > ans) {
+        ans = tmp;
+      }
+    }
+  }
+  cout << ans << '\n';
+  return 0;
+}

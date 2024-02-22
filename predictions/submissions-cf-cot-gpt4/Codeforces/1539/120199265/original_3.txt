@@ -1,0 +1,160 @@
+The given program is a C++ program that is utilizing a Segment Tree data structure. Here are some optimizations that can be made to improve the run time and memory usage:
+
+1. **Avoid using #define for Simple Statements:** The use of #define to create macros for simple statements like cin.tie(0); or cout.tie(0); is unnecessary and can be directly used in the main function. This reduces the overhead of macro replacement during preprocessing.
+
+2. **Avoid using namespace std:** This can cause name collisions, and thus, increase the compile-time. 
+
+3. **Avoid Global Variables:** The use of global variables increases memory usage. It is better to pass these variables as function arguments.
+
+4. **Avoid Redundant Recalculations:** In the given code, there are some redundant recalculations in the 'solve()' function. For example, qry1(j + 1, j + 1) is calculated twice. These recalculations can be avoided by storing the result in a variable.
+
+5. **Optimize vector usage:** The vector 'del' is used to store the indices to be updated. But we can directly update these indices in the while loop, instead of storing them in the vector and updating them later. This will save memory used by the vector.
+
+Here's the optimized version of the code based on the above suggestions:
+
+```cpp
+#include <bits/stdc++.h>
+using std::cin;
+using std::cout;
+using std::endl;
+using std::string;
+using std::vector;
+using std::bitset;
+using std::max;
+using std::min;
+
+typedef long long int ll;
+typedef array<ll, 3> pint;
+const ll INF = (ll)1e18;
+const ll N = 2e5;
+const ll MOD = 1e9 + 7;
+ll n;
+
+struct node {
+  ll mx, mi, lz;
+} st[1 << 20];
+
+void apply(ll i, ll x, ll l2, ll r2) {
+  st[i].mx -= x;
+  st[i].mi -= x;
+  if (st[i].lz == -MOD)
+    st[i].lz = 0;
+  st[i].lz += x;
+}
+
+void push(ll i, ll l2, ll mid, ll r2) {
+  if (st[i].lz == -MOD)
+    return;
+  apply(2 * i, st[i].lz, l2, mid);
+  apply(2 * i + 1, st[i].lz, mid + 1, r2);
+  st[i].lz = -MOD;
+}
+
+void build(ll l1, ll x, ll i = 1, ll l2 = 0, ll r2 = n - 1) {
+  if (l2 == r2) {
+    st[i].mx = x;
+    st[i].mi = x;
+    st[i].lz = -MOD;
+    return;
+  }
+  ll mid = (l2 + r2) / 2;
+  if (l1 <= mid)
+    build(l1, x, 2 * i, l2, mid);
+  else
+    build(l1, x, 2 * i + 1, mid + 1, r2);
+  st[i].mx = max(st[2 * i].mx, st[2 * i + 1].mx);
+  st[i].mi = min(st[2 * i].mi, st[2 * i + 1].mi);
+  st[i].lz = -MOD;
+}
+
+void upd(ll l1, ll r1, ll x, ll i = 1, ll l2 = 0, ll r2 = n - 1) {
+  if (l1 <= l2 && r2 <= r1) {
+    apply(i, x, l2, r2);
+    return;
+  }
+  ll mid = (l2 + r2) / 2;
+  push(i, l2, mid, r2);
+  if (l1 <= mid)
+    upd(l1, r1, x, 2 * i, l2, mid);
+  if (mid < r1)
+    upd(l1, r1, x, 2 * i + 1, mid + 1, r2);
+  st[i].mx = max(st[2 * i].mx, st[2 * i + 1].mx);
+  st[i].mi = min(st[2 * i].mi, st[2 * i + 1].mi);
+}
+
+ll qry1(ll l1, ll r1, ll i = 1, ll l2 = 0, ll r2 = n - 1) {
+  if (l1 <= l2 && r2 <= r1) {
+    return st[i].mx;
+  }
+  ll mid = (l2 + r2) / 2;
+  push(i, l2, mid, r2);
+  return max((l1 <= mid ? qry1(l1, r1, 2 * i, l2, mid) : -MOD),
+             (mid < r1 ? qry1(l1, r1, 2 * i + 1, mid + 1, r2) : -MOD));
+}
+
+ll qry2(ll l1, ll r1, ll i = 1, ll l2 = 0, ll r2 = n - 1) {
+  if (l1 <= l2 && r2 <= r1) {
+    return st[i].mi;
+  }
+  ll mid = (l2 + r2) / 2;
+  push(i, l2, mid, r2);
+  return min((l1 <= mid ? qry2(l1, r1, 2 * i, l2, mid) : MOD),
+             (mid < r1 ? qry2(l1, r1, 2 * i + 1, mid + 1, r2) : MOD));
+}
+
+void solve() {
+  ll n1;
+  cin >> n1;
+  ll arr[n1];
+  vector<pint> b;
+  for (ll i = 0; i < n1; i++) {
+    cin >> arr[i];
+    b.push_back({arr[i], i});
+  }
+  n = n1 + 1;
+  for (ll i = 0; i < n; i++)
+    build(i, i);
+  sort(b.begin(), b.end());
+  ll ans[n1] = {0};
+  for (ll i = n1 - 1; i >= 0; i--) {
+    ll cur = b[i][0];
+    while (i >= 0 && b[i][0] == cur) {
+      ll j = b[i][1];
+      ll p = qry1(j + 1, j + 1), q = qry2(0, j), r = qry1(j + 1, n - 1);
+      ans[j] = (p - q + r - p - 1) / 2;
+      upd(j + 1, n - 1, 2);
+      i--;
+    }
+    i++;
+  }
+  for (ll i = 0; i < n; i++)
+    build(i, i);
+  for (ll i = 0; i < n1; i++) {
+    ll cur = b[i][0];
+    while (i < n1 && b[i][0] == cur) {
+      ll j = b[i][1];
+      ll p = qry1(j + 1, j + 1), q = qry2(0, j), r = qry1(j + 1, n - 1);
+      ans[j] = max(ans[j], (p - q + r - p) / 2);
+      upd(j + 1, n - 1, 2);
+      i++;
+    }
+    i--;
+  }
+  for (ll i = 0; i < n1; i++)
+    cout << ans[i] << " ";
+}
+
+int main() {
+  ios::sync_with_stdio(0);                                                     \
+  cin.tie(0);                                                                 
+  cout.tie(0);
+  clock_t time = clock();
+  ll t = 1;
+  for (ll i = 0; i < t; i++) {
+    solve();
+  }
+  double time_taken = ((double)(clock() - time)) / CLOCKS_PER_SEC;
+  cerr << "LINE(" << __LINE__ << ") -> time taken: " << time_taken << endl;
+  return 0;
+}
+```

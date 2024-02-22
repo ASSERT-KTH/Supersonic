@@ -1,0 +1,111 @@
+Code Analysis:
+The provided program is a C++ implementation of a depth-first search (DFS) algorithm. The code reads an n x n matrix from standard input. Some elements of the matrix are marked as starting points (negative values). The DFS starts from the largest absolute value among the starting points and moves to its neighbors not visited yet, summing up the values. If the sum equals the absolute value of the starting point, the DFS continues from the next starting point. If it's possible to visit all starting points this way, the program outputs "YES", otherwise "NO". 
+
+Potential performance bottlenecks and inefficiencies:
+
+1. The code uses a recursive DFS, which can consume a large amount of memory for large inputs due to recursive calls.
+2. The code often checks whether a point (nx, ny) is within the matrix boundaries and has not been visited. This is performed inside the DFS loop, which leads to repeated computations.
+3. The code uses a vector of pairs to store the starting points, which is not as efficient as using a priority queue.
+4. The use of `cin` and `cout` for input and output can be slower than using `scanf` and `printf`.
+
+Optimization Strategy:
+
+1. Change the DFS implementation from recursive to iterative, using a stack, to reduce memory usage.
+2. Move the boundary and visited checks to a separate function to clean up the code.
+3. Use a priority queue instead of a vector for storing the starting points. This will allow us to always access the largest unvisited starting point in O(1) time.
+4. Use `scanf` and `printf` instead of `cin` and `cout` for input and output to speed up these operations.
+5. Optimize the initialization of the `used` and `mat` vectors. Instead of reinitializing them in every call to `solve`, we can initialize them once in `main` and then just reset them in `solve`.
+
+Optimized Code Block:
+
+```cpp
+#include <algorithm>
+#include <functional>
+#include <iostream>
+#include <queue>
+#include <stdio.h>
+#include <string>
+#include <vector>
+
+using namespace std;
+typedef long long ll;
+#define rep(i, n) for (int i = 0; i < (n); i++)
+typedef pair<int, int> Point;
+typedef pair<int, Point> SP;
+typedef vector<vector<int>> Mat;
+int dx[] = {0, 1, 0, -1};
+int dy[] = {-1, 0, 1, 0};
+int n;
+Mat mat;
+vector<vector<bool>> used;
+priority_queue<SP, vector<SP>, less<SP>> starts;
+
+bool is_valid(int x, int y) {
+  return 0 <= x && x < n && 0 <= y && y < n && !used[y][x];
+}
+
+void solve() {
+  while (!starts.empty()) starts.pop();
+  int sum = 0;
+  rep(i, n) {
+    rep(j, n) {
+      int a;
+      scanf("%d", &a);
+      sum += a;
+      if (a < 0) {
+        a *= -1;
+        used[i][j] = true;
+        starts.push(SP(a, Point(i, j)));
+      }
+      mat[i][j] = a;
+    }
+  }
+  bool ret = false;
+  if (sum != 0) {
+    ret = false;
+  } else if (starts.size() == 1) {
+    ret = true;
+  } else {
+    SP start = starts.top();
+    starts.pop();
+    stack<SP> dfs_stack;
+    dfs_stack.push(start);
+    while (!dfs_stack.empty()) {
+      SP cur = dfs_stack.top();
+      dfs_stack.pop();
+      if (cur.first == 0) {
+        if (starts.empty()) {
+          ret = true;
+          break;
+        }
+        cur = starts.top();
+        starts.pop();
+      }
+      rep(i, 4) {
+        int nx = cur.second.second + dx[i];
+        int ny = cur.second.first + dy[i];
+        if (is_valid(nx, ny)) {
+          used[ny][nx] = true;
+          dfs_stack.push(SP(cur.first - mat[ny][nx], Point(ny, nx)));
+        }
+      }
+    }
+  }
+  printf("%s\n", ret ? "YES" : "NO");
+  return;
+}
+
+int main() {
+  mat = Mat(100, vector<int>(100));
+  used = vector<vector<bool>>(100, vector<bool>(100, false));
+  while (true) {
+    scanf("%d", &n);
+    if (n == 0)
+      break;
+    rep(i, n) rep(j, n) used[i][j] = false;
+    solve();
+  }
+  return 0;
+}
+```
+This optimized code reduces memory usage by converting the DFS to an iterative version, speeds up input and output operations by using `scanf` and `printf`, makes accessing the largest unvisited starting point more efficient by using a priority queue, and cleans up the code by moving the boundary and visited checks to a separate function. The trade-offs are that the code becomes slightly more complex due to the use of a priority queue and a stack for DFS.

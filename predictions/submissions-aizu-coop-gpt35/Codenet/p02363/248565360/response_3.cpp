@@ -1,0 +1,17 @@
+The provided code is an implementation of the Bellman-Ford algorithm for finding the shortest paths from a single source vertex to all other vertices in a weighted directed graph. While the code is correct, there are several areas where it can be optimized for better performance and reduced memory usage.
+
+1. Use `std::numeric_limits<int>::max()` instead of `__INT_MAX__`: The code currently uses `__INT_MAX__` to represent infinity in the distance array (`d`). However, it is recommended to use `std::numeric_limits<int>::max()` instead, as it is a portable and more readable way to represent the maximum value of an `int`.
+
+2. Avoid unnecessary conversions between `int` and `string`: The code converts the distances stored in the `d` array to strings before appending them to the `ans` string. This conversion is unnecessary and adds overhead. Instead, you can directly append the integer values to the `ans` string using `std::to_string()`.
+
+3. Avoid unnecessary copying of edge objects: The code currently creates a copy of the `edge` object in each iteration of the inner loop. This copying can be avoided by using a reference or a pointer to the `edge` object.
+
+4. Use `reserve()` for vector capacity: The `edges` vector is dynamically resized as new edges are added. This resizing operation can be expensive, especially when adding a large number of edges. To avoid unnecessary reallocations, you can use the `reserve()` function to preallocate memory for the vector based on the expected number of edges.
+
+5. Use a `const` reference instead of passing by value: The `BellmanFord()` function currently takes the `edges` vector by value, which involves creating a copy of the vector. Since the function does not modify the vector, it can be more efficient to pass it by `const` reference instead.
+
+6. Avoid unnecessary function calls inside loops: The `std::to_string()` function and the `ans.append()` function are called inside loops. These function calls can be moved outside the loop to reduce the number of function invocations.
+
+7. Use `emplace_back()` instead of `push_back()`: The `edges.push_back()` function is used to add new edges to the `edges` vector. Since C++11, it is recommended to use `emplace_back()` instead, which constructs the object in-place without the need for an additional copy or move operation.
+
+8. Consider using compiler optimizations: Depending on the compiler and compiler flags used, there may be additional optimizations that can be enabled. For example, using optimization flags like `-O2` or `-O3` can enable more aggressive optimizations by the compiler.

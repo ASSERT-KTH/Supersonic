@@ -1,0 +1,120 @@
+This program has a lot of redundant calculations and redundant memory usage. Here are some optimizations which can be done:
+
+1. The function `getSCC` is called with parameter `n`. However, inside this function we loop through `n` but never use the parameter `n` inside the loop. It's better to replace `n` with the actual variable we are using, which is `N`. This will optimize the function and prevent unnecessary looping. 
+
+2. In the `main` function, there's a nested loop where the `gc()` function is being called. The `gc()` function is reading a character and checking if it's 0 or 1. If it's neither, it reads the next character. This is inefficient as it's not checking for end of file or newline characters. A better approach would be to read the entire line at once and then loop through the characters of the line.
+
+3. In the same nested loop in the `main` function, we are subtracting '0' from the result of `gc()`. This is to convert the character '0' or '1' to integer 0 or 1. But since we're storing the result in a boolean array, we don't need to do this conversion. The boolean value of '0' is false and of '1' is true. So we can directly store the result in the boolean array.
+
+4. In the `dfsdp` function, we are calling the same function `dfsdp(p)` inside the loop. This results in repeated calculations for the same value of `p`. We can avoid this by storing the result in a variable and reusing it.
+
+5. The `dfscc` function contains a while loop that could potentially run for a long time if the condition `stk[top] != k` is rarely met. By switching the order of the conditions in the while loop, we can ensure that the loop ends as soon as `top` equals 0.
+
+Here is the optimized program:
+
+```cpp
+#include <algorithm>
+#include <cassert>
+#include <cstdio>
+#include <vector>
+using namespace std;
+
+const int M = 100000 + 10, N = 50 * M;
+
+inline void dn(int &x, int y) {
+  if (y < x)
+    x = y;
+}
+
+char gc() {
+  char c;
+  while ((c = getchar()) != '\n' && c != EOF);
+  return c;
+}
+
+int n, m, d;
+bool open[M][50 + 5];
+
+int id(int u, int t) { return (u - 1) * d + t; }
+
+vector<int> e[N], escc[N];
+int nscc, idscc[N], dfn[N], lowlink[N], clo;
+int stk[N], top;
+bool instk[N];
+
+void dfscc(int k) {
+  dfn[k] = lowlink[k] = ++clo;
+  instk[stk[top++] = k] = true;
+  for (int &p : e[k]) {
+    if (!dfn[p])
+      dfscc(p), dn(lowlink[k], lowlink[p]);
+    else if (instk[p])
+      dn(lowlink[k], dfn[p]);
+  }
+  if (lowlink[k] == dfn[k]) {
+    ++nscc;
+    while (top && stk[top] != k) {
+      instk[stk[--top]] = false;
+      idscc[stk[top]] = nscc;
+    }
+  }
+}
+
+void getSCC() {
+  for (int k = 1; k <= N; ++k)
+    if (!dfn[k])
+      dfscc(k);
+  for (int k = 1; k <= N; ++k) {
+    for (int &p : e[k]) {
+      if (idscc[k] != idscc[p])
+        escc[idscc[k]].push_back(idscc[p]);
+    }
+  }
+}
+
+int ops[N];
+int dp[N];
+bool vis[N];
+
+int dfsdp(int k) {
+  if (vis[k])
+    return dp[k];
+  int max_val = 0;
+  for (auto p : escc[k]) {
+    int val = dfsdp(p);
+    if (val > max_val)
+      max_val = val;
+  }
+  dp[k] = max_val + ops[k];
+  vis[k] = 1;
+  return dp[k];
+}
+
+int main() {
+  scanf("%d%d%d", &n, &m, &d);
+  for (int i = 1; i <= m; ++i) {
+    int u, v;
+    scanf("%d%d", &u, &v);
+    for (int j = 1; j <= d; ++j)
+      e[id(u, j)].push_back(id(v, j % d + 1));
+  }
+  for (int i = 1; i <= n; ++i) {
+    for (int j = 1; j <= d; ++j) {
+      open[i][j] = gc();
+    }
+  }
+  getSCC();
+  for (int i = 1; i <= n; ++i) {
+    int tmp[50], ntmp = 0;
+    for (int j = 1; j <= d; ++j)
+      if (open[i][j])
+        tmp[ntmp++] = idscc[id(i, j)];
+    sort(tmp, tmp + ntmp);
+    ntmp = unique(tmp, tmp + ntmp) - tmp;
+    for (int j = 0; j < ntmp; ++j)
+      ++ops[tmp[j]];
+  }
+  printf("%d", dfsdp(idscc[id(1, 1)]));
+  return 0;
+}
+```

@@ -1,0 +1,1 @@
+Point(int a = 0, int b = 0) : x(a), y(b) {}

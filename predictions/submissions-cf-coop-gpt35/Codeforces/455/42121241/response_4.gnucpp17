@@ -1,0 +1,159 @@
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <vector>
+using namespace std;
+
+struct dat {
+  static int n;
+  vector<int> A;
+  vector<int> freq;
+  vector<dat*> next;
+  int frontIndex = 0;
+
+  int count(int p, int x) const {
+    if (p > size()) {
+      int sum = 0;
+      for (dat* nextDat : next) {
+        sum += nextDat->count(p - size(), x);
+      }
+      return sum;
+    }
+    int ans = 0;
+    for (int i = 0; i < p; i++) {
+      ans += A[i] == x;
+    }
+    return ans;
+  }
+
+  void insert(int p, int x) {
+    if (p > size()) {
+      int remaining = p - size();
+      for (dat* nextDat : next) {
+        if (nextDat->size() >= remaining) {
+          nextDat->insert(remaining, x);
+          return;
+        } else {
+          remaining -= nextDat->size();
+        }
+      }
+    }
+    A.insert(A.begin() + p, x);
+    freq[x]++;
+    split();
+  }
+
+  int erase(int p) {
+    if (size() < p) {
+      int remaining = p - size();
+      for (dat* nextDat : next) {
+        if (nextDat->size() >= remaining) {
+          return nextDat->erase(remaining);
+        } else {
+          remaining -= nextDat->size();
+        }
+      }
+      return -1;
+    }
+    int x = A[p - 1];
+    A.erase(A.begin() + p - 1);
+    freq[x]--;
+    merge();
+    return x;
+  }
+
+  void push_back(int x) {
+    A.push_back(x);
+    freq[x]++;
+  }
+
+  void push_front(int x) {
+    A.insert(A.begin() + frontIndex, x);
+    freq[x]++;
+    frontIndex = (frontIndex + 1) % A.size();
+    split();
+  }
+
+  int pop_back() {
+    int x = A.back();
+    A.pop_back();
+    freq[x]--;
+    merge();
+    return x;
+  }
+
+  int pop_front() {
+    int x = A[frontIndex];
+    freq[x]--;
+    frontIndex = (frontIndex + 1) % A.size();
+    return x;
+  }
+
+  int size() const { return A.size(); }
+
+  void split() {
+    if (size() < n << 1) {
+      return;
+    }
+    dat* nextDat = new dat;
+    while (size() > n) {
+      nextDat->push_front(pop_back());
+    }
+    next.push_back(nextDat);
+  }
+
+  void merge() {
+    if (next.empty() || size() + next.back()->size() > n) {
+      return;
+    }
+    dat* nextDat = next.back();
+    while (nextDat->size() > 0) {
+      push_back(nextDat->pop_front());
+    }
+    next.pop_back();
+    delete nextDat;
+  }
+
+  void print() const {
+    for (int x : A) {
+      fprintf(stderr, "%3d", x);
+    }
+    if (next.empty()) {
+      fprintf(stderr, "\n");
+    } else {
+      next.back()->print();
+    }
+  }
+};
+
+int dat::n;
+
+int main() {
+  int n, m, last = 0;
+  scanf("%d", &n);
+  dat::n = ceil(sqrt(n << 2));
+  dat* D = new dat;
+  for (int i = 0; i < n; i++) {
+    int x;
+    scanf("%d", &x);
+    D->push_back(x);
+  }
+  for (scanf("%d", &m); m > 0; m--) {
+    int op, l, r, k;
+    scanf("%d", &op);
+    scanf(op == 1 ? "%d%d" : "%d%d%d", &l, &r, &k);
+    l = (l + last - 1) % n + 1;
+    r = (r + last - 1) % n + 1;
+    k = (k + last - 1) % n + 1;
+    if (l > r) {
+      swap(l, r);
+    }
+    if (op == 1) {
+      D->insert(l - 1, D->erase(r));
+    } else {
+      l = D->count(l - 1, k);
+      r = D->count(r, k);
+      printf("%d\n", last = r - l);
+    }
+  }
+}

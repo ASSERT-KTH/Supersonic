@@ -1,0 +1,15 @@
+Upon analyzing the given code, we can identify several areas for potential optimization:
+
+1. Inefficient Data Structures:
+   - The `bitset<80000000>` data structure is used to track visited states, but it is unnecessarily large. We can reduce its size to be equal to the total number of possible states, which is 8! = 40320.
+   - The `dl` array is used as a queue for the breadth-first search (BFS) algorithm. However, it is currently declared with a fixed size of `1 << 16`, which is much larger than necessary. Since the maximum number of states that can be stored in the queue is 40320, we can reduce the size of `dl` accordingly.
+
+2. Redundant Computations:
+   - The `atoi` function is called on the `bj` string to convert it to an integer, but this conversion is performed multiple times unnecessarily. We can perform this conversion once and reuse the resulting integer in the BFS loop.
+   - The `strchr` function is called to find the position of '0' in the `bj` string, but this operation can be avoided by keeping track of the position of '0' during the conversion to an integer.
+
+3. Loop Optimization:
+   - The loop that converts the integer to a character array can be optimized to eliminate repeated divisions by 10. Instead, we can use integer division and modulo operations to extract the digits of the integer in reverse order.
+
+4. Compiler Optimizations:
+   - We can use compiler optimizations to improve the performance of the code. For example, we can enable compiler optimizations (e.g., `-O2` flag) to allow the compiler to automatically optimize the code based on the target platform.

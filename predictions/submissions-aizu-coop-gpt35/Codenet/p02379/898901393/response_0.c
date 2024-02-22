@@ -1,0 +1,1 @@
+double distance(const point* p1, const point* p2)

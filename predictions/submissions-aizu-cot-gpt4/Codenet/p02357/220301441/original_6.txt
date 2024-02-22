@@ -1,0 +1,139 @@
+Optimization Explanation:
+
+1. Avoid unnecessary memory allocations: The "table" is a 2D array that is initialized with calloc in the constructor, but it is not deallocated in the destructor. This can lead to a memory leak. To avoid this, you can use a vector of vectors instead. It will automatically deallocate the memory when the object is destroyed.
+  
+2. Use std::vector instead of raw arrays: The arrays "a", "R", "L", and "part" are allocated with calloc, which means that they are not automatically deallocated when the object is destroyed. This can lead to a memory leak. To avoid this, you can use std::vector instead. It will automatically deallocate the memory when the object is destroyed.
+
+3. Avoid unnecessary type casting: In the constructor, the size of the array is cast to uint32 multiple times. You can store it in a uint32 variable to avoid repetitive type casting.
+
+4. Use auto keyword for type inference: The type of some variables is explicitly specified, which can make the code more difficult to read and maintain. You can use the auto keyword to let the compiler infer the type.
+
+Optimized Program:
+
+```cpp
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <functional>
+#include <iostream>
+#include <map>
+#include <math.h>
+#include <queue>
+#include <set>
+#include <stack>
+#include <string>
+#include <time.h>
+#include <utility>
+#include <vector>
+#define INF 1000000000
+#define MOD 1000000007
+#define rep(i, a, b) for (uint32 i = (a); i < (b); ++i)
+#define bitget(a, b) (((a) >> (b)) & 1)
+#define ALL(x) (x).begin(), (x).end()
+#define C(x) std::cout << #x << " : " << x << std::endl
+#define scanf scanf_s
+using int32 = std::int_fast32_t;
+using int64 = std::int_fast64_t;
+using uint32 = std::uint_fast32_t;
+using uint64 = std::uint_fast64_t;
+
+template <typename T> class StaticRMQ {
+  std::vector<T> a;
+  std::vector<std::vector<uint32>> table;
+  uint32 t;
+  std::vector<uint32> R, L, part;
+  std::vector<uint32> bitmaskr, bitmaskl;
+
+public:
+  StaticRMQ(std::vector<T> &array) {
+    uint32 s, m, c = 0;
+    std::vector<uint32> e(32, 0);
+    a.resize(array.size());
+    uint32 array_size = static_cast<uint32>(array.size());
+    R.resize((array_size + 0x1F) >> 5);
+    L.resize((array_size + 0x1F) >> 5);
+    part.resize(array_size);
+    
+    s = std::max((uint32)(31 ^ __builtin_clrsb(array_size >> 5)), (uint32)1);
+    table.resize(s + 1);
+    e[1] = (array_size >> 5) + 1;
+    t = 0;
+    while ((1 << ++t) < (array_size >> 5))
+      e[t + 1] = e[t] + array_size - (1 << t) + 1;
+    table[0].resize(e[t]);
+    
+    for (t = 1; e[t]; ++t)
+      table[t] = table[0] + e[t];
+    for (t = 0; t < array_size; ++t) {
+      a[t] = array[t];
+      part[t] = 1 << (t & 0x1F);
+      if (!(t & 0x1F)) {
+        m = array[t];
+        R[t >> 5] = 1;
+        table[0][t >> 5] = t;
+        c = 0;
+      }
+      while (c)
+        if (!(array[t] < array[e[--c]])) {
+          part[t] |= part[e[c++]];
+          break;
+        }
+      e[c++] = t;
+      if (array[t] < m) {
+        m = array[t];
+        R[t >> 5] |= 1 << (t & 0x1F);
+        table[0][t >> 5] = t;
+      }
+      if (!((~t) & 0x1F)) {
+        L[t >> 5] = part[t];
+      }
+    }
+    --s;
+    for (t = 0; t < s; ++t) {
+      for (m = 0; m < (uint32)(table[t + 2].size() - table[t + 1].size()); ++m) {
+        table[t + 1][m] = a[table[t][m]] < a[table[t][m + (1 << t)]]
+                              ? table[t][m]
+                              : table[t][m + (1 << t)];
+      }
+    }
+  }
+  uint32 operator()(uint32 begin, uint32 end) {
+    uint32 l = (begin >> 5) + 1;
+    uint32 r = --end >> 5;
+    if (l < r) {
+      t = 31 ^ __builtin_clz(r - l);
+      t = std::min(a[table[t][l]], a[table[t][r - (1 << t)]]);
+      t = std::min(a[(begin & ~0x1F) |
+                     __builtin_ctz(L[begin >> 5] & bitmaskr[begin & 0x1F])],
+                   t);
+      return std::min(
+          a[(end & ~0x1F) |
+            (31 ^ __builtin_clz(R[end >> 5] & bitmaskl[end & 0x1F]))],
+          t);
+    }
+    if (l == r) {
+      t = a[(begin & ~0x1F) |
+            __builtin_ctz(L[begin >> 5] & bitmaskr[begin & 0x1F])];
+      return std::min(
+          a[(end & ~0x1F) |
+            (31 ^ __builtin_clz(R[end >> 5] & bitmaskl[end & 0x1F]))],
+          t);
+    }
+    return a[(end & ~0x1F) | __builtin_ctz(part[end] & bitmaskr[begin & 0x1F])];
+  }
+};
+int main(void) {
+  std::ios::sync_with_stdio(false);
+  std::cin.tie(0);
+  uint32 n, l;
+  std::cin >> n >> l;
+  std::vector<uint32> a(n);
+  rep(i, 0, n) { std::cin >> a[i]; }
+  StaticRMQ<uint32> S(a);
+  std::cout << S(0, l);
+  rep(i, 1, n - l + 1) { std::cout << " " << S(i, i + l); }
+  std::cout << "\n";
+  return 0;
+}
+```
+Please note that the above code is not tested and may contain errors. It's meant to illustrate the optimization strategies.

@@ -1,0 +1,120 @@
+The given program is already optimized with respect to the algorithmic complexity. However, there are a few minor changes that can be made to improve the performance:
+
+1. Avoid unnecessary calls to `push()`: The `push()` function is called at the start of `add_val()` and `get_min()` functions, and its purpose is to propagate the changes down to the children nodes. However, if the current node doesn't intersect with the query interval, these changes won't affect the result, and the `push()` call is unnecessary. So, we can postpone the `push()` call until it's clear that the current node intersects with the query interval.
+
+2. Use references for function parameters: In functions like `add_val()`, `get_min()`, and `f()`, the arguments are passed by value, which means the program makes copies of these values. This is unnecessary and can be avoided by passing the arguments by reference, which will improve the performance, especially for large inputs.
+
+Here is the optimized version of the program:
+
+```cpp
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <set>
+#include <string>
+#include <vector>
+#pragma GCC optimize("Ofast")
+using namespace std;
+typedef long long ll;
+typedef long double ld;
+#define pll pair<ll, ll>
+#define pb push_back
+const ll maxn = ll(2e5) + 11;
+const ll inf = ll(1e15) + 12;
+const ll mod = ll(1e9) + 7;
+ll n;
+ll a[maxn], ps[maxn], p[maxn], pref[maxn];
+struct node {
+  ll l, mid, r, val, add;
+  node *left, *right;
+  node(ll l, ll r) : l(l), r(r) {
+    add = 0;
+    mid = (l + r) / 2;
+    val = 0;
+    left = right = nullptr;
+  }
+};
+ll f(const ll &x, const ll &y) { return min(x, y); }
+void build(node *root) {
+  if (root->r - root->l == 1) {
+    root->val = pref[root->l];
+    if (root->l == n - 1) {
+      root->val = inf;
+    }
+  } else {
+    root->left = new node(root->l, root->mid);
+    root->right = new node(root->mid, root->r);
+    build(root->left);
+    build(root->right);
+    root->val = f(root->left->val, root->right->val);
+  }
+}
+void push(node *root) {
+  if (root->left != nullptr) {
+    root->left->add += root->add;
+    root->right->add += root->add;
+  }
+  root->val += root->add;
+  root->add = 0;
+}
+void add_val(node *root, const ll &ql, const ll &qr, const ll &val) {
+  if (root->r <= ql || root->l >= qr) {
+    return;
+  }
+  push(root);
+  if (ql == root->l && root->r == qr) {
+    root->add += val;
+    push(root);
+    return;
+  }
+  add_val(root->left, ql, min(root->mid, qr), val);
+  add_val(root->right, max(root->mid, ql), qr, val);
+  root->val = f(root->left->val, root->right->val);
+}
+ll get_min(node *root, const ll &ql, const ll &qr) {
+  if (root->r <= ql || root->l >= qr) {
+    return inf;
+  }
+  push(root);
+  if (ql == root->l && root->r == qr) {
+    return root->val;
+  }
+  return f(get_min(root->left, ql, min(root->mid, qr)),
+           get_min(root->right, max(root->mid, ql), qr));
+}
+void solve() {
+  cin >> n;
+  for (ll i = 0; i < n; i++) {
+    ll cur;
+    cin >> cur;
+    p[i] = cur;
+    ps[cur - 1] = i;
+  }
+  for (ll i = 0; i < n; i++) {
+    ll cur;
+    cin >> cur;
+    a[i] = cur;
+    if (i == 0) {
+      pref[i] = cur;
+    } else
+      pref[i] = pref[i - 1] + cur;
+  }
+  node *root = new node(0, n);
+  build(root);
+  ll ans = min(a[0], a[n - 1]);
+  ll mus = 0;
+  for (ll i = 0; i < n; i++) {
+    add_val(root, ps[i], n, -2 * a[ps[i]]);
+    mus += a[ps[i]];
+    ll cur = get_min(root, 0, n) + mus;
+    ans = min(ans, cur);
+  }
+  cout << ans << endl;
+}
+int main() {
+  ios::sync_with_stdio();
+  solve();
+  return 0;
+}
+```
+Please note that these optimizations might not result in a significant performance improvement, but they can help to reduce the running time and memory usage slightly in certain cases.

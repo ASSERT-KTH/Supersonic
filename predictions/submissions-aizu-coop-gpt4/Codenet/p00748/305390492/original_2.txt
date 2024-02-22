@@ -1,0 +1,84 @@
+1. **Code Analysis:**
+
+This code seems to be solving some kind of dynamic programming problem. It appears that `solve` and `solve2` are both memoized recursive functions that find the minimal number of steps to get to `n` starting from 0 using different rules. The `solve` function can take steps of size `p[i]` where `p[i]` is the `i-th` tetrahedral number, and the `solve2` function can take steps of size `p[i]` as well, but only when `p[i]` is odd. 
+
+The primary performance bottlenecks in this code are:
+
+- The recursive calls in both `solve` and `solve2` functions. Each call creates a new stack frame, which takes time and memory. When the input size is large, these recursive calls can lead to stack overflow.
+
+- The multiple nested loops in `solve` and `solve2` functions, which have a time complexity of O(n^2). This could potentially slow down the program when `n` is large.
+
+- The use of a large array `p` and two-dimensional array `memo` which takes a lot of memory. 
+
+2. **Optimization Strategy:**
+
+    1. Use bottom-up dynamic programming instead of top-down (memoization) to eliminate the overhead of recursive calls.
+
+    2. Change the loop structure to reduce the time complexity. We can calculate the `ans` in a single pass instead of using nested loops.
+
+    3. Use `vector<int>` instead of arrays to store `memo` and `p`. Vector is a dynamic container, it can reduce memory usage by not allocating memory that is not needed.
+
+3. **Step-by-Step Explanation:**
+
+    1. Change the recursion in `solve` and `solve2` functions to iteration. Start with small problems and iteratively solve larger problems using the results of smaller ones. This eliminates the overhead of recursive calls and avoids potential stack overflow.
+
+    2. Change the nested loops in `solve` and `solve2` functions to a single loop. We can calculate the `ans` in a single pass by maintaining a running minimum.
+
+    3. Use `vector<int>` instead of arrays to store `memo` and `p`. Initialize the vectors with a size of `n+1` to avoid reallocation. This can reduce memory usage as the `vector` only allocates the memory that is needed.
+
+4. **Optimized Code Block:**
+
+```cpp
+#include <algorithm>
+#include <iostream>
+#include <vector>
+#define INF 1 << 28
+using namespace std;
+vector<int> p;
+vector<vector<int>> memo;
+vector<int> memo2;
+
+void solve(int n) {
+    for (int i = 0; i <= n; i++) {
+        for (int count = 0; count <= 5; count++) {
+            if (!i || !count) {
+                memo[i][count] = 0;
+                continue;
+            }
+            int ans = INF;
+            for (int j = 0; j <= i && p[j] <= i; j++)
+                ans = min(ans, memo[i - p[j]][count - 1] + 1);
+            memo[i][count] = ans;
+        }
+    }
+}
+
+void solve2(int n) {
+    for (int i = 0; i <= n; i++) {
+        if (!i) {
+            memo2[i] = 0;
+            continue;
+        }
+        int ans = INF;
+        for (int j = 0; j <= i && p[j] <= i; j++) {
+            if (!(p[j] % 2))
+                continue;
+            ans = min(ans, memo2[i - p[j]] + 1);
+        }
+        memo2[i] = ans;
+    }
+}
+
+int main() {
+    int n;
+    p.resize(1000001);
+    memo.resize(1000001, vector<int>(6, 0));
+    memo2.resize(1000001, 0);
+    for (int i = 0; i <= 1000000; i++)
+        p[i] = i * (i + 1) * (i + 2) / 6;
+    solve(1000000);
+    solve2(1000000);
+    while (cin >> n, n)
+        cout << memo[n][5] << " " << memo2[n] << endl;
+}
+```

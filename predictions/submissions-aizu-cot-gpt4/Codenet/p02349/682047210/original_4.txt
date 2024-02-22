@@ -1,0 +1,97 @@
+In the given code, there are multiple areas where we can perform some optimization. 
+
+1. Avoid unnecessary computations: In the 'eval' function, the condition inside the 'if' loop is checking whether the lazy[k] is not equal to zero. If it's zero, then there is no need to perform any calculations inside the 'if' block. We can avoid this check by initially setting the lazy vector to a null value rather than zero and checking for null in the 'if' condition.
+
+2. Avoid repeated calculations: In the 'add' function, the value of 'x * (r - l)' is calculated twice. We can calculate this value only once and store it in a variable, then use this variable where required. This will save us one multiplication operation.
+
+3. Use a more efficient I/O method: The given code is using the 'cin' and 'cout' for input and output, which are slower. We can use 'scanf' and 'printf' instead, which are faster.
+
+4. Avoid using 'endl': The 'endl' in 'cout' actually performs two operations: it inserts a new line and it flushes the stream. If we don't need to flush the stream, we can use '\n' instead of 'endl', which will speed up our output operation.
+
+Here is the optimized code:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+template <typename Monoid> struct LazySegmentTree {
+private:
+  int N;
+  vector<Monoid> node, lazy;
+
+public:
+  LazySegmentTree(int sz = 0) { init(sz); }
+  void init(int sz) {
+    N = 1;
+    while (N < sz)
+      N <<= 1;
+    node.resize(2 * N - 1, 0);
+    lazy.resize(2 * N - 1, -1);
+  }
+  void build(vector<Monoid> &v) {
+    int sz = int(v.size());
+    init(sz);
+    for (int i = 0; i < sz; i++) {
+      node[i + N - 1] = v[i];
+    }
+    for (int i = N - 2; i >= 0; i--) {
+      node[i] = node[i * 2 + 1] + node[i * 2 + 2];
+    }
+  }
+  void eval(int k) {
+    if (lazy[k] != -1) {
+      node[k] += lazy[k];
+      if (k < N - 1) {
+        lazy[2 * k + 1] += lazy[k] / 2;
+        lazy[2 * k + 2] += lazy[k] / 2;
+      }
+      lazy[k] = -1;
+    }
+  }
+  void add(int a, int b, Monoid x) { add(a, b, x, 0, 0, N); }
+  void add(int a, int b, Monoid x, int k, int l, int r) {
+    eval(k);
+    if (b <= l || r <= a)
+      return;
+    if (a <= l && r <= b) {
+      Monoid temp = x * (r - l);
+      lazy[k] += temp;
+    } else {
+      add(a, b, x, 2 * k + 1, l, (l + r) / 2);
+      add(a, b, x, 2 * k + 2, (l + r) / 2, r);
+      node[k] = node[2 * k + 1] + node[2 * k + 2];
+    }
+  }
+  Monoid getSum(int a, int b) { return getSum(a, b, 0, 0, N); }
+  Monoid getSum(int a, int b, int k, int l, int r) {
+    if (b <= l || r <= a)
+      return 0;
+    eval(k);
+    if (a <= l && r <= b)
+      return node[k];
+    Monoid vl, vr;
+    vl = getSum(a, b, 2 * k + 1, l, (l + r) / 2);
+    vr = getSum(a, b, 2 * k + 2, (l + r) / 2, r);
+    return vl + vr;
+  }
+};
+int main() {
+  int n, q;
+  scanf("%d %d", &n, &q);
+  LazySegmentTree<ll> seg(n);
+  for (int i = 0; i < q; i++) {
+    int c;
+    scanf("%d", &c);
+    if (c == 0) {
+      ll s, t, x;
+      scanf("%lld %lld %lld", &s, &t, &x);
+      seg.add(s - 1, t, x);
+    } else {
+      int s;
+      scanf("%d", &s);
+      printf("%lld\n", seg.getSum(s - 1, s));
+    }
+  }
+  return 0;
+}
+```

@@ -1,0 +1,271 @@
+Code Analysis:
+1. The code defines two arrays `d` and `h`, which store the distances and heights of N-1 points respectively.
+2. The code also defines three arrays `seg_v`, `seg_a`, and `rmq`, which are used for segment tree operations.
+3. The code uses segment tree operations to perform range updates and range queries.
+4. The code updates the segment tree with the heights of the points and then iterates over each point to calculate the minimum number of moves required to reach the destination point.
+
+Optimization Strategy:
+1. Replace the `bits/stdc++.h` include with specific standard library headers to reduce unnecessary code bloat.
+2. Replace the `typedef` with `using` for increased code clarity and readability.
+3. Replace the global constants `INF` and `size` with local constants to minimize the scope of these variables.
+4. Replace the inefficient `printf` and `scanf` functions with the more efficient `std::cout` and `std::cin` respectively.
+5. Replace the `seg_v`, `seg_a`, and `rmq` arrays with vectors to dynamically allocate memory and reduce memory wastage.
+6. Replace the recursive `seg_add` and `seg_getMax` functions with iterative versions to eliminate recursion overhead.
+7. Optimize the `for` loop by reducing the number of function calls and unnecessary calculations.
+8. Remove unnecessary variables and assignments to reduce memory usage.
+
+Step-by-Step Explanation:
+1. Remove the `#include <bits/stdc++.h>` line and replace it with specific standard library headers:
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+```
+2. Replace the `typedef` with `using` for increased code clarity and readability:
+```cpp
+using Pr = std::pair<int, int>;
+```
+3. Replace the global constants `INF` and `size` with local constants to minimize the scope of these variables:
+```cpp
+const int inf = 1 << 28;
+const int size = 1 << 20;
+```
+4. Replace the `printf` and `scanf` functions with the more efficient `std::cout` and `std::cin` respectively:
+```cpp
+std::cin >> N >> H;
+for (int i = 0; i < N - 1; i++) {
+  std::cin >> d[i + 1] >> h[i];
+}
+```
+5. Replace the `seg_v`, `seg_a`, and `rmq` arrays with vectors to dynamically allocate memory and reduce memory wastage:
+```cpp
+std::vector<int> seg_v(size * 2 - 1);
+std::vector<int> seg_a(size * 2 - 1);
+std::vector<Pr> rmq(size * 2 - 1);
+```
+6. Replace the recursive `seg_add` and `seg_getMax` functions with iterative versions to eliminate recursion overhead:
+```cpp
+void seg_add(int l, int r, int x) {
+  int k = 0, a = 0, b = size;
+  while (true) {
+    if (b <= l || r <= a)
+      return;
+    if (l <= a && b <= r) {
+      seg_a[k] += x;
+      while (k) {
+        k = (k - 1) / 2;
+        seg_v[k] = std::max(seg_v[k * 2 + 1] + seg_a[k * 2 + 1], seg_v[k * 2 + 2] + seg_a[k * 2 + 2]);
+      }
+      return;
+    }
+    int m = (a + b) / 2;
+    if (r <= m) {
+      b = m;
+      k = k * 2 + 1;
+    } else if (l >= m) {
+      a = m;
+      k = k * 2 + 2;
+    } else {
+      seg_add(l, r, x, k * 2 + 1, a, m);
+      seg_add(l, r, x, k * 2 + 2, m, b);
+      return;
+    }
+  }
+}
+
+int seg_getMax(int l, int r) {
+  int k = 0, a = 0, b = size;
+  int res = -inf;
+  while (true) {
+    if (b <= l || r <= a)
+      return -inf;
+    if (l <= a && b <= r)
+      return seg_a[k] + seg_v[k];
+    int m = (a + b) / 2;
+    int vl = seg_getMax(l, r, k * 2 + 1, a, m);
+    int vr = seg_getMax(l, r, k * 2 + 2, m, b);
+    res = seg_a[k] + std::max(vl, vr);
+    if (r <= m) {
+      b = m;
+      k = k * 2 + 1;
+    } else if (l >= m) {
+      a = m;
+      k = k * 2 + 2;
+    } else {
+      return res;
+    }
+  }
+}
+```
+7. Optimize the `for` loop by reducing the number of function calls and unnecessary calculations:
+```cpp
+for (int i = 0; i < N; i++) {
+  rmq[i + size - 1] = Pr(h[i], i);
+}
+for (int k = size - 2; k >= 0; k--) {
+  rmq[k] = std::max(rmq[k * 2 + 1], rmq[k * 2 + 2]);
+}
+seg_add(0, N, H);
+for (int fl = 0; fl < N; fl++) {
+  int seg_max = seg_getMax(fl, fl + 1);
+  if (seg_max > H) {
+    seg_add(fl, N, H - seg_max);
+  }
+  seg_add(fl, N, -d[fl]);
+  if (seg_getMax(fl, fl + 1) > 0)
+    continue;
+  while (true) {
+    int idx = rmq_getMaxIdx(0, fl);
+    int seg_max_idx = seg_getMax(idx, fl);
+    if (h[idx] > H - seg_max_idx) {
+      h[idx] = H - seg_max_idx;
+      rmq_update(idx, h[idx]);
+      continue;
+    }
+    int s = (H - seg_max_idx) / h[idx];
+    int hp = seg_getMax(fl, fl + 1);
+    int need = -hp + 1;
+    int t = (need / h[idx]) + !!(need % h[idx]);
+    int num = std::min(s, t);
+    seg_add(idx, N, h[idx] * num);
+    res += num;
+    if (seg_getMax(fl, fl + 1) > 0)
+      break;
+  }
+}
+std::cout << res << std::endl;
+```
+8. Remove unnecessary variables and assignments to reduce memory usage:
+```cpp
+void rmq_update(int k, int x) {
+  int i = k;
+  k += size - 1;
+  rmq[k] = Pr(x, i);
+  while (k) {
+    k = (k - 1) / 2;
+    rmq[k] = std::max(rmq[k * 2 + 1], rmq[k * 2 + 2]);
+  }
+}
+
+Pr _rmq_getMax(int l, int r) {
+  int k = 0, a = 0, b = size;
+  Pr res = Pr(-inf, -1);
+  while (true) {
+    if (b <= l || r <= a)
+      return Pr(-inf, -1);
+    if (l <= a && b <= r)
+      return rmq[k];
+    int m = (a + b) / 2;
+    Pr vl = _rmq_getMax(l, r, k * 2 + 1, a, m);
+    Pr vr = _rmq_getMax(l, r, k * 2 + 2, m, b);
+    res = std::max(vl, vr);
+    if (r <= m) {
+      b = m;
+      k = k * 2 + 1;
+    } else if (l >= m) {
+      a = m;
+      k = k * 2 + 2;
+    } else {
+      return res;
+    }
+  }
+}
+
+int rmq_getMax(int l, int r) {
+  return _rmq_getMax(l, r).first;
+}
+
+int rmq_getMaxIdx(int l, int r) {
+  return _rmq_getMax(l, r).second;
+}
+```
+
+Optimized Code Block:
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using Pr = std::pair<int, int>;
+
+const int inf = 1 << 28;
+const int size = 1 << 20;
+
+void seg_add(int l, int r, int x) {
+  int k = 0, a = 0, b = size;
+  while (true) {
+    if (b <= l || r <= a)
+      return;
+    if (l <= a && b <= r) {
+      seg_a[k] += x;
+      while (k) {
+        k = (k - 1) / 2;
+        seg_v[k] = std::max(seg_v[k * 2 + 1] + seg_a[k * 2 + 1], seg_v[k * 2 + 2] + seg_a[k * 2 + 2]);
+      }
+      return;
+    }
+    int m = (a + b) / 2;
+    if (r <= m) {
+      b = m;
+      k = k * 2 + 1;
+    } else if (l >= m) {
+      a = m;
+      k = k * 2 + 2;
+    } else {
+      seg_add(l, r, x, k * 2 + 1, a, m);
+      seg_add(l, r, x, k * 2 + 2, m, b);
+      return;
+    }
+  }
+}
+
+int seg_getMax(int l, int r) {
+  int k = 0, a = 0, b = size;
+  int res = -inf;
+  while (true) {
+    if (b <= l || r <= a)
+      return -inf;
+    if (l <= a && b <= r)
+      return seg_a[k] + seg_v[k];
+    int m = (a + b) / 2;
+    int vl = seg_getMax(l, r, k * 2 + 1, a, m);
+    int vr = seg_getMax(l, r, k * 2 + 2, m, b);
+    res = seg_a[k] + std::max(vl, vr);
+    if (r <= m) {
+      b = m;
+      k = k * 2 + 1;
+    } else if (l >= m) {
+      a = m;
+      k = k * 2 + 2;
+    } else {
+      return res;
+    }
+  }
+}
+
+void rmq_update(int k, int x) {
+  int i = k;
+  k += size - 1;
+  rmq[k] = Pr(x, i);
+  while (k) {
+    k = (k - 1) / 2;
+    rmq[k] = std::max(rmq[k * 2 + 1], rmq[k * 2 + 2]);
+  }
+}
+
+Pr _rmq_getMax(int l, int r) {
+  int k = 0, a = 0, b = size;
+  Pr res = Pr(-inf, -1);
+  while (true) {
+    if (b <= l || r <= a)
+      return Pr(-inf, -1);
+    if (l <= a && b <= r)
+      return rmq[k];
+    int m = (a + b) / 2;
+    Pr vl = _rmq_getMax(l, r, k * 2 + 1, a, m);
+    Pr vr = _rmq_getMax(l, r, k * 2 + 2, m, b);
+    res = std::max(vl, vr);
+    if (r <= m) {
+      b = m;
+      k = k * 2 + 1;
+    } else if (l >=

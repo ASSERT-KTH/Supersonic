@@ -1,0 +1,59 @@
+#include <cstdio>
+#include <cstring>
+#include <queue>
+#define MOD 1000000007LL
+using namespace std;
+typedef long long ll;
+typedef pair<int, int> P;
+int n, m, k;
+int x[100001], y[100001];
+int g[1001][1001];
+int cost[100001];
+
+int bfs(int start_x, int start_y, int end_x, int end_y) {
+  queue<int> que;
+  bool flag = false;
+  memset(cost, -1, sizeof(cost));
+  for (int i = start_x; i <= end_x; i++) {
+    ll val = (ll)i * n;
+    if (g[val/n][val%n]) {
+      que.push(g[val/n][val%n]);
+      cost[g[val/n][val%n]] = 0;
+    }
+  }
+  while (!que.empty()) {
+    int q = que.front();
+    que.pop();
+    for (int i = -2; i <= 2; ++i) {
+      for (int j = -2; j <= 2; ++j) {
+        int nc = abs(i) > 1 || abs(j) > 1;
+        int nx = j + x[q], ny = i + y[q];
+        if (nx < start_x || ny < start_y || nx > end_x || ny > end_y) {
+          if (nc == 0) return 0;
+          if (nc == 1) flag = true;
+        }
+        if (nx >= 0 && nx < n && ny >= 0 && ny < m && g[ny][nx] && cost[g[ny][nx]] == -1) {
+          cost[g[ny][nx]] = nc;
+          que.push(g[ny][nx]);
+        }
+      }
+    }
+  }
+  return flag ? 1 : 2;
+}
+
+int main(void) {
+  scanf("%d%d%d", &n, &m, &k);
+  memset(g, 0, sizeof(g));
+  for (int i = 0; i < k; ++i) {
+    scanf("%d%d", &x[i], &y[i]);
+    g[y[i]][x[i]] = i;
+  }
+  int res = 2;
+  if((res = min(res, bfs(1, 0, m-1, n-1))) == 0) return printf("%d\n", res), 0;
+  if((res = min(res, bfs(0, 1, n-1, m-1))) == 0) return printf("%d\n", res), 0;
+  if((res = min(res, bfs(0, m-2, n-1, m-1))) == 0) return printf("%d\n", res), 0;
+  if((res = min(res, bfs(m-2, 0, m-1, n-1))) == 0) return printf("%d\n", res), 0;
+  printf("%d\n", res);
+  return 0;
+}

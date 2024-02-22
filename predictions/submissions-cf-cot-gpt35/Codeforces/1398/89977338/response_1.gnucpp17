@@ -1,0 +1,121 @@
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <bitset>
+#include <cstring>
+using namespace std;
+
+typedef long long ll;
+typedef vector<ll> poly;
+
+const int MAXN = 1 << 20;
+const int OFFSET = 200000;
+
+int n, x, y;
+int lp[MAXN + 1];
+bitset<2 * OFFSET + 1> can;
+vector<int> pr;
+
+void SieveOfEratosthenes() {
+    memset(lp, -1, sizeof(lp));
+    for (int i = 2; i <= MAXN; i++) {
+        if (lp[i] == -1) {
+            lp[i] = i;
+            pr.push_back(i);
+        }
+        for (int j = 0; j < pr.size() && pr[j] <= lp[i] && i * pr[j] <= MAXN; ++j)
+            lp[i * pr[j]] = pr[j];
+    }
+}
+
+void div_iter(vector<ll> &r, vector<pair<ll, int>> &f, int k, ll c) {
+    int size = f.size();
+    vector<int> index(size, 0);
+    while (true) {
+        r.push_back(c);
+        int j = 0;
+        while (j < size && index[j] == f[j].second) {
+            index[j] = 0;
+            c /= f[j].first;
+            j++;
+        }
+        if (j == size)
+            break;
+        index[j]++;
+        c *= f[j].first;
+    }
+}
+
+poly multiply(poly &p1, poly &p2) {
+    int n = p1.size() + p2.size() + 1;
+    poly res(n, 0);
+    for (int i = 0; i < p1.size(); i++) {
+        for (int j = 0; j < p2.size(); j++) {
+            res[i + j] += p1[i] * p2[j];
+        }
+    }
+    return res;
+}
+
+vector<int> g[MAXN];
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+
+    SieveOfEratosthenes();
+
+    cin >> n >> x >> y;
+
+    poly l(2 * OFFSET + 1, 0), r(2 * OFFSET + 1, 0);
+    for (int i = 0; i <= n; i++) {
+        int X;
+        cin >> X;
+        l[X + OFFSET]++;
+        r[-X + OFFSET]++;
+    }
+
+    poly p = multiply(l, r);
+
+    for (int i = 0; i < 2 * OFFSET && i + 2 * OFFSET < p.size(); i++) {
+        if (p[i + 2 * OFFSET] != 0)
+            can[i] = true;
+    }
+
+    int q;
+    cin >> q;
+
+    int res[q];
+    for (int i = 0; i < q; i++)
+        res[i] = -1;
+
+    for (int _ = 0; _ < q; _++) {
+        int X;
+        cin >> X;
+        if (g[X].empty()) {
+            int it = X;
+            vector<pair<ll, int>> aux;
+            while (it != 1) {
+                if (aux.empty() || aux.back().first != lp[it])
+                    aux.push_back({lp[it], 1});
+                else
+                    aux.back().second++;
+                it /= lp[it];
+            }
+            div_iter(g[X], aux, 0, 1);
+        }
+        for (int i : g[X]) {
+            ll need = i - 2 * y;
+            if (need <= 0 || need % 2 != 0)
+                continue;
+            if (can[need / 2])
+                res[_] = max(res[_], i);
+        }
+    }
+
+    for (int i = 0; i < q; i++)
+        cout << res[i] << " \n"[i == q - 1];
+
+    return 0;
+}

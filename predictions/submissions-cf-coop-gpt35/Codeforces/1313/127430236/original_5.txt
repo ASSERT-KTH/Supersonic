@@ -1,0 +1,243 @@
+Code Analysis:
+1. The code uses an array `a` to store the input values and arrays `l`, `r`, and `res` to store intermediate and final results.
+2. The code uses a segment tree implementation to efficiently find the minimum value in a range.
+3. The code computes the values of `l` and `r` arrays by finding the index of the minimum value in the prefix and suffix of the array `a`, respectively.
+4. The code then computes the maximum sum of `l[i] + r[n - i + 1] - a[i]` and finds the position `pos` at which this maximum sum occurs.
+5. Finally, the code constructs the `res` array by finding the minimum value to the left and right of the position `pos`.
+
+Optimization Strategy:
+1. Use a more space-efficient data structure to store the segment tree.
+2. Eliminate the need for reversing the `a` array by modifying the segment tree implementation.
+3. Optimize the computation of `l` and `r` arrays by eliminating unnecessary recursive calls and redundant computations.
+4. Optimize the computation of `res` array by eliminating redundant comparisons and assignments.
+
+Step-by-Step Explanation:
+1. Replace the `node` array with a dynamically allocated array to reduce memory usage. This will be done by replacing `int node[4 * N]` with `int* node = new int[4 * N]` and at the end of the code, add `delete[] node;` to deallocate the memory.
+2. Modify the `update` function to use a loop instead of recursion. This will improve performance by reducing function call overhead. The modified `update` function will look like this:
+
+```cpp
+void update(int id, int l, int r, int pos, int x) {
+  while (l != r) {
+    int mid = (l + r) / 2;
+    if (pos <= mid) {
+      r = mid;
+      id = 2 * id;
+    } else {
+      l = mid + 1;
+      id = 2 * id + 1;
+    }
+  }
+  node[id] = x;
+}
+```
+
+3. Modify the `find` function to use a loop instead of recursion. This will improve performance by reducing function call overhead. The modified `find` function will look like this:
+
+```cpp
+int find(int id, int l, int r, int tr, int ph, int x) {
+  while (tr <= ph) {
+    if (l == r) {
+      if (node[id] <= x)
+        return r;
+      else
+        return 0;
+    }
+    int mid = (l + r) / 2;
+    if (node[id * 2 + 1] <= x) {
+      l = mid + 1;
+      id = id * 2 + 1;
+    } else {
+      r = mid;
+      id = id * 2;
+    }
+  }
+  return 0;
+}
+```
+
+4. Optimize the computation of `l` and `r` arrays by eliminating unnecessary recursive calls and redundant computations. The modified code will look like this:
+
+```cpp
+id = find(1, 1, n, 1, i - 1, a[i]);
+update(1, 1, n, i, a[i]);
+l[i] = l[id] + a[i] * (i - id);
+```
+
+Replace these lines with:
+
+```cpp
+int j = i - 1;
+while (j > 0 && a[j] > a[i]) {
+  j--;
+}
+l[i] = l[j] + a[i] * (i - j);
+update(1, 1, n, i, a[i]);
+```
+
+Similarly, modify the computation of `r` array as follows:
+
+```cpp
+id = find(1, 1, n, 1, i - 1, a[i]);
+update(1, 1, n, i, a[i]);
+r[i] = r[id] + a[i] * (i - id);
+```
+
+Replace these lines with:
+
+```cpp
+int j = i - 1;
+while (j > 0 && a[j] > a[i]) {
+  j--;
+}
+r[i] = r[j] + a[i] * (i - j);
+update(1, 1, n, i, a[i]);
+```
+
+5. Optimize the computation of `res` array by eliminating redundant comparisons and assignments. The modified code will look like this:
+
+```cpp
+int sum = l[1] + r[n] - a[1];
+int pos = 1;
+for (int i = 2; i <= n; i++) {
+  int curr_sum = l[i] + r[n - i + 1] - a[i];
+  if (curr_sum > sum) {
+    sum = curr_sum;
+    pos = i;
+  }
+}
+int minn = a[pos];
+res[pos] = minn;
+for (int i = pos - 1; i >= 1; i--) {
+  minn = min(minn, a[i]);
+  res[i] = minn;
+}
+minn = a[pos];
+for (int i = pos + 1; i <= n; i++) {
+  minn = min(minn, a[i]);
+  res[i] = minn;
+}
+```
+
+Replace these lines with:
+
+```cpp
+int sum = l[1] + r[n] - a[1];
+int pos = 1;
+int minn = a[pos];
+res[pos] = minn;
+for (int i = 2; i <= n; i++) {
+  int curr_sum = l[i] + r[n - i + 1] - a[i];
+  if (curr_sum > sum) {
+    sum = curr_sum;
+    pos = i;
+    minn = a[pos];
+    res[pos] = minn;
+  } else {
+    minn = min(minn, a[i]);
+    res[i] = minn;
+  }
+}
+```
+
+Optimized Code Block:
+```cpp
+#include <algorithm>
+#include <cstring>
+#include <iostream>
+#include <stdio.h>
+using namespace std;
+#define int long long
+const int N = 5e5 + 9;
+int a[N], *node, l[N], r[N], res[N];
+void update(int id, int l, int r, int pos, int x) {
+  while (l != r) {
+    int mid = (l + r) / 2;
+    if (pos <= mid) {
+      r = mid;
+      id = 2 * id;
+    } else {
+      l = mid + 1;
+      id = 2 * id + 1;
+    }
+  }
+  node[id] = x;
+}
+int find(int id, int l, int r, int tr, int ph, int x) {
+  while (tr <= ph) {
+    if (l == r) {
+      if (node[id] <= x)
+        return r;
+      else
+        return 0;
+    }
+    int mid = (l + r) / 2;
+    if (node[id * 2 + 1] <= x) {
+      l = mid + 1;
+      id = id * 2 + 1;
+    } else {
+      r = mid;
+      id = id * 2;
+    }
+  }
+  return 0;
+}
+signed main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+  int n;
+  cin >> n;
+  for (int i = 1; i <= n; i++)
+    cin >> a[i];
+  node = new int[4 * n];
+  int id;
+  id = 0;
+  for (int i = 1; i <= n; i++) {
+    int j = i - 1;
+    while (j > 0 && a[j] > a[i]) {
+      j--;
+    }
+    l[i] = l[j] + a[i] * (i - j);
+    update(1, 1, n, i, a[i]);
+  }
+  memset(node, 0, sizeof(node));
+  id = 0;
+  for (int i = 1; i <= n; i++) {
+    int j = i - 1;
+    while (j > 0 && a[j] > a[i]) {
+      j--;
+    }
+    r[i] = r[j] + a[i] * (i - j);
+    update(1, 1, n, i, a[i]);
+  }
+  int sum = l[1] + r[n] - a[1];
+  int pos = 1;
+  int minn = a[pos];
+  res[pos] = minn;
+  for (int i = 2; i <= n; i++) {
+    int curr_sum = l[i] + r[n - i + 1] - a[i];
+    if (curr_sum > sum) {
+      sum = curr_sum;
+      pos = i;
+      minn = a[pos];
+      res[pos] = minn;
+    } else {
+      minn = min(minn, a[i]);
+      res[i] = minn;
+    }
+  }
+  minn = a[pos];
+  for (int i = pos - 1; i >= 1; i--) {
+    minn = min(minn, a[i]);
+    res[i] = minn;
+  }
+  minn = a[pos];
+  for (int i = pos + 1; i <= n; i++) {
+    minn = min(minn, a[i]);
+    res[i] = minn;
+  }
+  for (int i = 1; i <= n; i++)
+    cout << res[i] << " ";
+  delete[] node;
+  return 0;
+}
+```

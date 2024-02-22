@@ -1,0 +1,103 @@
+The given C/C++ program is already quite optimized, but there are a few areas that can be slightly improved, as described below:
+
+1. Remove Unused Includes: The program includes `<cstring>` and `<stdio.h>`, but there are no uses of functions or constructs from these headers in the code. Removing them will save a little bit of compile-time.
+
+2. Avoid Using Namespace Std: It's generally a bad practice to use the entire `std` namespace in C++. Instead, you can just use specific functions or constructs that you need.
+
+3. Use `constexpr`: Instead of `#define`, use `constexpr` for integer constants. `constexpr` is type-safe and should be preferred in modern C++.
+
+4. Use `std::ios_base::sync_with_stdio(false)`: This can speed up I/O operations, but it only needs to be called once, preferably at the start of the program. 
+
+5. Use `'\n'` instead of `" "`: Using `'\n'` is usually faster and more efficient than `" "` for outputting a newline to the console.
+
+Below is the optimized version of the program:
+
+```cpp
+#include <algorithm>
+#include <iostream>
+using std::cin;
+using std::cout;
+using std::ios_base;
+using std::max;
+using std::min;
+using std::reverse;
+
+constexpr long long N = 5e5 + 9;
+long long a[N], node[4 * N], l[N], r[N], res[N];
+
+void update(int id, int l, int r, int pos, int x) {
+  if (l > pos || r < pos)
+    return;
+  if (l == r) {
+    node[id] = x;
+    return;
+  }
+  int mid = (l + r) / 2;
+  update(id * 2, l, mid, pos, x);
+  update(id * 2 + 1, mid + 1, r, pos, x);
+  node[id] = min(node[id * 2], node[id * 2 + 1]);
+}
+
+int find(int id, int l, int r, int tr, int ph, int x) {
+  if (tr > ph || l > ph || r < tr || node[id] > x)
+    return 0;
+  if (l == r)
+    return r;
+  int mid = (l + r) / 2;
+  if (l >= tr && r <= ph) {
+    if (node[id] > x)
+      return 0;
+    if (node[id * 2 + 1] <= x)
+      return find(id * 2 + 1, mid + 1, r, tr, ph, x);
+    else
+      return find(id * 2, l, mid, tr, ph, x);
+  }
+  return max(find(id * 2, l, mid, tr, ph, x),
+             find(id * 2 + 1, mid + 1, r, tr, ph, x));
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(0);
+  int n;
+  cin >> n;
+  for (int i = 1; i <= n; i++)
+    cin >> a[i];
+  int id;
+  id = 0;
+  for (int i = 1; i <= n; i++) {
+    id = find(1, 1, n, 1, i - 1, a[i]);
+    update(1, 1, n, i, a[i]);
+    l[i] = l[id] + a[i] * (i - id);
+  }
+  for (int i = 0; i < 4 * N; i++)
+    node[i] = 0;
+  reverse(a + 1, a + 1 + n);
+  for (int i = 1; i <= n; i++) {
+    id = find(1, 1, n, 1, i - 1, a[i]);
+    update(1, 1, n, i, a[i]);
+    r[i] = r[id] + a[i] * (i - id);
+  }
+  reverse(a + 1, a + 1 + n);
+  long long sum = 0, pos;
+  for (int i = 1; i <= n; i++)
+    if (sum < l[i] + r[n - i + 1] - a[i]) {
+      sum = l[i] + r[n - i + 1] - a[i];
+      pos = i;
+    }
+  long long minn = a[pos];
+  res[pos] = a[pos];
+  for (int i = pos - 1; i >= 1; i--) {
+    minn = min(minn, a[i]);
+    res[i] = minn;
+  }
+  minn = a[pos];
+  for (int i = pos + 1; i <= n; i++) {
+    minn = min(minn, a[i]);
+    res[i] = minn;
+  }
+  for (int i = 1; i <= n; i++)
+    cout << res[i] << '\n';
+  return 0;
+}
+```

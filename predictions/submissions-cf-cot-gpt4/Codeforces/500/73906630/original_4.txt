@@ -1,0 +1,84 @@
+The given program consists of a union-find algorithm. It seems to be reading an adjacency matrix and grouping nodes that are connected. Then it sorts the values associated with each group and prints them out.
+
+Optimization steps:
+
+1. The `root` method is using path compression for the union-find data structure. However, it's not performing the path compression in the most optimal way. The standard way is to set `a[i] = root(a[i])` instead of `a[i] = a[a[i]]`. This compresses the path more efficiently by directly linking each node in the path to the root.
+
+2. In the `merge` method, `a[v] = a[u]` should be `a[v] = u`. This is because `u` is the root of `x`, there is no need to access `a[u]`.
+
+3. The `v_e` vector is being resized every time an element is added, which is inefficient. Instead, call `v_e[i].reserve(sz[i])` after the merges. This will preallocate memory for the vector, reducing the number of allocations.
+
+4. `v_e` vector is sorted for each `i`, but it's more efficient to sort it after all elements have been added. This way, the sort operation is done only once per vector instead of `n` times.
+
+Optimized code:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+#define int long long
+#define IOS ios::sync_with_stdio(0); cin.tie(0); cout.tie(0);
+const int MOD = 1e9 + 7;
+#define pb push_back
+const int N = 400;
+int sz[N];
+int a[N], ans[N];
+vector<int> v_i[N], v_e[N];
+void initialize() {
+  for (int i = 1; i <= N - 1; i++) {
+    a[i] = i;
+    sz[i] = 1;
+  }
+}
+int root(int i) {
+  while (a[i] != i) {
+    a[i] = root(a[i]);
+    i = a[i];
+  }
+  return i;
+}
+void merge(int x, int y) {
+  int u = root(x);
+  int v = root(y);
+  if (sz[u] < sz[v]) {
+    swap(u, v);
+  }
+  a[v] = u;
+  sz[u] += sz[v];
+}
+int cnt[N];
+int32_t main() {
+  IOS;
+  int n;
+  cin >> n;
+  initialize();
+  int v[n + 1];
+  for (int i = 1; i <= n; i++) {
+    cin >> v[i];
+  }
+  string s[n + 1];
+  for (int i = 0; i < n; i++) {
+    cin >> s[i];
+    for (int j = 0; j < n; j++) {
+      if (s[i][j] == '1') {
+        if (root(i + 1) != root(j + 1)) {
+          merge(i + 1, j + 1);
+        }
+      }
+    }
+  }
+  for (int i = 1; i <= n; i++) {
+    v_e[root(i)].pb(v[i]);
+  }
+  for (int i = 1; i <= n; i++) {
+    v_e[i].reserve(sz[i]);
+  }
+  for (int i = 1; i <= n; i++) {
+    sort(v_e[i].begin(), v_e[i].end());
+  }
+  for (int i = 1; i <= n; i++) {
+    int x = root(i);
+    cout << v_e[x][cnt[x]++] << " ";
+  }
+  cout << endl;
+}
+```

@@ -1,0 +1,56 @@
+#include <bits/stdc++.h>
+using namespace std;
+typedef vector<int> vi;
+typedef pair<int, int> pii;
+typedef long long ll;
+#define all(a) (a).begin(), (a).end()
+#define pb push_back
+#define INF 999999999
+vector<int> pass[6000];
+int n, k;
+int c[6000];
+int r[6000];
+int d[6000];
+vector<bool> used(6000);
+void dfs(int v, int u, int f, int end, vector<bool> &visited) {
+  if (visited[u])
+    return;
+  visited[u] = true;
+  d[u] = min(d[u], d[v] + c[v]);
+  if (f >= end)
+    return;
+  for(int i = 0; i < pass[u].size(); ++i) { dfs(v, pass[u][i], f + 1, end, visited); }
+}
+int dijk(int s, int g) {
+  for(int i=0; i<6000; ++i) d[i] = INF;
+  fill(all(used), false);
+  d[s] = 0;
+  priority_queue<pii, vector<pii>, greater<pii>> pq;
+  pq.push({0, s});
+  while (!pq.empty()) {
+    int v = pq.top().second;
+    pq.pop();
+    if (used[v])
+      continue;
+    used[v] = true;
+    vector<bool> visited(6000, false);
+    for(int i = 0; i < pass[v].size(); ++i) {
+      dfs(v, pass[v][i], 1, r[v], visited);
+    }
+  }
+  return d[g];
+}
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  cin >> n >> k;
+  for(int i=0; i<n; ++i) cin >> c[i] >> r[i];
+  for(int i=0; i<k; ++i) {
+    int a, b;
+    cin >> a >> b;
+    a--, b--;
+    pass[a].pb(b);
+    pass[b].pb(a);
+  }
+  cout << dijk(0, n - 1) << endl;
+}

@@ -1,0 +1,137 @@
+#include <algorithm>
+#include <iostream>
+#include <vector>
+#include <set>
+#include <cstring>
+
+using namespace std;
+
+const int MAXN = 2e5 + 100;
+
+int deg[MAXN];
+int chose[MAXN];
+int par[MAXN];
+vector<int> g[MAXN], g_MST[MAXN];
+vector<pair<int, int>> edge;
+set<pair<int, int>> MST;
+
+bool cmp(int u, int v) {
+  return (deg[u] < deg[v]) || (deg[u] == deg[v] && u < v);
+}
+
+void dfs(int u) {
+  for (auto v : g[u])
+    if (par[v] == -1) {
+      par[v] = u;
+      dfs(v);
+    }
+}
+
+void build_tree(int u) {
+  for (auto v : g_MST[u])
+    if (par[v] == -1) {
+      par[v] = u;
+      build_tree(v);
+    }
+}
+
+void solve() {
+  int n, m, k;
+  cin >> n >> m >> k;
+  
+  while (m--) {
+    int u, v;
+    cin >> u >> v;
+    g[u].push_back(v);
+    g[v].push_back(u);
+    ++deg[u];
+    ++deg[v];
+    edge.emplace_back(u, v);
+  }
+  
+  if (deg[1] < k) {
+    cout << "NO";
+    return;
+  }
+  
+  sort(g[1].begin(), g[1].end(), cmp);
+  
+  int cnt = 0;
+  for (auto v : g[1])
+    if (deg[v] == 1)
+      ++cnt;
+  
+  if (cnt > k) {
+    cout << "NO";
+    return;
+  }
+  
+  for (auto v : g[1])
+    if (deg[v] == 1) {
+      par[v] = 1;
+      g_MST[1].push_back(v);
+      g_MST[v].push_back(1);
+      MST.insert({1, v});
+    } else if (cnt < k) {
+      par[v] = 1;
+      chose[v] = true;
+      dfs(v);
+      ++cnt;
+    }
+  
+  for (auto E : edge) {
+    int u = E.first, v = E.second;
+    if (u == 1 || v == 1)
+      continue;
+    if (par[u] == -1 || par[v] == -1)
+      continue;
+    if (par[u] == par[v])
+      continue;
+    g_MST[u].push_back(v);
+    g_MST[v].push_back(u);
+    MST.insert({u, v});
+  }
+  
+  if (cnt > k || MST.size() < n - 1) {
+    cout << "NO";
+    return;
+  }
+  
+  if (cnt == k) {
+    cout << "YES" << endl;
+    for (auto x : MST)
+      cout << x.first << " " << x.second << endl;
+    return;
+  }
+  
+  int root = 1;
+  memset(par, -1, sizeof(par));
+  par[1] = 1;
+  build_tree(root);
+  
+  for (auto v : g[1])
+    if (!chose[v]) {
+      int p = par[v];
+      if (p == 1)
+        continue;
+      MST.erase({p, v});
+      MST.insert({1, v});
+      par[v] = 1;
+      ++cnt;
+      if (cnt == k)
+        break;
+    }
+  
+  cout << "YES" << endl;
+  for (auto x : MST)
+    cout << x.first << " " << x.second << endl;
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+
+  solve();
+
+  return 0;
+}

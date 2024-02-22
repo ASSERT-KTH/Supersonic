@@ -1,0 +1,90 @@
+This code can be optimized in various ways:
+
+1. Avoid using `using namespace std;` globally, it can lead to conflicts with other libraries and it's generally not a good practice.
+
+2. Avoid using macros for short expressions like `#define int long long`. It reduces the readability of the code.
+
+3. The code includes `<bits/stdc++.h>`, which is a GCC extension that includes all standard library headers at once. This is generally considered bad practice because it increases compilation time and can lead to portability issues. It's better to include only the headers that are actually used in the code.
+
+4. The `std::vector::push_back` function is used frequently, which can be inefficient because it may involve multiple reallocations and copies. Instead of using `push_back`, it's better to initialize the vector with the required size and then just set the elements directly.
+
+5. The function `main` is missing the return type `int`, which is required in C++.
+
+6. If the variable `tc` is always 1 and then decremented until it reaches 0, there is no need for the while loop.
+
+Here is the optimized version of the given code:
+
+```cpp
+#include <vector>
+#include <algorithm>
+#include <iostream>
+#include <climits>
+#include <numeric>
+
+int main() {
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(NULL);
+    std::cout.tie(NULL);
+
+    int a, b;
+    std::cin >> a >> b;
+    std::vector<std::pair<int, int>> dif(a);
+    std::vector<int> pre(a), suf(a);
+    std::vector<std::pair<int, int>> v(a);
+    std::vector<std::vector<int>> del(a + 1);
+
+    for (int i = 0; i < a; i++) {
+        std::cin >> v[i].first >> v[i].second;
+        dif[i] = {v[i].second - v[i].first, i};
+    }
+
+    std::sort(dif.begin(), dif.end());
+
+    for (int i = 0; i < a; i++) {
+        int k = dif[i].second;
+        suf[i] = v[k].second;
+        if (i)
+            suf[i] += suf[i - 1];
+    }
+
+    for (int i = a - 1, k; i >= 0; i--) {
+        k = dif[i].second;
+        pre[i] = v[k].first;
+        if (i != a - 1)
+            pre[i] += pre[i + 1];
+    }
+
+    for (int i = 0, x, y, k, m; i < b; i++) {
+        std::cin >> x >> y;
+        k = v[x - 1].second - v[x - 1].first;
+        m = v[y - 1].second - v[y - 1].first;
+        if (m <= k) {
+            del[x].push_back(v[x - 1].first + v[y - 1].second);
+            del[y].push_back(v[x - 1].first + v[y - 1].second);
+        } else {
+            del[x].push_back(v[x - 1].second + v[y - 1].first);
+            del[y].push_back(v[x - 1].second + v[y - 1].first);
+        }
+        if (del[x].size() > 1)
+            del[x].back() += del[x][del[x].size() - 2];
+        if (del[y].size() > 1)
+            del[y].back() += del[y][del[y].size() - 2];
+    }
+
+    for (int i = 0, k; i < a; i++) {
+        int ans = 0;
+        k = v[i].second - v[i].first;
+        auto it = std::upper_bound(dif.begin(), dif.end(), std::make_pair(k, LLONG_MAX));
+        int idx = std::distance(dif.begin(), it);
+        if (idx > 0)
+            ans = suf[idx - 1] + ((idx - 1) * v[i].first) - v[i].second;
+        if (idx < a)
+            ans += pre[idx] + ((a - idx) * v[i].second);
+        if (!del[i + 1].empty())
+            ans -= del[i + 1].back();
+        std::cout << ans << std::endl;
+    }
+
+    return 0;
+}
+```

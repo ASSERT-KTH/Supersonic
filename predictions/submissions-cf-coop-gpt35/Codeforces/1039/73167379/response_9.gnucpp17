@@ -1,0 +1,105 @@
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <cassert>
+
+using namespace std;
+
+const int MAX_N = 400002;
+
+int a;
+vector<int> l[MAX_N];
+int skok[MAX_N], o[MAX_N], zam[MAX_N], GR[MAX_N][2], mxd[MAX_N], mxp[MAX_N], dp[MAX_N][2], sz[MAX_N], good[MAX_N];
+
+void CALC(int v, int p, int D) {
+    mxd[v] = 1;
+    sz[v] = 1;
+    int c1 = 0, c2 = 0;
+    for (int h : l[v]) {
+        if (h == p)
+            continue;
+        CALC(h, v, D + 1);
+        mxd[v] = max(mxd[v], mxd[h] + 1);
+        sz[v] += sz[h];
+        if (mxd[h] >= c1)
+            c2 = c1, c1 = mxd[h];
+        else if (mxd[h] > c2)
+            c2 = mxd[h];
+    }
+    mxp[v] = c1 + c2 + 1;
+}
+
+int find_centroid(int v, int p, int a) {
+    int MX = 0, num = -1;
+    for (int h : l[v]) {
+        if (h != p && sz[h] > MX)
+            MX = sz[h], num = h;
+    }
+    return MX > a / 2 ? find_centroid(num, v, a) : v;
+}
+
+void KROLIK(int v, vector<int>& gd, vector<int>& bd) {
+    if (good[v])
+        gd.push_back(v);
+    else
+        bd.push_back(v);
+    for (int h : l[v]) {
+        if (!good[h])
+            KROLIK(h, gd, bd);
+    }
+}
+
+void RIP_PAPA(int v, int p) {
+    for (int q = 0; q < l[v].size(); q++) {
+        if (l[v][q] == p) {
+            l[v].erase(l[v].begin() + q);
+            break;
+        }
+    }
+    for (int h : l[v])
+        RIP_PAPA(h, v);
+}
+
+int eba = 0;
+void rnm(int v) {
+    zam[v] = eba++;
+    deque<int> dq = {v};
+    for (; dq.size();) {
+        int x = dq[0];
+        dq.pop_front();
+        for (int h : l[x]) {
+            if (zam[h] != -1)
+                continue;
+            dq.push_back(h);
+            zam[h] = eba++;
+        }
+    }
+}
+
+int iba = 0;
+void rnm2(int v) {
+    zam[v] = iba++;
+    deque<int> dq = {v};
+    for (; dq.size();) {
+        int x = dq[0];
+        dq.pop_front();
+        for (int h : l[x]) {
+            zam[h] = iba++;
+            if (good[h])
+                continue;
+            dq.push_back(h);
+        }
+    }
+}
+
+int GA(int LEN) {
+    if (o[LEN] != -1)
+        return o[LEN];
+    int d1, d2, w, rg;
+    for (int q = a - 1; q >= 0; q--) {
+        if (good[q]) {
+            dp[q][0] = sz[q] / LEN;
+            dp[q][1] = sz[q] % LEN;
+            continue;
+        }
+        dp[q][0] = 0;

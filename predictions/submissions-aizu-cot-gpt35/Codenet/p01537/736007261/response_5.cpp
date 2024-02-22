@@ -1,0 +1,11 @@
+Explanation of the optimization steps:
+
+1. Remove unnecessary header files: The program includes several header files that are not used in the code. Removing these unnecessary header files will improve the compilation time and reduce the memory usage.
+
+2. Remove unnecessary typedefs: The program uses typedefs for long long and vector<int> types, but these typedefs are not used in the code. Removing these unnecessary typedefs will improve the readability of the code.
+
+3. Remove unnecessary macros: The program defines several macros that are not used in the code. Removing these unnecessary macros will improve the clarity of the code.
+
+4. Remove unnecessary using namespace statement: The program uses the "using namespace std;" statement, which is generally considered bad practice. Instead, we can use the std:: prefix to specify the namespace for the standard library functions and types.
+
+5. Remove duplicate header files: The program includes the same header files multiple times. Removing the duplicate includes will improve the compilation time and reduce the memory usage.

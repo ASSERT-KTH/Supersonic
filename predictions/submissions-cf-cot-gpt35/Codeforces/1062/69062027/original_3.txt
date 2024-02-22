@@ -1,0 +1,187 @@
+Step 1: Remove unnecessary includes
+
+The program includes `<bits/stdc++.h>` and `<ext/pb_ds/assoc_container.hpp>` which are not necessary for this program. We can remove these includes to optimize the program.
+
+Step 2: Remove unnecessary typedefs
+
+The program includes typedefs for `ll`, `ld`, `vi`, `pi`, and `vpi` but these types are not used in the program. We can remove these typedefs to optimize the program.
+
+Step 3: Remove unnecessary macros
+
+The program includes macros for `mod`, `dmp`, `fs`, `sc`, `pb`, `all`, and `mt` but these macros are not used in the program. We can remove these macros to optimize the program.
+
+Step 4: Simplify `combine` function
+
+The `combine` function can be simplified by using the ternary operator instead of multiple if-else statements. This will make the code more concise and potentially improve performance.
+
+Step 5: Remove unused variables
+
+The program declares a variable `dat zero` but it is never used. We can remove this variable to optimize the program.
+
+Step 6: Optimize input/output operations
+
+The program uses `cin` and `cout` for input/output operations which can be slower compared to other methods such as `scanf` and `printf` in C++. We can optimize the program by replacing `cin` and `cout` with `scanf` and `printf` respectively.
+
+Step 7: Optimize vector initialization
+
+The program initializes the `adj` vector with `n + 1` elements and then resizes it to `n + 1`. We can optimize this by directly initializing the `adj` vector with `n + 1` elements.
+
+Step 8: Optimize loop variables
+
+The program uses a loop variable `i` for iterating from 1 to `n - 1` and accessing `adj[x - 1]`. We can optimize this by changing the loop variable to start from 0 and accessing `adj[x]`. This will eliminate the need for subtracting 1 from `x` and potentially improve performance.
+
+Step 9: Optimize array initialization
+
+The program initializes `a[n + 1]` and `a[n + 2]` with specific values. We can optimize this by directly assigning the values to `a[n + 1]` and `a[n + 2]` without initializing the entire array.
+
+Step 10: Optimize loop conditions
+
+The program has a loop condition `r - l < 2` which can be simplified to `r - l == 1`. This will eliminate the need for the extra comparison and potentially improve performance.
+
+Step 11: Optimize loop variables
+
+The program uses loop variables `l` and `r` for iterating over the queries. We can optimize this by changing the loop variables to start from 0 and `q - 1` respectively. This will eliminate the need for subtracting 1 from `l` and `r` and potentially improve performance.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+struct HLD {
+  std::vector<std::vector<int>> adj;
+  int n, root, cnt;
+  std::vector<int> sub, tin, tout, par, head, dep;
+  int dfs1(int s, int p, int d) {
+    par[s] = p;
+    dep[s] = d;
+    adj[s].erase(std::remove(adj[s].begin(), adj[s].end(), p), adj[s].end());
+    for (auto &t : adj[s]) {
+      sub[s] += dfs1(t, s, d + 1);
+      if (sub[adj[s][0]] < sub[t])
+        std::swap(t, adj[s][0]);
+    }
+    return sub[s];
+  }
+  void dfs2(int s, int h) {
+    head[s] = h;
+    tin[s] = cnt++;
+    for (auto t : adj[s]) {
+      dfs2(t, t == adj[s][0] ? h : t);
+    }
+    tout[s] = cnt;
+  }
+  HLD(std::vector<std::vector<int>> &g, int rt)
+      : adj(g), n(adj.size()), root(rt), cnt(0), sub(n, 1), tin(n), tout(n),
+        par(n, -1), head(n), dep(n) {
+    dfs1(root, -1, 0);
+    dfs2(root, root);
+  }
+  int lca(int a, int b) {
+    while (head[a] != head[b]) {
+      if (dep[head[a]] > dep[head[b]])
+        std::swap(a, b);
+      b = par[head[b]];
+    }
+    if (dep[a] > dep[b])
+      std::swap(a, b);
+    return a;
+  }
+};
+
+const int MAXN = 100100;
+std::vector<std::vector<int>> adj;
+int n, a[MAXN], q;
+
+struct dat {
+  std::pair<int, int> mx;
+  std::pair<int, int> mn;
+};
+
+dat combine(dat x, dat y) {
+  dat res;
+  res.mx.fs = (a[x.mx.fs] > a[y.mx.fs]) ? x.mx.fs : y.mx.fs;
+  res.mx.sc = (a[x.mx.sc] > a[y.mx.fs]) ? x.mx.sc : y.mx.fs;
+  res.mn.fs = (a[x.mn.fs] < a[y.mn.fs]) ? x.mn.fs : y.mn.fs;
+  res.mn.sc = (a[x.mn.sc] < a[y.mn.fs]) ? x.mn.sc : y.mn.fs;
+  return res;
+}
+
+void build(int v, int tl, int tr, dat* t, int* a, int n) {
+  if (tl == tr) {
+    t[v].mn = {tl, n + 1};
+    t[v].mx = {tl, n + 2};
+  } else {
+    int tm = (tl + tr) / 2;
+    build(2 * v, tl, tm, t, a, n);
+    build(2 * v + 1, tm + 1, tr, t, a, n);
+    t[v] = combine(t[2 * v], t[2 * v + 1]);
+  }
+}
+
+dat get(int v, int tl, int tr, int l, int r, dat* t, int* a) {
+  if (l > r)
+    return {};
+  if (l == tl && r == tr)
+    return t[v];
+  int tm = (tl + tr) / 2;
+  return combine(get(v * 2, tl, tm, l, std::min(r, tm), t, a),
+                 get(v * 2 + 1, tm + 1, tr, std::max(l, tm + 1), r, t, a));
+}
+
+int main() {
+  std::ios::sync_with_stdio(false);
+  std::cin.tie(nullptr);
+  std::cout.tie(nullptr);
+
+  std::scanf("%d%d", &n, &q);
+
+  adj.resize(n + 1);
+  for (int i = 0; i < n - 1; i++) {
+    int x;
+    std::scanf("%d", &x);
+    adj[x].push_back(i + 1);
+  }
+
+  a[n + 1] = mod;
+  a[n + 2] = 0;
+  HLD hld(adj, 0);
+  for (int i = 0; i < n; i++) {
+    a[i] = hld.tin[i];
+  }
+
+  dat* t = new dat[4 * n];
+  int* a = new int[n];
+  build(1, 0, n - 1, t, a, n);
+
+  while (q--) {
+    int l, r;
+    std::scanf("%d%d", &l, &r);
+    l--;
+    r--;
+    if (r - l == 1) {
+      int ans = r, d = hld.dep[l];
+      if (d < hld.dep[r]) {
+        ans = l;
+        d = hld.dep[r];
+      }
+      std::printf("%d %d\n", ans + 1, d);
+      continue;
+    }
+    dat cur = get(1, 0, n - 1, l, r, t, a);
+    int lc1 = hld.lca(cur.mx.fs, cur.mn.sc);
+    int lc2 = hld.lca(cur.mx.sc, cur.mn.fs);
+    if (hld.dep[lc1] > hld.dep[lc2]) {
+      std::printf("%d %d\n", cur.mn.fs + 1, hld.dep[lc1]);
+    } else {
+      std::printf("%d %d\n", cur.mx.fs + 1, hld.dep[lc2]);
+    }
+  }
+
+  delete[] t;
+  delete[] a;
+
+  return 0;
+}
+```

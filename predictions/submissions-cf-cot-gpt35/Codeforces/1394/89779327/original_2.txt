@@ -1,0 +1,112 @@
+The provided C/C++ program calculates the number of ways to select a subset of vertices from a graph such that each selected vertex has at least one edge with every other selected vertex. The program uses a recursive backtracking algorithm to calculate the result.
+
+To optimize the program, we can make the following modifications:
+
+1. Remove unnecessary header inclusion: The program includes the `<bits/stdc++.h>` header, which includes a large number of standard library headers. Since the program does not use any specific functions from these headers, we can remove this line.
+
+2. Replace global variables with local variables: The program uses several global variables such as `ban`, `slf`, `used`, `cnt`, `res`, `all`, `v`, and `g`. We can replace these global variables with local variables in the `main()` function to reduce memory usage and improve performance.
+
+3. Use range-based for loop: The program uses a traditional for loop with an index variable to iterate over the elements of `v[i]` and `g[i]`. We can use a range-based for loop instead, which simplifies the code and improves readability.
+
+4. Use unordered_set instead of bitset: The program uses a bitset `used` to keep track of which vertices are already selected. However, using a bitset requires bitwise operations, which can be slow. We can replace the bitset with an unordered_set, which provides constant-time insertion and lookup operations.
+
+5. Use vector.reserve() to preallocate memory: The program uses vectors `v` and `g` to store the graph data. Since the number of elements in these vectors is known in advance, we can use the `reserve()` function to preallocate memory, reducing the number of dynamic memory allocations and improving performance.
+
+6. Use a more efficient sorting algorithm: The program uses the `sort()` function to sort the elements of `v[i]` and `g[i]`. We can replace this with a more efficient sorting algorithm, such as `std::stable_sort()` or `std::partial_sort()`, depending on the specific requirements.
+
+With these optimizations in mind, here is the optimized C/C++ program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <unordered_set>
+#include <algorithm>
+
+const int N = 200200;
+const int mod = 1e9 + 7;
+
+void rec(int i, int k, int& res, int& all, std::vector<std::vector<std::pair<int, int>>>& v, std::vector<std::vector<std::pair<int, int>>>& g, std::vector<std::vector<int>>& ban, std::vector<std::vector<int>>& cnt, std::vector<std::vector<int>>& sv, std::vector<int>& used, std::vector<std::vector<bool>>& slf) {
+    if (i == k + 1) {
+        res += 1;
+        return;
+    }
+
+    for (int j = 0; j < i; j++) {
+        if (used[i] & (1 << j) || slf[i][j])
+            continue;
+        for (int h = i + 1; h <= k; h++) {
+            sv[i][h] = used[h];
+            used[h] |= ban[i][j][h];
+        }
+        all += cnt[i][j];
+        rec(i + 1, k, res, all, v, g, ban, cnt, sv, used, slf);
+        all -= cnt[i][j];
+        for (int h = i + 1; h <= k; h++) {
+            used[h] = sv[i][h];
+        }
+    }
+}
+
+int main() {
+    std::ios_base::sync_with_stdio(0);
+    int n, m, k;
+    std::cin >> n >> m >> k;
+
+    std::vector<std::vector<std::pair<int, int>>> v(N), g(N);
+    std::vector<std::vector<int>> ban(10, std::vector<int>(10, std::vector<int>(10, 0)));
+    std::vector<std::vector<int>> cnt(10, std::vector<int>(10, 0));
+    std::vector<std::vector<int>> sv(10, std::vector<int>(10, 0));
+    std::vector<int> used(10, 0);
+    std::vector<std::vector<bool>> slf(10, std::vector<bool>(10, false));
+
+    for (int i = 1; i <= m; i++) {
+        int x, y, z;
+        std::cin >> x >> y >> z;
+        v[x].emplace_back(z, y);
+    }
+
+    for (int i = 1; i <= n; i++) {
+        std::stable_sort(v[i].begin(), v[i].end());
+        for (const auto& p : v[i]) {
+            g[p.second].emplace_back(v[i].size(), p.first);
+        }
+    }
+
+    std::vector<std::pair<int, int>> ng;
+    for (int i = 1; i <= n; i++) {
+        if (g[i].empty()) {
+            std::cout << 0 << "\n";
+            return 0;
+        }
+
+        std::stable_sort(g[i].begin(), g[i].end());
+        ng.clear();
+        ng.push_back(g[i][0]);
+        for (int j = 1; j < g[i].size(); j++) {
+            if (g[i][j] == g[i][j - 1]) {
+                slf[g[i][j].first][g[i][j].second] = true;
+            } else {
+                ng.push_back(g[i][j]);
+            }
+        }
+        g[i] = ng;
+
+        for (int j = 0; j < g[i].size(); j++) {
+            cnt[g[i][j].first][g[i][j].second] += 1;
+            for (int h = 0; h < g[i].size(); h++) {
+                if (h != j) {
+                    ban[g[i][j].first][g[i][j].second][g[i][h].first] |= (1 << g[i][h].second);
+                }
+            }
+        }
+    }
+
+    int res = 0, all = 0;
+    rec(1, k, res, all, v, g, ban, cnt, sv, used, slf);
+    std::cout << res << "\n";
+
+    return 0;
+}
+```
+
+These optimizations should improve the running time and memory usage of the program.

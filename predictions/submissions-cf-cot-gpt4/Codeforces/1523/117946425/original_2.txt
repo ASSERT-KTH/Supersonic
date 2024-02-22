@@ -1,0 +1,85 @@
+The optimizations can be done on the following parts:
+
+1. Remove unnecessary `#include <bits/stdc++.h>`. This header file includes almost all standard library headers which is not good for compile time. We will include only the necessary header files.
+2. Remove the unnecessary debug function and its associated `#ifdef WA_DEBUG` and `#define dbg(...)`. These don't seem to contribute to the main program logic and just increase the complexity of the program.
+3. Avoid using `using namespace std;`. It's generally a bad practice because it can lead to name clashes.
+4. Avoid using `#define` for simple loops and use the loop directly in the code. Macros can lead to hard-to-debug syntax errors or unexpected behavior because they are literally replaced by the preprocessor before the compilation.
+5. Use `std::ios_base::sync_with_stdio(false);` and `std::cin.tie(nullptr);` to speed up cin and cout.
+6. `std::vector<int> id(n + 1);` and `std::iota(id.begin(), id.end(), 0);` can be replaced by a simple for loop.
+7. Avoid using `std::vector<int> one;` in a loop, instead declare it before the loop and use `one.clear();` in the loop to clear its elements.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <random>
+#include <chrono>
+#include <algorithm>
+
+int main() {
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+
+    int n, m, p;
+    std::cin >> n >> m >> p;
+    std::vector<long long> a(n + 1);
+    for (int i = 1; i <= n; i++) {
+        for (int j = 0; j < m; j++) {
+            char c;
+            std::cin >> c;
+            if (c == '1')
+                a[i] += (1ll << j);
+        }
+    }
+
+    std::mt19937 rng((unsigned int)std::chrono::steady_clock::now().time_since_epoch().count());
+    std::vector<int> id(n + 1);
+    for (int i = 0; i <= n; i++) {
+        id[i] = i;
+    }
+    std::shuffle(id.begin() + 1, id.end(), rng);
+
+    long long ans = 0;
+    int num = 0;
+    std::vector<int> one;
+    for (int i = 1; i <= std::min(200, n); i++) {
+        one.clear();
+        for (int j = 0; j < m; j++) {
+            if ((a[id[i]] >> j) & 1)
+                one.push_back(j);
+        }
+        std::vector<int> dp(1 << one.size());
+        for (int j = 1; j <= n; j++) {
+            int tmp = 0;
+            for (int k = 0; k < one.size(); k++) {
+                if ((a[j] >> one[k]) & 1)
+                    tmp += (1 << k);
+            }
+            dp[tmp]++;
+        }
+        for (int j = 0; j < one.size(); j++) {
+            for (int k = 0; k < (1 << one.size()); k++) {
+                if (k & (1 << j))
+                    dp[k ^ (1 << j)] += dp[k];
+            }
+        }
+        for (int k = 0; k < (1 << one.size()); k++) {
+            if (dp[k] >= (n + 1) / 2 && __builtin_popcount(k) > num) {
+                num = __builtin_popcount(k);
+                ans = 0;
+                for (int j = 0; j < one.size(); j++) {
+                    if (k & (1 << j))
+                        ans += (1ll << one[j]);
+                }
+            }
+        }
+    }
+    for (int i = 0; i < m; i++) {
+        std::cout << ((ans >> i) & 1);
+    }
+    std::cout << '\n';
+
+    return 0;
+}
+```

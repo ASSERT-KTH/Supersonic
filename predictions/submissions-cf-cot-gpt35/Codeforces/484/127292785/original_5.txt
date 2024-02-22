@@ -1,0 +1,92 @@
+The given program calculates the maximum value `maxi` such that for every number `i` from 2 to R+1, it finds the maximum difference between any two numbers in the range [j, j+i-1], where j is also a number in the range [2, R+1] and j is divisible by i.
+
+To optimize the program, we can make the following modifications:
+
+1. Remove unnecessary includes: The program includes `<bits/stdc++.h>` which includes a lot of unnecessary headers. We can remove this line and include only the necessary headers.
+
+2. Remove unused code: There are some unused functions and macros in the program (`yes`, `no`, `mt`, `op2`, `parr`, `db`, `db2`, `ld`, `pll`, `vep`). We can remove these to reduce the code size.
+
+3. Remove unnecessary variables: The variable `n` is not used in the program. We can remove it.
+
+4. Remove unnecessary memory allocation: The vector `a` is allocated with size R+5, but only n elements are used. We can reduce the size of `a` to n+1.
+
+5. Optimize the SparseTable constructor: The constructor of `SparseTable` initializes the table and logtwo vectors. We can optimize this part by pre-calculating `logtwo` values using a loop instead of using recursion. We can also use `reserve` instead of initializing the table vector with zeros.
+
+6. Optimize the query function: The query function in the `SparseTable` struct can be optimized by using a bitwise AND instead of subtraction to calculate the power of 2.
+
+7. Modify the loop conditions: The loop conditions in the main function can be modified to reduce unnecessary iterations. We can change the outer loop condition from `for (lli i = 2; i < R + 1; i++)` to `for (lli i = 2; i <= R; i++)` and the inner loop condition from `for (lli j = i; j < R + 1; j += i)` to `for (lli j = i; j <= R; j += i)`.
+
+Here is the optimized program:
+
+```cpp
+#pragma GCC optimize("Ofast")
+#pragma GCC target("avx,avx2,fma")
+#pragma GCC target("sse,sse2,sse3,ssse3,sse4,popcnt,abm,mmx,avx,tune=native")
+#pragma comment(linker, "/stack:200000000")
+#include <iostream>
+#include <vector>
+#include <cmath>
+using namespace std;
+
+#define fast ios_base::sync_with_stdio(false); cin.tie(NULL);
+#define lli int
+
+struct SparseTable {
+  lli N, K;
+  vector<lli> table;
+  vector<lli> logtwo;
+  lli f(lli a, lli b) { return max(a, b); }
+  SparseTable(vector<lli>& a) {
+    N = a.size();
+    K = log2(N) + 2;
+    table.reserve(N * K);
+    logtwo.resize(N + 5);
+    logtwo[1] = 0;
+    for (lli i = 2; i <= N; i++) {
+      logtwo[i] = logtwo[i / 2] + 1;
+    }
+    for (lli i = N - 1; i >= 0; i--) {
+      table[i * K] = a[i];
+      for (lli j = 1; i + (1LL << j) - 1 < N; j++) {
+        table[i * K + j] = f(table[i * K + j - 1], table[(i + (1LL << (j - 1))) * K + j - 1]);
+      }
+    }
+  }
+  lli query(lli l, lli r) {
+    lli temp = logtwo[r - l + 1];
+    lli ans = f(table[l * K + temp], table[(r - (1LL << temp) + 1) * K + temp]);
+    return ans;
+  }
+};
+
+void solve() {
+  lli R = 1e6;
+  lli n;
+  cin >> n;
+  vector<lli> a(n + 1, 0);
+  for (lli i = 0; i < n; i++) {
+    lli x;
+    cin >> x;
+    a[x] = x;
+  }
+  SparseTable tab(a);
+  lli maxi = 0;
+  for (lli i = 2; i <= R; i++) {
+    if (!a[i])
+      continue;
+    for (lli j = i; j <= R; j += i) {
+      lli temp = tab.query(j, min(j + i - 1, R)) - j;
+      maxi = max(maxi, temp);
+    }
+  }
+  cout << maxi << endl;
+}
+
+int main() {
+  fast;
+  lli test = 1;
+  while (test--) {
+    solve();
+  }
+}
+```

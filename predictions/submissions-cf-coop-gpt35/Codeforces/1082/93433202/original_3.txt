@@ -1,0 +1,172 @@
+Code Analysis:
+- The code uses several preprocessor directives and macros, such as `#pragma GCC optimize("O2")` and `#define` statements. These directives and macros can potentially improve performance, but they can also make the code less readable and maintainable.
+- The code includes unnecessary headers, such as `<bits/stdc++.h>`, which includes all standard C++ headers. This can increase compilation time and memory usage.
+- The code uses a fixed-size array `int t[n]` to store the input values. This can be inefficient if the value of `n` is large, as it may result in stack overflow or excessive memory usage.
+- The code uses a vector `one` to store indices of elements with value 1, and a vector `two` to store indices of elements with value 2. These vectors are used to generate the output pairs. However, using these vectors requires additional memory and loop iterations.
+- The code uses a priority queue `q` to store the indices of elements with value 2. The priority queue is used to select the index with the highest count each time a pair needs to be generated. However, using a priority queue can introduce additional overhead and slow down the program.
+
+Optimization Strategy:
+1. Replace unnecessary headers: Remove the unnecessary `<bits/stdc++.h>` header and include only the necessary headers, such as `<iostream>`, `<vector>`, and `<queue>`.
+2. Avoid using macros: Replace the macros `S`, `F`, `PB`, `sz`, `all`, `L`, `R`, and `M` with their corresponding functions or expressions. This will improve code readability and maintainability.
+3. Use dynamic memory allocation: Instead of using a fixed-size array `int t[n]`, use dynamic memory allocation with the `new` keyword to allocate memory for the array. This will prevent stack overflow and excessive memory usage.
+4. Avoid using separate vectors for indices: Instead of using separate vectors `one` and `two` to store indices, use a single vector `indices` to store all indices. This will reduce memory usage and eliminate the need for separate loops to generate the output pairs.
+5. Use a deque instead of a priority queue: Replace the priority queue `q` with a deque to store the indices of elements with value 2. This will allow constant-time access to both ends of the deque, which is more efficient than using a priority queue.
+
+Step-by-Step Explanation:
+1. Replace unnecessary headers:
+```cpp
+#include <iostream>
+#include <vector>
+#include <queue>
+```
+This change removes the unnecessary `<bits/stdc++.h>` header and includes only the necessary headers.
+
+2. Avoid using macros:
+```cpp
+#define S second
+#define F first
+#define PB push_back
+#define sz(x) (int)x.size()
+#define all(x) x.begin(), x.end()
+#define L(x) 2 * x
+#define R(x) 2 * x + 1
+#define M(x, y) (x + y) / 2
+```
+Replace these macros with their corresponding functions or expressions. For example, replace `S` with `.second`, `F` with `.first`, `PB` with `.push_back()`, `sz(x)` with `x.size()`, `all(x)` with `x.begin(), x.end()`, `L(x)` with `2 * x`, `R(x)` with `2 * x + 1`, and `M(x, y)` with `(x + y) / 2`.
+
+3. Use dynamic memory allocation:
+```cpp
+int t[n];
+```
+Replace this line with:
+```cpp
+int* t = new int[n];
+```
+This change dynamically allocates memory for the array `t` using the `new` keyword. Don't forget to deallocate the memory using `delete[] t;` at the end of the program.
+
+4. Avoid using separate vectors for indices:
+```cpp
+vector<int> one, two;
+for (int i = 0; i < n; i++) {
+  if (t[i] == 1)
+    one.PB(i);
+  else
+    two.PB(i);
+}
+```
+Replace this code block with:
+```cpp
+vector<int> indices;
+for (int i = 0; i < n; i++) {
+  indices.PB(i);
+}
+```
+This change eliminates the need for separate vectors `one` and `two` and stores all indices in a single vector `indices`.
+
+5. Use a deque instead of a priority queue:
+```cpp
+priority_queue<pair<int, int>> q;
+for (auto x : two) {
+  q.push({t[x], x});
+}
+```
+Replace this code block with:
+```cpp
+deque<pair<int, int>> q;
+for (auto x : indices) {
+  if (t[x] == 2) {
+    q.push_back({t[x], x});
+  }
+}
+```
+This change replaces the priority queue `q` with a deque and stores all indices with value 2 in the deque. The `push_back()` function is used instead of `push()` to add elements to the deque.
+
+6. Update the remaining code blocks:
+Replace `sz(two)` with `q.size()` and update the loop conditions accordingly. Replace `q.top()` with `q.front()` and `q.pop()` with `q.pop_front()`.
+
+Optimized Code:
+```cpp
+#include <iostream>
+#include <vector>
+#include <deque>
+using namespace std;
+
+typedef long long ll;
+
+const int md = 1e9 + 7;
+
+int main() {
+  cin.tie(0);
+  cout.tie(0);
+  ios::sync_with_stdio(0);
+
+  int n;
+  cin >> n;
+
+  int* t = new int[n];
+  int sum = 0;
+
+  for (int i = 0; i < n; i++) {
+    cin >> t[i];
+    sum += t[i];
+  }
+
+  if (sum > 2 * n * (n - 1) || sum < 2 * n - 2) {
+    cout << "NO";
+    delete[] t;
+    return 0;
+  }
+
+  vector<int> indices;
+  for (int i = 0; i < n; i++) {
+    indices.push_back(i);
+  }
+
+  vector<pair<int, int>> ans;
+
+  for (int i = 1; i < indices.size(); i++) {
+    ans.push_back({indices[i - 1], indices[i]});
+    t[indices[i - 1]]--;
+    t[indices[i]]--;
+  }
+
+  int f2 = min(2, sz(indices));
+
+  for (int i = 0; i < f2; i++) {
+    if (i == 0)
+      ans.push_back({indices[i], indices[0]}), t[indices[0]]--;
+    else
+      ans.push_back({indices[i], indices[indices.size() - 1]}), t[indices[indices.size() - 1]]--;
+  }
+
+  deque<pair<int, int>> q;
+  for (auto x : indices) {
+    if (t[x] == 2) {
+      q.push_back({t[x], x});
+    }
+  }
+
+  for (int i = f2; i < indices.size(); i++) {
+    int x = q.front().second;
+    q.pop_front();
+    
+    if (t[x] == 0) {
+      cout << "NO";
+      delete[] t;
+      return 0;
+    }
+    
+    ans.push_back({indices[i], x});
+    t[x]--;
+    q.push_back({t[x], x});
+  }
+
+  cout << "YES" << " " << sz(indices) + f2 - 1 << endl;
+  cout << sz(ans) << endl;
+  for (auto x : ans)
+    cout << x.first + 1 << " " << x.second + 1 << " " << endl;
+
+  delete[] t;
+  return 0;
+}
+```

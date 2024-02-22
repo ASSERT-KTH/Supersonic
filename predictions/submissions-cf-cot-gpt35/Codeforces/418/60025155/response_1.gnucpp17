@@ -1,0 +1,106 @@
+#include <iostream>
+#include <vector>
+#include <bitset>
+#include <map>
+using namespace std;
+
+const int MX = 100005;
+const int BLOCK = 1000;
+const int NUM = MX / BLOCK + 1;
+int cnt[NUM][2 * MX], CNT[NUM][MX], a[MX], A[MX];
+bitset<MX> in[NUM];
+vector<int> con[NUM];
+vector<int> m;
+int N;
+
+int get(int x) {
+  if (m[x] == 0) {
+    m[x] = m.size();
+  }
+  return m[x];
+}
+
+void upd(int p, int inc) {
+  int v = a[p];
+  for (int i = (p + BLOCK - 1) / BLOCK; i < N / BLOCK + 1; i++) {
+    CNT[i][cnt[i][v]]--;
+    cnt[i][v] += inc;
+    CNT[i][cnt[i][v]]++;
+    int c = cnt[i][v];
+    if (c > 0 && !in[i][c]) {
+      in[i][c] = 1;
+      con[i].push_back(c);
+    }
+  }
+}
+
+int query2(int y) {
+  int b = y / BLOCK;
+  int ans = cnt[b][a[y]];
+  for (int i = BLOCK * b + 1; i <= y; i++) {
+    ans += a[i] == a[y];
+  }
+  return ans;
+}
+
+int query3(int y) {
+  int mn = query2(y), ans = 0;
+  int b = y / BLOCK;
+  vector<int> ok;
+  for (int i = 0; i < con[b].size(); i++) {
+    int val = con[b][i];
+    if (!CNT[b][val]) {
+      in[b][val] = 0;
+      continue;
+    }
+    ok.push_back(val);
+    if (val >= mn)
+      ans += CNT[b][val];
+  }
+  swap(con[b], ok);
+  for (int i = BLOCK * b + 1; i <= y; i++) {
+    cnt[b][a[i]]++;
+    ans += cnt[b][a[i]] == mn;
+  }
+  for (int i = BLOCK * b + 1; i <= y; i++) {
+    cnt[b][a[i]]--;
+  }
+  return ans;
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(nullptr);
+  cin >> N;
+  for (int i = 1; i <= N; i++) {
+    cin >> A[i];
+    a[i] = get(A[i]);
+    upd(i, 1);
+  }
+  int M;
+  cin >> M;
+  for (int i = 0; i < M; i++) {
+    int t;
+    cin >> t;
+    if (t == 1) {
+      int v, p;
+      cin >> v >> p;
+      upd(p, -1);
+      A[p] = v;
+      a[p] = get(v);
+      upd(p, 1);
+    } else {
+      int x, y;
+      cin >> x >> y;
+      if (x == 1)
+        cout << A[y] << endl;
+      else {
+        if (x % 2 == 0)
+          cout << query2(y) << endl;
+        else
+          cout << query3(y) << endl;
+      }
+    }
+  }
+  return 0;
+}

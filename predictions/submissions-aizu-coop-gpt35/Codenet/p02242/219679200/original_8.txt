@@ -1,0 +1,156 @@
+Code Analysis:
+- The code implements Dijkstra's algorithm to find the shortest path in a graph.
+- The graph is represented using a 2D array of `uint`, where `g_[i][j]` represents the weight of the edge from vertex `i` to vertex `j`.
+- The `Graph` class has a constructor that initializes the graph with a given size and sets all elements to a maximum value `INFINIT`. It also has a destructor to free the memory allocated for the graph.
+- The `dijkstra` function performs the main Dijkstra's algorithm. It initializes the distance array, visited array, and starting vertex. It then iterates `n_ - 1` times, finding the minimum distance vertex and updating the distance array accordingly.
+- The `main` function reads the input graph, performs Dijkstra's algorithm, and prints the shortest distances.
+
+Potential optimizations:
+1. Memory Allocation: The graph is currently represented using a 1D array. However, since it is a 2D array, it can be more efficiently represented using a 1D array of size `n_ * n_`. This avoids the need for pointer arithmetic and improves cache locality.
+2. Loop Unrolling: The inner loop in the `dijkstra` function can be unrolled to process multiple vertices in parallel. This can improve instruction-level parallelism and reduce loop overhead.
+3. Compiler Optimizations: Enabling compiler optimizations and using appropriate compiler directives can help the compiler generate more efficient code.
+
+Optimization Strategy:
+1. Replace 2D Array with 1D Array: Replace the 2D array `g_` with a 1D array to represent the graph more efficiently.
+2. Unroll Inner Loop: Unroll the inner loop in the `dijkstra` function to process multiple vertices in parallel.
+3. Enable Compiler Optimizations: Add compiler directives to enable optimizations.
+
+Step-by-Step Explanation:
+1. Replace 2D Array with 1D Array:
+   - Replace the declaration `uint *const g_;` with `uint *const g_;`
+   - In the constructor, replace `g_(new uint[(n_ * n_)])` with `g_(new uint[n_ * n_])`.
+   - In the `operator[]` overload, replace `g_ + (n_ * i)` with `&g_[(n_ * i)]`.
+   - In the `dijkstra` function, replace `auto es = (*this)[i];` with `auto es = &(*this)[i * n_];`.
+
+2. Unroll Inner Loop:
+   - In the `dijkstra` function, replace the inner loop with the following unrolled loop:
+     ```
+     for (auto j = 0u; j < n_; j += 4) {
+       if (visited[j])
+         continue;
+       dist[j] = std::min(dist[j], base_dist + es[j]);
+       if (cur_min > dist[j]) {
+         cur_min = dist[j];
+         i = j;
+       }
+
+       if (visited[j+1])
+         continue;
+       dist[j+1] = std::min(dist[j+1], base_dist + es[j+1]);
+       if (cur_min > dist[j+1]) {
+         cur_min = dist[j+1];
+         i = j+1;
+       }
+
+       if (visited[j+2])
+         continue;
+       dist[j+2] = std::min(dist[j+2], base_dist + es[j+2]);
+       if (cur_min > dist[j+2]) {
+         cur_min = dist[j+2];
+         i = j+2;
+       }
+
+       if (visited[j+3])
+         continue;
+       dist[j+3] = std::min(dist[j+3], base_dist + es[j+3]);
+       if (cur_min > dist[j+3]) {
+         cur_min = dist[j+3];
+         i = j+3;
+       }
+     }
+     ```
+
+3. Enable Compiler Optimizations:
+   - Add compiler directives to enable optimizations. For example, add `#pragma GCC optimize("O3")` before the `Graph` class definition.
+   
+Optimized Code Block:
+```cpp
+#include <algorithm>
+#include <cstdio>
+using uint = unsigned int;
+class Graph {
+  const uint n_;
+  uint *const g_;
+  const uint INFINIT;
+
+public:
+  Graph(uint n)
+      : n_(n), g_(new uint[n_ * n_]), INFINIT(100000 * (n_ - 1) + 1) {
+    std::fill_n(g_, n_ * n_, INFINIT);
+  }
+  ~Graph() { delete[] g_; }
+  uint *operator[](uint i) const { return &g_[n_ * i]; }
+  void dijkstra(uint *dist) {
+    std::fill_n(dist, n_, INFINIT);
+    bool visited[n_];
+    std::fill_n(visited, n_, false);
+    auto i = 0u;
+    visited[i] = true;
+    dist[i] = 0u;
+    for (auto n = 0u; n < n_ - 1; ++n) {
+      auto cur_min = INFINIT;
+      auto es = &(*this)[i * n_];
+      auto base_dist = dist[i];
+      for (auto j = 0u; j < n_; j += 4) {
+        if (visited[j])
+          continue;
+        dist[j] = std::min(dist[j], base_dist + es[j]);
+        if (cur_min > dist[j]) {
+          cur_min = dist[j];
+          i = j;
+        }
+
+        if (visited[j + 1])
+          continue;
+        dist[j + 1] = std::min(dist[j + 1], base_dist + es[j + 1]);
+        if (cur_min > dist[j + 1]) {
+          cur_min = dist[j + 1];
+          i = j + 1;
+        }
+
+        if (visited[j + 2])
+          continue;
+        dist[j + 2] = std::min(dist[j + 2], base_dist + es[j + 2]);
+        if (cur_min > dist[j + 2]) {
+          cur_min = dist[j + 2];
+          i = j + 2;
+        }
+
+        if (visited[j + 3])
+          continue;
+        dist[j + 3] = std::min(dist[j + 3], base_dist + es[j + 3]);
+        if (cur_min > dist[j + 3]) {
+          cur_min = dist[j + 3];
+          i = j + 3;
+        }
+      }
+      visited[i] = true;
+      dist[i] = cur_min;
+    }
+  }
+};
+#pragma GCC optimize("O3")
+int main() {
+  uint n;
+  std::scanf("%u", &n);
+  Graph g(n);
+  uint u, k, c, v;
+  for (auto i = 0u; i < n; ++i) {
+    std::scanf("%u %u", &u, &k);
+    for (auto j = 0u; j < k; ++j) {
+      std::scanf("%u %u", &c, &v);
+      g[u][c] = v;
+    }
+  }
+  uint dist[n];
+  g.dijkstra(dist);
+  for (auto i = 0u; i < n; ++i) {
+    std::printf("%u %u\n", i, dist[i]);
+  }
+}
+```
+
+Trade-offs:
+- The optimized code achieves better performance by improving memory access patterns and increasing instruction-level parallelism.
+- However, the unrolled loop increases code complexity and may lead to larger code size.
+- Enabling compiler optimizations may introduce changes in the generated code that could be difficult to analyze or debug.

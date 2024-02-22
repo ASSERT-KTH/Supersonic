@@ -1,0 +1,86 @@
+Optimization Steps:
+1. Instead of including the whole std library via `#include <bits/stdc++.h>`, it's better to include only the necessary headers. This reduces the load on the compiler and decreases compile time.
+2. The `REP` macro doesn't provide any significant improvement, using the usual for loop is more readable and doesn't change the performance.
+3. `min(W, H)` is computed twice. We can compute it once and store the result in a variable.
+4. `printf` function is slower than `cout`. We can replace `printf` with `cout` and set precision using `std::setprecision`.
+5. The `judge` function checks if a circle is inside a rectangle. Instead of checking each edge separately, we can calculate the distance from the center of the circle to the nearest edge and compare it with the radius. This will make the function faster and use less memory.
+6. `sqrt` function is called several times. We can reduce the number of calls by storing the result in a variable.
+7. The `solve` function has repeated code. We can extract the common part into a separate function.
+
+Optimized Code:
+```cpp
+#include <iostream>
+#include <cmath>
+#include <cassert>
+#include <iomanip>
+
+using namespace std;
+
+const double EPS = 1e-4;
+
+double calc(double ra, double rb, double s) {
+    double lb = abs(ra - rb);
+    double ub = ra + rb;
+    for(int _ = 0; _ < 80; _++) {
+        double d = (lb + ub) / 2;
+        double tha = acos((ra * ra + d * d - rb * rb) / (2.0 * d * ra));
+        double thb = acos((rb * rb + d * d - ra * ra) / (2.0 * d * rb));
+        double sum = ra * ra * tha + rb * rb * thb - ra * d * sin(tha);
+        if (sum > s) {
+            lb = d;
+        } else {
+            ub = d;
+        }
+    }
+    return ub;
+}
+
+bool judge(double x, double y, double r, double W, double H) {
+    return min(min(x, W - x), min(y, H - y)) >= r - EPS;
+}
+
+bool print_res(double xa, double ya, double ra, double xb, double yb, double rb, bool reversed) {
+    if (reversed) {
+        swap(xa, xb);
+        swap(ya, yb);
+        swap(ra, rb);
+    }
+    cout << fixed << setprecision(9) << xa << " " << ya << " " << ra << " " << xb << " " << yb << " " << rb << "\n";
+    return true;
+}
+
+bool solve(double W, double H, double sa, double sb, double sc, bool reversed) {
+    double ra = sqrt(sa / M_PI);
+    double rb = sqrt(sb / M_PI);
+    double minDimension = min(W, H);
+    if (2.0 * ra > minDimension + EPS || 2.0 * rb > minDimension + EPS)
+        return false;
+    double D = calc(ra, rb, sc);
+    double xa = ra;
+    double ya = ra;
+    double candidates[] = {ra, rb, W - rb};
+    for (double xb : candidates) {
+        double dy = sqrt(D * D - (xa - xb) * (xa - xb));
+        for (int sign = -1; sign <= 1; sign += 2) {
+            double yb = ya + sign * dy;
+            if (judge(xb, yb, rb, W, H)) {
+                assert(judge(xa, ya, ra, W, H));
+                assert(abs(hypot(xa - xb, ya - yb) - D) < EPS);
+                return print_res(xa, ya, ra, xb, yb, rb, reversed);
+            }
+        }
+    }
+    return false;
+}
+
+int main() {
+    double W, H, sa, sb, sc;
+    while (cin >> W >> H >> sa >> sb >> sc && W > 0) {
+        if (solve(W, H, sa, sb, sc, false) || solve(W, H, sb, sa, sc, true))
+            continue;
+        cout << "impossible" << endl;
+    }
+    return 0;
+}
+```
+Please note that the original code seems to be a competitive programming code where the priority is to solve a complex problem within a time limit, so the optimizations done may not have a significant impact on the performance.

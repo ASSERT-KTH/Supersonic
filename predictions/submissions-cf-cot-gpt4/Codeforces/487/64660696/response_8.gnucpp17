@@ -1,0 +1,100 @@
+#include <iostream>
+#include <algorithm>
+#include <utility>
+
+using namespace std;
+
+const int maxLig = (1e5) + 5;
+const int maxCol = 12;
+const int maxReq = (1e5) + 5;
+const int sqr = 600;
+
+struct Point {
+    int x, y;
+};
+
+int nbLig, nbCol, nbReq;
+char grille[maxLig][maxCol] = {'~'};
+int proc[maxLig][maxCol];
+int tps = 0;
+Point go[maxLig][maxCol];
+int blocRef[maxLig];
+
+void comp(int lig, int col, int safeLig) {
+    while (proc[lig][col] != tps) {
+        proc[lig][col] = tps;
+        int nextLig = lig, nextCol = col;
+        if (grille[lig][col] == '<')
+            --nextCol;
+        else if (grille[lig][col] == '>')
+            ++nextCol;
+        else if (grille[lig][col] == '^')
+            --nextLig;
+        if (nextLig == safeLig || grille[nextLig][nextCol] == '~') {
+            go[lig][col] = {nextLig, nextCol};
+        } else if (grille[lig][col] != '^' && grille[lig][nextCol] != '^' &&
+                   grille[lig][col] != grille[lig][nextCol]) {
+            go[lig][col] = {0, 0};
+        } else {
+            lig = nextLig;
+            col = nextCol;
+        }
+    }
+}
+
+Point getFin(int lig, int col) {
+    while (grille[lig][col] != '~') {
+        Point e = go[lig][col];
+        lig = e.x;
+        col = e.y;
+    }
+    return {lig, col};
+}
+
+bool compBloc(int bloc) {
+    int deb = bloc * sqr, fin = min(nbLig, (bloc + 1) * sqr);
+    if (deb > nbLig)
+        return false;
+    for (int lig = deb + 1; lig <= fin; ++lig) {
+        blocRef[lig] = bloc;
+        for (int col = 1; col <= nbCol; ++col) {
+            comp(lig, col, deb);
+        }
+    }
+    return true;
+}
+
+int main() {
+    scanf("%d %d %d", &nbLig, &nbCol, &nbReq);
+    for (int lig = 1; lig <= nbLig; ++lig) {
+        for (int col = 1; col <= nbCol; ++col) {
+            cin >> grille[lig][col];
+        }
+    }
+    ++tps;
+    for (int bloc = 0;; ++bloc) {
+        if (!compBloc(bloc))
+            break;
+    }
+    for (int req = 0; req < nbReq; ++req) {
+        char mode;
+        cin >> mode;
+        int lig, col;
+        scanf("%d %d", &lig, &col);
+        if (mode == 'A') {
+            Point res = getFin(lig, col);
+            if (res.x == 0 && res.y == 0)
+                res = {-1, -1};
+            cout << res.x << " " << res.y << "\n";
+        } else {
+            ++tps;
+            char nv;
+            cin >> nv;
+            grille[lig][col] = nv;
+            int bloc = blocRef[lig];
+            compBloc(bloc);
+            if (bloc)
+                compBloc(bloc - 1);
+        }
+    }
+}

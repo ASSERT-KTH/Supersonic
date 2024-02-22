@@ -1,0 +1,87 @@
+Here are some optimization steps we can take:
+
+1. Reserve Memory: The vectors `adj` and `adjt` can be reserved memory before they are used. This is because resizing the vector during the execution of the program can take up considerable time. Reserving memory beforehand would significantly reduce the time taken to run the program. In our case, we can reserve `2N` memory for both `adj` and `adjt`.
+
+2. Avoiding unnecessary operations: In the function `run2sat()`, the `if` condition `if (vis[ord[i]])` is checked twice for the same `i` in two different for loops. We can combine these two for loops into one to avoid checking the condition twice.
+
+3. Use Fast Input/Output: Although the existing code already uses fast I/O operations by using `ios_base::sync_with_stdio(0), cin.tie(0);`, we can further optimize this by disabling synchronization with stdio using `std::ios::sync_with_stdio(false)`. This will speed up the cin and cout operations.
+
+Here is the optimized code:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+const int N = 1e5 + 5;
+int n, vis[2 * N], ord[2 * N], ordn, cnt, cmp[2 * N], val[N];
+vector<int> adj[2 * N], adjt[2 * N];
+int m, st[N], sw[N][2];
+vector<int> stk;
+int v(int x) { return 2 * x; }
+int nv(int x) { return 2 * x + 1; }
+void add(int a, int b) {
+  adj[a ^ 1].push_back(b);
+  adj[b ^ 1].push_back(a);
+  adjt[b].push_back(a ^ 1);
+  adjt[a].push_back(b ^ 1);
+}
+void dfs(int x) {
+  vis[x] = 1;
+  for (auto v : adj[x])
+    if (!vis[v])
+      dfs(v);
+  ord[ordn++] = x;
+}
+void dfst(int x) {
+  cmp[x] = cnt, vis[x] = 0;
+  for (auto v : adjt[x])
+    if (vis[v])
+      dfst(v);
+}
+bool run2sat() {
+  for (int i = 1; i <= m; i++) {
+    if (!vis[v(i)])
+      dfs(v(i));
+    if (!vis[nv(i)])
+      dfs(nv(i));
+  }
+  for (int i = ordn - 1; i >= 0; i--) {
+    if (vis[ord[i]]) {
+      cnt++, dfst(ord[i]);
+      if (i <= m && vis[ord[i]])
+        cnt++, dfst(ord[i]);
+    }
+  }
+  for (int i = 1; i <= m; i++) {
+    if (cmp[v(i)] == cmp[nv(i)])
+      return false;
+    val[i] = cmp[v(i)] > cmp[nv(i)];
+  }
+  return true;
+}
+int main() {
+  std::ios::sync_with_stdio(false), cin.tie(NULL);
+  cin >> n >> m;
+  adj->reserve(2*N);
+  adjt->reserve(2*N);
+  for (int i = 1; i <= n; i++)
+    cin >> st[i];
+  int q, a;
+  for (int i = 1; i <= m; i++) {
+    cin >> q;
+    while (q--) {
+      cin >> a;
+      sw[a][0] ? sw[a][1] = i : sw[a][0] = i;
+    }
+  }
+  for (int i = 1; i <= n; i++) {
+    int p = sw[i][0];
+    int q = sw[i][1];
+    if (!st[i])
+      add(v(p), v(q)), add(nv(p), nv(q));
+    else
+      add(nv(p), v(q)), add(v(p), nv(q));
+  }
+  cout << (run2sat() ? "YES\n" : "NO\n");
+}
+```
+Note: Please take care that using direct memory allocation (like reserve function) should be used with caution and thorough understanding of the code as it may lead to unexpected behaviors if not handled properly.

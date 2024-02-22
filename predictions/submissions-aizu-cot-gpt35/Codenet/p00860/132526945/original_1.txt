@@ -1,0 +1,193 @@
+Step 1: Remove unnecessary includes.
+The program includes `cstdio`, `cstring`, and `queue` but does not use any of their functions. These includes can be removed to reduce unnecessary overhead.
+
+Step 2: Optimize the `check` function.
+The `check` function is used to determine if a move from a given state to another state is valid. However, the implementation of the function can be optimized.
+
+- The function iterates over 24 bits and checks if each 8-bit segment contains a value. This can be simplified by using a single loop that iterates over the 8-bit segments directly.
+- The function checks if the current 8-bit segment contains a wall value and returns false if it does. This check can be optimized by using a lookup table instead of checking the `wall` array for each segment.
+- The function checks if the current 8-bit segment is equal to the next 8-bit segment, and if so, returns false. This check is unnecessary because the loop only iterates up to the current segment, ensuring that the current segment is not equal to the next one.
+- The function checks if the current 8-bit segment is equal to the corresponding segment in the next state and if the next segment is equal to the corresponding segment in the current state, and if so, returns false. This check is unnecessary because it is already covered by the previous check.
+
+Optimized `check` function:
+```c++
+inline bool check(int u, int v) {
+  for (int i = 0; i < 3; ++i) {
+    int p1 = (v >> (i * 8)) & 255;
+    if (wall[p1]) {
+      return false;
+    }
+  }
+  return true;
+}
+```
+
+Step 3: Optimize the `solve` function.
+The `solve` function is used to find the shortest path from the start state to the goal state. There are a few optimizations that can be applied to improve the performance of this function.
+
+- The `solve` function uses a queue to perform a breadth-first search. However, the queue is not efficiently used because it is not cleared after each iteration. This results in unnecessary iterations and increased memory usage. Clearing the queue after each iteration can improve performance and reduce memory usage.
+- The `solve` function uses a separate variable `tm` to keep track of the current time. This variable is incremented after each iteration. Instead of using a separate variable, the existing `tm0` variable can be incremented directly.
+- The `solve` function uses a nested loop to iterate over all possible moves from the current state. This nested loop can be simplified by using a single loop that iterates over all possible combination of moves using bit manipulation.
+- The `solve` function uses bitwise shift operations to calculate the next state. These operations can be simplified by using the `<<` operator.
+
+Optimized `solve` function:
+```c++
+int solve(int start, int goal) {
+  const int dif[5] = {0, -1, 1, -16, 16};
+  queue<int> q;
+  q.push(start);
+  q.push(-1);
+  vis[start] = tm0 + 1;
+  while (!q.empty()) {
+    int u = q.front();
+    q.pop();
+    if (u < 0) {
+      if (!q.empty()) {
+        q.push(-1);
+        ++tm0;
+      }
+    } else {
+      for (int i = 0; i < 5; ++i) {
+        int v = u + dif[i];
+        if (vis[v] <= tm0 && check(u, v)) {
+          if (v == goal) {
+            return tm0 + 1;
+          }
+          vis[v] = tm0 + 1;
+          q.push(v);
+        }
+      }
+    }
+  }
+  return -1;
+}
+```
+
+Step 4: Optimize the `main` function.
+The `main` function is used to read input, initialize variables, and call the `solve` function. There are a few optimizations that can be applied to improve the performance of this function.
+
+- The `main` function reads input using `scanf` and `fgets` functions, but these functions can be slow for large input. Using `cin` and `getline` functions can be faster and more efficient.
+- The `main` function uses bitwise shift operations to calculate the goal and start states. These operations can be simplified by using the `<<` operator.
+- The `main` function uses a nested loop to initialize the `wall` array. This nested loop can be simplified by using a single loop that iterates over the input characters directly.
+
+Optimized `main` function:
+```c++
+int main() {
+  int w, h;
+  while (cin >> w >> h, w) {
+    cin.ignore(256, '\n');
+    for (int i = 0; i < h; ++i) {
+      getline(cin, c[i]);
+    }
+    int goal = 0;
+    int start = 0;
+    for (int i = 0; i < h; ++i) {
+      for (int j = 0; j < w; ++j) {
+        if (c[i][j] == '#') {
+          wall[(i << 4) | j] = true;
+        } else {
+          wall[(i << 4) | j] = false;
+          if (isupper(c[i][j])) {
+            goal |= ((i << 4) | j) << ((c[i][j] - 'A') * 8);
+          } else if (islower(c[i][j])) {
+            start |= ((i << 4) | j) << ((c[i][j] - 'a') * 8);
+          }
+        }
+      }
+    }
+    int tm = solve(start, goal);
+    cout << tm - tm0 << endl;
+    tm0 = tm + 1;
+    if (tm0 > 55000) {
+      memset(vis, 0, sizeof(vis));
+      tm0 = 0;
+    }
+  }
+}
+```
+
+Optimized program:
+```c++
+#include <iostream>
+#include <cstring>
+#include <queue>
+using namespace std;
+
+unsigned short vis[1 << 24];
+char c[16][20];
+bool wall[256];
+int tm0;
+
+inline bool check(int u, int v) {
+  for (int i = 0; i < 3; ++i) {
+    int p1 = (v >> (i * 8)) & 255;
+    if (wall[p1]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+int solve(int start, int goal) {
+  const int dif[5] = {0, -1, 1, -16, 16};
+  queue<int> q;
+  q.push(start);
+  q.push(-1);
+  vis[start] = tm0 + 1;
+  while (!q.empty()) {
+    int u = q.front();
+    q.pop();
+    if (u < 0) {
+      if (!q.empty()) {
+        q.push(-1);
+        ++tm0;
+      }
+    } else {
+      for (int i = 0; i < 5; ++i) {
+        int v = u + dif[i];
+        if (vis[v] <= tm0 && check(u, v)) {
+          if (v == goal) {
+            return tm0 + 1;
+          }
+          vis[v] = tm0 + 1;
+          q.push(v);
+        }
+      }
+    }
+  }
+  return -1;
+}
+
+int main() {
+  int w, h;
+  while (cin >> w >> h, w) {
+    cin.ignore(256, '\n');
+    for (int i = 0; i < h; ++i) {
+      getline(cin, c[i]);
+    }
+    int goal = 0;
+    int start = 0;
+    for (int i = 0; i < h; ++i) {
+      for (int j = 0; j < w; ++j) {
+        if (c[i][j] == '#') {
+          wall[(i << 4) | j] = true;
+        } else {
+          wall[(i << 4) | j] = false;
+          if (isupper(c[i][j])) {
+            goal |= ((i << 4) | j) << ((c[i][j] - 'A') * 8);
+          } else if (islower(c[i][j])) {
+            start |= ((i << 4) | j) << ((c[i][j] - 'a') * 8);
+          }
+        }
+      }
+    }
+    int tm = solve(start, goal);
+    cout << tm - tm0 << endl;
+    tm0 = tm + 1;
+    if (tm0 > 55000) {
+      memset(vis, 0, sizeof(vis));
+      tm0 = 0;
+    }
+  }
+}
+```

@@ -1,0 +1,93 @@
+#include <iostream>
+#include <algorithm>
+#include <vector>
+using namespace std;
+
+const int mx = 3e5 + 10;
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  cout.tie(NULL);
+
+  int tc = 1, i, j, k;
+  while (tc--) {
+    int a, b;
+    cin >> a >> b;
+    vector<pair<int, int>> v(a);
+    vector<int> pre(a), suf(a), del[mx];
+
+    for (i = 0; i < a; i++) {
+      cin >> v[i].first >> v[i].second;
+    }
+
+    // Counting sort on differences
+    vector<int> count(a, 0);
+    for (i = 0; i < a; i++) {
+      count[v[i].second - v[i].first]++;
+    }
+    for (i = 1; i < a; i++) {
+      count[i] += count[i - 1];
+    }
+    vector<pair<int, int>> dif(a);
+    for (i = a - 1; i >= 0; i--) {
+      dif[--count[v[i].second - v[i].first]] = {v[i].second - v[i].first, i};
+    }
+
+    // Prefix and suffix calculations
+    for (i = 0; i < a; i++) {
+      k = dif[i].second;
+      suf[i] = v[k].second;
+      if (i > 0) {
+        suf[i] += suf[i - 1];
+      }
+    }
+    for (i = a - 1; i >= 0; i--) {
+      k = dif[i].second;
+      pre[a - 1 - i] = v[k].first;
+      if (i < a - 1) {
+        pre[a - 1 - i] += pre[a - i];
+      }
+    }
+
+    for (i = 0; i < b; i++) {
+      int x, y;
+      cin >> x >> y;
+      k = v[x - 1].second - v[x - 1].first;
+      int m = v[y - 1].second - v[y - 1].first;
+      if (m <= k) {
+        del[x].push_back(v[x - 1].first + v[y - 1].second);
+        del[y].push_back(v[x - 1].first + v[y - 1].second);
+      } else {
+        del[x].push_back(v[x - 1].second + v[y - 1].first);
+        del[y].push_back(v[x - 1].second + v[y - 1].first);
+      }
+      int sz = del[x].size();
+      if (sz > 1) {
+        del[x][sz - 1] += del[x][sz - 2];
+      }
+      sz = del[y].size();
+      if (sz > 1) {
+        del[y][sz - 1] += del[y][sz - 2];
+      }
+    }
+
+    for (i = 0; i < a; i++) {
+      int ans = 0;
+      k = v[i].second - v[i].first;
+      int pos = lower_bound(dif.begin(), dif.end(), make_pair(k, 0)) - dif.begin();
+      if (pos > 0) {
+        ans = suf[pos - 1] + ((pos - 1) * v[i].first) - v[i].second;
+      }
+      if (pos < a) {
+        ans += pre[a - pos] + (a - pos) * v[i].second;
+      }
+      if (!del[i + 1].empty()) {
+        ans -= del[i + 1].back();
+      }
+      cout << ans << '\n';
+    }
+  }
+
+  return 0;
+}

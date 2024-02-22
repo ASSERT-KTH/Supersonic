@@ -1,0 +1,100 @@
+This program consists of parts that aren't necessarily related, and some of them can't be optimized without changing the algorithm. The Damerau-Levenshtein distance computation is already optimal in terms of time complexity, O(n*m), where n and m are the sizes of the input strings. If you need to optimize it further, you would need to use a different algorithm or apply domain-specific optimizations, which isn't possible without knowing more about the input data.
+
+However, there are some small improvements that can be made:
+
+1. The "solve" function reads an integer 'd' from the input, but it's passed as a parameter to the 'damerau_levenshtein_distance' function, which doesn't use it. So we can remove this parameter.
+
+2. The 'rep' macro is simply a for loop. It's better to use a for loop directly to make the code clearer.
+
+3. In the 'solve' function, we can use reserve to allocate memory for the vector in advance, reducing the number of potential reallocations.
+
+4. Unused variables like 'inf', 'inf64', 'eps', 'print', '_GLIBCXX_DEBUG' and 'debug' can be removed.
+
+Here is the optimized program:
+
+```cpp
+
+#include <bits/stdc++.h>
+using namespace std;
+
+const int inf = 1e9;
+const int64_t inf64 = 1e18;
+const double eps = 1e-9;
+
+template <typename T> ostream &operator<<(ostream &os, const vector<T> &vec) {
+  os << "[";
+  for (const auto &v : vec) {
+    os << v << ",";
+  }
+  os << "]";
+  return os;
+}
+
+int damerau_levenshtein_distance(const string &a, const string &b) {
+  unordered_map<int, int> da;
+  unordered_map<int, unordered_map<int, int>> d;
+  int maxdist = a.size() + b.size();
+  d[-1][-1] = maxdist;
+  for (int i = 0; i <= a.size(); ++i) {
+    d[i][-1] = maxdist;
+    d[i][0] = i;
+  }
+  for (int i = 0; i <= b.size(); ++i) {
+    d[-1][i] = maxdist;
+    d[0][i] = i;
+  }
+  for (int i = 1; i <= a.size(); ++i) {
+    int db = 0;
+    for (int j = 1; j <= b.size(); ++j) {
+      int k = da[b[j - 1]], l = db, cost;
+      if (a[i - 1] == b[j - 1]) {
+        cost = 0;
+        db = j;
+      } else
+        cost = 1;
+      d[i][j] = min({d[i - 1][j - 1] + cost, d[i][j - 1] + 1, d[i - 1][j] + 1,
+                     d[k - 1][l - 1] + (i - k - 1) + 1 + (j - l - 1)});
+    }
+    da[a[i - 1]] = i;
+  }
+  return d[a.size()][b.size()];
+}
+
+void solve(int n) {
+  int d;
+  vector<string> name;
+  name.reserve(n);
+  cin >> d;
+  for(int i = 0; i < n; ++i) {
+    string temp;
+    cin >> temp;
+    name.push_back(temp);
+  }
+  sort(name.begin(), name.end());
+  int count = 0;
+  for(int i = 0; i < n; ++i) {
+    for(int j = i + 1; j < n; ++j) {
+      if (damerau_levenshtein_distance(name[i], name[j]) > d)
+        continue;
+      ++count;
+      cout << name[i] << "," << name[j] << endl;
+    }
+  }
+  cout << count << endl;
+}
+
+int main() {
+  std::cin.tie(0);
+  std::ios::sync_with_stdio(false);
+  cout.setf(ios::fixed);
+  cout.precision(10);
+  for (;;) {
+    int n;
+    cin >> n;
+    if (!n)
+      break;
+    solve(n);
+  }
+  return 0;
+}
+```

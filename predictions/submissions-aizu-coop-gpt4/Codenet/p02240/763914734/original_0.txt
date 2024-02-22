@@ -1,0 +1,94 @@
+First, let's analyze the given code:
+
+This program seems to solve a problem of identifying connected components in a graph. The graph nodes are connected based on the relationships input by the user. The `makeGroup` function is used to assign group numbers to nodes that are connected together. The `canAccess` function checks if two nodes belong to the same group (i.e., are they connected directly or indirectly).
+
+Now, let's discuss some potential optimizations:
+
+1. Redundant Data Structure: `num_of_each` array is used to store the number of connections each node has. However, this information is already stored in the vector `V`. `V[node].size()` would give the same information, which makes `num_of_each` unnecessary.
+
+2. Dynamic Memory Allocation: The code currently uses a combination of dynamically allocated arrays and vectors. This can be simplified to only use vectors, eliminating the need for manual memory management.
+
+3. Unnecessary Variable: `group_number` is incremented even after the queue becomes empty and no additional group is found. This results in `group_number` being always one more than the actual number of groups. Although it doesn't affect the correctness of the program, it's unnecessary and can be optimized.
+
+4. Input/Output operations: `scanf` and `printf` can be slower compared to C++'s `cin` and `cout`. We can use `ios_base::sync_with_stdio(false);` to speed this up.
+
+5. Non-optimal data structure: A queue is used to visit the nodes. Once a node is visited, it is removed from the queue. Later, when checking for unvisited nodes, a linear search is performed, which is inefficient. An unordered set would be more efficient.
+
+Let's implement these optimizations:
+
+```cpp
+#include <algorithm>
+#include <queue>
+#include <iostream>
+#include <vector>
+#include <unordered_set>
+using namespace std;
+
+class Relation {
+public:
+  Relation(int tmp_n) : n(tmp_n), group(tmp_n, 0), V(tmp_n) {}
+  
+  void push(int s, int t) {
+    V[s].push_back(t);
+    V[t].push_back(s);
+  }
+
+  void makeGroup() {
+    int group_number = 1;
+    unordered_set<int> unvisited;
+    for(int i=0; i<n; i++) unvisited.insert(i);
+    while (!unvisited.empty()) {
+      queue<int> Q;
+      int node = *unvisited.begin();
+      Q.push(node);
+      unvisited.erase(node);
+      group[node] = group_number;
+      while (!Q.empty()) {
+        node = Q.front();
+        Q.pop();
+        for (int k : V[node]) {
+          if (group[k] == 0) {
+            group[k] = group[node];
+            Q.push(k);
+            unvisited.erase(k);
+          }
+        }
+      }
+      group_number++;
+    }
+  }
+  
+  bool canAccsess(int s, int t) { return group[s] == group[t]; }
+
+private:
+  vector<vector<int>> V;
+  vector<int> group;
+  int n;
+};
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  
+  int n, m, s, t, q;
+  cin >> n >> m;
+  Relation relation(n);
+  for (int i = 0; i < m; i++) {
+    cin >> s >> t;
+    relation.push(s, t);
+  }
+  relation.makeGroup();
+  cin >> q;
+  for (int i = 0; i < q; i++) {
+    cin >> s >> t;
+    if (relation.canAccsess(s, t)) {
+      cout << "yes\n";
+    } else {
+      cout << "no\n";
+    }
+  }
+  return 0;
+}
+```
+
+This version of the code is much simpler and easier to understand, and it is more efficient in terms of memory usage and time complexity.

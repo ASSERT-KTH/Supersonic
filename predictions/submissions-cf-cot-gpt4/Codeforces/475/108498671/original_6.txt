@@ -1,0 +1,87 @@
+The given program seems to be already optimized in terms of its algorithmic complexity. However, there are a few things we can do to further improve the performance and memory usage of this program:
+
+1. **Use `ios_base::sync_with_stdio(false);` and `cin.tie(NULL);`**: This will speed up the IO operations by not syncing C++ standard streams with standard C streams and untie `cin` from `cout`. These are two different optimizations, but they serve a similar purpose. 
+
+2. **Avoid using `std::map`**: `std::map` has a time complexity of O(log(n)) for insertions and access. If we know the maximum possible value that we are going to insert in the map, we can use an array or `std::vector` instead, which will have a time complexity of O(1) for insertions and access.
+
+3. **Use `'\n'` instead of `endl`**: `endl` causes a flush operation, which can be slow. If you don't need to flush the buffer, you can use `'\n'`.
+
+4. **Reduce the use of global variables**: This won't necessarily optimize your program, but it's a good practice. Global variables can be changed from anywhere in the program, making it harder to debug. It is better to pass them as function arguments.
+
+Now let's apply these optimizations to the program:
+
+```cpp
+#include <cstdio>
+#include <cstdlib>
+#include <iostream>
+#include <vector>
+using namespace std;
+int gcd(int a, int b) {
+  if (b == 0) {
+    return a;
+  }
+  return gcd(b, a % b);
+}
+
+int get_log[200100];
+int get(int l, int r, vector<vector<int>>& st) {
+  int sz = get_log[r - l];
+  return gcd(st[l][sz], st[r - (1LL << sz)][sz]);
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  get_log[1] = 0;
+  for (int i = 2; i < 200000; i++) {
+    get_log[i] = get_log[i - 1];
+    while ((1 << get_log[i]) <= i)
+      get_log[i]++;
+    get_log[i]--;
+  }
+  int n;
+  scanf("%d", &n);
+  vector<int> a(n);
+  for (int i = 0; i < n; i++) {
+    scanf("%d", &a[i]);
+  }
+  vector<vector<int>> st(n, vector<int>(20));
+  for (int i = 0; i < n; i++) {
+    st[i][0] = a[i];
+  }
+  for (int nowP = 1; nowP < 20; nowP++) {
+    for (int i = 0; i + (1LL << nowP) <= n; i++) {
+      st[i][nowP] = gcd(st[i][nowP - 1], st[i + (1LL << (nowP - 1))][nowP - 1]);
+    }
+  }
+  vector<long long> ans(200100, 0);
+  for (int L = 0; L < n; L++) {
+    int prev_ind = L;
+    int now_ind = L;
+    while (now_ind < n) {
+      int now_gcd = get(L, now_ind + 1, st);
+      int l = now_ind;
+      int r = n;
+      while (r - l > 1) {
+        int m = (l + r) / 2;
+        int x = get(L, m + 1, st);
+        if (x < now_gcd)
+          r = m;
+        else
+          l = m;
+      }
+      ans[now_gcd] += r - prev_ind;
+      now_ind = r;
+      prev_ind = r;
+    }
+  }
+  int q;
+  scanf("%d", &q);
+  while (q--) {
+    int x;
+    scanf("%d", &x);
+    printf("%lld\n", ans[x]);
+  }
+  return 0;
+}
+```

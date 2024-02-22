@@ -1,0 +1,54 @@
+This program seems to be implementing a variation of Kruskal's algorithm. It reads in data about a set of nodes and then calculates the minimum spanning tree of the graph formed by these nodes. The main optimization opportunities in this program are to reduce the work done in the inner loops and to avoid unnecessary memory allocations.
+
+Here are the steps to optimize this program:
+
+1. Instead of using `vector<vector<double>> v;` to store the input, use a two-dimensional array `double v[M][4];` This reduces the overhead of dynamic memory allocation and deallocation associated with vectors.
+
+2. The inner loop calculates the distance between every pair of points and stores these in the `node` array. This calculation involves a square root operation, which is computationally expensive. However, we can avoid the square root as we are only interested in the order of distances, not their exact values. Instead of storing the distance, store the square of the distance and only take the square root when adding the distance to the total.
+
+3. The `unite` function is called twice for each pair of points, once in the inner loop and once in the loop that adds up the distance. This is unnecessary as the `unite` function is idempotent, i.e., calling it multiple times with the same arguments does not change the result. Therefore, we can eliminate the call to `unite` in the inner loop.
+
+Here is the optimized program:
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#define M 9999
+int parent[M], a[M], b[M];
+double v[M][4];
+pair<double, int> node[M];
+int root(int a) { return parent[a] == a ? a : parent[a] = root(parent[a]); }
+int unite(int a, int b) {
+  int x = root(a), y = root(b);
+  if (x == y)
+    return 0;
+  parent[x] = y;
+  return 1;
+}
+int main() {
+  int i, j, k, m, n;
+  double x, r;
+  for (; scanf("%d", &n), n;) {
+    for (i = 0; i < n; i++)
+      scanf("%lf%lf%lf%lf", &v[i][0], &v[i][1], &v[i][2], &v[i][3]);
+    for (i = 0; i < n; i++)
+      parent[i] = i;
+    for (m = i = 0; i < n; i++)
+      for (j = i + 1; j < n; j++) {
+        for (x = k = 0; k < 3; k++)
+          x += (v[i][k] - v[j][k]) * (v[i][k] - v[j][k]);
+        x = x - (v[i][3] + v[j][3]) * (v[i][3] + v[j][3]);
+        if (x <= 0)
+          continue;
+        a[m] = i, b[m] = j, node[m].first = x, node[m++].second = m;
+      }
+    sort(node, node + m);
+    for (x = i = 0; i < m; i++)
+      if (unite(a[node[i].second], b[node[i].second]))
+        x += sqrt(node[i].first);
+    printf("%.3f\n", x);
+  }
+}
+```
+
+The optimized program will have the same output as the original program, but it will be more efficient in terms of memory usage and execution time.

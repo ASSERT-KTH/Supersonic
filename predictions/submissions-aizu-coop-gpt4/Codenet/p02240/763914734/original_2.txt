@@ -1,0 +1,108 @@
+**Code Analysis**
+
+This C++ program appears to implement a functionality for grouping nodes in a graph and checking if two nodes are in the same group. 
+
+1. The program uses an adjacency list (vector of vectors) to represent the graph, which is a good choice for sparse graphs.
+2. The "push" function adds an edge between two nodes.
+3. The "makeGroup" function groups the nodes using a BFS (Breadth First Search) approach.
+4. The "canAccess" function checks if two nodes belong to the same group.
+
+**Optimization Strategy**
+
+1. **Data Structures:** The data structure used to represent the graph is efficient for sparse graphs. However, the use of a dynamically allocated array of vectors could be replaced with a vector of vectors, which would handle memory management automatically.
+
+2. **Redundant Computations:** The "makeGroup" function contains a potentially unnecessary loop that searches for the next ungrouped node. This can be removed if we track the ungrouped nodes separately.
+
+3. **Loops:** The "makeGroup" function can be optimized by avoiding a loop to find the next ungrouped node. 
+
+4. **Compiler Optimizations:** The compiler should already optimize the code well, but if necessary, you could consider using flags such as -O2 or -O3 for further optimization.
+
+**Step-by-Step Explanation**
+
+1. **Replace dynamically allocated array with vector:** Replace the dynamically allocated array "V" with a "vector<vector<int>>". This will reduce the risk of memory leaks and simplify the code.
+
+2. **Track ungrouped nodes:** Instead of searching for the next ungrouped node, we can keep track of them in a separate data structure, such as a queue. This would remove the need for the inner "for" loop in the "makeGroup" function.
+
+3. **Avoid unnecessary checks:** In the "makeGroup" function, the check "if (num_of_each[node] > 0)" seems unnecessary, as the for loop would not execute if "num_of_each[node]" is 0. 
+
+**Optimized Code Block**
+
+```cpp
+#include <algorithm>
+#include <queue>
+#include <stdio.h>
+#include <vector>
+using namespace std;
+
+class Relation {
+public:
+  Relation(int tmp_n, int tmp_m) : n(tmp_n), m(tmp_m), group_number(1), V(n), num_of_each(n, 0), group(n, 0) {}
+
+  void push(int s, int t) {
+    V[s].push_back(t);
+    V[t].push_back(s);
+    num_of_each[s]++;
+    num_of_each[t]++;
+  }
+
+  void makeGroup() {
+    int node, i;
+    queue<int> Q;
+    Q.push(0);
+    group[0] = 1;
+    while (true) {
+      while (!Q.empty()) {
+        node = Q.front();
+        Q.pop();
+        for (int k = 0; k < num_of_each[node]; k++) {
+          if (group[V[node][k]] == 0) {
+            group[V[node][k]] = group[node];
+            Q.push(V[node][k]);
+          }
+        }
+      }
+      group_number++;
+      if (!ungrouped.empty()) {
+        i = ungrouped.front();
+        ungrouped.pop();
+        group[i] = group_number;
+        Q.push(i);
+      } else {
+        break;
+      }
+    }
+  }
+
+  bool canAccess(int s, int t) { return group[s] == group[t]; }
+
+private:
+  vector<vector<int>> V;
+  vector<int> num_of_each;
+  vector<int> group;
+  int group_number;
+  int n, m;
+};
+
+int main() {
+  int n, m, s, t, q;
+  scanf("%d %d", &n, &m);
+  Relation relation(n, m);
+  for (int i = 0; i < m; i++) {
+    scanf("%d %d", &s, &t);
+    relation.push(s, t);
+  }
+  relation.makeGroup();
+  scanf("%d", &q);
+  for (int i = 0; i < q; i++) {
+    scanf("%d %d", &s, &t);
+    if (relation.canAccess(s, t)) {
+      printf("yes\n");
+    } else {
+      printf("no\n");
+    }
+  }
+  return 0;
+}
+```
+
+Please note that the "ungrouped" queue should be populated with all nodes at the start of the "makeGroup" function.

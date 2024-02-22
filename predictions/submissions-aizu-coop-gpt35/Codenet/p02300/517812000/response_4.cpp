@@ -1,0 +1,53 @@
+#include <algorithm>
+#include <cstdio>
+#include <vector>
+using namespace std;
+
+class Point {
+public:
+  int x, y;
+  Point(int a = 0, int b = 0) : x(a), y(b) {}
+  bool operator<(const Point &p) const {
+    return y < p.y || (y == p.y && x < p.x);
+  }
+};
+
+inline bool direct(const Point &base, const Point &a, const Point &b) {
+  int dx1 = a.x - base.x;
+  int dy1 = b.y - base.y;
+  int dx2 = b.x - base.x;
+  int dy2 = a.y - base.y;
+  return dx1 * dy1 - dy2 * dx2 < 0;
+}
+
+int main() {
+  int n, i;
+  int k = 2;
+  vector<Point> P;
+  vector<Point> H;
+  scanf("%d", &n);
+  P.resize(n);
+  for (i = 0; i < n; ++i) {
+    scanf("%d%d", &P[i].x, &P[i].y);
+  }
+  sort(P.begin(), P.end());
+  H.resize(2 * n);
+  H[0] = P[0];
+  H[1] = P[1];
+  for (i = 0; i < n - 2 || i >= 3; ++i) {
+    if (i < n - 2) {
+      while (k >= 2 && direct(H[k - 2], H[k - 1], P[i + 2]))
+        k--;
+      H[k++] = P[i + 2];
+    } else {
+      while (k >= 2 && direct(H[k - 2], H[k - 1], P[i - 3]))
+        k--;
+      H[k++] = P[i - 3];
+    }
+  }
+  printf("%d\n", k - 1);
+  for (i = 0; i < k - 1; ++i) {
+    printf("%d %d\n", H[i].x, H[i].y);
+  }
+  return 0;
+}

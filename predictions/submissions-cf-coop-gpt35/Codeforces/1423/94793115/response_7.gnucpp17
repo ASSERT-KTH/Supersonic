@@ -1,0 +1,149 @@
+#include <cstdio>
+#include <vector>
+#include <array>
+#include <tuple>
+
+struct SegTree {
+  std::array<int, 2*n> sand, sor, lazy;
+  int n;
+  
+  SegTree(int n_) {
+    n = n_;
+  }
+  
+  void upd(int id, int v) {
+    sand[id] |= v;
+    sor[id] |= v;
+    lazy[id] |= v;
+  }
+  
+  void push(int id, int il, int ir) {
+    if (lazy[id] == 0)
+      return;
+    upd(il, lazy[id]);
+    upd(ir, lazy[id]);
+    lazy[id] = 0;
+  }
+  
+  void update(int x, int y, int v, int id, int l, int r) {
+    if (x <= l && r <= y) {
+      upd(id, v);
+      return;
+    }
+    if (x >= r || l >= y)
+      return;
+    int mid = (l + r) >> 1, il = id + 1, ir = id + 2 * (mid - l);
+    push(id, il, ir);
+    update(x, y, v, il, l, mid);
+    update(x, y, v, ir, mid, r);
+    sand[id] = sand[il] & sand[ir];
+    sor[id] = sor[il] | sor[ir];
+  }
+  
+  void update(int x, int y, int v) { 
+    update(x, y, v, 0, 0, n);
+  }
+  
+  std::tuple<int, int> get(int x, int y, int id, int l, int r) {
+    if (x <= l && r <= y) {
+      return std::tie(sand[id], sor[id]);
+    }
+    if (x >= r || l >= y)
+      return {-1, 0};
+    int mid = (l + r) >> 1, il = id + 1, ir = id + 2 * (mid - l);
+    push(id, il, ir);
+    auto retl = get(x, y, il, l, mid);
+    auto retr = get(x, y, ir, mid, r);
+    return {retl.first & retr.first, retl.second | retr.second};
+  }
+  
+  std::tuple<int, int> get(int x, int y) { 
+    return get(x, y, 0, 0, n);
+  }
+  
+  void print(int id, int l, int r) {
+    if (r - l < 2) {
+      printf("%d\n", sand[id]);
+      return;
+    }
+    int mid = (l + r) >> 1, il = id + 1, ir = id + 2 * (mid - l);
+    push(id, il, ir);
+    print(il, l, mid);
+    print(ir, mid, r);
+  }
+  
+  void print() { 
+    print(0, 0, n);
+  }
+};
+
+int main() {
+  int k, q;
+  scanf("%d %d", &k, &q);
+  int n = 1 << k, mask = (1 << k) - 1;
+  SegTree low(n), hig(n);
+  std::vector<std::tuple<long long, long long, int>> cons;
+  
+  for (int i = 0; i < q; ++i) {
+    long long l, r;
+    int v;
+    scanf("%lld %lld %d", &l, &r, &v);
+    int la = l & mask, lb = (l >> k) & mask;
+    int ra = r & mask, rb = (r >> k) & mask;
+    
+    if (lb + 1 < rb) {
+      low.update(0, n, v);
+    } else if (lb < rb) {
+      low.update(la, n, v);
+      low.update(0, ra + 1, v);
+    } else {
+      low.update(la, ra + 1, v);
+    }
+    
+    hig.update(lb, rb + 1, v);
+    cons.emplace_back(l, r, v);
+  }
+  
+  auto cek = [&](int la, int ra, int lb, int rb, int v) {
+    bool ok = true;
+    int resh = hig.get(lb, rb + 1);
+    int resl = low.get(la, ra + 1);
+    ok &= (resl & resh) == v;
+    return ok;
+  };
+  
+  bool ok = true;
+  
+  for (auto &c : cons) {
+    long long l, r;
+    int v;
+    std::tie(l, r, v) = c;
+    int la = l & mask, lb = (l >> k) & mask;
+    int ra = r & mask, rb = (r >> k) & mask;
+    
+    if (lb == rb) {
+      ok &= cek(la, ra, lb, rb, v);
+    } else {
+      ok &= cek(la, n - 1, lb, lb, v);
+      ok &= cek(0, ra, rb, rb, v);
+      
+      if (lb + 1 < rb) {
+        ok &= cek(0, n - 1, lb + 1, rb - 1, v);
+      }
+    }
+    
+    if (!ok)
+      break;
+  }
+  
+  if (!ok) {
+    puts("impossible");
+    return 0;
+  }
+  
+  puts("possible");
+  low.print();
+  hig.print();
+  
+  return 0;
+}

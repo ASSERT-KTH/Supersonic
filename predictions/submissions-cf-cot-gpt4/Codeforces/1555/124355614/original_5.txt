@@ -1,0 +1,71 @@
+The given code is a C++ program that implements a Segment Tree with lazy propagation. It seems to be already optimized by using efficient data structures and algorithms. However, we can do some small modifications:
+
+1) Remove the `#include <bits/stdc++.h>` and replace it with the specific libraries needed. The `bits/stdc++.h` is a header file that includes almost all standard library headers. This can increase the compilation time, and it is not good practice to include it. 
+
+2) The division operation in the `add` function `(tl + tr) / 2` can be replaced with a bit manipulation operation `(tl + tr) >> 1` which is faster than the division operation.
+
+3) The main function contains the statement `ios_base ::sync_with_stdio(0); cin.tie(0); cout.tie(0);`. While these lines are necessary to speed up input/output operations in a large dataset, they are not required in all programs. If the size of input/output is small, these lines can be removed.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <climits>
+
+using namespace std;
+typedef long long ll;
+const int N = 2e6 + 5;
+int t[4 * N], push[4 * N];
+void makepush(int v, int tl, int tr) {
+  if (!push[v])
+    return;
+  if (tl != tr) {
+    push[v * 2] += push[v];
+    push[v * 2 + 1] += push[v];
+    t[v * 2] += push[v];
+    t[v * 2 + 1] += push[v];
+  }
+  push[v] = 0;
+}
+void add(int v, int tl, int tr, int l, int r, int x) {
+  if (l > r)
+    return;
+  makepush(v, tl, tr);
+  if (tl == l && tr == r) {
+    t[v] += x;
+    push[v] += x;
+    return;
+  }
+  int tm = (tl + tr) >> 1;
+  add(v * 2, tl, tm, l, min(r, tm), x);
+  add(v * 2 + 1, tm + 1, tr, max(l, tm + 1), r, x);
+  t[v] = min(t[v * 2], t[v * 2 + 1]);
+}
+int main() {
+  int n, m;
+  cin >> n >> m;
+  vector<pair<int, pair<int, int>>> s;
+  for (int i = 0; i < n; i++) {
+    int l, r, w;
+    cin >> l >> r >> w;
+    s.push_back({w, {l, r - 1}});
+  }
+  sort(s.begin(), s.end(),
+       [&](const pair<int, pair<int, int>> &x,
+           const pair<int, pair<int, int>> &y) { return x.first < y.first; });
+  int ptr = -1, ans = INT_MAX;
+  for (int i = 0; i < n; i++) {
+    if (i > 0)
+      add(1, 1, m - 1, s[i - 1].second.first, s[i - 1].second.second, -1);
+    while (ptr + 1 < n && t[1] == 0) {
+      ++ptr;
+      add(1, 1, m - 1, s[ptr].second.first, s[ptr].second.second, +1);
+    }
+    if (t[1])
+      ans = min(ans, s[ptr].first - s[i].first);
+  }
+  cout << ans;
+}
+```

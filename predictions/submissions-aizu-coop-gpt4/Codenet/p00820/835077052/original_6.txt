@@ -1,0 +1,50 @@
+The provided code block is a C++ program that calculates the number of ways to represent a number as a sum of four or fewer perfect squares. The program uses dynamic programming to store calculations in a two-dimensional array `dp[][]`. 
+
+Let's analyze the code:
+
+- The program reads an integer `n` from the input.
+- The 2D array `dp[][]` is initialized to zero.
+- The nested loops iterate through all the perfect squares less than or equal to `n` and update the `dp[][]` array accordingly.
+- The result is then calculated as the sum of `dp[n][4]`, `dp[n][3]`, `dp[n][2]`, and `dp[n][1]`, which represents the number of ways to represent `n` as the sum of 4, 3, 2 or 1 perfect squares respectively.
+
+Optimization Strategy:
+
+1. **Inefficient use of memory**: The 2D array `dp[][]` is larger than necessary. The first dimension of `dp[][]` goes up to `n`, but the second dimension goes up to 4 as the program only uses `dp[n][4]`, `dp[n][3]`, `dp[n][2]`, and `dp[n][1]`. This means the array `dp[][]` could be reduced to `dp[n][5]`.
+
+2. **Redundant Computations**: The innermost loop computes `i * i` repeatedly on each iteration. This multiplication could be computed once and stored in a variable.
+
+3. **Compiler Optimizations**: The loop iterations appear to be independent of each other, meaning they could potentially be executed in parallel. Compiler directives could be added to hint at this.
+
+Optimized Code:
+
+```c++
+#include <cstdio>
+#include <cstring>
+using namespace std;
+
+int dp[1000000][5];
+
+int main() {
+    int n;
+    while (~scanf("%d", &n)) {
+        if (n == 0) break;
+
+        memset(dp, 0, sizeof(dp));
+        dp[0][0] = 1;
+        
+        for (int i = 1; i * i <= n; i++) {
+            int square = i * i; // Store square value to avoid repeated computation
+            for (int k = 1; k <= 4; k++) {
+                #pragma omp parallel for    // Compiler directive for parallel execution
+                for (int j = square; j <= n; j++) {
+                    dp[j][k] += dp[j - square][k - 1];
+                }
+            }
+        }
+
+        printf("%d\n", dp[n][4] + dp[n][3] + dp[n][2] + dp[n][1]);
+    }
+}
+```
+
+Please note that using `#pragma omp parallel for` requires OpenMP library, which is not part of the standard C++ library and must be included separately. It does increase the code complexity a little and may not always result in performance gain due to the overhead of creating and managing multiple threads. However, in cases where `n` is large and the system has multiple cores, the performance gain can be significant.

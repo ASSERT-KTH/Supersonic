@@ -1,0 +1,11 @@
+The given code includes two functions `M2S()` and `S2M()` that convert dates between two different formats. The `M2S()` function converts a date from the `Ma` format (consisting of five integers b, ka, t, w, ki) to the `S` format (consisting of three integers y, m, d). The `S2M()` function performs the reverse conversion.
+
+Here are some potential areas for optimization in the given code:
+
+1. The `check()` function: The `check()` function checks if a year is a leap year. Instead of using this function multiple times, we can precompute an array of leap years for faster access.
+
+2. The `M2S()` function: This function performs several multiplications and additions to convert the `Ma` format to the `S` format. These calculations can be simplified and optimized.
+
+3. The `S2M()` function: This function performs calculations to convert the `S` format to the `Ma` format. Similar to `M2S()`, there are opportunities for simplification and optimization.
+
+4. The input processing in the `main()` function: The input processing is done using a string and a loop. This can be optimized by using `cin` directly and avoiding the loop.

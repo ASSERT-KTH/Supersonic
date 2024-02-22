@@ -1,0 +1,77 @@
+#include <cctype>
+#include <cstdio>
+#include <cstring>
+#include <queue>
+#include <vector>
+using namespace std;
+
+vector<vector<int>> validMoves;
+
+int solve(int start, int goal) {
+  const int dif[5] = {0, -1, 1, -16, 16};
+  queue<int> q;
+  q.push(start);
+  q.push(-1);
+  int tm = 1;
+  while (1) {
+    int u = q.front();
+    q.pop();
+    if (u < 0) {
+      q.push(-1);
+      ++tm;
+    } else {
+      for (int i1 = u & 255 ? 4 : 0; i1 >= 0; --i1)
+        for (int i2 = u >> 8 & 255 ? 4 : 0; i2 >= 0; --i2)
+          for (int i3 = u >> 16 ? 4 : 0; i3 >= 0; --i3) {
+            int v = u + dif[i1] + (dif[i2] << 8) + (dif[i3] << 16);
+            if (v < 0 || v >= validMoves.size() || validMoves[v].empty()) {
+              continue;
+            }
+            if (v == goal) {
+              return tm;
+            }
+            q.push(v);
+            validMoves[v].clear();
+          }
+    }
+  }
+}
+
+int main() {
+  int w, h;
+  while (scanf("%d%d%*d ", &w, &h), w) {
+    vector<string> c(h);
+    validMoves.clear();
+    validMoves.resize(h*w);
+    int goal = 0;
+    int start = 0;
+    for (int i = 0; i < h; ++i) {
+      char line[20];
+      fgets(line, 20, stdin);
+      c[i] = line;
+    }
+    for (int i = 0; i < h; ++i) {
+      for (int j = 0; j < w; ++j) {
+        if (c[i][j] == '#') {
+          continue;
+        }
+        int position = i*w + j;
+        if (isupper(c[i][j])) {
+          goal |= position << (c[i][j] - 'A') * 8;
+        } else if (islower(c[i][j])) {
+          start |= position << (c[i][j] - 'a') * 8;
+        }
+        // Calculate valid moves for the current position
+        for (int d = 0; d < 5; ++d) {
+          int ni = i + dif[d] / w;
+          int nj = j + dif[d] % w;
+          if (ni >= 0 && ni < h && nj >= 0 && nj < w && c[ni][nj] != '#') {
+            validMoves[position].push_back(ni*w + nj);
+          }
+        }
+      }
+    }
+    int tm = solve(start, goal);
+    printf("%d\n", tm);
+  }
+}

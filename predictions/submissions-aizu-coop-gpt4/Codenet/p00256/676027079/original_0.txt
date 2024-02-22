@@ -1,0 +1,109 @@
+Code Analysis:
+The program converts dates from one calendar to another, and reads from standard input until it encounters "#". It uses two structs, S and Ma, to represent different types of dates. It also has two conversion functions, M2S and S2M. The main loop reads in a string, parses it into a vector of integers, and then calls the appropriate conversion function based on the size of the vector.
+
+Optimization Strategy:
+
+1. Data Structures: The program uses vectors and structs. These are efficient for the tasks at hand, so no changes are needed in this regard.
+
+2. Redundant Computations: The check function is being called multiple times with the same argument within the same scope. This redundancy could be eliminated by storing the result of the function call in a variable, and reusing that variable whenever the same computation is needed.
+
+3. Loops: There are several loops in the code. However, these loops iterate over small sets of data and are necessary for the functioning of the program. Therefore, they do not warrant any optimizations.
+
+4. Compiler Optimizations: The compiler should automatically optimize the code for performance. However, we could consider enabling further optimizations through compiler flags, such as -O2 or -O3.
+
+Step-by-Step Explanation:
+
+1. Remove Redundant Computations: In the M2S and S2M functions, the 'check function' is called several times with the same arguments. To remove this redundancy, we can store the result of the function in a variable and reuse this variable.
+
+Trade-offs: This optimization will make the code slightly more complicated because we are introducing additional variables. However, the performance gain should outweigh this increase in complexity.
+
+Optimized Code Block:
+```
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+struct S {
+  ll y, m, d;
+};
+struct Ma {
+  ll b, ka, t, w, ki;
+};
+int M[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+bool check(ll y) { return (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)); }
+S M2S(ll b, ll ka, ll t, ll w, ll ki) {
+  ka += b * 20;
+  t += ka * 20;
+  w += t * 18;
+  ki += w * 20;
+  S res;
+  res.y = 2012, res.m = 12, res.d = 21 + ki;
+  if (res.d <= 31)
+    return res;
+  while (res.d / (365 + check(res.y + 1)))
+    res.y++, res.d -= (365 + check(res.y));
+  bool ycheck = check(res.y);
+  if (res.d == 0)
+    res.m--, res.d = M[res.m - 1] + (ycheck && res.m == 2);
+  if (res.d <= 31)
+    return res;
+  res.y++, res.m = 1, res.d -= 31;
+  while (res.d / (M[res.m - 1] + (ycheck && res.m == 2))) {
+    res.d -= (M[res.m - 1] + (ycheck && res.m == 2));
+    res.m++;
+  }
+  if (res.d == 0)
+    res.m--, res.d = M[res.m - 1] + (ycheck && res.m == 2);
+  return res;
+}
+Ma S2M(ll y, ll m, ll d) {
+  y -= 2012;
+  if (y)
+    d += 10;
+  else
+    d = (d - 21);
+  for (int i = 0; i < m - 1 && y; i++)
+    d += (M[i] + (i == 1 && check(y + 2012)));
+  y--;
+  while (y > 0)
+    d += (365 + check(y + 2012)), y--;
+  Ma res;
+  d %= 13 * 20 * 20 * 18 * 20;
+  res.ki = d;
+  res.w = res.ki / 20;
+  res.ki %= 20;
+  res.t = res.w / 18;
+  res.w %= 18;
+  res.ka = res.t / 20;
+  res.t %= 20;
+  res.b = res.ka / 20;
+  res.ka %= 20;
+  return res;
+}
+int main() {
+  while (1) {
+    string str;
+    cin >> str;
+    if (str == "#")
+      break;
+    vector<int> a;
+    int i = 0, num = 0;
+    while (str[i]) {
+      if (str[i] == '.')
+        a.push_back(num), num = 0;
+      else
+        num = num * 10 + str[i] - '0';
+      i++;
+    }
+    a.push_back(num);
+    if (a.size() == 5) {
+      S ans = M2S(a[0], a[1], a[2], a[3], a[4]);
+      cout << ans.y << "." << ans.m << "." << ans.d << endl;
+    } else {
+      Ma ans = S2M(a[0], a[1], a[2]);
+      cout << ans.b << "." << ans.ka << "." << ans.t << "." << ans.w << "."
+           << ans.ki << endl;
+    }
+  }
+  return 0;
+}
+```

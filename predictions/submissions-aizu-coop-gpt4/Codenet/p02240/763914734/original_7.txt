@@ -1,0 +1,116 @@
+## Code Analysis
+
+This code represents a class named "Relation" that models a network of relationships between different nodes. The network is undirected, meaning that a relationship from node 'a' to node 'b' also implies a relationship from 'b' to 'a'. 
+
+Each node is assigned a group number, and nodes that are directly or indirectly connected to each other belong to the same group. The intention of the class's methods is to construct these groups and then to check if two nodes belong to the same group (i.e., are they directly or indirectly connected).
+
+## Optimization Strategy
+
+1. **Inefficient Data Structures:** The use of vector `V` and `num_of_each` seem to be redundant. The size of a vector can be directly accessed by `std::vector::size()`, eliminating the need for `num_of_each`.
+
+2. **Redundant Computation:** The `group_number` is always incremented after every iteration in `makeGroup()`, even if no new group is formed. This can be improved by only incrementing `group_number` when a new group is formed.
+
+3. **Loop Optimization:** In the `makeGroup()` method, there is an inner loop that checks all nodes for the formation of a new group. This can be optimized by using a separate queue for unvisited nodes.
+
+4. **Compiler Optimization:** The compiler can be hinted to inline small, frequently used functions like `canAccsess()`, which might offer a slight performance boost.
+
+## Step-by-Step Explanation
+
+1. **Remove `num_of_each` array and use `std::vector::size()`:** The `num_of_each` array, which stores the number of connections for each node, is not necessary because this information can be directly obtained from the size of each vector in `V`. This reduces memory usage and simplifies the code.
+
+2. **Optimize `group_number` increment:** In the `makeGroup()` function, `group_number` is incremented in every outer loop iteration, which is not necessary. It should be incremented only when a new group is formed, i.e., when a new node is pushed into the queue `Q`. This reduces redundant computations.
+
+3. **Optimize Loop by using separate queue for unvisited nodes:** In the `makeGroup()` function, a loop is used to find unvisited nodes. This can be optimized by maintaining a separate queue of unvisited nodes. When a node is visited, it is removed from the unvisited queue. This reduces the number of iterations in the loop.
+
+4. **Use Compiler Optimization:** The small function `canAccsess()` can be inlined. This means that the compiler will replace the function call with the function code itself, eliminating the overhead of a function call.
+
+## Optimized Code Block:
+
+```cpp
+#include <algorithm>
+#include <queue>
+#include <stdio.h>
+#include <vector>
+using namespace std;
+
+class Relation {
+public:
+  Relation(int tmp_n, int tmp_m) {
+    n = tmp_n;
+    m = tmp_m;
+    V = new vector<int>[n];
+    group = new int[n];
+    for (int i = 0; i < n; i++) {
+      group[i] = 0;
+      unvisited.push(i);
+    }
+    group_number = 1;
+  }
+
+  void push(int s, int t) {
+    V[s].push_back(t);
+    V[t].push_back(s);
+  }
+
+  void makeGroup() {
+    int node, i;
+    queue<int> Q;
+    Q.push(unvisited.front());
+    unvisited.pop();
+    group[0] = 1;
+    while (!unvisited.empty()) {
+      while (!Q.empty()) {
+        node = Q.front();
+        Q.pop();
+        for (int k = 0; k < V[node].size(); k++) {
+          if (group[V[node][k]] == 0) {
+            group[V[node][k]] = group_number;
+            Q.push(V[node][k]);
+            unvisited.erase(std::find(unvisited.begin(), unvisited.end(), V[node][k]));
+          }
+        }
+      }
+      if (!unvisited.empty()) {
+        group_number++;
+        Q.push(unvisited.front());
+        unvisited.pop();
+        group[Q.back()] = group_number;
+      }
+    }
+  }
+  
+  inline bool canAccsess(int s, int t) { return group[s] == group[t]; }
+
+private:
+  vector<int> *V;
+  int *group;
+  int group_number;
+  int n, m;
+  vector<int> unvisited;
+};
+
+int main() {
+  int n, m, s, t, q;
+  scanf("%d %d", &n, &m);
+  Relation relation(n, m);
+  for (int i = 0; i < m; i++) {
+    scanf("%d %d", &s, &t);
+    relation.push(s, t);
+  }
+  relation.makeGroup();
+  scanf("%d", &q);
+  for (int i = 0; i < q; i++) {
+    scanf("%d %d", &s, &t);
+    if (relation.canAccsess(s, t)) {
+      printf("yes\n");
+    } else {
+      printf("no\n");
+    }
+  }
+  return 0;
+}
+```
+
+## Trade-offs:
+
+Although these optimizations improve the performance of the code, it does increase its complexity. For example, managing a separate queue for unvisited nodes may make the code harder to understand for some readers. Also, the `std::find` operation in the `makeGroup()` method adds a linear scan of the `unvisited` queue, which may impact performance for very large inputs.

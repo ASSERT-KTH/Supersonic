@@ -1,0 +1,110 @@
+The given code contains various potential points for optimization. Here are the step by step optimizations:
+
+1. Avoid using "#include <bits/stdc++.h>": It includes a lot of unnecessary libraries which increases the compile time. Instead, include only those libraries which are used in the program.
+2. Avoid the use of "using namespace std;": It can cause name collision problems. It is better to use std:: before each standard library object.
+3. Avoid using macros like "#define REP(i, n) for (int i = 0; i < (int)(n); ++i)". Instead, use a function or just write the loop where needed.
+4. Avoid repetitive calculations: In the code, the same calculations like "ra * ra", "rb * rb", "sin(tha)" etc. are performed multiple times. These calculations can be stored in a variable and the variable can be used wherever required to avoid repetitive calculations.
+5. Avoid using the "printf" function for output. Instead, use "cout" which is more C++ style.
+6. Use references in function parameters if the values are not modified in the function. This avoids unnecessary copying of values.
+7. Avoid "cin" and "cout" for I/O operations as they are slower. Instead, use scanf and printf for faster I/O operations.
+
+Now, let's optimize the code:
+
+```c++
+#include <iostream>
+#include <cmath>
+#include <assert.h>
+
+const double EPS = 1e-4;
+
+double calc(double ra, double rb, double s) {
+    double lb = abs(ra - rb);
+    double ub = ra + rb;
+    for(int _ = 0; _ < 80; _++) {
+        double d = (lb + ub) / 2;
+        double ra_sq = ra * ra;
+        double rb_sq = rb * rb;
+        double d_sq = d * d;
+        double tha = acos((ra_sq + d_sq - rb_sq) / (2.0 * d * ra));
+        double sin_tha = sin(tha);
+        double thb = acos((rb_sq + d_sq - ra_sq) / (2.0 * d * rb));
+        double sum = ra_sq * tha + rb_sq * thb - ra * d * sin_tha;
+        if (sum > s) {
+            lb = d;
+        } else {
+            ub = d;
+        }
+    }
+    return ub;
+}
+
+double sq(double x) { return x * x; }
+
+bool judge(double x, double y, double r, double W, double H) {
+    return x - r > -EPS && x + r < W + EPS && y - r > -EPS && y + r < H + EPS;
+}
+
+bool solve(double W, double H, double sa, double sb, double sc, bool reversed) {
+    double ra = sqrt(sa / M_PI);
+    double rb = sqrt(sb / M_PI);
+    if (2.0 * ra > std::min(W, H) + EPS)
+        return false;
+    if (2.0 * rb > std::min(W, H) + EPS)
+        return false;
+    double D = calc(ra, rb, sc);
+    double xa = ra;
+    double ya = ra;
+    double D_sq = sq(D);
+    double ra_sq = sq(ra);
+    double rb_sq = sq(rb);
+    for (double xb : {ra, rb, W - rb}) {
+        double dy_sq = D_sq - sq(xa - xb);
+        if(dy_sq < 0) continue;
+        double dy = sqrt(dy_sq);
+        for (int sign = -1; sign <= 1; sign += 2) {
+            double yb = ya + sign * dy;
+            if (judge(xb, yb, rb, W, H)) {
+                assert(judge(xa, ya, ra, W, H));
+                assert(abs(hypot(xa - xb, ya - yb) - D) < EPS);
+                if (!reversed) {
+                    std::cout << xa << ' ' << ya << ' ' << ra << ' ' << xb << ' ' << yb << ' ' << rb << '\n';
+                } else {
+                    std::cout << xb << ' ' << yb << ' ' << rb << ' ' << xa << ' ' << ya << ' ' << ra << '\n';
+                }
+                return true;
+            }
+        }
+    }
+    for (double yb : {ra, rb, H - rb}) {
+        double dx_sq = D_sq - sq(ya - yb);
+        if(dx_sq < 0) continue;
+        double dx = sqrt(dx_sq);
+        for (int sign = -1; sign <= 1; sign += 2) {
+            double xb = xa + sign * dx;
+            if (judge(xb, yb, rb, W, H)) {
+                assert(judge(xa, ya, ra, W, H));
+                assert(abs(hypot(xa - xb, ya - yb) - D) < EPS);
+                if (!reversed) {
+                    std::cout << xa << ' ' << ya << ' ' << ra << ' ' << xb << ' ' << yb << ' ' << rb << '\n';
+                } else {
+                    std::cout << xb << ' ' << yb << ' ' << rb << ' ' << xa << ' ' << ya << ' ' << ra << '\n';
+                }
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+int main() {
+    double W, H, sa, sb, sc;
+    while (std::cin >> W >> H >> sa >> sb >> sc && W > 0) {
+        if (solve(W, H, sa, sb, sc, false))
+            continue;
+        if (solve(W, H, sb, sa, sc, true))
+            continue;
+        std::cout << "impossible\n";
+    }
+    return 0;
+}
+```

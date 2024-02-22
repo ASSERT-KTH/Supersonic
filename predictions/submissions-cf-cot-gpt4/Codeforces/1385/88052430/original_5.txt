@@ -1,0 +1,124 @@
+The given program has a good amount of efficiency, but there are still some areas that we can optimize. 
+
+1. Avoid the use of `#define`: `#define` is a preprocessor directive that replaces the defined symbol with the value throughout the code. This can cause issues if a symbol is redefined unintentionally. Instead, we can use `const` or `constexpr` for constant values and inline functions for macros that act as functions. 
+
+2. Avoid using `std::endl`: `std::endl` not only inserts a newline character, but also flushes the output buffer, which is a relatively costly operation. We can replace `std::endl` with '\n' to improve performance.
+
+3. Use `reserve()` for vectors: If we know the size of the vector in advance, we can reserve the memory beforehand, which can avoid reallocations.
+
+4. Replace `std::map` with `std::unordered_map`: `std::unordered_map` has a time complexity of O(1) for insert and find operations, whereas `std::map` has O(log n). In this case, we do not need the map keys to be sorted, so we can use `std::unordered_map`.
+
+5. Reduce the usage of `std::vector<std::vector<int>>`: These nested vectors are equivalent to a 2D array, and they can consume a large amount of memory. If possible, we should try to reduce the usage of such data structures, but in this case, it is necessary for the algorithm, so we cannot remove it.
+
+Here is the optimized program:
+
+```cpp
+#include <bits/stdc++.h>
+#include <ext/pb_ds/assoc_container.hpp>
+#include <ext/pb_ds/tree_policy.hpp>
+using namespace std;
+using namespace __gnu_pbds;
+
+template <typename T>
+using ordered_set =
+    tree<T, null_type, less<T>, rb_tree_tag, tree_order_statistics_node_update>;
+template <typename T>
+using ordered_multiset = tree<T, null_type, less_equal<T>, rb_tree_tag,
+                              tree_order_statistics_node_update>;
+
+inline void fastio() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  cout.tie(NULL);
+}
+
+constexpr int MOD = 1000000007;
+constexpr char endl = '\n';
+
+bool dfs(int i, vector<int> &visited, vector<int> &being_visited,
+         vector<int> &TS, vector<vector<int>> &g) {
+  if (visited[i]) {
+    return 0;
+  } else if (being_visited[i]) {
+    return 1;
+  } else {
+    being_visited[i] = 1;
+    for (auto j : g[i]) {
+      if (dfs(j, visited, being_visited, TS, g))
+        return 1;
+    }
+  }
+  being_visited[i] = 0;
+  visited[i] = 1;
+  TS.push_back(i);
+  return 0;
+}
+
+void solve() {
+  int n, m;
+  cin >> n >> m;
+  vector<int> visited(n + 1, 0), being_visited(n + 1, 0), TS;
+  TS.reserve(n+1);  // reserve space for TS vector
+  vector<vector<int>> g(n + 1);
+  vector<set<int>> G(n + 1);
+  for (int i = 0; i < m; ++i) {
+    int t, x, y;
+    cin >> t >> x >> y;
+    if (t)
+      g[x].push_back(y);
+    G[x].insert(y);
+    G[y].insert(x);
+  }
+
+  for(int i = 1; i < n + 1; ++i) {
+    bool ch = 1;
+    if (g[i].size() == 0 and G[i].size() > 0) {
+      for (auto j : G[i]) {
+        ch &= (!G[j].count(i));
+      }
+    } else {
+      ch = 0;
+    }
+    if (ch) {
+      for (auto j : G[i]) {
+        g[i].push_back(j);
+      }
+    }
+  }
+
+  auto havecycle = [&]() {
+    for(int i = 1; i < n + 1; ++i) {
+      if (!visited[i]) {
+        if (dfs(i, visited, being_visited, TS, g)) {
+          return 1;
+        }
+      }
+    }
+    return 0;
+  };
+
+  if (havecycle()) {
+    cout << "NO" << endl;
+    return;
+  }
+  reverse(TS.begin(), TS.end());
+  unordered_map<int, int> map;
+  for(int i = 0; i < n; ++i) map[TS[i]] = i;
+  cout << "YES" << endl;
+  for(int i = 1; i < n + 1; ++i) {
+    for (auto j : G[i]) {
+      if (map[j] < map[i])
+        cout << j << " " << i << endl;
+    }
+  }
+}
+
+int main() {
+  fastio();
+  int t = 1;
+  cin >> t;
+  while (t--) 
+    solve();
+  return 0;
+}
+```

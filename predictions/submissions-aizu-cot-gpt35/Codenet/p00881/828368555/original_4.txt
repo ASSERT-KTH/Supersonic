@@ -1,0 +1,83 @@
+Step 1: Avoid unnecessary copying of the vector `vi` in the `search` function.
+
+In the current implementation, the `search` function takes the vector `vi` by reference, but then it creates copies of `vi` multiple times in the for loop. This can be avoided by passing `vi` as a const reference and using `const_cast` to remove the constness when necessary.
+
+Step 2: Avoid unnecessary lookups in the `map` mp.
+
+In the current implementation, the `map` `mp` is used to store computed results and avoid recomputing them. However, in the `search` function, there are multiple lookups in the `map` for the same key. We can avoid these repeated lookups by storing the result of the lookup in a variable and reusing it.
+
+Step 3: Use a `vector` instead of a `map` for storing computed results.
+
+In the current implementation, a `map` is used to store computed results. However, using a `vector` would be more efficient in terms of both time and memory. We can use a `vector` of size `(1 << n)` to store the computed results. The index of the `vector` can be calculated using the `used` variable. This will avoid the overhead of hashing and searching in the `map`.
+
+Step 4: Use `reserve` to avoid unnecessary reallocations of the vector `a` and `b`.
+
+In the current implementation, the vectors `a` and `b` are created inside the for loop. However, we know that the maximum size of `a` and `b` is `n`, so we can use `reserve` to avoid unnecessary reallocations of these vectors.
+
+Below is the optimized program incorporating these optimizations:
+
+```
+#include <iostream>
+#include <string>
+#include <vector>
+using namespace std;
+
+vector<vector<int>> mp;
+string qes[128];
+
+int search(const vector<int>& vi, int depth, int used, int m, int n) {
+  if (mp[used][vi.size()] != -1)
+    return mp[used][vi.size()];
+
+  if (vi.size() > (1 << (m - depth)))
+    return 100;
+
+  if (vi.size() == 1)
+    return depth;
+
+  int res = 100;
+
+  for (int i = 0; i < m; i++) {
+    if ((used >> i) & 1)
+      continue;
+
+    vector<int> a, b;
+    a.reserve(vi.size());
+    b.reserve(vi.size());
+
+    for (int j = 0; j < vi.size(); j++) {
+      if (qes[vi[j]][i] == '0')
+        a.push_back(vi[j]);
+      else
+        b.push_back(vi[j]);
+    }
+
+    if (a.empty() || b.empty())
+      continue;
+
+    int res_a = search(a, depth + 1, used | (1 << i), m, n);
+    int res_b = search(b, depth + 1, used | (1 << i), m, n);
+
+    res = min(res, max(res_a, res_b));
+  }
+
+  mp[used][vi.size()] = res;
+  return res;
+}
+
+int main() {
+  int m, n;
+  while (cin >> m >> n, m) {
+    for (int i = 0; i < n; i++)
+      cin >> qes[i];
+
+    mp.assign(1 << m, vector<int>(n + 1, -1));
+
+    vector<int> vi(n);
+    for (int i = 0; i < n; i++)
+      vi[i] = i;
+
+    cout << search(vi, 0, 0, m, n) << endl;
+  }
+}
+```

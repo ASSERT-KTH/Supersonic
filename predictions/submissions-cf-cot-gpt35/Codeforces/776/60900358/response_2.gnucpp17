@@ -1,0 +1,104 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+const int N = 1e5 + 5;
+const int MAX_NODES = 2 * N;
+
+int n, vis[MAX_NODES], ord[MAX_NODES], ordn, cnt, cmp[MAX_NODES], val[N];
+vector<int> adj[MAX_NODES], adjt[MAX_NODES];
+int m, st[N], sw[N][2];
+int stk[MAX_NODES], top;
+
+int v(int x) { return 2 * x; }
+int nv(int x) { return 2 * x + 1; }
+
+void add(int a, int b, vector<int>& list, int& count) {
+  list[count++] = b;
+  list[count++] = a ^ 1;
+}
+
+void dfs(int x) {
+  vis[x] = 1;
+  stk[top++] = x;
+  while (top > 0) {
+    int u = stk[--top];
+    ord[ordn++] = u;
+    for (int i = 0; i < adj[u].size(); i++) {
+      int v = adj[u][i];
+      if (!vis[v]) {
+        vis[v] = 1;
+        stk[top++] = v;
+      }
+    }
+  }
+}
+
+void dfst(int x) {
+  cmp[x] = cnt;
+  vis[x] = 0;
+  stk[top++] = x;
+  while (top > 0) {
+    int u = stk[--top];
+    for (int i = 0; i < adjt[u].size(); i++) {
+      int v = adjt[u][i];
+      if (vis[v]) {
+        cmp[v] = cnt;
+        vis[v] = 0;
+        stk[top++] = v;
+      }
+    }
+  }
+}
+
+bool run2sat() {
+  for (int i = 1; i <= m; i++) {
+    if (!vis[v(i)])
+      dfs(v(i));
+    if (!vis[nv(i)])
+      dfs(nv(i));
+  }
+  cnt = 0;
+  for (int i = ordn - 1; i >= 0; i--) {
+    int u = ord[i];
+    if (vis[u]) {
+      cnt++;
+      dfst(u);
+    }
+  }
+  for (int i = 1; i <= m; i++) {
+    if (cmp[v(i)] == cmp[nv(i)])
+      return false;
+    val[i] = cmp[v(i)] > cmp[nv(i)];
+  }
+  return true;
+}
+
+int main() {
+  ios_base::sync_with_stdio(0), cin.tie(0);
+  cin >> n >> m;
+  for (int i = 1; i <= n; i++)
+    cin >> st[i];
+  int q, a;
+  for (int i = 1; i <= m; i++) {
+    cin >> q;
+    while (q--) {
+      cin >> a;
+      sw[a][0] ? sw[a][1] = i : sw[a][0] = i;
+    }
+  }
+  int count1 = 0, count2 = 0;
+  for (int i = 1; i <= n; i++) {
+    int p = sw[i][0];
+    int q = sw[i][1];
+    if (!st[i]) {
+      add(v(p), v(q), adj[p], count1);
+      add(nv(q), nv(p), adj[q], count2);
+    } else {
+      add(nv(p), v(q), adj[p], count1);
+      add(v(q), nv(p), adj[q], count2);
+    }
+  }
+  cout << (run2sat() ? "YES\n" : "NO\n");
+}

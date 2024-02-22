@@ -1,0 +1,13 @@
+The provided code implements a segment tree data structure and performs a series of range updates and queries on it. The goal is to optimize this code for efficiency.
+
+Upon analyzing the code, we can identify a few potential areas for optimization:
+
+1. The use of `vector<int>` for both the `seg` and `add` arrays in the `SegmentTree` struct can be improved. Since the size of these arrays is fixed and known at compile time, we can replace `vector<int>` with a regular array `int[]` to eliminate the overhead of dynamic memory allocation.
+
+2. The `Add` function in the `SegmentTree` struct has a recursive implementation. Recursive function calls can have a significant performance overhead due to the function call stack. We can optimize this by converting the recursive implementation to an iterative one using a loop.
+
+3. The `Query` function in the `SegmentTree` struct also has a recursive implementation. Similar to the `Add` function, we can optimize it by converting it to an iterative implementation using a loop.
+
+4. The `min` function calls in the `for` loop can be replaced with simple conditional statements to avoid the function call overhead.
+
+5. The `scanf` function is used to read input values. This function can be relatively slow compared to other methods, such as using the `cin` stream. We can consider replacing `scanf` with `cin` for better performance.

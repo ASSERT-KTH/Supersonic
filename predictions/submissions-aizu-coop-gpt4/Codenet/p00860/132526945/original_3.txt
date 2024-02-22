@@ -1,0 +1,114 @@
+1. Code Analysis:
+- This program seems to be a pathfinding program, likely a variant of BFS (Breadth-First Search) for a 2D grid. 
+- There are three main functions: `main()`, `solve()`, and `check()`. `check()` function is used in `solve()` to verify the validity of a move.
+- The `wall` array is used to store the locations of walls in the grid. The `vis` array is used to store the state of each possible point in the grid to check if it was visited or not.
+- The function `solve()` is the main part of the program, where the BFS algorithm is implemented.
+- The `main()` function reads the input, sets up the start and goal positions, and calls the `solve()` function. 
+
+2. Optimization Strategy:
+- The `check()` function is called frequently and can be optimized. The majority of the time is spent shifting and masking bits. Precomputing some of these operations can help.
+- The `solve()` function contains nested loops which can be optimized by reducing computations within the loops and reducing the number of function calls.
+- Use of `memset` function for resetting the `vis` array can be optimized.
+- The I/O functions `scanf()` and `printf()` can be replaced with faster alternatives for significant speedup.
+
+3. Step-by-Step Explanation:
+- We can create a lookup table for the operation `i << 4 | j` which appears in multiple places in the code. This will reduce the computation time as we will replace a bit manipulation operation with a simple array access.
+- The `check()` function can be optimized by removing the loop and manually unrolling it for each 8 bits. This will reduce the number of iterations.
+- The BFS loops inside the `solve()` function can be optimized by reducing the number of function calls. We can inline the function `check()` to avoid function call overheads.
+- The `memset` function used for resetting the `vis` array uses a loop internally to set all values. Instead of using `memset`, we can keep a `timestamp` counter that is incremented for every new BFS. When we visit a cell, we set `vis[cell]` to the current timestamp. To check if a cell is visited, we check if `vis[cell] == timestamp`. If we need to do a new BFS, we increment the `timestamp` instead of resetting the whole `vis` array.
+- For faster I/O, replace `scanf` with `getchar_unlocked()` to read input and `printf` with `putchar_unlocked()` to write output. This can give a significant speedup because these functions don't have the overhead of checking for multithreading locks.
+
+4. Optimized Code Block:
+Please note that the following optimized code is a rough draft and you might need to debug before using it.
+
+```cpp
+#include <cctype>
+#include <cstdio>
+#include <cstring>
+#include <queue>
+using namespace std;
+unsigned short vis[1 << 24];
+char c[16][20];
+bool wall[256];
+int tm0;
+int lookup[256];
+
+inline int check(int u, int v) {
+  int p1 = v & 255;
+  if (p1 && (wall[p1] || p1 == ((v >> 8) & 255) || p1 == (u & 255))) {
+    return false;
+  }
+  p1 = (v >> 8) & 255;
+  if (p1 && (wall[p1] || p1 == ((v >> 16) & 255) || p1 == ((u >> 8) & 255))) {
+    return false;
+  }
+  p1 = v >> 16;
+  if (p1 && (wall[p1] || p1 == (v & 255) || p1 == ((u >> 16) & 255))) {
+    return false;
+  }
+  return true;
+}
+
+int solve(int start, int goal) {
+  const int dif[5] = {0, -1, 1, -16, 16};
+  queue<int> q;
+  q.push(start);
+  q.push(-1);
+  int tm = tm0 + 1;
+  vis[start] = tm;
+  while (1) {
+    int u = q.front();
+    q.pop();
+    if (u < 0) {
+      q.push(-1);
+      ++tm;
+    } else {
+      for (int i1 = u & 255 ? 4 : 0; i1 >= 0; --i1)
+        for (int i2 = u >> 8 & 255 ? 4 : 0; i2 >= 0; --i2)
+          for (int i3 = u >> 16 ? 4 : 0; i3 >= 0; --i3) {
+            int v = u + dif[i1] + (dif[i2] << 8) + (dif[i3] << 16);
+            if (vis[v] == tm) {
+              continue;
+            }
+            if (check(u, v)) {
+              if (v == goal) {
+                return tm;
+              }
+              vis[v] = tm;
+              q.push(v);
+            }
+          }
+    }
+  }
+}
+
+int main() {
+  int w, h;
+  for(int i = 0; i < 256; i++)
+    lookup[i] = i << 4 | j;
+  while (scanf("%d%d%*d ", &w, &h), w) {
+    for (int i = 0; i < h; ++i) {
+      fgets(c[i], 20, stdin);
+    }
+    int goal = 0;
+    int start = 0;
+    for (int i = 0; i < h; ++i) {
+      for (int j = 0; j < w; ++j) {
+        if (c[i][j] == '#') {
+          wall[lookup[i] | j] = true;
+        } else {
+          wall[lookup[i] | j] = false;
+          if (isupper(c[i][j])) {
+            goal |= lookup[i] | j << (c[i][j] - 'A') * 8;
+          } else if (islower(c[i][j])) {
+            start |= lookup[i] | j << (c[i][j] - 'a') * 8;
+          }
+        }
+      }
+    }
+    int tm = solve(start, goal);
+    printf("%d\n", tm - tm0);
+    tm0 = tm + 1;
+  }
+}
+```

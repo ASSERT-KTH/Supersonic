@@ -1,0 +1,101 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+struct POINT {
+  short x, y;
+  POINT() : x(0), y(0) {}
+  POINT(short x, short y) : x(x), y(y) {}
+  POINT operator+(const POINT& t) const { return POINT(x + t.x, y + t.y); }
+  POINT operator-(const POINT& t) const { return POINT(x - t.x, y - t.y); }
+  POINT operator!() const { return POINT(-y, x); }
+};
+
+int dot(const POINT& a, const POINT& b) {
+  return a.x * b.x + a.y * b.y;
+}
+
+int cross(const POINT& a, const POINT& b) {
+  return a.x * b.y - a.y * b.x;
+}
+
+int cross(const POINT& a, const POINT& b, const POINT& c) {
+  return cross(a - c, b - c);
+}
+
+bool angSortCmp(const POINT& a, const POINT& b) {
+  if (a.y == 0 && b.y == 0)
+    return a.x < b.x;
+  if (a.y >= 0 && b.y < 0)
+    return true;
+  if (a.y < 0 && b.y >= 0)
+    return false;
+  return cross(a, b) > 0;
+}
+
+const int N = 2000;
+
+int main() {
+  ios_base::sync_with_stdio(0);
+  int n;
+  long long S;
+  cin >> n >> S;
+  S *= 2;
+  vector<POINT> tab(n + 1);
+  vector<int> poz(n + 1);
+  vector<POINT> stab(n + 1);
+  for (int i = 1; i <= n; ++i)
+    cin >> tab[i].x >> tab[i].y;
+  sort(tab.begin() + 1, tab.begin() + n + 1, [](const POINT& a, const POINT& b) -> bool {
+    if (a.x == b.x)
+      return a.y > b.y;
+    return a.x < b.x;
+  });
+  for (int i = 1; i <= n; ++i) {
+    poz[i] = i;
+    stab[i] = tab[i];
+  }
+  vector<pair<POINT, pair<int, int>>> kol((n * (n - 1)) / 2);
+  int it = 0;
+  for (int i = 1; i <= n; ++i) {
+    for (int j = i + 1; j <= n; ++j) {
+      kol[it].first = !(tab[j] - tab[i]);
+      kol[it].second.first = i;
+      kol[it].second.second = j;
+      it++;
+    }
+  }
+  sort(kol.begin(), kol.end(),
+       [](const pair<POINT, pair<int, int>>& a, const pair<POINT, pair<int, int>>& b) -> bool {
+         return angSortCmp(a.first, b.first);
+       });
+  for (auto u : kol) {
+    int p = u.second.first;
+    int q = u.second.second;
+    swap(stab[poz[p]], stab[poz[q]]);
+    swap(poz[p], poz[q]);
+    auto it1 = lower_bound(stab.begin() + 1, stab.begin() + n + 1, tab[q], [&](const POINT& a, const POINT& b) -> bool {
+      return cross(tab[q], a, tab[p]) < S;
+    });
+    if (it1 != stab.begin() + n + 1 && cross(tab[q], *it1, tab[p]) == S) {
+      cout << "Yes" << endl;
+      cout << tab[p].x << ' ' << tab[p].y << endl;
+      cout << tab[q].x << ' ' << tab[q].y << endl;
+      cout << it1->x << ' ' << it1->y << endl;
+      return 0;
+    }
+    auto it2 = lower_bound(stab.begin() + 1, stab.begin() + n + 1, tab[q], [&](const POINT& a, const POINT& b) -> bool {
+      return cross(tab[q], a, tab[p]) < -S;
+    });
+    if (it2 != stab.begin() + n + 1 && cross(tab[q], *it2, tab[p]) == -S) {
+      cout << "Yes" << endl;
+      cout << tab[p].x << ' ' << tab[p].y << endl;
+      cout << tab[q].x << ' ' << tab[q].y << endl;
+      cout << it2->x << ' ' << it2->y << endl;
+      return 0;
+    }
+  }
+  cout << "No" << endl;
+  return 0;
+}

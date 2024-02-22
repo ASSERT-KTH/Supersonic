@@ -1,0 +1,119 @@
+#include <iostream>
+#include <vector>
+#include <array>
+#include <algorithm>
+
+struct Point {
+  int x, y;
+};
+
+inline long long dot(const Point &a, const Point &b) {
+  return (long long)a.x * b.x + (long long)a.y * b.y;
+}
+
+inline long long cross(const Point &a, const Point &b) {
+  return (long long)a.x * b.y - (long long)a.y * b.x;
+}
+
+inline long long cross(const Point &a, const Point &b, const Point &c) {
+  return cross({a.x - c.x, a.y - c.y}, {b.x - c.x, b.y - c.y});
+}
+
+inline bool halfPlane(const Point &p) {
+  if (p.y == 0)
+    return p.x < 0;
+  return p.y < 0;
+}
+
+inline bool angSortCmp(const Point &a, const Point &b) {
+  bool ha = halfPlane(a);
+  bool hb = halfPlane(b);
+  if (ha != hb)
+    return ha < hb;
+  return cross(a, b) > 0;
+}
+
+int main() {
+  int n;
+  long long S;
+  std::cin >> n >> S;
+  S *= 2;
+
+  std::vector<Point> tab(n);
+  for (int i = 0; i < n; ++i)
+    std::cin >> tab[i].x >> tab[i].y;
+
+  std::sort(tab.begin(), tab.end(), [](const Point &a, const Point &b) -> bool {
+    if (a.x == b.x)
+      return a.y > b.y;
+    return a.x < b.x;
+  });
+
+  std::vector<int> poz(n);
+  std::vector<Point> stab(n);
+  for (int i = 0; i < n; ++i) {
+    poz[i] = i;
+    stab[i] = tab[i];
+  }
+
+  std::array<std::array<Point, 2>, 1000000> kol;
+  int it = 0;
+  for (int i = 0; i < n; ++i) {
+    for (int j = i + 1; j < n; ++j) {
+      kol[it][0] = tab[j] - tab[i];
+      kol[it][1] = {i, j};
+      it++;
+    }
+  }
+
+  std::sort(kol.begin(), kol.begin() + it,
+       [](const std::array<Point, 2> &a, const std::array<Point, 2> &b) -> bool {
+         return angSortCmp(a[0], b[0]);
+       });
+
+  for (int i = 0; i < it; ++i) {
+    int p = kol[i][1].at(0);
+    int q = kol[i][1].at(1);
+    std::swap(stab[poz[p]], stab[poz[q]]);
+    std::swap(poz[p], poz[q]);
+
+    int l = 0;
+    int r = n - 1;
+    while (l <= r) {
+      int s = (l + r) / 2;
+      long long ww = cross(tab[q], stab[s], tab[p]);
+      if (ww == S) {
+        std::cout << "Yes" << std::endl;
+        std::cout << tab[p].x << ' ' << tab[p].y << std::endl;
+        std::cout << tab[q].x << ' ' << tab[q].y << std::endl;
+        std::cout << stab[s].x << ' ' << stab[s].y << std::endl;
+        return 0;
+      }
+      if (ww > S)
+        r = s - 1;
+      else
+        l = s + 1;
+    }
+
+    l = 0;
+    r = n - 1;
+    while (l <= r) {
+      int s = (l + r) / 2;
+      long long ww = cross(tab[q], stab[s], tab[p]);
+      if (ww == -S) {
+        std::cout << "Yes" << std::endl;
+        std::cout << tab[p].x << ' ' << tab[p].y << std::endl;
+        std::cout << tab[q].x << ' ' << tab[q].y << std::endl;
+        std::cout << stab[s].x << ' ' << stab[s].y << std::endl;
+        return 0;
+      }
+      if (ww > -S)
+        r = s - 1;
+      else
+        l = s + 1;
+    }
+  }
+
+  std::cout << "No" << std::endl;
+  return 0;
+}

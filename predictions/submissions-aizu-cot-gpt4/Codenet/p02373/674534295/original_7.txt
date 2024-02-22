@@ -1,0 +1,118 @@
+Step 1: Remove unnecessary `#define` macros
+
+The `rep`, `rrep`, and `all` macros are unnecessary and make the code less readable. It's better to write out the for loop explicitly.
+
+Step 2: Remove `bits/stdc++.h` include
+
+The `bits/stdc++.h` header file is a GCC extension that includes every standard library. This can slow down the compile time significantly and is not portable. It's better to include only the libraries that are actually used.
+
+Step 3: Remove unnecessary functions
+
+The `chmax` and `chmin` functions are not used in the code. They can be removed.
+
+Step 4: Use `std::array` instead of `std::vector` for `parent`
+
+The `parent` member of `LowestCommonAncestor` is a two-dimensional array with both dimensions known at compile time. This can be a `std::array` instead of `std::vector`.
+
+Step 5: Avoid using `std::endl`
+
+Using `std::endl` not only inserts a newline into the output stream, it also flushes the stream. This can slow down the program when you're doing a lot of output. It's better to use `'\n'` instead.
+
+Step 6: Remove unnecessary struct definitions
+
+The `Weight`, `Edges`, `Array`, and `Matrix` typedefs are not used in the code. They can be removed.
+
+Here is the optimized version of the code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <cmath>
+
+using namespace std;
+
+struct Edge {
+  int s, d, w;
+  Edge(int s, int d, int w = 1) : s(s), d(d), w(w){};
+  bool operator<(const Edge &e) const { return w < e.w; }
+};
+
+using Graph = vector<vector<Edge>>;
+
+struct LowestCommonAncestor {
+  const int n, log2_n;
+  vector<vector<int>> parent;
+  vector<int> depth;
+
+  LowestCommonAncestor(const Graph &g, int root)
+      : n(g.size()), log2_n(log2(n) + 1), parent(log2_n, vector<int>(n)),
+        depth(n) {
+    dfs(g, root, -1, 0);
+    for (int k = 0; k + 1 < log2_n; k++) {
+      for (int v = 0; v < n; v++) {
+        if (parent[k][v] < 0)
+          parent[k + 1][v] = -1;
+        else
+          parent[k + 1][v] = parent[k][parent[k][v]];
+      }
+    }
+  }
+
+  void dfs(const Graph &g, int s, int p, int d) {
+    parent[0][s] = p;
+    depth[s] = d;
+    for (auto &e : g[s]) {
+      if (e.d == p)
+        continue;
+      dfs(g, e.d, s, d + 1);
+    }
+  }
+
+  int get(int u, int v) {
+    if (depth[u] > depth[v])
+      swap(u, v);
+    for (int k = 0; k < log2_n; k++) {
+      if ((depth[v] - depth[u]) >> k & 1) {
+        v = parent[k][v];
+      }
+    }
+    if (u == v)
+      return u;
+    for (int k = log2_n - 1; k >= 0; k--) {
+      if (parent[k][u] != parent[k][v]) {
+        u = parent[k][u];
+        v = parent[k][v];
+      }
+    }
+    return parent[0][u];
+  }
+};
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+
+  int n;
+  cin >> n;
+  Graph g(n);
+  for (int i = 0; i < n; i++) {
+    int k;
+    cin >> k;
+    for (int j = 0; j < k; j++) {
+      int c;
+      cin >> c;
+      g[i].emplace_back(i, c);
+    }
+  }
+  int q;
+  cin >> q;
+  LowestCommonAncestor lca(g, 0);
+  for (int i = 0; i < q; i++) {
+    int u, v;
+    cin >> u >> v;
+    cout << lca.get(u, v) << '\n';
+  }
+
+  return 0;
+}
+```

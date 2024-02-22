@@ -1,0 +1,73 @@
+1. Code Analysis:
+The provided C++ code calculates the maximum time it will take to reach from a particular location to any other point given a specific speed at each point. It uses a vector of points and their corresponding speeds to calculate this. The major computation is done in a loop where it calculates the distance between points and uses this to move to a new point. The code seems to be well-written but there are places where it can be optimized for better performance.
+
+2. Optimization Strategy:
+   1. Avoiding Recalculation: The distance between the current point and another point is calculated twice in each iteration of the second loop in the main function. This can be avoided by storing the distance after calculating it for the first time.
+   
+   2. Efficient Data Structures: The code uses two separate vectors to store points and their corresponding speeds. This can be combined into a single vector of a pair or a struct containing both the point and speed.
+
+   3. Streamlining Computational Steps: The point class is overloaded with arithmetic operators. However, the addition operation makes use of the add() function, which seems unnecessary and could potentially slow down computations.
+
+3. Step-by-Step Explanation:
+   1. The first step is to remove the add() function and replace all its usages with direct arithmetic operations. This function is used to prevent floating point errors, however, it performs additional arithmetic operations and checks which might slow the program down.
+   
+   2. The second step is storing the distance in a variable after calculating it for the first time during each iteration of the second loop in the main function. Instead of calculating dist(now, P[j]) twice, we can store it in a variable and reuse it.
+   
+   3. The third step is to combine the vectors P and V into a single vector. This will make the code cleaner and slightly faster as we will only need to iterate through one vector.
+
+4. Optimized Code Block:
+```cpp
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <iostream>
+#include <vector>
+using namespace std;
+double EPS = 1e-6;
+
+struct point {
+  double x, y, v;
+  point() {}
+  point(double x, double y, double v) : x(x), y(y), v(v) {}
+  point operator+(point p) { return point(x + p.x, y + p.y, v); }
+  point operator-(point p) { return point(x - p.x, y - p.y, v); }
+  point operator*(double d) { return point(x * d, y * d, v); }
+  point operator/(double d) { return point(x / d, y / d, v); }
+};
+
+double dist(point a, point b) {
+  return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2));
+}
+
+int main(void) {
+  int n;
+  double x, y, v;
+  vector<point> P;
+  while (cin >> n, n) {
+    P.clear();
+    for (int i = 0; i < n; i++) {
+      cin >> x >> y >> v;
+      P.push_back(point(x, y, v));
+    }
+    double r = 0.98;
+    point now(0, 0, 0);
+    for (double d = 10; d > EPS; d *= r) {
+      int mx = 0;
+      double mxd = 0;
+      for (int j = 0; j < P.size(); j++) {
+        double currentDist = dist(now, P[j]) / P[j].v;
+        if (currentDist > mxd)
+          mx = j, mxd = currentDist;
+      }
+      now = now + ((P[mx] - now) / dist(P[mx], now) * d);
+    }
+    double ans = 0;
+    for (int i = 0; i < P.size(); i++) {
+      ans = max(ans, dist(now, P[i]) / P[i].v);
+    }
+    printf("%.8f\n", ans);
+  }
+  return 0;
+}
+```
+This optimized code should run faster and use less memory than the original code.

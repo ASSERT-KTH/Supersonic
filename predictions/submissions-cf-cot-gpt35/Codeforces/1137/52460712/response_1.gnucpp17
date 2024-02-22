@@ -1,0 +1,103 @@
+#include <algorithm>
+#include <cassert>
+#include <cstdio>
+#include <vector>
+using namespace std;
+const int M = 100000 + 10, N = 50 * M;
+inline void dn(int &x, int y) {
+  if (y < x)
+    x = y;
+}
+char gc() {
+  char c = getchar();
+  if (c != '0' && c != '1')
+    c = getchar();
+  return c;
+}
+int n, m, d;
+bool open[M][50 + 5];
+int id(int u, int t) { return (u - 1) * d + t; }
+int e[N][M], escc[N][M];
+int nscc, idscc[N], dfn[N], lowlink[N], clo;
+int stk[N], top;
+bool instk[N];
+void dfscc(int k) {
+  dfn[k] = lowlink[k] = ++clo;
+  instk[stk[top++] = k] = true;
+  while (top > 0) {
+    k = stk[top - 1];
+    bool finished = true;
+    for (int i = 0; i < e[k][0]; ++i) {
+      int& p = e[k][i + 1];
+      if (!dfn[p]) {
+        dfn[p] = lowlink[p] = ++clo;
+        instk[stk[top++] = p] = true;
+        finished = false;
+        break;
+      } else if (instk[p]) {
+        dn(lowlink[k], dfn[p]);
+      }
+    }
+    if (finished) {
+      if (lowlink[k] == dfn[k]) {
+        ++nscc;
+        while (top > 0 && stk[top - 1] != k) {
+          instk[stk[--top]] = false;
+          idscc[stk[top]] = nscc;
+        }
+        top--;
+        instk[k] = false;
+      }
+    }
+  }
+}
+void getSCC(int n) {
+  for (int k = 1; k <= n; ++k)
+    if (!dfn[k])
+      dfscc(k);
+  for (int k = 1; k <= n; ++k) {
+    for (int i = 0; i < e[k][0]; ++i) {
+      int& p = e[k][i + 1];
+      if (idscc[k] != idscc[p])
+        escc[idscc[k]][++escc[idscc[k]][0]] = idscc[p];
+    }
+  }
+}
+int ops[N];
+int dp[N];
+bool vis[N];
+int dfsdp(int k) {
+  if (vis[k])
+    return dp[k];
+  vis[k] = true;
+  for (int i = 1; i <= escc[k][0]; ++i)
+    dp[k] = max(dp[k], dfsdp(escc[k][i]));
+  dp[k] += ops[k];
+  return dp[k];
+}
+int main() {
+  scanf("%d%d%d", &n, &m, &d);
+  for (int i = 1; i <= m; ++i) {
+    int u, v;
+    scanf("%d%d", &u, &v);
+    e[id(u, 1)][++e[id(u, 1)][0]] = id(v, 2);
+    e[id(u, 2)][++e[id(u, 2)][0]] = id(v, 3);
+    // ...
+    e[id(u, d)][++e[id(u, d)][0]] = id(v, 1);
+  }
+  for (int i = 1; i <= n; ++i)
+    for (int j = 1; j <= d; ++j)
+      open[i][j] = gc() - '0';
+  getSCC(n * d);
+  for (int i = 1; i <= n; ++i) {
+    for (int j = 1; j <= d; ++j) {
+      if (open[i][j]) {
+        int id = idscc[id(i, j)];
+        if (ops[id] == 0)
+          ops[id] = 1;
+      }
+    }
+  }
+  printf("%d", dfsdp(idscc[id(1, 1)]));
+  return 0;
+}

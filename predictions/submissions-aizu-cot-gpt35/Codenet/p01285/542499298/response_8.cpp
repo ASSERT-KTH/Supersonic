@@ -1,0 +1,80 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cmath>
+#include <cassert>
+
+constexpr double EPS = 1e-6;
+constexpr double M_PI = 3.14159265358979323846;
+
+class Point {
+public:
+  double x, y;
+  Point(double x = 0, double y = 0) : x(x), y(y) {}
+
+  Point operator+(const Point& p) const { return Point(x + p.x, y + p.y); }
+  Point operator-(const Point& p) const { return Point(x - p.x, y - p.y); }
+  Point operator*(double a) const { return Point(a * x, a * y); }
+  Point operator/(double a) const { return Point(x / a, y / a); }
+  Point operator*(const Point& a) const { return Point(x * a.x - y * a.y, x * a.y + y * a.x); }
+
+  bool operator<(const Point& p) const { return (x != p.x) ? x < p.x : (y < p.y); }
+  bool operator==(const Point& p) const { return (fabs(x - p.x) < EPS) && (fabs(y - p.y) < EPS); }
+
+  double norm() const { return x * x + y * y; }
+  double abs() const { return sqrt(norm()); }
+};
+
+class Segment {
+public:
+  Point p1, p2;
+  int index;
+  Segment(const Point& p1 = Point(), const Point& p2 = Point(), int index = -1) : p1(p1), p2(p2), index(index) {}
+
+  bool operator<(const Segment& s) const { return (p2 == s.p2) ? p1 < s.p1 : p2 < s.p2; }
+  bool operator==(const Segment& s) const { return (s.p1 == p1 && s.p2 == p2) || (s.p1 == p2 && s.p2 == p1); }
+};
+
+typedef Point Vector;
+typedef Segment Line;
+typedef std::vector<Point> Polygon;
+
+double dot(const Point& a, const Point& b) { return a.x * b.x + a.y * b.y; }
+double cross(const Point& a, const Point& b) { return a.x * b.y - a.y * b.x; }
+
+double toRad(double agl) { return agl * M_PI / 180.0; }
+
+double getArg(const Point& a, const Point& b, const Point& c) {
+  double arg1 = atan2(b.y - a.y, b.x - a.x);
+  double arg2 = atan2(c.y - b.y, c.x - b.x);
+  double arg = fabs(arg1 - arg2);
+  while (arg > M_PI)
+    arg -= 2.0 * M_PI;
+  return fabs(arg);
+}
+
+int ccw(const Point& p0, const Point& p1, const Point& p2) {
+  Point a = p1 - p0;
+  Point b = p2 - p0;
+  if (cross(a, b) > EPS)
+    return 1;
+  if (cross(a, b) < -EPS)
+    return -1;
+  if (dot(a, b) < -EPS)
+    return 2;
+  if (a.norm() < b.norm())
+    return -2;
+  return 0;
+}
+
+bool intersectLL(const Line& l, const Line& m) {
+  return fabs(cross(l.p2 - l.p1, m.p2 - m.p1)) > EPS || fabs(cross(l.p2 - l.p1, m.p1 - l.p1)) < EPS;
+}
+
+bool intersectLS(const Line& l, const Line& s) {
+  return cross(l.p2 - l.p1, s.p1 - l.p1) * cross(l.p2 - l.p1, s.p2 - l.p1) < -EPS;
+}
+
+bool intersectLP(const Line& l, const Point& p) {
+  return fabs(cross(l.p2 - p, l.p1 - p)) < EPS;
+}

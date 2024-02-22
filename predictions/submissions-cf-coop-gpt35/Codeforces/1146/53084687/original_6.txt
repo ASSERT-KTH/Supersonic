@@ -1,0 +1,232 @@
+**Code Analysis:**
+
+The given code is a C++ program that performs range updates and queries on an array. The program uses a segment tree data structure to efficiently handle these operations.
+
+The main steps in the code are as follows:
+
+1. Read the input values for `n` and `q`.
+2. Read the array `a` of size `n`.
+3. Build two segment trees, `sgt0` and `sgt1`, with initial values set to 1.
+4. For each query, update the segment trees based on the query type (`>` or `<`) and the query value.
+5. For each element in the array, compute the query result based on the segment trees and print the result.
+
+**Potential Performance Bottlenecks:**
+
+1. Memory Usage: The code uses two segment trees, `sgt0` and `sgt1`, which can consume a significant amount of memory if `n` is large. The memory usage can be optimized by using a single segment tree instead of two separate trees.
+2. Redundant Computation: The code performs redundant computations in the `update` function, where it checks for boundary conditions multiple times. This can be optimized by simplifying the logic and removing unnecessary checks.
+3. Inefficient Updates: The code updates the segment trees for each query individually, which can be inefficient. It would be more efficient to batch the updates and perform them in a single pass.
+4. Unoptimized Queries: The code performs individual queries for each element in the array, resulting in multiple function calls and unnecessary overhead. It would be more efficient to compute the query results in a single pass.
+
+**Optimization Strategy:**
+
+Based on the analysis, the following optimization steps can be taken:
+
+1. Reduce Memory Usage: Instead of using two separate segment trees, `sgt0` and `sgt1`, use a single segment tree and store both positive and negative values. This will reduce the memory footprint by half.
+2. Simplify Update Logic: Simplify the update logic by removing unnecessary checks and combining the different cases into a single update function.
+3. Batch Updates: Batch the updates by processing all the queries together in a single pass, instead of updating the segment tree for each query individually.
+4. Optimize Queries: Instead of performing individual queries for each element in the array, compute the query results in a single pass and store them in a separate array.
+5. Use Compiler Optimizations: Enable compiler optimizations, such as loop unrolling and vectorization, to improve the performance of the code.
+
+**Step-by-Step Explanation:**
+
+1. Reduce Memory Usage:
+   - Replace the two segment trees, `sgt0` and `sgt1`, with a single segment tree `sgt`.
+   - Modify the `node` struct to include both positive and negative values:
+     ```cpp
+     struct node {
+       int l, r;
+       int lz;
+       int sgn_pos;
+       int sgn_neg;
+     };
+     ```
+   - Update the `pushup`, `pushdown`, `build`, and `query` functions to handle the positive and negative values correctly.
+
+2. Simplify Update Logic:
+   - Remove the `inv` function and simplify the logic inside the `update` function.
+   - Combine the different cases into a single update function that handles both `>` and `<` queries:
+     ```cpp
+     void update(node sgt[], int l, int r, int x, int val) {
+       if (l <= sgt[x].l && r >= sgt[x].r) {
+         sgt[x].sgn_pos = (val > 0) ? val : 0;
+         sgt[x].sgn_neg = (val < 0) ? -val : 0;
+         sgt[x].lz = val;
+         return;
+       }
+       pushdown(sgt, x);
+       int mid = (sgt[x].l + sgt[x].r) >> 1;
+       if (l <= mid) {
+         update(sgt, l, r, x << 1, val);
+       }
+       if (r > mid) {
+         update(sgt, l, r, x << 1 | 1, val);
+       }
+       pushup(sgt, x);
+     }
+     ```
+
+3. Batch Updates:
+   - Modify the main loop to read all the queries and store them in a separate data structure, such as a vector or an array.
+   - Process the queries in a single pass, updating the segment tree accordingly.
+
+4. Optimize Queries:
+   - Before the main loop, create a new array `result` of size `n` to store the query results.
+   - After processing all the queries, iterate over the array `a` and compute the query result for each element using the segment tree.
+   - Store the query result in the `result` array.
+   - Print the elements of the `result` array.
+
+5. Use Compiler Optimizations:
+   - Enable compiler optimizations by adding compiler-specific pragmas or flags, such as `-O3` for GCC or Clang.
+
+**Optimized Code:**
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <vector>
+using namespace std;
+
+const int X = 1e5;
+
+struct node {
+  int l, r;
+  int lz;
+  int sgn_pos;
+  int sgn_neg;
+};
+
+void pushup(node sgt[], int x) {
+  if (sgt[x << 1].sgn_pos == sgt[x << 1 | 1].sgn_pos) {
+    sgt[x].sgn_pos = sgt[x << 1].sgn_pos;
+  } else {
+    sgt[x].sgn_pos = 0;
+  }
+  if (sgt[x << 1].sgn_neg == sgt[x << 1 | 1].sgn_neg) {
+    sgt[x].sgn_neg = sgt[x << 1].sgn_neg;
+  } else {
+    sgt[x].sgn_neg = 0;
+  }
+}
+
+void pushdown(node sgt[], int x) {
+  if (sgt[x].lz == 2) {
+    sgt[x << 1].sgn_pos = -sgt[x << 1].sgn_pos;
+    sgt[x << 1 | 1].sgn_pos = -sgt[x << 1 | 1].sgn_pos;
+    sgt[x << 1].sgn_neg = -sgt[x << 1].sgn_neg;
+    sgt[x << 1 | 1].sgn_neg = -sgt[x << 1 | 1].sgn_neg;
+    sgt[x << 1].lz = (sgt[x << 1].lz + 1) % 2;
+    sgt[x << 1 | 1].lz = (sgt[x << 1 | 1].lz + 1) % 2;
+    sgt[x].lz = 0;
+  }
+  if (sgt[x].lz) {
+    sgt[x << 1].sgn_pos = sgt[x].lz;
+    sgt[x << 1 | 1].sgn_pos = sgt[x].lz;
+    sgt[x << 1].sgn_neg = sgt[x].lz;
+    sgt[x << 1 | 1].sgn_neg = sgt[x].lz;
+    sgt[x << 1].lz = sgt[x].lz;
+    sgt[x << 1 | 1].lz = sgt[x].lz;
+    sgt[x].lz = 0;
+  }
+}
+
+void build(node sgt[], int l, int r, int x) {
+  sgt[x].l = l;
+  sgt[x].r = r;
+  sgt[x].lz = 0;
+  if (l == r) {
+    sgt[x].sgn_pos = 1;
+    sgt[x].sgn_neg = 1;
+    return;
+  }
+  int mid = (l + r) >> 1;
+  build(sgt, l, mid, x << 1);
+  build(sgt, mid + 1, r, x << 1 | 1);
+  pushup(sgt, x);
+}
+
+void update(node sgt[], int l, int r, int x, int val) {
+  if (l <= sgt[x].l && r >= sgt[x].r) {
+    sgt[x].sgn_pos = (val > 0) ? val : 0;
+    sgt[x].sgn_neg = (val < 0) ? -val : 0;
+    sgt[x].lz = val;
+    return;
+  }
+  pushdown(sgt, x);
+  int mid = (sgt[x].l + sgt[x].r) >> 1;
+  if (l <= mid) {
+    update(sgt, l, r, x << 1, val);
+  }
+  if (r > mid) {
+    update(sgt, l, r, x << 1 | 1, val);
+  }
+  pushup(sgt, x);
+}
+
+int main() {
+  int n, q;
+  scanf("%d %d", &n, &q);
+  int a[n];
+  for (int i = 0; i < n; i++) {
+    scanf("%d", &a[i]);
+  }
+  getchar();
+
+  node sgt[X * 4 + 1];
+  build(sgt, 1, X, 1);
+
+  vector<pair<char, int>> queries;
+  while (q--) {
+    char s;
+    int x;
+    scanf("%c %d\n", &s, &x);
+    queries.push_back(make_pair(s, x));
+  }
+
+  for (auto query : queries) {
+    char s = query.first;
+    int x = query.second;
+    if (s == '>') {
+      x++;
+      if (x == 0) {
+        x++;
+      }
+      if (x > 0) {
+        update(sgt, x, X, 1, 1);
+      } else {
+        update(sgt, 1, -x, 1, 2);
+        update(sgt, -x + 1, X, 1, 1);
+      }
+    } else {
+      x--;
+      if (x == 0) {
+        x--;
+      }
+      if (x < 0) {
+        update(sgt, -x, X, 1, -1);
+      } else {
+        update(sgt, 1, x, 1, 2);
+        update(sgt, x + 1, X, 1, -1);
+      }
+    }
+  }
+
+  int result[n];
+  for (int i = 0; i < n; i++) {
+    int r = 0;
+    if (a[i] < 0) {
+      r = query(sgt, -a[i], 1).sgn_pos;
+    } else if (a[i] > 0) {
+      r = query(sgt, a[i], 1).sgn_neg;
+    }
+    result[i] = a[i] * r;
+  }
+
+  for (int i = 0; i < n; i++) {
+    printf("%d%c", result[i], i == n - 1 ? '\n' : ' ');
+  }
+
+  return 0;
+}
+```
+
+**Trade

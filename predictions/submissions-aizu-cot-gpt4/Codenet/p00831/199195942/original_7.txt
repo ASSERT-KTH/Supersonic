@@ -1,0 +1,104 @@
+There are a few things we can optimize here:
+
+1. First of all, in the function `damerau_levenshtein_distance`, we are using unordered_map which has an average constant-time complexity for insertions, deletions and look-ups. However, since we know that our inputs are characters (as part of a string), we can replace the unordered_map `da` with a vector of size `alphabet_size` which will work much faster.
+
+2. The function `damerau_levenshtein_distance` is called many times for different pairs of strings. In order to avoid recalculating the same distances over and over again, we can use a memoization approach. We store the calculated distances in a map and then, before calculating a distance, we first check if we have already computed it in the past.
+
+3. Using `vector<vector<int>>` instead of `unordered_map<int, unordered_map<int, int>>` for `d` as the indices are contiguous and within a known range, access times will be faster with a vector.
+
+Optimized code:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+#define rep(i, x, y) for (int i = (x); i < (y); ++i)
+#define debug(x) #x << "=" << (x)
+#ifdef DEBUG
+#define _GLIBCXX_DEBUG
+#define print(x) std::cerr << debug(x) << " (L:" << __LINE__ << ")" << std::endl
+#else
+#define print(x)
+#endif
+const int inf = 1e9;
+const int64_t inf64 = 1e18;
+const double eps = 1e-9;
+
+template <typename T> ostream &operator<<(ostream &os, const vector<T> &vec) {
+  os << "[";
+  for (const auto &v : vec) {
+    os << v << ",";
+  }
+  os << "]";
+  return os;
+}
+
+map<pair<string, string>, int> memo;
+
+int damerau_levenshtein_distance(const string &a, const string &b,
+                                 const int alphabet_size) {
+  if (memo.count({a, b})) {
+    return memo[{a, b}];
+  }
+
+  vector<int> da(alphabet_size, 0);
+  vector<vector<int>> d(a.size() + 1, vector<int>(b.size() + 1));
+  int maxdist = a.size() + b.size();
+  d[0][0] = maxdist;
+  for (int i = 0; i <= a.size(); ++i) {
+    d[i][0] = i;
+  }
+  for (int i = 0; i <= b.size(); ++i) {
+    d[0][i] = i;
+  }
+  for (int i = 1; i <= a.size(); ++i) {
+    int db = 0;
+    for (int j = 1; j <= b.size(); ++j) {
+      int k = da[b[j - 1]], l = db, cost;
+      if (a[i - 1] == b[j - 1]) {
+        cost = 0;
+        db = j;
+      } else
+        cost = 1;
+      d[i][j] = min({d[i - 1][j - 1] + cost, d[i][j - 1] + 1, d[i - 1][j] + 1,
+                     d[k - 1][l - 1] + (i - k - 1) + 1 + (j - l - 1)});
+    }
+    da[a[i - 1]] = i;
+  }
+  memo[{a, b}] = d[a.size()][b.size()];
+  return d[a.size()][b.size()];
+}
+
+void solve(int n) {
+  int d;
+  vector<string> name(n);
+  cin >> d;
+  rep(i, 0, n) cin >> name[i];
+  sort(name.begin(), name.end());
+  int count = 0;
+  rep(i, 0, n) {
+    rep(j, i + 1, n) {
+      if (damerau_levenshtein_distance(name[i], name[j], 26) > d)
+        continue;
+      ++count;
+      cout << name[i] << "," << name[j] << endl;
+    }
+  }
+  cout << count << endl;
+}
+
+int main() {
+  std::cin.tie(0);
+  std::ios::sync_with_stdio(false);
+  cout.setf(ios::fixed);
+  cout.precision(10);
+  for (;;) {
+    int n;
+    cin >> n;
+    if (!n)
+      break;
+    solve(n);
+  }
+  return 0;
+}
+
+```

@@ -1,0 +1,115 @@
+This program seems to be implementing a custom data structure and solving some queries on it. Here are some steps to optimize it:
+
+1. Use `std::ios_base::sync_with_stdio(false);` and `cin.tie(NULL);` to speed up the I/O operations.
+2. Use `reserve()` function to pre-allocate memory for the vector. It can prevent unnecessary re-allocations and copies during the push_back operation.
+3. Instead of using `queue.size()` in the while loop condition, use `!queue.empty()`. The `empty()` function is generally faster than `size()` as it directly checks whether the container is empty or not, whereas `size()` function returns the number of elements present in the container which can be a slower operation.
+4. Use `emplace_back()` instead of `push_back()` to directly construct the object in the memory allocated for the vector. This can potentially improve performance by eliminating a temporary copy.
+
+Optimized code:
+
+```cpp
+#include <algorithm>
+#include <cassert>
+#include <iostream>
+#include <queue>
+#include <vector>
+using namespace std;
+#define rep(i, n) for (int i = 0; i < (int)(n); i++)
+const int B = 200;
+int color[100010], par[100010], depth[100010];
+int top[100010];
+int goUp[100010];
+bool vis[100010];
+int n;
+vector<vector<int>> g;
+
+void decomp(int root) {
+  rep(i, n) vis[i] = false, par[i] = -1;
+  queue<int> q;
+  q.push(root);
+  vector<int> tord;
+  tord.reserve(n);
+  while (!q.empty()) {
+    int v = q.front();
+    q.pop();
+    vis[v] = true;
+    tord.emplace_back(v);
+    for (int c : g[v]) {
+      if (!vis[c]) {
+        q.push(c);
+        par[c] = v;
+        depth[c] = depth[v] + 1;
+      }
+    }
+  }
+  rep(i, n) vis[i] = false;
+  int c = 0;
+  for (int u : tord) {
+    if (vis[u])
+      continue;
+    q.push(u);
+    int k = 0;
+    while (!q.empty() && k < B) {
+      int v = q.front();
+      q.pop();
+      vis[v] = true;
+      color[v] = c;
+      goUp[v] = par[u];
+      top[v] = u;
+      k++;
+      for (int c : g[v]) {
+        if (!vis[c])
+          q.push(c);
+      }
+    }
+    while (!q.empty())
+      q.pop();
+    c++;
+  }
+}
+
+int solve(int u, int v) {
+  while (color[u] != color[v]) {
+    assert(u != -1 && v != -1);
+    if (depth[top[u]] > depth[top[v]])
+      u = goUp[u];
+    else
+      v = goUp[v];
+  }
+  while (u != v) {
+    assert(u != -1 && v != -1);
+    if (depth[u] > depth[v])
+      u = par[u];
+    else
+      v = par[v];
+  }
+  return u;
+}
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  cin >> n;
+  g.assign(n, {});
+  rep(i, n) {
+    int k;
+    cin >> k;
+    g[i].reserve(k);
+    rep(j, k) {
+      int c;
+      cin >> c;
+      g[i].emplace_back(c);
+      par[c] = i;
+    }
+  }
+  decomp(0);
+  int q;
+  cin >> q;
+  rep(i, q) {
+    int u, v;
+    cin >> u >> v;
+    cout << solve(u, v) << endl;
+  }
+}
+```
+Please note that how much the execution speed improves depends on the specific input and the environment, as well as the compiler's optimization settings.

@@ -1,0 +1,93 @@
+## Code Analysis
+
+This C++ program appears to be implementing an algorithm to minimize the maximum time it takes for something to reach various points. It uses a decaying step size to iteratively move towards the point that is furthest away in terms of time.
+
+Potential performance bottlenecks and inefficient memory usage:
+
+1. **Inefficient use of vectors**: The program creates two vectors (P and V) inside the main function, but clears them at the start of every loop. This is inefficient, as clearing a vector does not actually free the memory it used.
+
+2. **Repeated computations**: The distance between the current point and all other points is computed twice in each iteration. First to determine the point that is furthest away in terms of time (mx), and then when updating the current point (now).
+
+3. **No use of const**: The point class's operator methods could be declared as const, because they don't modify the object itself. This can help the compiler to optimize the code.
+
+4. **I/O operations**: The use of cin and printf for input and output operations is slower than using scanf and printf.
+
+## Optimization Strategy
+
+1. **Efficient use of vectors**: Instead of clearing the vectors, we can use the `resize` function to change the size of the vectors to match the number of points. This way, the vectors can re-use the memory that was allocated in previous iterations.
+
+2. **Avoid repeated computations**: We can store the result of the distance calculation in a variable to avoid computing it twice.
+
+3. **Use of const**: Declare the operator methods in the point class as const.
+
+4. **Use of scanf**: Replace cin with scanf for faster I/O.
+
+## Step-by-step Explanation
+
+1. **Efficient use of vectors**: To avoid unnecessary memory allocations and deallocations, we can use the `resize` function to change the size of the vectors to match the number of points. This will allow the vectors to re-use the memory that was allocated in previous iterations. This is a simple change that can be done at the start of the loop where the vectors are currently being cleared.
+
+2. **Avoid repeated computations**: We can store the result of the distance calculation in a variable to avoid computing it twice. This reduces the number of computations, thus improving performance.
+
+3. **Use of const**: Declaring the operator methods in the point class as const allows the compiler to make certain assumptions about the behavior of these methods, which can lead to better optimization. This is a simple change in the class definition.
+
+4. **Use of scanf**: Replacing cin with scanf for input operations can speed up the program. This is because cin involves more overhead due to its use of C++ streams, while scanf is a C function that is generally faster.
+
+## Optimized Code
+
+```c++
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <vector>
+using namespace std;
+double EPS = 1e-6;
+double add(double a, double b) {
+  if (abs(a + b) < EPS * (abs(a) + abs(b)))
+    return 0;
+  return a + b;
+}
+struct point {
+  double x, y;
+  point() {}
+  point(double x, double y) : x(x), y(y) {}
+  point operator+(const point &p) const { return point(add(x, p.x), add(y, p.y)); }
+  point operator-(const point &p) const { return point(add(x, -p.x), add(y, -p.y)); }
+  point operator*(double d) const { return point(x * d, y * d); }
+  point operator/(double d) const { return point(x / d, y / d); }
+};
+double dist(const point &a, const point &b) {
+  return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2));
+}
+int main(void) {
+  int n, x, y, v;
+  vector<point> P;
+  vector<double> V;
+  while (scanf("%d", &n), n) {
+    P.resize(n);
+    V.resize(n);
+    for (int i = 0; i < n; i++) {
+      scanf("%d %d %d", &x, &y, &v);
+      P[i] = point(x, y);
+      V[i] = v;
+    }
+    double r = 0.98;
+    point now(0, 0);
+    for (double d = 10; d > EPS; d *= r) {
+      int mx = 0;
+      double mxd = 0, mxdist;
+      for (int j = 0; j < P.size(); j++) {
+        mxdist = dist(now, P[j]) / V[j];
+        if (mxdist > mxd)
+          mx = j, mxd = mxdist;
+      }
+      now = now + ((P[mx] - now) / dist(P[mx], now) * d);
+    }
+    double ans = 0;
+    for (int i = 0; i < P.size(); i++) {
+      ans = max(ans, dist(now, P[i]) / V[i]);
+    }
+    printf("%.8f\n", ans);
+  }
+  return 0;
+}
+```

@@ -1,0 +1,80 @@
+The provided C++ program is designed to calculate the minimum weight capacity (`P`) of a track that can load all items in a given sequence (`W`) in no more than `k` trips. The program has several sections that can be optimized for better performance and lower memory usage:
+
+1. **Code Analysis:**
+    - `IsAllLoaded` function: This function is called repeatedly in a loop in the `Calc` function. This can be a potential performance bottleneck as it iterates over the entire `W` vector each time it's called.
+    - Data passing: The vector `W` is passed by value to the functions `Input`, `IsAllLoaded`, and `Calc`. This can lead to unnecessary memory consumption and performance overhead as it involves copying the entire vector.
+
+2. **Optimization Strategy:**
+    - Use binary search to find the minimum `P` in the `Calc` function to reduce the number of calls to `IsAllLoaded`.
+    - Pass the vector `W` by reference to avoid unnecessary copying.
+    - Use `std::ios_base::sync_with_stdio(false)` to speed up I/O operations.
+
+3. **Step-by-Step Explanation:**
+    - Instead of incrementing `P` by 1 in each iteration of the loop in the `Calc` function, we can use binary search to find the minimum `P`. Binary search reduces the time complexity from O(N) to O(log N). The lower bound of the binary search is the maximum element in `W` and the upper bound is the sum of all elements in `W`.
+    - Passing `W` by reference to the `Input`, `IsAllLoaded`, and `Calc` functions avoids copying the entire vector, thus reducing memory usage and potentially improving performance.
+    - `std::ios_base::sync_with_stdio(false)` is used to untie C++'s standard streams from their corresponding C streams. This can potentially speed up I/O operations. However, this makes it unsafe to mix C++'s standard I/O with C's standard I/O.
+
+4. **Optimized Code Block:**
+```cpp
+#include <iostream>
+#include <numeric>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+// Now `W` is passed by reference
+void Input(vector<int>& W, const int n) {
+  for (int i = 0; i < n; i++) {
+    int w;
+    cin >> w;
+    W.push_back(w);
+  }
+}
+
+// Now `W` is passed by reference
+bool IsAllLoaded(int P, const vector<int>& W, int k) {
+  int TrackIndex = 0;
+  int CurrentSum = 0;
+  for (int i = 0; i < W.size(); i++) {
+    if (W[i] > P) {
+      return false;
+    }
+    if (CurrentSum + W[i] > P) {
+      TrackIndex++;
+      if (TrackIndex == k) {
+        return false;
+      }
+      CurrentSum = 0;
+    }
+    CurrentSum += W[i];
+  }
+  return true;
+}
+
+// Now `W` is passed by reference
+int Calc(const vector<int>& W, int k) {
+  int left = *max_element(W.begin(), W.end());
+  int right = accumulate(W.begin(), W.end(), 0);
+  while (left < right) {
+    int mid = left + (right - left) / 2;
+    if (IsAllLoaded(mid, W, k)) {
+      right = mid;
+    } else {
+      left = mid + 1;
+    }
+  }
+  return left;
+}
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  int n, k;
+  cin >> n >> k;
+  vector<int> W;
+  W.reserve(n);
+  Input(W, n);
+  int P = Calc(W, k);
+  cout << P << endl;
+  return 0;
+}
+```

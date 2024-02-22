@@ -1,0 +1,73 @@
+Code Analysis:
+This program seems to be a solution to a competitive programming problem. It calculates the smallest enclosing disc for a set of points in 2D space for several sets of points. Then it tries to find if there are enough radii in the array 'r' that can enclose each of these discs. If not, it prints "NG", otherwise it prints the indices of the radii used.
+
+Optimization Strategy:
+1. Data structures - The most inefficient data structures used here are the vectors `a` and `b` in the `chk` function. These are created, filled, and sorted every time the function is called, which is inefficient. We could instead maintain a sorted list of available radii and update it as we use the radii.
+
+2. Redundant computations - The function `chk` is called in a loop for every radius in the `r` array. This function checks if the remaining radii can cover the remaining discs. But this is redundant. We only need to check this when we are deciding whether to use a radius or not.
+
+3. Loops/Recursive calls - The three nested loops in the function `smallest_enclosing_disc` can potentially be optimized using a more efficient algorithm for calculating the smallest enclosing disc. However, this might require a more complex algorithm like Welzl's algorithm.
+
+4. Compiler optimizations - The compiler can be given hints to unroll small loops or inline small functions. However, in this code, there are no such small loops or functions that would significantly benefit from these optimizations.
+
+Step-by-Step Explanation:
+1. Instead of creating, filling, and sorting the vectors `a` and `b` every time the `chk` function is called, we can maintain a sorted list of available radii. We can use a multiset for this, which allows multiple instances of the same value and keeps the elements sorted. When we use a radius, we can simply remove it from the multiset.
+
+2. Instead of calling the `chk` function in a loop for every radius, we can check whether a radius can be used right when we are deciding whether to use it. If using a radius would mean that there aren't enough remaining radii to cover the remaining discs, we don't use that radius.
+
+3. Optimizing the three nested loops in the function `smallest_enclosing_disc` would require a more complex algorithm like Welzl's algorithm, which is beyond the scope of this task.
+
+Optimized Code Block:
+```
+// ... (keep the first part of the code until the definition of the chk function)
+
+// Change the chk function to take the multiset of available radii as a parameter
+bool chk(multiset<ld>& b) {
+  vector<ld> a;
+  for (int i = s; i < m; ++i)
+    a.emplace_back(mb[i]);
+  sort(all(a));
+  auto it = b.begin();
+  rep(i, a.size()) {
+    it = b.lower_bound(a[i]); // Find the smallest radius that can enclose the disc
+    if (it == b.end()) // If there is no such radius
+      return false;
+    else
+      it++; // Skip this radius
+  }
+  return true;
+}
+
+int main() {
+  vector<int> ans;
+  cin >> n >> m;
+  multiset<ld> b; // Use a multiset to keep the available radii sorted
+  rep(i, n) {
+    cin >> r[i];
+    b.insert(r[i]); // Add the radius to the multiset
+  }
+  // ... (keep the rest of the code until the start of the loop over the discs)
+  rep(i, m) {
+    bool found = false;
+    auto it = b.begin();
+    while (it != b.end()) {
+      ld radius = *it;
+      if (mb[i] < radius + eps) { // If the radius can enclose the disc
+        b.erase(it); // Temporarily remove the radius from the multiset
+        if (chk(b)) { // Check if the remaining radii can cover the remaining discs
+          ans.push_back(distance(b.begin(), it) + 1);
+          found = true;
+          break;
+        }
+        b.insert(radius); // If not, put the radius back
+      }
+      it++;
+    }
+    if (!found) {
+      f = false;
+      break;
+    }
+  }
+  // ... (keep the rest of the code)
+}
+```

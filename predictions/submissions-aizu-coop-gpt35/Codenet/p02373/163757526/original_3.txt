@@ -1,0 +1,174 @@
+Code Analysis:
+- The code is implementing the Lowest Common Ancestor (LCA) algorithm on a tree.
+- The main bottleneck in the code is the construction of the Sparse Table (ST) data structure.
+- The ST data structure is used to answer LCA queries efficiently.
+- The code uses a recursive depth-first search (DFS) to construct the path and calculate the depths of the nodes.
+- The code uses an array of pairs to store the path, where each pair consists of the depth and the node index.
+- The ST data structure is a 2D array where the first dimension represents the logarithmic height of the table, and the second dimension represents the indices of the nodes in the path.
+- The ST data structure is built using a nested loop, where the outer loop represents the height and the inner loop represents the nodes in the path.
+- The code calculates the height of the ST table using the ceil(log2(n + 1)) formula, where n is the number of nodes in the path.
+- The LCA function uses the ST table to find the lowest common ancestor of two nodes.
+
+Optimization Strategy:
+1. Use a vector instead of an array for the path and adjList data structures.
+2. Use a vector of pairs instead of an array of pairs for the ST data structure.
+3. Avoid redundant calculations of log2 and pow functions.
+4. Use a custom min function instead of the standard library min function.
+5. Use a custom swap function instead of the standard library swap function.
+6. Use a custom printf function instead of the standard library printf function.
+
+Step-by-Step Explanation:
+1. Use a vector instead of an array for the path and adjList data structures:
+   - The vector data structure provides dynamic resizing, which eliminates the need to allocate a fixed-size array and avoids wasting memory.
+   - Replace `ii path[MAXN << 1];` with `vector<ii> path;` and initialize it as `path.reserve(MAXN << 1);`.
+   - Replace `vi adjList[MAXN];` with `vector<vi> adjList(num_nodes);`.
+
+2. Use a vector of pairs instead of an array of pairs for the ST data structure:
+   - The vector data structure provides dynamic resizing, which eliminates the need to allocate a fixed-size array and avoids wasting memory.
+   - Replace `ii ST[LOGN][MAXN << 1];` with `vector<vector<ii>> ST(LOGN, vector<ii>(path_size));`.
+
+3. Avoid redundant calculations of log2 and pow functions:
+   - Calculate the height of the ST table using a while loop instead of the ceil(log2(n + 1)) formula.
+   - Replace `int h = ceil(log2(n + 1));` with `int h = 0; while ((1 << h) <= n) h++;`.
+
+4. Use a custom min function instead of the standard library min function:
+   - The standard library min function may introduce function call overhead.
+   - Define a custom min function that directly compares the values and returns the minimum.
+   - Add the following min function at the beginning of the code:
+     ```
+     inline ii min(ii a, ii b) {
+       return (a.fi < b.fi) ? a : b;
+     }
+     ```
+
+5. Use a custom swap function instead of the standard library swap function:
+   - The standard library swap function may introduce function call overhead.
+   - Define a custom swap function that directly swaps the values.
+   - Add the following swap function at the beginning of the code:
+     ```
+     inline void swap(int& a, int& b) {
+       int temp = a;
+       a = b;
+       b = temp;
+     }
+     ```
+
+6. Use a custom printf function instead of the standard library printf function:
+   - The standard library printf function may introduce function call overhead.
+   - Define a custom printf function that directly prints the integer value.
+   - Add the following printf function at the beginning of the code:
+     ```
+     inline void printf(int x) {
+       if (x < 0) {
+         putchar('-');
+         x = -x;
+       }
+       if (x > 9)
+         printf(x / 10);
+       putchar('0' + x % 10);
+     }
+     ```
+
+Optimized Code Block:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+#define fi first
+#define se second
+typedef pair<int, int> ii;
+typedef vector<int> vi;
+const int MAXN = 100005;
+const int LOGN = 20;
+int idx_in_path[MAXN];
+vector<ii> path;
+vector<vi> adjList;
+int path_size = 0;
+
+void dfs(int u, int depth = 0) {
+  idx_in_path[u] = path_size;
+  path.push_back(ii(depth, u));
+  path_size++;
+  for (int v : adjList[u]) {
+    dfs(v, depth + 1);
+    path.push_back(ii(depth, u));
+    path_size++;
+  }
+}
+
+vector<vector<ii>> ST;
+
+void build(int n) {
+  int h = 0;
+  while ((1 << h) <= n) h++;
+  ST.resize(h, vector<ii>(n));
+  for (int i = 0; i < n; i++)
+    ST[0][i] = path[i];
+  for (int i = 1; i < h; i++)
+    for (int j = 0; j + (1 << i) <= n; j++)
+      ST[i][j] = min(ST[i - 1][j], ST[i - 1][j + (1 << (i - 1))]);
+}
+
+int lca(int u, int v) {
+  int l = idx_in_path[u], r = idx_in_path[v];
+  if (l > r)
+    swap(l, r);
+  r++;
+  int p = 31 - __builtin_clz(r - l);
+  return min(ST[p][l], ST[p][r - (1 << p)]).se;
+}
+
+inline ii min(ii a, ii b) {
+  return (a.fi < b.fi) ? a : b;
+}
+
+inline void swap(int& a, int& b) {
+  int temp = a;
+  a = b;
+  b = temp;
+}
+
+inline void printf(int x) {
+  if (x < 0) {
+    putchar('-');
+    x = -x;
+  }
+  if (x > 9)
+    printf(x / 10);
+  putchar('0' + x % 10);
+}
+
+int main() {
+  int num_nodes;
+  scanf("%d", &num_nodes);
+  adjList.resize(num_nodes);
+  for (int u = 0; u < num_nodes; u++) {
+    int num_neighbors;
+    scanf("%d", &num_neighbors);
+    for (int i = 0; i < num_neighbors; i++) {
+      int v;
+      scanf("%d", &v);
+      adjList[u].push_back(v);
+    }
+  }
+  dfs(0);
+  build(path_size);
+  int num_queries;
+  scanf("%d", &num_queries);
+  for (int i = 0; i < num_queries; i++) {
+    int u, v;
+    scanf("%d%d", &u, &v);
+    printf(lca(u, v));
+    putchar('\n');
+  }
+  return 0;
+}
+```
+
+The optimized code makes the following changes:
+- Replaces the arrays `path` and `adjList` with vectors.
+- Replaces the array `ST` with a vector of vectors.
+- Calculates the height of the ST table using a while loop.
+- Adds a custom `min` function to directly compare pairs.
+- Adds a custom `swap` function to directly swap values.
+- Adds a custom `printf` function to directly print integers.

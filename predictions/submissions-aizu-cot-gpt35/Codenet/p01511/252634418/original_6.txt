@@ -1,0 +1,129 @@
+Step 1: Remove unnecessary includes
+The original program includes the `<bits/stdc++.h>` header, which includes a lot of unnecessary standard library headers. We can remove this line and include only the necessary headers.
+
+Step 2: Avoid using namespace std
+The original program uses the `using namespace std` statement, which brings all names from the `std` namespace into the global namespace. This can lead to naming conflicts and make the code harder to understand. Instead, we should use the `std::` prefix for standard library names.
+
+Step 3: Remove unnecessary macros
+The original program defines several macros, such as `rep`, `all`, `pb`, `fi`, `se`, and `dbg`. These macros are not necessary and can be replaced with their corresponding code.
+
+Step 4: Optimize matrix multiplication
+The original program uses a simple triple-nested loop to perform matrix multiplication. This can be optimized by using a more efficient algorithm, such as Strassen's algorithm or the Coppersmith-Winograd algorithm. However, implementing these algorithms would require rewriting the matrix multiplication code from scratch, which goes against the requirement of making only small modifications. Therefore, we will keep the original matrix multiplication code as it is.
+
+Step 5: Optimize matrix exponentiation
+The original program uses a simple loop to perform matrix exponentiation. This can be optimized by using a more efficient algorithm, such as exponentiation by squaring. Exponentiation by squaring reduces the number of matrix multiplications required to calculate the exponentiation. We will modify the `mat_pow` function to use exponentiation by squaring.
+
+Step 6: Optimize input processing
+The original program reads the input using `cin` in a loop. This can be slow for large inputs. To optimize input processing, we can use the `scanf` function instead of `cin`. The `scanf` function is generally faster for reading input, especially when reading large numbers of integers.
+
+Step 7: Optimize output formatting
+The original program uses `printf` for output formatting. This can be slow for large outputs. To optimize output formatting, we can use the `cout` stream instead of `printf`. The `cout` stream is generally faster for output formatting, especially when printing large numbers of values.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <map>
+
+using ll = long long;
+using vl = std::vector<ll>;
+using mat = std::vector<vl>;
+
+const ll mod = 1000000009;
+
+mat mul(const mat& A, const mat& B) {
+    int n = A.size();
+    mat C(n, vl(n));
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            for (int k = 0; k < n; ++k) {
+                C[i][j] += A[i][k] * B[k][j];
+                C[i][j] %= mod;
+            }
+        }
+    }
+    return C;
+}
+
+mat mat_pow(const mat& A, ll x) {
+    int n = A.size();
+    mat ret(n, vl(n));
+    for (int i = 0; i < n; ++i) {
+        ret[i][i] = 1;
+    }
+    mat P(A);
+    while (x) {
+        if (x & 1)
+            ret = mul(ret, P);
+        P = mul(P, P);
+        x >>= 1;
+    }
+    return ret;
+}
+
+vl mul(const mat& A, const vl& b) {
+    int n = A.size();
+    vl ret(n);
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            ret[i] += A[i][j] * b[j];
+            ret[i] %= mod;
+        }
+    }
+    return ret;
+}
+
+int main() {
+    int T = 1;
+    int w, n;
+    ll h;
+    while (scanf("%d %lld %d", &w, &h, &n), w) {
+        std::map<ll, std::vector<int>> obj;
+        for (int i = 0; i < n; ++i) {
+            ll x, y;
+            scanf("%lld %lld", &x, &y);
+            --x;
+            --y;
+            if (y > 0) {
+                obj[y].push_back(x);
+            }
+        }
+        mat O(w, vl(w));
+        for (int i = 0; i < w; ++i) {
+            for (int j = -1; j <= 1; ++j) {
+                if (0 <= i + j && i + j < w)
+                    O[i][i + j] = 1;
+            }
+        }
+        mat A(w, vl(w));
+        for (int i = 0; i < w; ++i) {
+            A[i][i] = 1;
+        }
+        ll ny = 0;
+        for (const auto& p : obj) {
+            ll Y = p.first;
+            if (Y - ny > 1) {
+                A = mul(mat_pow(O, Y - ny - 1), A);
+            }
+            mat B(O);
+            for (int i : p.second) {
+                for (int j = -1; j <= 1; ++j) {
+                    if (0 <= i + j && i + j < w)
+                        B[i][i + j] = 0;
+                }
+            }
+            A = mul(B, A);
+            ny = Y;
+        }
+        if (ny != h - 1)
+            A = mul(mat_pow(O, h - 1 - ny), A);
+        vl b(w);
+        b[0] = 1;
+        vl res = mul(A, b);
+        ll ans = res[w - 1];
+        std::cout << "Case " << T++ << ": " << ans << std::endl;
+    }
+    return 0;
+}
+```

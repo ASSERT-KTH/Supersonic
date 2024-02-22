@@ -1,0 +1,1 @@
+int num[(int)sqrt(1000000)];

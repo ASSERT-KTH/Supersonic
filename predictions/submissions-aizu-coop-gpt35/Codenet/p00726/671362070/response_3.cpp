@@ -1,0 +1,15 @@
+The provided code is a C++ program that takes a string as input and expands it according to a specific pattern. The expansion is performed based on the number of repetitions specified in the input string. The expanded string is then printed as the output.
+
+Upon analyzing the code, the following potential performance bottlenecks, inefficient memory usage, and areas for optimization can be identified:
+
+1. The `cket` function iterates through the string to find the index of the closing parenthesis for a given opening parenthesis. This operation is performed repeatedly while expanding the string. The current implementation has a time complexity of O(n), where n is the size of the string. This can be optimized by using a stack data structure to keep track of opening parentheses and their corresponding indices, reducing the time complexity to O(1) for finding the closing parenthesis.
+
+2. The `expand` function has a nested loop structure, which can be computationally expensive for large inputs. Additionally, the function creates multiple substrings using `str.substr()`, which incurs additional memory allocation and copying. This can be optimized by avoiding unnecessary substring creation and performing the expansion in a more efficient manner.
+
+3. The `expand` function uses a global variable `n` to keep track of the number of expanded characters. This can lead to potential data race conditions and limit the reusability of the function.
+
+Based on these observations, the following optimization strategy can be formulated:
+
+1. Replace the usage of the `cket` function with a stack-based approach to find the closing parenthesis index.
+2. Refactor the `expand` function to perform the expansion in a more efficient manner, avoiding unnecessary substring creation.
+3. Remove the global variable `n` and pass it as a parameter to the `expand` function to avoid data race conditions and improve reusability.

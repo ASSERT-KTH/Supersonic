@@ -1,0 +1,66 @@
+This program is primarily aimed at finding the maximum number of people that can participate in a three-meal program (morning, lunch, and dinner) given their individual available time slots. The current implementation has a high time complexity due to multiple nested loops, leading to inefficiency. We can aim to optimize its performance by making the following changes:
+
+1. **Inefficient Data Structures**: The program uses vectors (`MORNING`, `LUNCH`, `DINNER`) to store available time slots for each meal and then sorts and iterates over these vectors multiple times. Instead, we could use sorted data structures like `std::set` or `std::map` that automatically maintain sorted order and provide faster lookup.
+
+2. **Redundant Computations**: The program calculates `tmp` for every possible combination of (morning, lunch, dinner) times, which involves checking every person's availability for each combination. We can avoid this by creating an `availability` map for each meal, which will store the number of people available at each time slot. This way, we can find the maximum overlap of morning, lunch, and dinner times directly from these maps.
+
+3. **Loop Unrolling**: The innermost loop where `tmp` is calculated can be eliminated by using an `availability` map as explained above. This will significantly reduce the running time.
+
+4. **Compiler Optimizations**: Using the `-O3` flag during compilation can provide additional performance improvements by enabling all optimization flags.
+
+Below is the optimized version of the code following these strategies:
+
+```cpp
+#include <iostream>
+#include <map>
+#include <vector>
+using namespace std;
+typedef long long int ll;
+
+int calc(int hour, int minute) { return 60 * hour + minute; }
+
+int main() {
+  int N;
+  scanf("%d", &N);
+  map<int, int> MORNING, LUNCH, DINNER;
+  vector<int> morn_start(N), morn_end(N), lunch_start(N), lunch_end(N), dinner_start(N), dinner_end(N);
+  for (int i = 0; i < N; i++) {
+    int m_st_h, m_st_m, m_ed_h, m_ed_m, l_st_h, l_st_m, l_ed_h, l_ed_m, d_st_h, d_st_m, d_ed_h, d_ed_m;
+    scanf("%d %d %d %d %d %d %d %d %d %d %d %d", &m_st_h, &m_st_m, &m_ed_h,
+          &m_ed_m, &l_st_h, &l_st_m, &l_ed_h, &l_ed_m, &d_st_h, &d_st_m,
+          &d_ed_h, &d_ed_m);
+    morn_start[i] = calc(m_st_h, m_st_m);
+    morn_end[i] = calc(m_ed_h, m_ed_m);
+    lunch_start[i] = calc(l_st_h, l_st_m);
+    lunch_end[i] = calc(l_ed_h, l_ed_m);
+    dinner_start[i] = calc(d_st_h, d_st_m);
+    dinner_end[i] = calc(d_ed_h, d_ed_m);
+    MORNING[morn_start[i]]++;
+    MORNING[morn_end[i]]--;
+    LUNCH[lunch_start[i]]++;
+    LUNCH[lunch_end[i]]--;
+    DINNER[dinner_start[i]]++;
+    DINNER[dinner_end[i]]--;
+  }
+  int max_overlap = 0, overlap_morning = 0, overlap_lunch = 0, overlap_dinner = 0;
+  for(auto &m : MORNING) {
+    overlap_morning += m.second;
+    for(auto &l : LUNCH) {
+      if(l.first < m.first) continue;
+      overlap_lunch += l.second;
+      for(auto &d : DINNER) {
+        if(d.first < l.first) continue;
+        overlap_dinner += d.second;
+        max_overlap = max(max_overlap, min({overlap_morning, overlap_lunch, overlap_dinner}));
+        overlap_dinner -= d.second;
+      }
+      overlap_lunch -= l.second;
+    }
+    overlap_morning -= m.second;
+  }
+  printf("%d\n", max_overlap);
+  return 0;
+}
+```
+
+In this optimized version, we maintain a running `overlap_morning`, `overlap_lunch`, and `overlap_dinner` count while iterating through the sorted times in the maps. We update `max_overlap` whenever we find a greater overlap. This approach significantly reduces the number of iterations and computations, thereby improving performance.

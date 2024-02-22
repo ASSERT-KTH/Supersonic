@@ -1,0 +1,24 @@
+The code given is complex and includes a lot of mathematical computation. It seems to be a solution to a competitive programming problem where some string manipulation and hashing techniques are used. Let's break down the optimizations that can be done:
+
+1. **Code Analysis**
+   a. The code consists of several utility functions that are used in the `solve()` function.
+   b. Several macros are defined which are used throughout the code.
+   c. The `solve()` function contains a lot of redundant and inefficient computations.
+   d. The `solve()` function also contains a lot of operations on the array `gha` and the map `vis` inside the loop, which might be optimized.
+   e. The code has a lot of unnecessary includes.
+
+2. **Optimization Strategy**
+   a. Reducing the number of includes: Several includes in the code are not used and can be removed.
+   b. Reducing redundant computations: There are several places where the same computation is being done multiple times in a loop. This can be optimized by storing the result of the computation in a variable and reusing it.
+   c. Optimizing the loops: Some loops might be optimized by unrolling them.
+   d. Changing inefficient data structures: The map `vis` is being used inefficiently, it might be better to use a different data structure.
+   e. Optimizing mathematical computations: Some mathematical computations might be optimized using mathematical tricks or approximations.
+
+3. **Step-by-Step Explanation**
+   a. Reducing the number of includes: If an include is not used in the code, it adds unnecessary overhead to the compilation process. By removing these includes, the compilation time will be reduced.
+   b. Reducing redundant computations: If a computation is being done multiple times with the same inputs, it can be optimized by storing the result of the computation in a variable and reusing it. This will reduce the running time of the code.
+   c. Optimizing the loops: Loop unrolling can reduce the overhead of loop control structures and increase the parallelism of the code, thus improving performance.
+   d. Changing inefficient data structures: If a data structure is not suitable for a particular use case, it can cause unnecessary overhead. By changing to a more suitable data structure, the performance can be improved.
+   e. Optimizing mathematical computations: Some mathematical computations can be optimized using mathematical tricks or approximations. This can reduce the running time of the code.
+
+4. **Optimized Code Block**

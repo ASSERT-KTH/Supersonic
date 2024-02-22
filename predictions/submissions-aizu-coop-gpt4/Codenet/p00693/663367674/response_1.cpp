@@ -1,0 +1,29 @@
+Code Analysis:
+1. The program appears to be a message filter. It reads a sequence of rules, which are either "permit" or "deny" for a pair of "from" and "to" addresses. It then reads a sequence of messages, each with a "from" and "to" address, and decides which messages are permitted according to the rules.
+
+2. The program is using arrays of structs to store rules and messages. This might not be the most efficient data structure, especially when it comes to searching for a specific rule or message.
+
+3. The functions "strCmp" and "ambiguousCmp" are used to compare strings. They can be replaced with standard library functions.
+
+4. The function "strcpy" is also a reimplementation of a standard library function and can be replaced.
+
+5. The program uses nested loops to compare rules and messages. This is likely to be a performance bottleneck as it results in quadratic time complexity.
+
+Optimization Strategy:
+A. Data Structures:
+   1. Replace the arrays of structs with std::vector. This will allow for dynamic resizing and efficient memory usage.
+   
+B. Redundant Computations:
+   1. Replace the custom string comparison and copy functions with standard library functions like std::strcmp and std::strcpy.
+
+C. Loops:
+   1. The nested loops for comparing rules and messages can be optimized. Instead of checking every rule for every message, we can use a map to store the rules. This will allow us to look up a rule in constant time.
+
+D. Compiler Optimizations:
+   1. Use the -O2 or -O3 compiler optimization flags to enable all the safe optimizations.
+
+E. Other Optimizations:
+   1. We can avoid the need to check if a rule has been erased by simply removing it from the vector.
+   2. Use std::cin and std::cout for input and output, which can be faster than scanf and printf when used with std::ios_base::sync_with_stdio(false).
+   3. Use std::string instead of char arrays for better memory management and ease of use.
+   

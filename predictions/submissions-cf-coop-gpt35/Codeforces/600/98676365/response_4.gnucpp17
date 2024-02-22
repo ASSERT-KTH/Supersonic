@@ -1,0 +1,111 @@
+#include <bits/stdc++.h>
+using namespace std;
+#define lson t[id].l
+#define rson t[id].r
+typedef long long ll;
+template <class T> inline void read(T &x) {
+  int f = 0;
+  x = 0;
+  char ch = getchar();
+  for (; !isdigit(ch); ch = getchar())
+    f |= (ch == '-');
+  for (; isdigit(ch); ch = getchar())
+    x = x * 10 + ch - '0';
+  if (f)
+    x = -x;
+}
+const int maxn = 1e5 + 7;
+struct Seg {
+  int l, r, v;
+  ll num, sum;
+} t[maxn << 2];  // Reduce the size of the t array
+int n, tot, cor[maxn], rt[maxn];
+ll ans[maxn];
+vector<int> G[maxn];
+void up(int id) {
+  ll lson_num = t[lson].num; // Store the value to avoid redundant calculations
+  ll rson_num = t[rson].num; // Store the value to avoid redundant calculations
+  if (lson_num > rson_num) {
+    t[id].num = lson_num;
+    t[id].v = t[lson].v;
+    t[id].sum = t[lson].sum;
+  } else if (lson_num < rson_num) {
+    t[id].num = rson_num;
+    t[id].v = t[rson].v;
+    t[id].sum = t[rson].sum;
+  } else {
+    t[id].num = lson_num;
+    t[id].v = t[lson].v;
+    t[id].sum = t[lson].sum + t[rson].sum;
+  }
+}
+void modify(int &id, int l, int r, int p) {
+  if (!id)
+    id = ++tot;
+  if (l == r) {
+    t[id].num += 1;
+    t[id].sum = l;
+    t[id].v = l;
+    return;
+  }
+  int mid = l + r >> 1;
+  if (p <= mid)
+    modify(lson, l, mid, p);
+  else
+    modify(rson, mid + 1, r, p);
+  up(id);
+}
+int merge(int a, int b, int l, int r) {
+  if (!a)
+    return b;
+  if (!b)
+    return a;
+  if (l == r) {
+    t[a].v = l;
+    t[a].sum = l;
+    t[a].num += t[b].num;
+    return a;
+  }
+  int mid = l + r >> 1;
+  int i;
+  for (i = lson; t[i].r; i = t[i].r) {
+    t[i].num += t[rson].num;
+    t[i].sum += t[rson].sum;
+  }
+  t[i].num += t[rson].num;
+  t[i].sum += t[rson].sum;
+  t[i].r = t[rson].r;
+  up(a);
+  return a;
+}
+void dfs(int u, int fa) {
+  for (auto v : G[u]) {
+    if (v == fa)
+      continue;
+    dfs(v, u);
+    merge(u, v, 1, n);
+  }
+  modify(u, 1, n, cor[u]);
+  ans[u] = t[u].sum;
+}
+void solve() {
+  read(n);
+  tot = n;
+  for (int i = 1; i <= n; ++i)
+    read(cor[i]);
+  for (int i = 1, u, v; i < n; ++i) {
+    read(u), read(v);
+    G[u].push_back(v);
+    G[v].push_back(u);
+  }
+  dfs(1, 0);
+  for (int i = 1; i <= n; ++i) {
+    printf("%lld%c", ans[i], " \n"[i == n]);
+  }
+}
+int main() {
+  int _T = 1;
+  while (_T--)
+    solve();
+  return 0;
+}

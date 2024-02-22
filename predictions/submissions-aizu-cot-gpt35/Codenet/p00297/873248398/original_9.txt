@@ -1,0 +1,114 @@
+The optimization steps for the given program are as follows:
+
+1. Remove unnecessary header files: The program includes many unnecessary header files such as `<algorithm>`, `<cmath>`, `<cstdlib>`, etc. These header files are not used in the program, so they can be removed.
+
+2. Remove unnecessary typedefs: The program defines several typedefs that are not used. These typedefs can be removed to simplify the code.
+
+3. Remove unnecessary functions: The program defines several unnecessary functions such as `max()`, `min()`, `chmax()`, `chmin()`, `get()`, `rev()`, `sort()`. These functions are not used in the program and can be removed.
+
+4. Remove unnecessary macros: The program defines several unnecessary macros such as `all()`, `rall()`, `PB`, `MP`, etc. These macros are not used in the program and can be removed.
+
+5. Optimize sorting: The program uses the `sort()` function to sort the `hoge` vector. Instead of sorting the entire vector, we can use the `partial_sort()` function to sort only the first `N` elements. This will improve the sorting performance.
+
+6. Optimize segment tree initialization: The program initializes the `Min` and `Max` vectors of the `SegTree` struct with `-inf` and `inf` values respectively. Instead of initializing the entire vector, we can use the `assign()` function to assign these values to the required range.
+
+7. Optimize segment tree update: The program updates the `Min` and `Max` values of the segment tree for each element in the `hoge` vector. Instead of updating the values one by one, we can update them in a batch by using the `assign()` function.
+
+8. Optimize segment tree query: The program performs multiple queries on the segment tree to find the minimum and maximum values. Instead of performing separate queries, we can modify the segment tree query function to return both the minimum and maximum values in a single query.
+
+9. Replace `endl` with `'\n'`: The program uses `endl` to end each line of output. However, `endl` flushes the output buffer, which can significantly slow down the program. We can replace `endl` with `'\n'` to improve the output performance.
+
+10. Use `vector.reserve()` to optimize memory usage: The program uses a vector `hoge` to store the `pii` values. We can use the `reserve()` function to allocate memory for the vector in advance, which can reduce the number of reallocations and improve memory usage.
+
+The optimized program is as follows:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+struct SegTree {
+    int n;
+    vector<int> Max;
+    vector<int> Min;
+
+    void init(int n_) {
+        n = 1;
+        while (n < n_) {
+            n *= 2;
+        }
+        Max.assign(2 * n, -inf);
+        Min.assign(2 * n, inf);
+    }
+
+    void update(int idx, int val) {
+        idx += n - 1;
+        Min[idx] = val;
+        Max[idx] = val;
+        while (idx > 0) {
+            idx = (idx - 1) / 2;
+            Min[idx] = min(Min[idx * 2 + 1], Min[idx * 2 + 2]);
+            Max[idx] = max(Max[idx * 2 + 1], Max[idx * 2 + 2]);
+        }
+    }
+
+    pair<int, int> query(int a, int b, int k = 0, int l = 0, int r = -1) {
+        if (r == -1) {
+            r = n;
+        }
+        if (r <= a || b <= l) {
+            return make_pair(inf, -inf);
+        }
+        if (a <= l && r <= b) {
+            return make_pair(Min[k], Max[k]);
+        }
+        pair<int, int> vl = query(a, b, k * 2 + 1, l, (l + r) / 2);
+        pair<int, int> vr = query(a, b, k * 2 + 2, (l + r) / 2, r);
+        return make_pair(min(vl.first, vr.first), max(vl.second, vr.second));
+    }
+};
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(0);
+
+    int N, d;
+    cin >> N >> d;
+
+    SegTree x_seg, y_seg;
+    x_seg.init(N);
+    y_seg.init(N);
+
+    vector<pair<int, int>> hoge;
+    hoge.reserve(N);
+
+    for (int i = 0; i < N; ++i) {
+        int x, y, b;
+        cin >> x >> y >> b;
+        hoge.emplace_back(b, i);
+    }
+
+    partial_sort(hoge.begin(), hoge.begin() + N, hoge.end());
+
+    for (int i = 0; i < N; ++i) {
+        x_seg.update(i, x[hoge[i].second]);
+        y_seg.update(i, y[hoge[i].second]);
+    }
+
+    ll ans = -inf;
+
+    for (int i = 0; i < N; ++i) {
+        int b = hoge[i].first;
+        int idx = upper_bound(hoge.begin(), hoge.end(), make_pair(b + d, inf)) - hoge.begin();
+        pair<int, int> x_range = x_seg.query(i, idx);
+        pair<int, int> y_range = y_seg.query(i, idx);
+        ans = max(ans, 1ll * (x_range.second - x_range.first) * (y_range.second - y_range.first));
+    }
+
+    cout << ans << '\n';
+
+    return 0;
+}
+```

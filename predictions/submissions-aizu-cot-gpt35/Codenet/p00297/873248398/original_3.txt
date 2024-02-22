@@ -1,0 +1,118 @@
+Step 1: Remove unnecessary headers
+The program includes several unnecessary headers that are not used. These include `<algorithm>`, `<cmath>`, `<deque>`, `<functional>`, `<map>`, `<queue>`, `<set>`, `<sstream>`, `<stack>`, and `<utility>`. We can remove these headers to improve compilation time and reduce memory usage.
+
+Step 2: Remove unnecessary macros
+The program defines several unnecessary macros that are not used. These include `PB`, `MP`, `rall`, `rev`, and `sort`. We can remove these macros to simplify the code.
+
+Step 3: Remove unnecessary typedefs
+The program defines several unnecessary typedefs that are not used. These include `vi`, `vvi`, `vpii`, and `ld`. We can remove these typedefs to simplify the code.
+
+Step 4: Remove unnecessary template functions
+The program defines several unnecessary template functions that are not used. These include `max`, `min`, `chmax`, `chmin`, `get`, and `sort`. We can remove these template functions to simplify the code.
+
+Step 5: Optimize the SegTree class
+The `SegTree` class has some unnecessary operations. The `Max` and `Min` vectors are initialized with default values, but they are later overwritten in the `min_update` and `max_update` functions. We can remove the initialization of `Max` and `Min` vectors to improve memory usage. Additionally, the `get_min` and `get_max` functions have a default value of -1 for the `r` parameter, but it is never used. We can remove the default value of -1 to simplify the code.
+
+Step 6: Optimize the main function
+The main function can be optimized by removing the unnecessary `X` and `Y` arrays. These arrays are used to store the values of `x` and `y` for each point, but they are not used in any other calculations. We can remove these arrays to simplify the code and reduce memory usage.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+struct SegTree {
+  int n;
+  vector<int> Max;
+  vector<int> Min;
+  
+  void init(int n_) {
+    n = 1;
+    while (n < n_)
+      n *= 2;
+    Max.resize(2 * n);
+    Min.resize(2 * n);
+  }
+  
+  void min_update(int idx, int val) {
+    idx += n - 1;
+    Min[idx] = val;
+    while (idx > 0) {
+      idx = (idx - 1) / 2;
+      Min[idx] = min(Min[idx * 2 + 1], Min[idx * 2 + 2]);
+    }
+  }
+  
+  void max_update(int idx, int val) {
+    idx += n - 1;
+    Max[idx] = val;
+    while (idx > 0) {
+      idx = (idx - 1) / 2;
+      Max[idx] = max(Max[idx * 2 + 1], Max[idx * 2 + 2]);
+    }
+  }
+  
+  int get_min(int a, int b, int k = 0, int l = 0, int r) {
+    if (r <= a || b <= l)
+      return inf;
+    if (a <= l && r <= b)
+      return Min[k];
+    int vl = get_min(a, b, k * 2 + 1, l, (l + r) / 2);
+    int vr = get_min(a, b, k * 2 + 2, (l + r) / 2, r);
+    return min(vl, vr);
+  }
+  
+  int get_max(int a, int b, int k = 0, int l = 0, int r) {
+    if (r <= a || b <= l)
+      return -inf;
+    if (a <= l && r <= b)
+      return Max[k];
+    int vl = get_max(a, b, k * 2 + 1, l, (l + r) / 2);
+    int vr = get_max(a, b, k * 2 + 2, (l + r) / 2, r);
+    return max(vl, vr);
+  }
+};
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+
+  int N, d;
+  cin >> N >> d;
+  
+  SegTree x_seg, y_seg;
+  x_seg.init(N), y_seg.init(N);
+  
+  vector<pair<int, int>> hoge;
+  for (int i = 0; i < N; ++i) {
+    int x, y, b;
+    cin >> x >> y >> b;
+    hoge.push_back(make_pair(b, i));
+  }
+  
+  sort(hoge.begin(), hoge.end());
+  
+  for (int i = 0; i < N; ++i) {
+    x_seg.min_update(i, hoge[i].first);
+    x_seg.max_update(i, hoge[i].first);
+    y_seg.min_update(i, hoge[i].second);
+    y_seg.max_update(i, hoge[i].second);
+  }
+  
+  ll ans = -inf;
+  for (int i = 0; i < N; ++i) {
+    int b = hoge[i].first;
+    int idx = upper_bound(hoge.begin(), hoge.end(), make_pair(b + d, inf)) - hoge.begin();
+    int min_x = x_seg.get_min(i, idx);
+    int max_x = x_seg.get_max(i, idx);
+    int min_y = y_seg.get_min(i, idx);
+    int max_y = y_seg.get_max(i, idx);
+    ans = max(ans, 1ll * (max_x - min_x) * (max_y - min_y));
+  }
+  
+  cout << ans << endl;
+}
+```

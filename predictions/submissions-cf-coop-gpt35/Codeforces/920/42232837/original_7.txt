@@ -1,0 +1,171 @@
+Code Analysis:
+- The code is finding prime numbers up to a given maximum value and storing them in the `pint` vector.
+- The `fac` function is finding the prime factors of a given number `x` and storing them in the `f` vector.
+- The `solve` function is calculating the number of integers less than or equal to `val` that are divisible by an odd number of prime factors in `f`.
+- The main function is reading inputs, finding the prime factors of `p`, and then using binary search to find the smallest number greater than `x` that has at least `k` integers less than or equal to it divisible by an odd number of prime factors in `f`.
+
+Optimization Strategy:
+1. Use a more efficient data structure:
+- The current implementation uses a `vector` to store the prime numbers and prime factors. However, a `bitset` can be used to store the prime numbers, as it requires less memory and allows for faster prime number generation.
+- Replace the `vector<long long> pint` with a `bitset<maxn + 100>` to store the prime numbers.
+
+2. Reduce unnecessary computations:
+- There is no need to calculate the prime factors of `p` for each test case. Instead, calculate the prime factors once before the test cases and reuse the result.
+- Move the calculation of `a1` outside the while loop since it does not depend on the test case inputs.
+
+3. Optimize the binary search:
+- Instead of calculating `val` for every `mid` in the binary search, precalculate the values for all possible `mid` values and store them in an array. This will reduce the number of calls to the `solve` function.
+
+4. Compiler optimizations:
+- Use compiler optimization flags (`-O2`, `-O3`) to enable compiler optimizations, such as loop unrolling and function inlining.
+
+Step-by-Step Explanation:
+1. Replace the `vector<long long> pint` with a `bitset<maxn + 100>` to store the prime numbers. This change reduces memory usage and allows for faster prime number generation.
+```cpp
+bitset<maxn + 100> pr;
+vector<long long> f;
+```
+
+2. Calculate the prime factors of `p` once before the test cases and reuse the result. This change avoids unnecessary computations.
+```cpp
+int main() {
+  memset(pr.pr, true, sizeof(pr.pr));
+  pr.pr[0] = pr.pr[1] = false;
+  for (int i = 2; i <= maxn; i++)
+    if (pr.pr[i])
+      for (int j = 2; j * i <= maxn; j++)
+        pr.pr[i * j] = false;
+  for (int i = 2; i <= maxn; i++)
+    if (pr.pr[i])
+      pint.push_back(i);
+  cin >> cas;
+  while (cas--) {
+    scanf("%d%d%d", &x, &p, &k);
+    f.clear();
+    for (auto i : pint) {
+      if (p % i != 0)
+        continue;
+      if (i * i > p)
+        break;
+      f.push_back(i);
+      while (p % i == 0)
+        p /= i;
+    }
+    if (p != 1)
+      f.push_back(p);
+    int a1 = solve(x), L = x + 1, R = maxn, ans = 0;
+    while (L <= R) {
+      int mid = (L + R) / 2;
+      int val = solve(mid) - a1;
+      if (val >= k)
+        R = mid - 1, ans = mid;
+      else
+        L = mid + 1;
+    }
+    printf("%d\n", ans);
+  }
+  return 0;
+}
+```
+
+3. Optimize the binary search by precalculating the values of `solve(mid)` for all possible `mid` values and storing them in an array. This change reduces the number of calls to the `solve` function.
+```cpp
+int main() {
+  // ...
+
+  // Precalculate solve(mid) values
+  vector<int> solveValues(maxn + 1);
+  for (int i = x; i <= maxn; i++) {
+    solveValues[i] = solve(i);
+  }
+
+  while (cas--) {
+    // ...
+
+    int a1 = solveValues[x], L = x + 1, R = maxn, ans = 0;
+    while (L <= R) {
+      int mid = (L + R) / 2;
+      int val = solveValues[mid] - a1;
+      if (val >= k)
+        R = mid - 1, ans = mid;
+      else
+        L = mid + 1;
+    }
+    printf("%d\n", ans);
+  }
+  return 0;
+}
+```
+
+4. Enable compiler optimizations by adding the `-O2` or `-O3` flag when compiling the code. This change allows the compiler to automatically optimize the code, such as loop unrolling and function inlining.
+
+Optimized Code:
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+const int maxn = 1.8e7;
+struct Prime {
+  bitset<maxn + 100> pr;
+  vector<long long> pint;
+  Prime() {
+    memset(pr.pr, true, sizeof(pr.pr));
+    pr.pr[0] = pr.pr[1] = false;
+    for (int i = 2; i <= maxn; i++)
+      if (pr.pr[i])
+        for (int j = 2; j * i <= maxn; j++)
+          pr.pr[i * j] = false;
+    for (int i = 2; i <= maxn; i++)
+      if (pr.pr[i])
+        pint.push_back(i);
+  }
+} prime;
+vector<long long> f;
+void fac(int x) {
+  f.clear();
+  for (auto i : prime.pint) {
+    if (x % i != 0)
+      continue;
+    if (i * i > x)
+      break;
+    f.push_back(i);
+    while (x % i == 0)
+      x /= i;
+  }
+  if (x != 1)
+    f.push_back(x);
+}
+int solve(int val) {
+  int ret = 0;
+  int lim = 1 << f.size();
+  for (int j = 1; j < lim; j++) {
+    int tp = 1, ct = 0;
+    for (int i = 0; i < (int)f.size(); i++) {
+      if ((j >> i) & 1) {
+        tp *= f[i];
+        ct++;
+      }
+    }
+    ret += (ct % 2 ? 1 : -1) * val / tp;
+  }
+  return val - ret;
+}
+int cas, x, p, k;
+int main() {
+  cin >> cas;
+  while (cas--) {
+    scanf("%d%d%d", &x, &p, &k);
+    fac(p);
+    int a1 = solve(x), L = x + 1, R = maxn, ans = 0;
+    while (L <= R) {
+      int mid = (L + R) / 2;
+      int val = solve(mid) - a1;
+      if (val >= k)
+        R = mid - 1, ans = mid;
+      else
+        L = mid + 1;
+    }
+    printf("%d\n", ans);
+  }
+  return 0;
+}
+```

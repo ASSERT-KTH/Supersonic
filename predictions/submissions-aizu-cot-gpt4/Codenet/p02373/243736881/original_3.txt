@@ -1,0 +1,109 @@
+The given C++ program has already been written fairly efficiently. However, there are a few minor optimizations we can make:
+
+1. Avoiding unnecessary memory allocation: The vector 'tord' is only used inside the 'decomp' function, so we can move its declaration inside this function to avoid allocating memory for it when it's not needed.
+
+2. Reducing function calls: In two places, the size of the queue 'q' is checked using 'q.size()'. In C++, calling size() on a container (like a queue, vector, etc.) is generally an O(1) operation, but it's still a function call that can be avoided. Instead, we can use 'while(!q.empty())', which checks if the queue is empty, also an O(1) operation but without a function call.
+
+3. Avoiding vector reallocation: When we use 'push_back' on a vector, if the vector's capacity is not enough to accommodate the new element, the vector needs to reallocate its memory, which is an expensive operation. By using 'reserve' function, we can allocate enough memory at the beginning.
+
+4. Reducing variable re-initialization: In two places, the 'vis' array is set to false for all of its elements. This is unnecessary as it is already initialized to false at the beginning of the 'decomp' function.
+
+Here is the code after these optimizations:
+
+```cpp
+#include <algorithm>
+#include <cassert>
+#include <iostream>
+#include <queue>
+#include <vector>
+using namespace std;
+#define rep(i, n) for (int i = 0; i < (int)(n); i++)
+const int B = 200;
+int color[100010], par[100010], depth[100010];
+int top[100010];
+int goUp[100010];
+bool vis[100010];
+int n;
+vector<vector<int>> g;
+void decomp(int root) {
+  queue<int> q;
+  q.push(root);
+  vector<int> tord;
+  tord.reserve(n);
+  while (!q.empty()) {
+    int v = q.front();
+    q.pop();
+    vis[v] = true;
+    tord.push_back(v);
+    for (int c : g[v]) {
+      if (!vis[c]) {
+        q.push(c);
+        par[c] = v;
+        depth[c] = depth[v] + 1;
+      }
+    }
+  }
+  int c = 0;
+  for (int u : tord) {
+    if (vis[u])
+      continue;
+    q.push(u);
+    int k = 0;
+    while (!q.empty() && k < B) {
+      int v = q.front();
+      q.pop();
+      vis[v] = true;
+      color[v] = c;
+      goUp[v] = par[u];
+      top[v] = u;
+      k++;
+      for (int c : g[v]) {
+        if (!vis[c])
+          q.push(c);
+      }
+    }
+    while (!q.empty())
+      q.pop();
+    c++;
+  }
+}
+int solve(int u, int v) {
+  while (color[u] != color[v]) {
+    assert(u != -1 && v != -1);
+    if (depth[top[u]] > depth[top[v]])
+      u = goUp[u];
+    else
+      v = goUp[v];
+  }
+  while (u != v) {
+    assert(u != -1 && v != -1);
+    if (depth[u] > depth[v])
+      u = par[u];
+    else
+      v = par[v];
+  }
+  return u;
+}
+int main() {
+  cin >> n;
+  g.assign(n, {});
+  rep(i, n) {
+    int k;
+    cin >> k;
+    rep(j, k) {
+      int c;
+      cin >> c;
+      g[i].push_back(c);
+      par[c] = i;
+    }
+  }
+  decomp(0);
+  int q;
+  cin >> q;
+  rep(i, q) {
+    int u, v;
+    cin >> u >> v;
+    cout << solve(u, v) << endl;
+  }
+}
+```

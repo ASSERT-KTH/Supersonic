@@ -1,0 +1,1 @@
+weight = (int*)malloc(num_packet * sizeof(int));

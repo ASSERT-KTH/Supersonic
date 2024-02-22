@@ -1,0 +1,85 @@
+Code Analysis:
+The provided code is a C++ program that reads an array of integers and performs some calculations based on the inputs. The program reads an array of weights (W), the number of elements in the array (n), and a threshold (k). The main calculation is to find the smallest integer P such that all elements of the array can be loaded into a number of tracks, each of which can carry at most P weight and the number of tracks does not exceed k. 
+
+Potential bottlenecks:
+1. The function `IsAllLoaded` is called multiple times from `Calc` with the same array which may have a large number of elements. In each call, it iterates over the whole array. This is potentially a performance issue as the time complexity of the function `Calc` is O(n^2) in the worst case scenario.
+2. The usage of `vector<int>` for passing the array to functions. Vectors are dynamic arrays and using them for passing large arrays between functions could potentially slow down the program due to the overhead of dynamic memory allocation and deallocation.
+3. The function `Input` iteratively reads an integer and inserts it into the vector. This could be more efficient.
+
+Optimization Strategy:
+1. Reduce the number of iterations over the array in `IsAllLoaded` function by implementing a binary search algorithm to find the smallest P.
+2. Instead of passing vectors to functions, pass pointers to the array which is faster and consumes less memory.
+3. Minimize the number of memory allocations and deallocations by reserving memory for the vector in function `Input` before inserting elements.
+
+Optimized Code:
+```C++
+#include <iostream>
+#include <algorithm>
+#include <numeric>
+#include <vector>
+using namespace std;
+
+vector<int> Input(const int n) {
+  vector<int> W;
+  W.reserve(n);  // Reserve memory for n elements
+  for (int i = 0; i < n; i++) {
+    int w;
+    cin >> w;
+    W.push_back(w);
+  }
+  return W;
+}
+
+bool IsAllLoaded(int P, const vector<int>& W, int k) {
+  int TrackIndex = 0;
+  int CurrentSum = 0;
+  for (int i = 0; i < W.size(); i++) {
+    if (W[i] > P) {
+      return false;
+    }
+    if (CurrentSum + W[i] > P) {
+      TrackIndex++;
+      if (TrackIndex == k) {
+        return false;
+      }
+      CurrentSum = 0;
+    }
+    CurrentSum += W[i];
+  }
+  return true;
+}
+
+int Calc(const vector<int>& W, int k) {
+  int Sum = accumulate(W.begin(), W.end(), 0);
+  int Max = *max_element(W.begin(), W.end());
+  int Left = max(Sum / k, Max), Right = Sum;
+  while (Left < Right) {
+    int Mid = Left + (Right - Left) / 2;
+    if (IsAllLoaded(Mid, W, k)) {
+      Right = Mid;
+    } else {
+      Left = Mid + 1;
+    }
+  }
+  return Left;
+}
+
+int main() {
+  int n, k;
+  cin >> n >> k;
+  vector<int> W = Input(n);
+  int P = Calc(W, k);
+  cout << P << endl;
+  return 0;
+}
+```
+Explanation:
+1. The vector `W` is passed by reference to `IsAllLoaded` and `Calc` functions to avoid copying. 
+2. In `Input` function, memory is reserved for the vector before inserting elements which reduces the number of memory allocations.
+3. In `Calc` function, instead of incrementing `P` and checking if all weights can be loaded, binary search is implemented which reduces the number of iterations from `n` to `log(n)`.
+4. The initial values of `Left` and `Right` in the binary search are calculated based on the total sum of the weights and the maximum weight which guarantees that the result `P` is within `[Left, Right]`.
+5. The variable `Mid` is calculated in a way that avoids overflow.
+
+Trade-offs:
+- The code becomes slightly more complex with the introduction of binary search.
+- The optimization reduces the time complexity from O(n^2) to O(n log n) which significantly improves the performance for large inputs.

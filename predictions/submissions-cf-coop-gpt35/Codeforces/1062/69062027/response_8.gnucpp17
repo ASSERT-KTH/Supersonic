@@ -1,0 +1,175 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+typedef long long ll;
+
+struct HLD {
+  std::vector<std::vector<int>>& adj;
+  int n, root, cnt;
+  std::vector<int> sub, tin, tout, par, head, dep;
+
+  HLD(std::vector<std::vector<int>>& g, int rt)
+      : adj(g), n(adj.size()), root(rt), cnt(0), sub(n, 1), tin(n), tout(n),
+        par(n, -1), head(n), dep(n) {
+    dfs1(root, -1, 0);
+    dfs2(root, root);
+  }
+
+  int dfs1(int s, int p, int d) {
+    par[s] = p;
+    dep[s] = d;
+    adj[s].erase(std::remove(adj[s].begin(), adj[s].end(), p), adj[s].end());
+    int sub_size = 0;
+    for (int i = 0; i < adj[s].size(); i++) {
+      int t = adj[s][i];
+      sub_size += dfs1(t, s, d + 1);
+      if (sub[adj[s][0]] < sub[t])
+        std::swap(t, adj[s][0]);
+    }
+    sub[s] = sub_size;
+    return sub_size;
+  }
+
+  void dfs2(int s, int h) {
+    head[s] = h;
+    tin[s] = cnt++;
+    for (int i = 0; i < adj[s].size(); i++) {
+      int t = adj[s][i];
+      dfs2(t, t == adj[s][0] ? h : t);
+    }
+    tout[s] = cnt;
+  }
+
+  int lca(int a, int b) {
+    while (head[a] != head[b]) {
+      if (dep[head[a]] > dep[head[b]])
+        std::swap(a, b);
+      b = par[head[b]];
+    }
+    if (dep[a] > dep[b])
+      std::swap(a, b);
+    return a;
+  }
+};
+
+const int MAXN = 100100;
+std::vector<std::vector<int>> adj;
+int n, a[MAXN], q;
+
+struct dat {
+  std::pair<int, int> mx;
+  std::pair<int, int> mn;
+} t[4 * MAXN];
+
+dat zero;
+
+dat combine(dat x, dat y) {
+  dat res;
+  if (a[x.mx.first] > a[y.mx.first]) {
+    res.mx.first = x.mx.first;
+    if (a[x.mx.second] > a[y.mx.first]) {
+      res.mx.second = x.mx.second;
+    } else {
+      res.mx.second = y.mx.first;
+    }
+  } else {
+    res.mx.first = y.mx.first;
+    if (a[x.mx.first] > a[y.mx.second]) {
+      res.mx.second = x.mx.first;
+    } else {
+      res.mx.second = y.mx.second;
+    }
+  }
+  if (a[x.mn.first] < a[y.mn.first]) {
+    res.mn.first = x.mn.first;
+    if (a[x.mn.second] < a[y.mn.first]) {
+      res.mn.second = x.mn.second;
+    } else {
+      res.mn.second = y.mn.first;
+    }
+  } else {
+    res.mn.first = y.mn.first;
+    if (a[x.mn.first] < a[y.mn.second]) {
+      res.mn.second = x.mn.first;
+    } else {
+      res.mn.second = y.mn.second;
+    }
+  }
+  return res;
+}
+
+void build(int v, int tl, int tr) {
+  if (tl == tr) {
+    t[v].mn = {tl, n + 1};
+    t[v].mx = {tl, n + 2};
+  } else {
+    int tm = (tl + tr) / 2;
+    build(2 * v, tl, tm);
+    build(2 * v + 1, tm + 1, tr);
+    t[v] = combine(t[2 * v], t[2 * v + 1]);
+  }
+}
+
+dat get(int v, int tl, int tr, int l, int r) {
+  if (l > r)
+    return zero;
+  if (l == tl && r == tr)
+    return t[v];
+  int tm = (tl + tr) / 2;
+  return combine(get(v * 2, tl, tm, l, std::min(r, tm)),
+                 get(v * 2 + 1, tm + 1, tr, std::max(l, tm + 1), r));
+}
+
+int main() {
+  std::ios::sync_with_stdio(0);
+  std::cin.tie(0);
+  std::cout.tie(0);
+
+  std::cin >> n >> q;
+  zero.mx = {n + 2, n + 2};
+  zero.mn = {n + 1, n + 1};
+  adj.resize(n + 1);
+  
+  for (int i = 1; i < n; i++) {
+    int x;
+    std::cin >> x;
+    adj[x - 1].push_back(i);
+  }
+  
+  a[n + 1] = mod;
+  a[n + 2] = 0;
+  HLD hld(adj, 0);
+  
+  for (int i = 0; i < n; i++) {
+    a[i] = hld.tin[i];
+  }
+  
+  build(1, 0, n - 1);
+
+  while (q--) {
+    int l, r;
+    std::cin >> l >> r;
+    l--;
+    r--;
+    if (r - l < 2) {
+      int ans = r, d = hld.dep[l];
+      if (d < hld.dep[r]) {
+        ans = l;
+        d = hld.dep[r];
+      }
+      std::cout << ans + 1 << " " << d << std::endl;
+      continue;
+    }
+    dat cur = get(1, 0, n - 1, l, r);
+    int lc1 = hld.lca(cur.mx.first, cur.mn.second);
+    int lc2 = hld.lca(cur.mx.second, cur.mn.first);
+    if (hld.dep[lc1] > hld.dep[lc2]) {
+      std::cout << cur.mn.first + 1 << " " << hld.dep[lc1] << std::endl;
+    } else {
+      std::cout << cur.mx.first + 1 << " " << hld.dep[lc2] << std::endl;
+    }
+  }
+
+  return 0;
+}

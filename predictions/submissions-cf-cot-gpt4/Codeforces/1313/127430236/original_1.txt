@@ -1,0 +1,95 @@
+Let's go through the optimizations step by step.
+
+1. **Using `scanf` and `printf` instead of `cin` and `cout`:** `scanf` and `printf` are faster than `cin` and `cout` because they don't need to sync with the standard C library.
+
+2. **Removing `ios::sync_with_stdio(false)` and `cin.tie(0)`:** Since we replace `cin` and `cout` with `scanf` and `printf`, these lines are no longer needed.
+
+3. **Removing `using namespace std;`:** This line can potentially cause naming conflicts and it's considered bad practice to use it, especially in large programs. It doesn't have a direct impact on performance, but it's a good habit to get into.
+
+4. **Minimizing the use of global variables:** Global variables consume memory for the entire duration of the program, which is not good for memory usage. However, in this case, we cannot remove global variables as they are necessary for the program's function.
+
+5. **Avoiding unnecessary `memset`:** The `memset` function is used to set a block of memory with a specific value, but it can be an expensive operation. In this case, `memset` is not necessary because the values in the `node` array are overwritten before they are used.
+
+6. **Avoiding unnecessary calls to `reverse`:** The `reverse` function is called twice in this program, which effectively just restores the original order of the `a` array. Instead of calling `reverse`, we can modify the loop where `a` is used in reverse order.
+
+Here's the optimized code:
+
+```c++
+#include <algorithm>
+#include <cstring>
+#include <stdio.h>
+#define int long long
+const int N = 5e5 + 9;
+int a[N], node[4 * N], l[N], r[N], res[N];
+
+void update(int id, int l, int r, int pos, int x) {
+  if (l > pos || r < pos)
+    return;
+  if (l == r) {
+    node[id] = x;
+    return;
+  }
+  int mid = (l + r) / 2;
+  update(id * 2, l, mid, pos, x);
+  update(id * 2 + 1, mid + 1, r, pos, x);
+  node[id] = std::min(node[id * 2], node[id * 2 + 1]);
+}
+
+int find(int id, int l, int r, int tr, int ph, int x) {
+  if (tr > ph || l > ph || r < tr || node[id] > x)
+    return 0;
+  if (l == r)
+    return r;
+  int mid = (l + r) / 2;
+  if (l >= tr && r <= ph) {
+    if (node[id] > x)
+      return 0;
+    if (node[id * 2 + 1] <= x)
+      return find(id * 2 + 1, mid + 1, r, tr, ph, x);
+    else
+      return find(id * 2, l, mid, tr, ph, x);
+  }
+  return std::max(find(id * 2, l, mid, tr, ph, x),
+             find(id * 2 + 1, mid + 1, r, tr, ph, x));
+}
+
+signed main() {
+  int n;
+  scanf("%lld", &n);
+  for (int i = 1; i <= n; i++)
+    scanf("%lld", &a[i]);
+  int id;
+  id = 0;
+  for (int i = 1; i <= n; i++) {
+    id = find(1, 1, n, 1, i - 1, a[i]);
+    update(1, 1, n, i, a[i]);
+    l[i] = l[id] + a[i] * (i - id);
+  }
+  for (int i = n; i >= 1; i--) {
+    id = find(1, 1, n, 1, n - i, a[n - i + 1]);
+    update(1, 1, n, n - i + 1, a[n - i + 1]);
+    r[n - i + 1] = r[id] + a[n - i + 1] * ((n - i + 1) - id);
+  }
+  int sum = 0, pos;
+  for (int i = 1; i <= n; i++)
+    if (sum < l[i] + r[n - i + 1] - a[i]) {
+      sum = l[i] + r[n - i + 1] - a[i];
+      pos = i;
+    }
+  int minn = a[pos];
+  res[pos] = a[pos];
+  for (int i = pos - 1; i >= 1; i--) {
+    minn = std::min(minn, a[i]);
+    res[i] = minn;
+  }
+  minn = a[pos];
+  for (int i = pos + 1; i <= n; i++) {
+    minn = std::min(minn, a[i]);
+    res[i] = minn;
+  }
+  for (int i = 1; i <= n; i++)
+    printf("%lld ", res[i]);
+  return 0;
+}
+```
+Please note that the optimizations largely depend on the specific conditions of the problem and the platform where the code will be executed. These optimizations mentioned above may not speed up the program on every platform.

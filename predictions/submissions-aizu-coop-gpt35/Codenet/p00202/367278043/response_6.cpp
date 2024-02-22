@@ -1,0 +1,28 @@
+Code Analysis:
+- The code seems to be solving a problem where the goal is to find the largest prime number less than or equal to a given number 'x', using a combination of numbers from an array 'a'.
+- The code initializes an array 'prime' to mark the prime numbers up to a certain limit.
+- It then enters a loop to read inputs and solve the problem until the input 'n' becomes zero.
+- Inside the loop, it reads 'n' numbers into the array 'a', sorts the array, and then uses dynamic programming to find the largest prime number less than or equal to 'x' using the numbers from 'a'.
+
+Potential Performance Bottlenecks:
+1. The 'prime' array has a fixed size of 1000001, which is much larger than necessary for finding primes up to 'x'. This wastes memory and affects cache utilization.
+2. The nested loop for marking non-prime numbers in the 'prime' array has a time complexity of O(n^2). This can be improved by using a more efficient algorithm for finding prime numbers.
+3. The dynamic programming loop has a time complexity of O(n*x), which can be improved by optimizing the algorithm.
+
+Optimization Strategy:
+1. Use a more memory-efficient data structure to store the prime numbers.
+2. Replace the nested loop for marking non-prime numbers with an efficient prime number generation algorithm.
+3. Optimize the dynamic programming loop to reduce the time complexity.
+
+Step-by-Step Explanation:
+1. Replace the 'prime' array with a 'vector<bool>' to save memory. The 'vector<bool>' type uses a bitset internally, which is more memory-efficient than a regular array of booleans. The size of the 'vector<bool>' can be set to 'x+1' to accommodate the numbers up to 'x'.
+   - Rationale: This optimization reduces memory usage, especially for larger values of 'x'.
+   - Trade-off: The 'vector<bool>' type has some limitations compared to a regular array, such as not being able to take the address of individual elements. However, these limitations are not relevant in this code.
+
+2. Replace the loop for marking non-prime numbers with a more efficient prime number generation algorithm, such as the Sieve of Eratosthenes.
+   - Rationale: The Sieve of Eratosthenes algorithm can mark all non-prime numbers up to a given limit 'x' in O(x*log(log(x))) time complexity, which is more efficient than the nested loop in the original code.
+   - Trade-off: Implementing the Sieve of Eratosthenes algorithm requires additional code and may slightly increase the code complexity. However, the performance gain is significant.
+
+3. Optimize the dynamic programming loop to reduce the time complexity. Instead of iterating over all elements of 'a' for each value of 'i', pre-calculate the possible values of 'i - a[j]' and store them in a set or vector.
+   - Rationale: This optimization reduces the number of iterations in the inner loop, improving the time complexity of the dynamic programming algorithm.
+   - Trade-off: This optimization introduces additional memory usage to store the pre-calculated values. However, the memory usage is still within reasonable limits and the performance gain is worth it.

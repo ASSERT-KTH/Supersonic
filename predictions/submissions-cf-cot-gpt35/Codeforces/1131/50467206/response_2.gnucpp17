@@ -1,0 +1,77 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <limits>
+using namespace std;
+
+const int NMax = 1e7 + 5;
+
+int height[NMax];
+long long cost[NMax], dp[NMax];
+
+int main() {
+    ifstream in("bellmanford.in");
+    ofstream out("bellmanford.out");
+
+    int N, M;
+    in >> N >> M;
+    vector<pair<int, long long>> block(N + 1);
+    for (int i = 1; i <= N; ++i) {
+        int K;
+        in >> K;
+        for (int j = 1; j <= K; ++j) {
+            int h;
+            in >> h;
+            block[i].push_back({h, 0});
+        }
+        for (int j = 1; j <= K; ++j) {
+            long long c;
+            in >> c;
+            block[i][j - 1].second = c;
+        }
+    }
+
+    int Q, curr = 0;
+    in >> Q;
+    for (int i = 1; i <= Q; ++i) {
+        int id, mult;
+        in >> id >> mult;
+        for (auto it : block[id]) {
+            height[++curr] = it.first;
+            cost[curr] = 1LL * mult * it.second;
+        }
+    }
+
+    block.clear();
+    long long stackPushLeft = numeric_limits<long long>::max();
+    long long stackPushRight = numeric_limits<long long>::max();
+    for (int i = 1; i <= M; ++i) {
+        long long minLeft = dp[i - 1];
+        while (i - height[i] + 1 <= stackPushLeft) {
+            minLeft = min(minLeft, stackPushLeft);
+            stackPushLeft = dp[i - height[i]];
+        }
+        dp[i] = minLeft + cost[i];
+        long long valHere = dp[i - 1];
+        minLeft = min(minLeft, valHere);
+        stackPushLeft = minLeft;
+
+        int idx = -1;
+        while ((idx = stackPushRight) && idx + height[idx] - 1 < i) {
+            stackPushRight = 0;
+        }
+        if (stackPushRight) {
+            long long dpPlusCost = stackPushRight;
+            dp[i] = min(dp[i], dpPlusCost);
+        }
+        long long dpPlusCost = dp[i - 1] + cost[i];
+        if (stackPushRight) {
+            dpPlusCost = min(dpPlusCost, stackPushRight);
+        }
+        stackPushRight = dpPlusCost;
+    }
+
+    out << dp[M] << '\n';
+
+    return 0;
+}

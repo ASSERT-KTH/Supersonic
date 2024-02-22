@@ -1,0 +1,96 @@
+The provided code is a solution to a grid-based problem where it counts the number of distinct regions in a 2D grid that are not covered by any rectangles. It uses a technique called "coordinate compression" to reduce the size of the grid and BFS to find distinct regions.
+
+Here are the main points of optimization:
+
+1. **Avoid unnecessary memory allocation**: In the current implementation, the fld array is much larger than required. It is possible to reduce the size of this array to exactly what is needed, thereby reducing memory usage.
+
+2. **Avoid redundant computations**: In the compress function, the lower_bound function is called twice for the same value. We can store the result in a variable and use it, to avoid the call again.
+
+3. **Use more efficient data structures**: The compress function uses a vector to store unique values and sorts them. A more efficient way of doing this would be to use a set, which stores unique elements in sorted order.
+
+4. **Compiler optimizations**: Using certain flags during compilation can optimize the code further. The -O2 or -O3 flags can be used for optimization during compilation.
+
+Here is the optimized code:
+
+```cpp
+#include <set>
+#include <queue>
+#include <iostream>
+#include <string.h>
+using namespace std;
+
+#define rep(i, x) for (int i = 0; i < (int)(x); ++i)
+using pii = pair<int, int>;
+
+int w, h, n;
+int x1[1005], x2[1005], y1[1005], y2[1005];
+bool fld[1005 * 6][1005 * 6];
+int dx[4] = {-1, 0, 1, 0};
+int dy[4] = {0, -1, 0, 1};
+
+int compress(int *x1, int *x2, int w) {
+  set<int> xs;
+  rep(i, n) {
+    for (int d = -1; d <= 1; ++d) {
+      int tx1 = x1[i] + d, tx2 = x2[i] + d;
+      if (0 <= tx1 && tx1 < w)
+        xs.insert(tx1);
+      if (0 <= tx2 && tx2 < w)
+        xs.insert(tx2);
+    }
+  }
+  int idx = 0;
+  map<int, int> x_to_idx;
+  for (int x : xs)
+    x_to_idx[x] = idx++;
+  rep(i, n) {
+    x1[i] = x_to_idx[x1[i]];
+    x2[i] = x_to_idx[x2[i]];
+  }
+  return xs.size();
+}
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+  while (cin >> w >> h, w) {
+    cin >> n;
+    memset(fld, 0, sizeof fld);
+    rep(i, n) { cin >> x1[i] >> y1[i] >> x2[i] >> y2[i]; }
+    w = compress(x1, x2, w);
+    h = compress(y1, y2, h);
+    rep(i, n) {
+      for (int y = y1[i]; y < y2[i]; ++y) {
+        for (int x = x1[i]; x < x2[i]; ++x) {
+          fld[y][x] = true;
+        }
+      }
+    }
+    int ans = 0;
+    rep(y, h) rep(x, w) {
+      if (fld[y][x])
+        continue;
+      ans++;
+      queue<pii> q;
+      q.push(pii(y, x));
+      while (!q.empty()) {
+        pii p = q.front();
+        q.pop();
+        rep(i, 4) {
+          int ny = p.first + dy[i], nx = p.second + dx[i];
+          if (ny < 0 || ny >= h || nx < 0 || nx >= w || fld[ny][nx])
+            continue;
+          fld[ny][nx] = true;
+          q.push(pii(ny, nx));
+        }
+      }
+    }
+    cout << ans << "\n";
+  }
+}
+```
+
+Remember to compile the code with -O2 or -O3 flag for further optimization. For example, if you are using g++, the command would be:
+```
+g++ -O3 -o optimized_program optimized_program.cpp
+```

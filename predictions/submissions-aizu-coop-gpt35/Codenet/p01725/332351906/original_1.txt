@@ -1,0 +1,276 @@
+Analysis:
+- The code is implementing a simple recursive descent parser to evaluate arithmetic expressions.
+- The expression is read from the input and stored in the string variable `S`.
+- The parser evaluates the expression using the `bnf()` function, which calls the `calc()` function recursively.
+- The `calc()` function evaluates the expression recursively, taking into account operator precedence.
+- The operators are stored in the `ch` array, which maps the characters '+', '-', and '*' to their corresponding precedence values.
+- The `get()` function is used to perform the arithmetic operations.
+- The program then iterates over all possible combinations of the precedence values of the operators and evaluates the expression with each combination to find the maximum result.
+
+Potential optimizations:
+1. Avoiding unnecessary string operations: The code currently reads the input expression into a string and then processes the string character by character. This can be inefficient in terms of memory usage and can result in unnecessary string operations. It would be better to process the expression directly without storing it in a string.
+
+2. Eliminating unnecessary recursion: The code uses recursion to evaluate the expression. While recursion is a natural fit for parsing, it can be inefficient in terms of time and memory usage, especially for large expressions. It may be possible to eliminate or reduce recursion by using an iterative approach.
+
+3. Precomputing the operator precedence: The code currently uses an array `ch` to store the precedence values of the operators. However, these values are constant and can be precomputed outside the loop.
+
+4. Loop optimization: The code has three nested loops to iterate over all possible combinations of the precedence values. This can result in a large number of iterations. It may be possible to optimize this loop by reducing the number of iterations or using loop unrolling.
+
+Optimization strategy:
+1. Remove the use of the `S` string variable and read the expression directly from the input in a character array. This will eliminate the need for string operations and reduce memory usage.
+
+2. Replace the recursive approach with an iterative approach to evaluate the expression. This can be done using a stack data structure to keep track of the operands and operators.
+
+3. Precompute the operator precedence values outside the loop and store them in an array.
+
+4. Optimize the loop by reducing the number of iterations or using loop unrolling if possible.
+
+Step-by-Step Explanation:
+
+1. Remove the use of the `S` string variable and read the expression directly from the input in a character array. This can be done by replacing the line `cin >> S;` with the following code:
+```cpp
+const int MAX_LEN = 1000000; // maximum length of the expression
+char S[MAX_LEN];
+cin.getline(S, MAX_LEN);
+```
+This code reads the expression into the character array `S` using `cin.getline()`.
+
+2. Replace the recursive approach with an iterative approach to evaluate the expression. This can be done using a stack data structure to keep track of the operands and operators. Here's the modified code for the `bnf()` and `calc()` functions:
+```cpp
+ll bnf() {
+  stack<ll> operands;
+  stack<char> operators;
+  p = 0;
+  while (S[p] != '\0') {
+    if (isdigit(S[p])) {
+      operands.push(getNum());
+    } else if (S[p] == '(') {
+      operators.push('(');
+      p++;
+    } else if (S[p] == ')') {
+      while (!operators.empty() && operators.top() != '(') {
+        char op = operators.top();
+        operators.pop();
+        ll b = operands.top();
+        operands.pop();
+        ll a = operands.top();
+        operands.pop();
+        operands.push(get(a, b, op));
+      }
+      operators.pop(); // Pop '('
+      p++;
+    } else if (ch[S[p]] > -1) {
+      while (!operators.empty() && ch[S[p]] <= ch[operators.top()]) {
+        char op = operators.top();
+        operators.pop();
+        ll b = operands.top();
+        operands.pop();
+        ll a = operands.top();
+        operands.pop();
+        operands.push(get(a, b, op));
+      }
+      operators.push(S[p]);
+      p++;
+    } else {
+      p++;
+    }
+  }
+  while (!operators.empty()) {
+    char op = operators.top();
+    operators.pop();
+    ll b = operands.top();
+    operands.pop();
+    ll a = operands.top();
+    operands.pop();
+    operands.push(get(a, b, op));
+  }
+  return operands.top();
+}
+
+ll calc(int c) {
+  stack<ll> operands;
+  stack<char> operators;
+  while (S[p] != '\0' && S[p] != ')' && ch[S[p]] > c) {
+    if (isdigit(S[p])) {
+      operands.push(getNum());
+    } else if (S[p] == '(') {
+      operators.push('(');
+      p++;
+    } else if (ch[S[p]] > -1) {
+      while (!operators.empty() && ch[S[p]] <= ch[operators.top()]) {
+        char op = operators.top();
+        operators.pop();
+        ll b = operands.top();
+        operands.pop();
+        ll a = operands.top();
+        operands.pop();
+        operands.push(get(a, b, op));
+      }
+      operators.push(S[p]);
+      p++;
+    } else {
+      p++;
+    }
+  }
+  while (!operators.empty()) {
+    char op = operators.top();
+    operators.pop();
+    ll b = operands.top();
+    operands.pop();
+    ll a = operands.top();
+    operands.pop();
+    operands.push(get(a, b, op));
+  }
+  return operands.top();
+}
+```
+
+3. Precompute the operator precedence values outside the loop and store them in an array. Add the following line before the loop:
+```cpp
+int precedence[3][3][3];
+for (int i = 0; i < 3; i++) {
+  for (int j = 0; j < 3; j++) {
+    for (int k = 0; k < 3; k++) {
+      precedence[i][j][k] = max(max(i, j), k);
+    }
+  }
+}
+```
+
+4. Optimize the loop by reducing the number of iterations or using loop unrolling if possible. There is no obvious optimization that can be done for the loop in this case.
+
+Optimized Code Block:
+```cpp
+#include <iostream>
+#include <stack>
+using namespace std;
+typedef long long ll;
+
+const int MAX_LEN = 1000000; // maximum length of the expression
+char S[MAX_LEN];
+int p, ch[1 << 8];
+int precedence[3][3][3];
+
+ll getNum() {
+  ll res = 0;
+  while (isdigit(S[p]))
+    res = res * 10 + S[p++] - '0';
+  return res;
+}
+
+ll get(ll &a, ll b, char c) {
+  if (c == '+')
+    a += b;
+  if (c == '-')
+    a -= b;
+  if (c == '*')
+    a *= b;
+  return a;
+}
+
+ll bnf() {
+  stack<ll> operands;
+  stack<char> operators;
+  p = 0;
+  while (S[p] != '\0') {
+    if (isdigit(S[p])) {
+      operands.push(getNum());
+    } else if (S[p] == '(') {
+      operators.push('(');
+      p++;
+    } else if (S[p] == ')') {
+      while (!operators.empty() && operators.top() != '(') {
+        char op = operators.top();
+        operators.pop();
+        ll b = operands.top();
+        operands.pop();
+        ll a = operands.top();
+        operands.pop();
+        operands.push(get(a, b, op));
+      }
+      operators.pop(); // Pop '('
+      p++;
+    } else if (ch[S[p]] > -1) {
+      while (!operators.empty() && ch[S[p]] <= ch[operators.top()]) {
+        char op = operators.top();
+        operators.pop();
+        ll b = operands.top();
+        operands.pop();
+        ll a = operands.top();
+        operands.pop();
+        operands.push(get(a, b, op));
+      }
+      operators.push(S[p]);
+      p++;
+    } else {
+      p++;
+    }
+  }
+  while (!operators.empty()) {
+    char op = operators.top();
+    operators.pop();
+    ll b = operands.top();
+    operands.pop();
+    ll a = operands.top();
+    operands.pop();
+    operands.push(get(a, b, op));
+  }
+  return operands.top();
+}
+
+ll calc(int c) {
+  stack<ll> operands;
+  stack<char> operators;
+  while (S[p] != '\0' && S[p] != ')' && ch[S[p]] > c) {
+    if (isdigit(S[p])) {
+      operands.push(getNum());
+    } else if (S[p] == '(') {
+      operators.push('(');
+      p++;
+    } else if (ch[S[p]] > -1) {
+      while (!operators.empty() && ch[S[p]] <= ch[operators.top()]) {
+        char op = operators.top();
+        operators.pop();
+        ll b = operands.top();
+        operands.pop();
+        ll a = operands.top();
+        operands.pop();
+        operands.push(get(a, b, op));
+      }
+      operators.push(S[p]);
+      p++;
+    } else {
+      p++;
+    }
+  }
+  while (!operators.empty()) {
+    char op = operators.top();
+    operators.pop();
+    ll b = operands.top();
+    operands.pop();
+    ll a = operands.top();
+    operands.pop();
+    operands.push(get(a, b, op));
+  }
+  return operands.top();
+}
+
+int main() {
+  cin.getline(S, MAX_LEN);
+  int res = bnf();
+  for (int i = 0; i < 3; i++)
+    for (int j = 0; j < 3; j++)
+      for (int k = 0; k < 3; k++) {
+        ch['+'] = i, ch['-'] = j, ch['*'] = k;
+        p = 0;
+        res = max(res, calc(precedence[i][j][k]));
+      }
+  cout << res << endl;
+  return 0;
+}
+```
+
+Trade-offs:
+- The optimized code may be slightly more complex due to the use of stacks and the iterative approach. However, this complexity is necessary to eliminate recursion and improve performance.
+- The optimized code may have slightly increased memory usage due to the use of stacks. However, this increase in memory usage is minimal compared to the potential performance gains.
+- The optimized code may have a slight increase in code size due to the additional code for stack manipulation and the precomputed operator precedence array. However, this increase in code size is minimal compared to the potential performance gains.

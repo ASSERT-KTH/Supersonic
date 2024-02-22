@@ -1,0 +1,89 @@
+#include <algorithm>
+#include <iostream>
+#include <math.h>
+#include <set>
+#include <vector>
+using namespace std;
+typedef long long ll;
+#define REP(i, n) for (int i = 0; i < (int)(n); i++)
+#define MEMSET(v, h) memset((v), h, sizeof(v))
+struct Point {
+  int x;
+  int y;
+  char type;
+  Point() { ; }
+  Point(double x, double y, int type) : x(x), y(y), type(type) { ; }
+  bool operator<(const Point &rhs) const {
+    if (y != rhs.y) {
+      return y < rhs.y;
+    }
+    return x < rhs.x;
+  }
+};
+struct Event {
+  int x;
+  Point p;
+  char in;
+  Event() { ; }
+  Event(int x, Point p, int in) : x(x), p(p), in(in) { ; }
+  bool operator<(const Event &rhs) const {
+    if (x != rhs.x) {
+      return x < rhs.x;
+    }
+    return in > rhs.in;
+  }
+};
+inline int square(int x) { return x * x; }
+inline int dist2(const Point &a, const Point &b) {
+  return square(a.x - b.x) + square(a.y - b.y);
+}
+int an, bn, n;
+int r;
+Event event[500000];
+int PlaneSweep() {
+  int ans = 0;
+  set<Point> open[2];
+  REP(iter, n) {
+    Event &e = event[iter];
+    Point &p = e.p;
+    int type_xor = (int)p.type ^ 1;
+    if (e.in) {
+      set<Point>::iterator lower =
+          open[type_xor].lower_bound(Point(0, p.y - 4 * r - 1, 0));
+      set<Point>::iterator upper =
+          open[type_xor].upper_bound(Point(0, p.y + 4 * r + 1, 0));
+      for (set<Point>::iterator it = lower; it != upper; it++) {
+        if (dist2(*it, p) <= 16 * r * r) {
+          ans++;
+        }
+      }
+      open[(int)p.type].insert(p);
+    } else {
+      open[(int)p.type].erase(open[(int)p.type].find(p));
+    }
+  }
+  return ans;
+}
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  while (cin >> an >> bn >> r, an | bn) {
+    n = (an + bn) * 2;
+    REP(i, an) {
+      int x, y;
+      cin >> x >> y;
+      event[2 * i + 0] = Event(x - 2 * r, Point(x, y, 0), 1);
+      event[2 * i + 1] = Event(x + 2 * r, Point(x, y, 0), 0);
+    }
+    REP(i, bn) {
+      int x, y;
+      cin >> x >> y;
+      event[2 * an + 2 * i + 0] = Event(x - 2 * r, Point(x, y, 1), 1);
+      event[2 * an + 2 * i + 1] = Event(x + 2 * r, Point(x, y, 1), 0);
+    }
+    sort(event, event + n);
+    int ans = PlaneSweep();
+    cout << ans << "\n";
+  }
+  return 0;
+}

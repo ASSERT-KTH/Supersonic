@@ -1,0 +1,97 @@
+The code is quite optimized already, but there are a few changes we can make for further optimization.
+
+1. The use of `using namespace std;` can lead to name clashes and is generally discouraged. In the rare cases where an identifier is present in both the standard library and another library, this can lead to hard-to-diagnose errors. It's better to use specific `using` statements for the types we need or to prefix standard library identifiers with `std::`.
+
+2. The use of `#define` preprocessor directives for constants should be avoided in C++. Instead, we can use `constexpr` which can be type checked by the compiler and can also be used for non-integral types.
+
+3. Removing the `std::endl` in `std::cout` can give a significant performance boost. This is because `std::endl` does two things: it inserts a newline character, and it flushes the stream. Flushing the stream is an expensive operation, and doing it unnecessarily can slow down I/O operations. We can replace it with the newline character `\n`.
+
+4. We can change `vector<vector<int>>` to `vector<deque<int>>`. This is because `deque` provides an efficient way to add or remove elements from both ends of the container, while `vector` does not.
+
+5. Using `reserve()` function before using `push_back()` in a loop can reduce the number of memory allocations.
+
+6. Instead of clearing the vector with `clear()`, you can use `swap()` with an empty vector. This will immediately free up the memory used by the vector.
+
+Let's apply these changes to the code:
+
+```cpp
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <deque>
+#include <algorithm>
+#include <utility>
+#include <cmath>
+
+constexpr double PI = 3.14159265358979323846264338327950288419716939937510582097494459230781640628620899862;
+constexpr int inf_int = 1e9 + 5;
+constexpr long long inf_ll = 1e18 + 5;
+constexpr int NMax = 1e7 + 5;
+constexpr int dx[] = {-1, 0, 0, +1}, dy[] = {0, -1, +1, 0};
+constexpr double EPS = 1e-8;
+int height[NMax];
+long long cost[NMax], dp[NMax];
+
+int main() {
+  int N, M;
+  std::cin >> N >> M;
+  std::vector<std::deque<int>> heightsOfBlock(N + 1), costsOfBlock(N + 1);
+  for (int i = 1; i <= N; ++i) {
+    int K;
+    std::cin >> K;
+    for (int j = 1; j <= K; ++j) {
+      int val;
+      std::cin >> val;
+      heightsOfBlock[i].push_back(val);
+    }
+    for (int j = 1; j <= K; ++j) {
+      int val;
+      std::cin >> val;
+      costsOfBlock[i].push_back(val);
+    }
+  }
+  int Q, curr = 0;
+  std::cin >> Q;
+  for (int i = 1; i <= Q; ++i) {
+    int id, mult;
+    std::cin >> id >> mult;
+    for (int j = 0; j < (int)heightsOfBlock[id].size(); ++j) {
+      int h = heightsOfBlock[id][j], c = costsOfBlock[id][j];
+      height[++curr] = h;
+      cost[curr] = 1LL * mult * c;
+    }
+  }
+  std::vector<std::deque<int>>().swap(heightsOfBlock);
+  std::vector<std::deque<int>>().swap(costsOfBlock);
+  std::deque<std::pair<int, long long>> stackPushLeft, stackPushRight;
+  for (int i = 1; i <= M; ++i) {
+    long long minLeft = dp[i - 1];
+    while (stackPushLeft.size() &&
+           i - height[i] + 1 <= stackPushLeft.back().first) {
+      minLeft = std::min(minLeft, stackPushLeft.back().second);
+      stackPushLeft.pop_back();
+    }
+    dp[i] = minLeft + cost[i];
+    long long valHere = dp[i - 1];
+    minLeft = std::min(minLeft, valHere);
+    stackPushLeft.push_back({i, minLeft});
+    int idx = -1;
+    while (stackPushRight.size() &&
+           ((idx = stackPushRight.back().first) || true) &&
+           idx + height[idx] - 1 < i) {
+      stackPushRight.pop_back();
+    }
+    if (stackPushRight.size()) {
+      long long dpPlusCost = stackPushRight.back().second;
+      dp[i] = std::min(dp[i], dpPlusCost);
+    }
+    long long dpPlusCost = dp[i - 1] + cost[i];
+    if (stackPushRight.size()) {
+      dpPlusCost = std::min(dpPlusCost, stackPushRight.back().second);
+    }
+    stackPushRight.push_back({i, dpPlusCost});
+  }
+  std::cout << dp[M] << '\n';
+  return 0;
+}
+```

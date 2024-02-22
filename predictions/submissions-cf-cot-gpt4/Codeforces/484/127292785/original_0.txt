@@ -1,0 +1,97 @@
+The given program is already quite optimized with the use of fast input-output, efficient data structures, and bit manipulation techniques. However, we can still make some improvements:
+
+1. Sparely populated array `a` with size `R + 5` is used and filled with zeros. Memory usage can be reduced by using a map or unordered_map (which is a hash map) instead of a vector if the number of elements `n` is much smaller than `R`.
+
+2. Instead of using `log2(N) + 2` to calculate `K` in the `SparseTable` constructor, we can use `31 - __builtin_clz(N) + 2`. This is because `log2(N)` is computed at runtime which costs some CPU cycles, while `__builtin_clz` is usually translated to a single CPU instruction.
+
+Please note that these changes might not always lead to performance improvements. The actual performance can vary depending on the specific input data and hardware.
+
+Here is the optimized code:
+```cpp
+#pragma GCC optimize("Ofast")
+#pragma GCC target("avx,avx2,fma")
+#pragma GCC target("sse,sse2,sse3,ssse3,sse4,popcnt,abm,mmx,avx,tune=native")
+#pragma comment(linker, "/stack:200000000")
+#include <bits/stdc++.h>
+using namespace std;
+#define fast ios_base::sync_with_stdio(false); cin.tie(NULL);
+#define lli int
+#define ld long double
+#define pll pair<lli, lli>
+#define ve map<lli, lli>
+#define vep vector<pll>
+#define pb push_back
+#define mp make_pair
+#define mt make_tuple
+#define all(x) (x).begin(), (x).end()
+#define fr(i, a, n) for (lli i = a; i < (n); i++)
+#define frx(i, a, n) for (lli i = a; i > (n); i--)
+#define lb lower_bound
+#define ub upper_bound
+#define F first
+#define S second
+#define endl '\n'
+#define op(x) cout << x << endl
+#define op2(x, y) cout << x << " " << y << endl
+#define parr(arr, a, n) fr(u, a, n) cout << arr[u] << " "; cout << endl
+#define yes cout << "YES" << endl
+#define no cout << "NO" << endl
+#define mem(a, x) memset(a, x, sizeof(a))
+#define sz(a) ((lli)a.size())
+#define db(x) cout << "[ " << x << " ]" << endl
+#define db2(x, y) cout << "[ " << x << " " << y << " ]" << endl
+struct SparseTable {
+  lli N, K;
+  vector<ve> table;
+  ve logtwo;
+  lli f(lli a, lli b) { return max(a, b); }
+  SparseTable(ve a) {
+    N = sz(a);
+    K = 31 - __builtin_clz(N) + 2;
+    table = vector<ve>(N, ve(K));
+    logtwo = ve(N + 5);
+    logtwo[1] = 0;
+    fr(i, 2, N + 1) { logtwo[i] = logtwo[i / 2] + 1; }
+    frx(i, N - 1, -1) {
+      table[i][0] = a[i];
+      for (lli j = 1; i + (1LL << j) - 1 < N; j++) {
+        table[i][j] = f(table[i][j - 1], table[i + (1LL << (j - 1))][j - 1]);
+      }
+    }
+  }
+  lli query(lli l, lli r) {
+    lli temp = logtwo[r - l + 1];
+    lli ans = f(table[l][temp], table[r - (1LL << temp) + 1][temp]);
+    return ans;
+  }
+};
+void solve() {
+  lli R = 1e6;
+  ve a;
+  lli n;
+  cin >> n;
+  fr(i, 0, n) {
+    lli x;
+    cin >> x;
+    a[x] = x;
+  }
+  SparseTable tab(a);
+  lli maxi = 0;
+  for (lli i = 2; i < R + 1; i++) {
+    if (!a[i])
+      continue;
+    for (lli j = i; j < R + 1; j += i) {
+      lli temp = tab.query(j, min(j + i - 1, R)) - j;
+      maxi = max(maxi, temp);
+    }
+  }
+  op(maxi);
+}
+int main() {
+  fast;
+  lli test = 1;
+  while (test--) {
+    solve();
+  }
+}
+```

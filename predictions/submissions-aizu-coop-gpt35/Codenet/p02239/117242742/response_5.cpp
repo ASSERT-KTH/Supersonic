@@ -1,0 +1,12 @@
+The given code is an implementation of the Breadth-First Search (BFS) algorithm to find the shortest path in an unweighted graph. While the code is correct, there are several areas where optimization can be applied:
+
+1. Reducing Memory Usage:
+   - The adjacency matrix `m` is of size `105x105`, which is excessive for most inputs. We can reduce the memory usage by using a more efficient data structure, such as an adjacency list.
+   - The `v` and `d` arrays are of size `105`, which is also excessive. We can reduce the memory usage by using a `bool` array for `v` and an `int` array for `d`, both of size `n`, where `n` is the number of nodes in the graph.
+
+2. Optimizing Loops:
+   - The outer loop in the `main` function initializes the `d` array with `-1`. We can initialize it with `INT_MAX` instead, as `-1` is not a valid distance value.
+   - The loops in the `bfs` function iterate over all nodes, even though some nodes may not be connected. We can optimize these loops by iterating only over the connected nodes.
+
+3. Compiler Optimizations:
+   - We can enable compiler optimizations to let the compiler automatically optimize the code. This can be done by setting the appropriate compiler flags or using `#pragma` directives.

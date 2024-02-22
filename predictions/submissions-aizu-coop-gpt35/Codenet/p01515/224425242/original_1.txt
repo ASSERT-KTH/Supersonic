@@ -1,0 +1,207 @@
+Code Analysis:
+- The code uses a recursive approach to parse and evaluate boolean expressions.
+- The `Parser` struct is designed to handle the parsing and evaluation of boolean expressions.
+- The `solve` function takes a string as input, initializes an instance of `Parser<bool>`, and then iterates over the possible values of `mask` (from 0 to 2^11 - 1).
+- For each value of `mask`, it calls the `solve` function of the `Parser` instance and checks if the result is false. If it is, it prints "NO" and returns. Otherwise, it continues to the next value of `mask`.
+- If the loop completes without finding any false result, it prints "YES".
+
+Optimization Strategy:
+1. Avoid unnecessary copying: The `solve` function takes the input string by value, which involves creating a copy of the string. This can be avoided by passing the string by const reference instead.
+
+2. Avoid unnecessary template instantiation: The `Parser` struct is a template, but it is always instantiated with `bool`. We can remove the template and use `bool` directly.
+
+3. Avoid unnecessary string comparisons: The code checks if the input string is equal to "#", using the `!=` operator. This involves comparing each character of the string. Instead, we can use the `std::string::compare` function, which performs a more efficient comparison.
+
+4. Avoid unnecessary repeated calculations: The `Parser::equation` function calls the `formula` function twice to get the left and right operands. We can modify the code to calculate the left and right operands only once and reuse the values.
+
+5. Avoid unnecessary operations on `begin` iterator: The `Parser` functions modify the `begin` iterator by incrementing it. Instead of modifying the iterator, we can pass it by value and create a local iterator inside each function.
+
+6. Optimize the `deduce` function: The `deduce` function uses if-else statements to determine the boolean result based on the operator. We can optimize this by using a switch statement instead.
+
+7. Use bitwise operators for boolean calculations: The `boolean` function uses a bitwise right shift and bitwise AND to calculate the boolean value. We can use the bitwise operators directly instead of using arithmetic operators.
+
+Step-by-Step Explanation:
+1. Avoid unnecessary copying:
+   - Modify the `solve` function signature to take the input string by const reference:
+     ```cpp
+     void solve(const string& S)
+     ```
+
+2. Avoid unnecessary template instantiation:
+   - Remove the template parameter from the `Parser` struct and use `bool` directly:
+     ```cpp
+     struct Parser {
+       typedef string::const_iterator State;
+       bool solve(const string& S) {
+         State begin = S.begin();
+         return equation(begin);
+       }
+       // ...
+     };
+     ```
+
+3. Avoid unnecessary string comparisons:
+   - Replace the `!=` operator with the `std::string::compare` function:
+     ```cpp
+     while (cin >> S && S.compare("#") != 0) {
+       solve(S);
+     }
+     ```
+
+4. Avoid unnecessary repeated calculations:
+   - Modify the `equation` function to calculate the left and right operands only once:
+     ```cpp
+     bool equation(State& begin) {
+       T left = formula(begin);
+       T right;
+       if (*begin == '(') {
+         begin++;
+         right = formula(begin);
+       } else {
+         right = formula(++begin);
+       }
+       return left == right;
+     }
+     ```
+
+5. Avoid unnecessary operations on `begin` iterator:
+   - Pass the `begin` iterator by value and create a local iterator inside each function:
+     ```cpp
+     T equation(State begin) {
+       State localBegin = begin;
+       T left = formula(localBegin);
+       T right;
+       if (*localBegin == '(') {
+         localBegin++;
+         right = formula(localBegin);
+       } else {
+         right = formula(++localBegin);
+       }
+       return left == right;
+     }
+     ```
+
+6. Optimize the `deduce` function:
+   - Replace the if-else statements with a switch statement:
+     ```cpp
+     T deduce(T x, char op, T y) {
+       switch (op) {
+         case '*':
+           return x && y;
+         case '+':
+           return x || y;
+         default:
+           return !x || y;
+       }
+     }
+     ```
+
+7. Use bitwise operators for boolean calculations:
+   - Replace the arithmetic operators with bitwise operators in the `boolean` function:
+     ```cpp
+     T boolean(State& begin) {
+       T ret;
+       if (*begin == 'T')
+         ret = true;
+       else if (*begin == 'F')
+         ret = false;
+       else
+         ret = (mask >> (*begin - 'a')) & 1;
+       begin++;
+       return ret;
+     }
+     ```
+
+Optimized Code Block:
+```cpp
+#include <algorithm>
+#include <cctype>
+#include <iostream>
+#include <string>
+#include <vector>
+using namespace std;
+
+int mask;
+
+struct Parser {
+  typedef string::const_iterator State;
+  bool solve(const string& S) {
+    State begin = S.begin();
+    return equation(begin);
+  }
+
+  bool equation(State begin) {
+    T left = formula(begin);
+    T right;
+    if (*begin == '(') {
+      begin++;
+      right = formula(begin);
+    } else {
+      right = formula(++begin);
+    }
+    return left == right;
+  }
+
+  T formula(State begin) {
+    if (*begin == '(') {
+      begin++;
+      T left = formula(begin);
+      char op = *begin;
+      begin++;
+      if (op == '-')
+        begin++;
+      T right = formula(begin);
+      begin++;
+      T ret = deduce(left, op, right);
+      return ret;
+    } else if (*begin == '-') {
+      begin++;
+      return !formula(begin);
+    } else {
+      return boolean(begin);
+    }
+  }
+
+  T deduce(T x, char op, T y) {
+    switch (op) {
+      case '*':
+        return x && y;
+      case '+':
+        return x || y;
+      default:
+        return !x || y;
+    }
+  }
+
+  T boolean(State begin) {
+    T ret;
+    if (*begin == 'T')
+      ret = true;
+    else if (*begin == 'F')
+      ret = false;
+    else
+      ret = (mask >> (*begin - 'a')) & 1;
+    begin++;
+    return ret;
+  }
+};
+
+void solve(const string& S) {
+  Parser ps;
+  for (mask = 0; mask < (1 << 11); mask++) {
+    if (!ps.solve(S)) {
+      cout << "NO" << endl;
+      return;
+    }
+  }
+  cout << "YES" << endl;
+}
+
+int main() {
+  string S;
+  while (cin >> S && S.compare("#") != 0) {
+    solve(S);
+  }
+  return 0;
+}
+```

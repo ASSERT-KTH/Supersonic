@@ -1,0 +1,1 @@
+vector<int> d(N), h(N-1);

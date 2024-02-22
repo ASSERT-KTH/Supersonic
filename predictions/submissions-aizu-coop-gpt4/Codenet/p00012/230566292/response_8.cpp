@@ -1,0 +1,21 @@
+The given code appears to be a computational geometry program, where it checks if a point P lies within a triangle formed by points A, B, and C. If the point P is within the triangle, it prints "YES" and if not, "NO". It keeps repeating this until there is no more input.
+
+Let's analyze and identify potential areas for optimization.
+
+1. Code Analysis:
+   - The code uses complex numbers to represent points, which might be a bit overkill for simple 2D coordinates. Also, operations over complex numbers might have a bit more overhead compared to basic arithmetic operations.
+   - The `ccwise` function is called three times for each test case, which involves repeated computations of same values. Caching the results could help.
+   - There are many unused structures in the code like `Line`, `LineSeg`, `Circle` and `Plane`, which are not being used and can be removed.
+   - The `testcase_ends` function is doing more than its name suggests - it's both processing the test case and checking if the input is exhausted.
+   
+2. Optimization Strategy:
+   - Replace complex number-based point representation with a struct or class that holds x and y coordinates as doubles, to simplify arithmetic operations.
+   - Use memoization to avoid repeated computations in the `ccwise` function.
+   - Remove unused structures to clean up the code.
+   - Split the `testcase_ends` function into two separate functions for better code readability and maintenance.
+   
+3. Step-by-Step Explanation:
+   - **Step 1:** Replace complex numbers with a simpler struct for points. This would simplify the arithmetic operations and potentially save some CPU cycles.
+   - **Step 2:** Use memoization for `ccwise` function. By storing the result of the function call for a specific set of points, we avoid recalculating the same thing multiple times.
+   - **Step 3:** Remove unused structures like `Line`, `LineSeg`, `Circle`, `Plane` and others. These are not being used anywhere in the program, hence cleaning these up would make the code more readable.
+   - **Step 4:** Split `testcase_ends` into `process_testcase` and `is_eof`. This would make the code more readable and each function would only do what their name suggests.

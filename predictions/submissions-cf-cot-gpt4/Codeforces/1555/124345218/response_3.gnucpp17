@@ -1,0 +1,70 @@
+#include <iostream>
+#include <vector>
+#include <array>
+#include <algorithm>
+using namespace std;
+const int mod = 1e9 + 7;
+
+void dfs(int st, int en, int node, int rngst, int rngen, int value, vector<int>& sgtree, vector<int>& slow) {
+  sgtree[node] += slow[node];
+  slow[2 * node] += slow[node];
+  slow[2 * node + 1] += slow[node];
+  slow[node] = 0;
+  if (st >= rngst && en <= rngen) {
+    slow[node] += value;
+    sgtree[node] += slow[node];
+    slow[2 * node] += slow[node];
+    slow[2 * node + 1] += slow[node];
+    slow[node] = 0;
+  } else if (en < rngst || st > rngen) {
+    slow[node] += 0;
+  } else {
+    dfs(st, (st + en) / 2, 2 * node, rngst, rngen, value, sgtree, slow);
+    dfs(((st + en) / 2) + 1, en, 2 * node + 1, rngst, rngen, value, sgtree, slow);
+    sgtree[node] = min(sgtree[2 * node] + slow[2 * node], sgtree[2 * node + 1] + slow[2 * node + 1]);
+  }
+}
+void del(int i, int m, vector<array<int, 3>>& ve, vector<int>& sgtree, vector<int>& slow) { dfs(1, m - 1, 1, ve[i][1], ve[i][2], -1, sgtree, slow); }
+void add(int i, int m, vector<array<int, 3>>& ve, vector<int>& sgtree, vector<int>& slow) { dfs(1, m - 1, 1, ve[i][1], ve[i][2], 1, sgtree, slow); }
+
+int main() {
+  int n, m;
+  cin >> n >> m;
+  vector<array<int, 3>> ve;
+  vector<int> sgtree(8000000);
+  vector<int> slow(8000000);
+
+  if (m == 2) {
+    cout << "0\n";
+    return 0;
+  }
+  for (int i = 0; i < n; i++) {
+    ve.push_back({0, 0, 0});
+    cin >> ve[i][1] >> ve[i][2] >> ve[i][0];
+    if (ve[i][1] == 1 && ve[i][2] == m) {
+      cout << "0\n";
+      return 0;
+    }
+    ve[i][2]--;
+  }
+  sort(ve.begin(), ve.end());
+  int i = 0, j = -1, ans = 1000000;
+  while (j < ((int)ve.size() - 1)) {
+    if (sgtree[1] + slow[1] > 0) {
+      del(i, m, ve, sgtree, slow);
+      ans = min(ans, ve[j][0] - ve[i][0]);
+      i++;
+    } else {
+      j++;
+      add(j, m, ve, sgtree, slow);
+    }
+  }
+  while (sgtree[1] + slow[1] > 0) {
+    del(i, m, ve, sgtree, slow);
+    ans = min(ans, ve[j][0] - ve[i][0]);
+    i++;
+  }
+  cout << ans << '\n';
+
+  return 0;
+}

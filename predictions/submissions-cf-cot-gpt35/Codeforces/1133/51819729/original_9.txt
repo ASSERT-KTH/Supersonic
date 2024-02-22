@@ -1,0 +1,192 @@
+To optimize the given C++ program, we can make the following modifications:
+
+1. Since we are only interested in the running time and memory usage, we can remove unnecessary header files such as `<bitset>`, `<cassert>`, `<chrono>`, `<cmath>`, `<cstdio>`, `<cstdlib>`, `<cstring>`, `<iomanip>`, `<iostream>`, `<list>`, `<map>`, `<queue>`, `<random>`, `<set>`, `<stack>`, and `<unordered_map>`.
+2. We can remove unnecessary preprocessor directives such as `#pragma comment(linker, "/stack:200000000")`, `#pragma GCC optimize("Ofast,no-stack-protector")`, and `#pragma GCC target("avx")`.
+3. We can remove unnecessary using statements such as `using namespace std`.
+4. We can remove unnecessary macros such as `FOR`, `FORD`, `REP`, `REPD`, `fi`, `se`, `PB`, `EB`, `MP`, `prev`, `next`, `y0`, `y1`, `left`, `right`, `PI`, `sec`, `asec`, `debugfunc`, `debugfunc2`, `sqr`, `unify`, `__builtin_popcount`, `SZ`.
+5. We can remove unnecessary type definitions such as `typedef long long ll`, `typedef unsigned long long ull`, `typedef std::pair<int, int> pii`, `typedef std::pair<ll, ll> pll`.
+6. We can remove unnecessary global variables such as `const int MAXN`, `const int MOD`, `const ll MAXV`, `const double eps`, `const ll INF`, `mt19937 RNG`.
+7. We can remove unnecessary inline functions such as `toStr`, `toInt`, `toBinStr`, `rnd`, `random_gen`.
+8. We can remove unnecessary constructors and functions such as `DisjointSet`, `make`, `find`, `merge`.
+9. We can remove unnecessary variables such as `int deg[MAXN]`, `int chose[MAXN]`, `int par[MAXN]`, `vector<int> g[MAXN]`, `vector<int> g_MST[MAXN]`, `vector<pii> edge`, `set<pii> MST`, `int root`, `vector<pii> res`.
+
+Here is the optimized program:
+
+```cpp
+#include <algorithm>
+#include <iostream>
+#include <vector>
+using namespace std;
+
+struct DisjointSet {
+  struct node {
+    int parent, rank;
+  } T[MAXN];
+
+  void make(int u) {
+    T[u].parent = u;
+    T[u].rank = 0;
+  }
+
+  int find(int u) {
+    if (T[u].parent == u)
+      return u;
+    return T[u].parent = find(T[u].parent);
+  }
+
+  void merge(int u, int v) {
+    u = find(u);
+    v = find(v);
+    if (u == v)
+      return;
+    if (T[u].rank < T[v].rank)
+      T[u].parent = v;
+    else if (T[u].rank > T[v].rank)
+      T[v].parent = u;
+    else
+      T[v].parent = u, ++T[u].rank;
+  }
+};
+
+const int MAXN = 2e5 + 100;
+
+DisjointSet dsu;
+int deg[MAXN];
+int chose[MAXN];
+
+vector<int> g[MAXN], g_MST[MAXN];
+vector<pair<int, int>> edge;
+
+bool cmp(int u, int v) {
+  return (deg[u] < deg[v]) || (deg[u] == deg[v] && u < v);
+}
+
+void dfs(int u) {
+  for (auto v : g[u]) {
+    if (dsu.find(1) == dsu.find(v))
+      continue;
+    else {
+      dsu.merge(dsu.find(1), dsu.find(v));
+      if (u < v)
+        MST.insert({u, v});
+      else
+        MST.insert({v, u});
+      g_MST[u].push_back(v);
+      g_MST[v].push_back(u);
+      dfs(v);
+    }
+  }
+}
+
+void build_tree(int u) {
+  for (auto v : g_MST[u]) {
+    if (par[v] == -1) {
+      par[v] = u;
+      build_tree(v);
+    }
+  }
+}
+
+int main() {
+  int n, m, k;
+  cin >> n >> m >> k;
+
+  while (m--) {
+    int u, v;
+    cin >> u >> v;
+    g[u].push_back(v);
+    g[v].push_back(u);
+    ++deg[u];
+    ++deg[v];
+    edge.emplace_back(u, v);
+  }
+
+  if (deg[1] < k)
+    return !printf("NO");
+
+  sort(g[1].begin(), g[1].end(), cmp);
+
+  int cnt = 0;
+
+  for (auto v : g[1]) {
+    if (deg[v] == 1)
+      ++cnt;
+  }
+
+  if (cnt > k)
+    return !printf("NO");
+
+  for (auto v : g[1]) {
+    if (deg[v] == 1) {
+      dsu.merge(dsu.find(1), dsu.find(v));
+      MST.insert({1, v});
+      g_MST[1].push_back(v);
+      g_MST[v].push_back(1);
+    } else if (dsu.find(1) != dsu.find(v)) {
+      dsu.merge(dsu.find(1), dsu.find(v));
+      MST.insert({1, v});
+      g_MST[1].push_back(v);
+      g_MST[v].push_back(1);
+      chose[v] = true;
+      dfs(v);
+      ++cnt;
+      if (cnt == k)
+        break;
+    }
+  }
+
+  for (auto E : edge) {
+    int u = E.first;
+    int v = E.second;
+    if (u == 1 || v == 1)
+      continue;
+    if (dsu.find(u) != dsu.find(v)) {
+      dsu.merge(dsu.find(u), dsu.find(v));
+      if (u < v)
+        MST.insert({u, v});
+      else
+        MST.insert({v, u});
+      g_MST[u].push_back(v);
+      g_MST[v].push_back(u);
+    }
+  }
+
+  if (cnt > k || MST.size() < n - 1)
+    return !printf("NO");
+
+  if (cnt == k) {
+    puts("YES");
+    for (auto x : MST)
+      printf("%d %d\n", x.first, x.second);
+    return 0;
+  }
+
+  int root = 1;
+  memset(par, -1, sizeof(par));
+  par[1] = 1;
+  build_tree(root);
+
+  vector<pair<int, int>> res;
+
+  for (auto v : g[1]) {
+    if (!chose[v]) {
+      int p = par[v];
+      if (p == 1)
+        continue;
+      if (v < p)
+        MST.erase({v, p});
+      else
+        MST.erase({p, v});
+      MST.insert({1, v});
+      par[v] = 1;
+      ++cnt;
+      if (cnt == k)
+        break;
+    }
+  }
+
+  puts("YES");
+  for (auto x : MST)
+    printf("%d %d\n", x.first, x.second);
+
+  return 0;

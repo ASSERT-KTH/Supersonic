@@ -1,0 +1,179 @@
+Step 1: Remove unnecessary includes
+The program includes the header `<bits/stdc++.h>`, which includes a large number of standard library headers. This can result in increased compile times and unnecessary code bloat. We can remove this include and only include the necessary headers.
+
+Step 2: Remove unnecessary variable `trapped`
+The variable `trapped` is declared but not used anywhere in the program. We can safely remove it to reduce memory usage.
+
+Step 3: Optimize the range_update method in LazySegmentTree
+The range_update method in the LazySegmentTree class updates a range of values in the tree. However, it unnecessarily calls the push method twice - once at the beginning and once at the end. We can optimize this by removing the first call to push, as it is already called inside the update method.
+
+Step 4: Optimize the is_possible function
+The is_possible function performs a range_update operation for each element in the array `d` if `d[i] > min_agility`. This can be optimized by sorting the `d` array in non-decreasing order and using a two-pointer approach to update the range in a single pass.
+
+Step 5: Optimize the binary search in the main function
+The binary search in the main function can be optimized by using a more efficient method to calculate the mid index. Instead of `(left + right) / 2`, we can use `left + (right - left) / 2`. This avoids potential overflow when the array size is large.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+template <typename T> 
+class LazySegmentTree {
+  int n;
+  std::vector<T> arr;
+  std::vector<T> lazy;
+
+  void push(int node, int left_node, int right_node) {
+    if (lazy[node] != T()) {
+      arr[node].update_val_with_lazy(lazy[node], left_node, right_node);
+      if (right_node - left_node > 1) {
+        lazy[2 * node + 1].update_lazy_with_val(lazy[node]);
+        lazy[2 * node + 2].update_lazy_with_val(lazy[node]);
+      }
+      lazy[node] = T();
+    }
+  }
+
+  T query(int node, int left_node, int right_node, int left, int right) {
+    push(node, left_node, right_node);
+    if (right <= left_node || right_node <= left) {
+      return T();
+    }
+    if (left <= left_node && right_node <= right) {
+      return arr[node];
+    }
+    int mid = left_node + (right_node - left_node) / 2;
+    return T(query(2 * node + 1, left_node, mid, left, right),
+             query(2 * node + 2, mid, right_node, left, right));
+  }
+
+  void update(int node, int left_node, int right_node, int left, int right,
+              T val) {
+    push(node, left_node, right_node);
+    if (right <= left_node || right_node <= left) {
+      return;
+    }
+    if (left <= left_node && right_node <= right) {
+      lazy[node].update_lazy_with_val(val);
+      push(node, left_node, right_node);
+      return;
+    }
+    int mid = left_node + (right_node - left_node) / 2;
+    update(2 * node + 1, left_node, mid, left, right, val);
+    update(2 * node + 2, mid, right_node, left, right, val);
+    arr[node] = T(arr[2 * node + 1], arr[2 * node + 2]);
+  }
+
+public:
+  LazySegmentTree(int n) {
+    this->n = n;
+    arr = std::vector<T>(4 * n);
+    lazy = std::vector<T>(4 * n);
+  }
+
+  T range_query(int l, int r) { 
+    return query(0, 0, n, l, r); 
+  }
+
+  T point_query(int idx) { 
+    return range_query(idx, idx + 1); 
+  }
+
+  void range_update(int l, int r, T val) { 
+    update(0, 0, n, l, r, val); 
+  }
+
+  void point_update(int idx, T val) { 
+    range_update(idx, idx + 1, val); 
+  }
+};
+
+struct Sum {
+  int val;
+  bool marker;
+  
+  Sum() {
+    val = 0;
+    marker = false;
+  }
+
+  Sum(int val) : val(val) { 
+    marker = true; 
+  }
+
+  Sum(Sum left, Sum right) { 
+    val = left.val + right.val; 
+  }
+
+  void update_lazy_with_val(Sum val) { 
+    this->val = val.val; 
+  }
+
+  void update_val_with_lazy(Sum lazy, int left_node, int right_node) {
+    this->val = (right_node - left_node);
+  }
+
+  bool operator!=(const Sum &other) const {
+    return val != other.val || marker != other.marker;
+  }
+};
+
+int m, n, k, t;
+int a[200000];
+int l[200000];
+int r[200000];
+int d[200000];
+
+bool is_possible(int mid) {
+  std::sort(d, d + k);
+  LazySegmentTree<Sum> stree(n + 1);
+  int min_agility = a[mid];
+  int i = 0, j = 0;
+  while (i < k) {
+    if (d[i] > min_agility) {
+      while (j < k && d[j] <= min_agility) {
+        ++j;
+      }
+      stree.range_update(l[i] - 1, r[j - 1], Sum(1));
+      i = j;
+    } else {
+      ++i;
+    }
+  }
+  int req_time = n + 1 + 2 * stree.range_query(0, n + 1).val;
+  return req_time <= t;
+}
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(0);
+  std::cin >> m >> n >> k >> t;
+  for (int i = 0; i < m; i++) {
+    std::cin >> a[i];
+  }
+  for (int i = 0; i < k; i++) {
+    std::cin >> l[i] >> r[i] >> d[i];
+  }
+  std::sort(a, a + m);
+  int left = 0;
+  int right = m - 1;
+  while (left < right) {
+    int mid = left + (right - left) / 2;
+    if (is_possible(mid)) {
+      right = mid;
+    } else {
+      left = mid + 1;
+    }
+  }
+  if (!is_possible(left)) {
+    left += 1;
+  }
+  int sent = m - left;
+  std::printf("%d\n", sent);
+}
+```
+
+The optimizations made in the above program should improve the running time and memory usage.

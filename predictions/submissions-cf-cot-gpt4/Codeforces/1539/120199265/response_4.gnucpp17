@@ -1,0 +1,132 @@
+#include <bits/stdc++.h>
+using namespace std;
+#define fast ios::sync_with_stdio(0);
+#define int long long int
+#define pint array<int, 3>
+#define INF (int)1e18
+const int N = 2e5;
+const int MOD = 1e9 + 7;
+int n;
+struct node {
+  int mx, mi, lz;
+} st[1 << 20];
+void apply(int i, int x, int l2, int r2) {
+  st[i].mx -= x;
+  st[i].mi -= x;
+  if (st[i].lz == -MOD)
+    st[i].lz = 0;
+  st[i].lz += x;
+}
+void push(int i, int l2, int mid, int r2) {
+  if (st[i].lz == -MOD)
+    return;
+  apply(2 * i, st[i].lz, l2, mid);
+  apply(2 * i + 1, st[i].lz, mid + 1, r2);
+  st[i].lz = -MOD;
+}
+void build(int l1, int x, int i = 1, int l2 = 0, int r2 = n - 1) {
+  if (l2 == r2) {
+    st[i].mx = x;
+    st[i].mi = x;
+    st[i].lz = -MOD;
+    return;
+  }
+  int mid = (l2 + r2) / 2;
+  if (l1 <= mid)
+    build(l1, x, 2 * i, l2, mid);
+  else
+    build(l1, x, 2 * i + 1, mid + 1, r2);
+  st[i].mx = max(st[2 * i].mx, st[2 * i + 1].mx);
+  st[i].mi = min(st[2 * i].mi, st[2 * i + 1].mi);
+  st[i].lz = -MOD;
+}
+void upd(int l1, int r1, int x, int i = 1, int l2 = 0, int r2 = n - 1) {
+  if (l1 <= l2 && r2 <= r1) {
+    apply(i, x, l2, r2);
+    return;
+  }
+  int mid = (l2 + r2) / 2;
+  push(i, l2, mid, r2);
+  if (l1 <= mid)
+    upd(l1, r1, x, 2 * i, l2, mid);
+  if (mid < r1)
+    upd(l1, r1, x, 2 * i + 1, mid + 1, r2);
+  st[i].mx = max(st[2 * i].mx, st[2 * i + 1].mx);
+  st[i].mi = min(st[2 * i].mi, st[2 * i + 1].mi);
+}
+int qry1(int l1, int r1, int i = 1, int l2 = 0, int r2 = n - 1) {
+  if (l1 <= l2 && r2 <= r1) {
+    return st[i].mx;
+  }
+  int mid = (l2 + r2) / 2;
+  push(i, l2, mid, r2);
+  return max((l1 <= mid ? qry1(l1, r1, 2 * i, l2, mid) : -MOD),
+             (mid < r1 ? qry1(l1, r1, 2 * i + 1, mid + 1, r2) : -MOD));
+}
+int qry2(int l1, int r1, int i = 1, int l2 = 0, int r2 = n - 1) {
+  if (l1 <= l2 && r2 <= r1) {
+    return st[i].mi;
+  }
+  int mid = (l2 + r2) / 2;
+  push(i, l2, mid, r2);
+  return min((l1 <= mid ? qry2(l1, r1, 2 * i, l2, mid) : MOD),
+             (mid < r1 ? qry2(l1, r1, 2 * i + 1, mid + 1, r2) : MOD));
+}
+void solve() {
+  int n1;
+  cin >> n1;
+  vector<pint> b;
+  for (int i = 0; i < n1; i++) {
+    int val;
+    cin >> val;
+    b.push_back({val, i});
+  }
+  n = n1 + 1;
+  for (int i = 0; i < n; i++)
+    build(i, i);
+  sort(b.begin(), b.end());
+  int ans[n1] = {0};
+  for (int i = n1 - 1; i >= 0; i--) {
+    vector<int> del;
+    int cur = b[i][0];
+    while (i >= 0 && b[i][0] == cur) {
+      int j = b[i][1];
+      int p = qry1(j + 1, j + 1), q = qry2(0, j), r = qry1(j + 1, n - 1);
+      del.push_back(b[i][1]);
+      ans[j] = (p - q + r - p - 1) / 2;
+      i--;
+    }
+    for (auto u : del) {
+      upd(u + 1, n - 1, 2);
+    }
+    i++;
+  }
+  for (int i = 0; i < n1; i++) {
+    vector<int> del;
+    int cur = b[i][0];
+    while (i < n1 && b[i][0] == cur) {
+      int j = b[i][1];
+      int p = qry1(j + 1, j + 1), q = qry2(0, j), r = qry1(j + 1, n - 1);
+      del.push_back(b[i][1]);
+      ans[j] = max(ans[j], (p - q + r - p) / 2);
+      i++;
+    }
+    for (auto u : del) {
+      upd(u + 1, n - 1, 2);
+    }
+    i--;
+  }
+  for (int i = 0; i < n1; i++)
+    cout << ans[i] << " ";
+}
+int32_t main() {
+  fast;
+  clock_t time = clock();
+  int t = 1;
+  for (int i = 0; i < t; i++) {
+    solve();
+  }
+  double time_taken = ((double)(clock() - time)) / CLOCKS_PER_SEC;
+  cerr << "Time : " << time_taken << "\n";
+  return 0;
+}

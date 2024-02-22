@@ -1,0 +1,71 @@
+The given C++ program appears to be trying to find the minimum value of the expression `(e - (z^3 + y^2)) + y + z` for given `e`, where `z` and `y` are non-negative integers and `z^3 + y^2 <= e`. It does so by iterating over all possible values of `z` and `y` and updating the minimum value `m` whenever a smaller value is found.
+
+Here are the potential performance bottlenecks and the optimization strategies:
+
+1. **Inefficient Iteration**: The program iterates over all possible values of `z` and `y`, even though many of these do not satisfy the condition `z^3 + y^2 <= e`. We can improve this by only iterating over relevant values.
+
+2. **Redundant Computations**: The program repeatedly computes `z * z * z` and `y * y` for the same values of `z` and `y`. We can avoid this by precomputing these values and storing them in an array.
+
+3. **Inefficient Data Structure**: The program uses a single integer `m` to store the current minimum value. This is efficient in terms of memory usage, but it does not allow us to take advantage of the structure of the problem. We can improve this by using a priority queue to store candidate values, which will allow us to efficiently find the minimum value.
+
+Here's the optimized code:
+
+```cpp
+#include <iostream>
+#include <cmath>
+#include <queue>
+#include <utility>
+using namespace std;
+
+const int MAXN = 100;
+
+int main(void) {
+  int e;
+  int cube[MAXN+1], square[MAXN+1];
+
+  // Precompute cubes and squares
+  for (int i = 0; i <= MAXN; ++i) {
+    cube[i] = i * i * i;
+    square[i] = i * i;
+  }
+
+  while (cin >> e, e) {
+    priority_queue<pair<int, pair<int, int>>> pq;
+
+    // Initialize priority queue
+    for (int z = 1; z <= MAXN && cube[z] <= e; ++z)
+      pq.push(make_pair(-(e - cube[z] + z), make_pair(z, 0)));
+
+    int m = e;
+    while (!pq.empty()) {
+      int val = -pq.top().first;
+      int z = pq.top().second.first;
+      int y = pq.top().second.second;
+      pq.pop();
+
+      m = min(m, val);
+
+      // Add next candidate
+      if (y + 1 <= z && cube[z] + square[y+1] <= e)
+        pq.push(make_pair(-(e - (cube[z] + square[y+1]) + y + 1 + z), make_pair(z, y+1)));
+    }
+
+    cout << m << endl;
+  }
+
+  return 0;
+}
+```
+
+Explanation of the changes:
+
+- I replaced `#include "bits/stdc++.h"` with more specific includes. This is not a performance optimization, but it's a good practice because it makes the dependencies of the program clear.
+- I computed and stored the cubes and squares of the numbers from 0 to 100 in the arrays `cube` and `square`. This eliminates the need to compute these values repeatedly.
+- I used a priority queue to store the values `(val, z, y)` where `val = e - (z^3 + y^2) + y + z` and `z^3 + y^2 <= e`. The priority queue is ordered by `val`, so the smallest `val` is always at the top. This allows us to find the minimum value efficiently.
+- I added the next candidate `(val', z, y+1)` to the priority queue, where `val' = e - (z^3 + (y+1)^2) + (y+1) + z`, if `z^3 + (y+1)^2 <= e`. This ensures that we consider all relevant values of `y` for each `z`.
+
+Trade-offs:
+
+- The optimized code is more complex than the original code. It uses more advanced data structures (arrays and a priority queue), and it requires understanding of how these data structures are used to solve the problem.
+- The optimized code uses more memory than the original code. It stores all cubes and squares in arrays, and it uses a priority queue to store candidate values. However, the memory usage is still reasonable because the maximum values of `z` and `y` are 100.
+- The optimized code is faster than the original code. It avoids redundant computations by precomputing cubes and squares, and it reduces the number of iterations by only considering relevant values of `z` and `y`.

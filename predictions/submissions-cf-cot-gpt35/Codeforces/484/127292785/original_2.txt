@@ -1,0 +1,87 @@
+Step 1: Remove unnecessary headers and preprocessor directives
+
+The program includes the entire `<bits/stdc++.h>` header, which is not necessary and can slow down the compilation process. It also includes several preprocessor directives that target specific CPU features. Since the task is to optimize for running time and memory usage, we can remove these directives.
+
+Step 2: Remove unused typedefs and macros
+
+The program defines several typedefs and macros that are not used. We can remove them to simplify the code.
+
+Step 3: Optimize the SparseTable constructor
+
+The constructor of the `SparseTable` class computes the logarithm and builds the sparse table. However, it doesn't need to compute the logarithm for all numbers from 2 to N. We can optimize this by using a lookup table for the logarithm values.
+
+Step 4: Optimize the main loop
+
+The main loop iterates over all numbers from 2 to R and performs a nested loop. However, the nested loop can be optimized to only consider multiples of the current number, rather than iterating over all numbers up to R. This can significantly reduce the number of iterations.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <cmath>
+using namespace std;
+
+struct SparseTable {
+  int N, K;
+  vector<vector<int>> table;
+  vector<int> logtwo;
+  
+  int f(int a, int b) { return max(a, b); }
+  
+  SparseTable(const vector<int>& a) {
+    N = a.size();
+    K = log2(N) + 2;
+    table = vector<vector<int>>(N, vector<int>(K, 0));
+    logtwo = vector<int>(N + 5);
+    logtwo[1] = 0;
+    for (int i = 2; i <= N; i++) {
+      logtwo[i] = logtwo[i / 2] + 1;
+    }
+    for (int i = N - 1; i >= 0; i--) {
+      table[i][0] = a[i];
+      for (int j = 1; i + (1 << j) - 1 < N; j++) {
+        table[i][j] = f(table[i][j - 1], table[i + (1 << (j - 1))][j - 1]);
+      }
+    }
+  }
+  
+  int query(int l, int r) {
+    int temp = logtwo[r - l + 1];
+    int ans = f(table[l][temp], table[r - (1 << temp) + 1][temp]);
+    return ans;
+  }
+};
+
+void solve() {
+  int R = 1e6;
+  vector<int> a(R + 5, 0);
+  int n;
+  cin >> n;
+  for (int i = 0; i < n; i++) {
+    int x;
+    cin >> x;
+    a[x] = x;
+  }
+  SparseTable tab(a);
+  int maxi = 0;
+  for (int i = 2; i < R + 1; i++) {
+    if (!a[i]) continue;
+    for (int j = i; j < R + 1; j += i) {
+      int temp = tab.query(j, min(j + i - 1, R)) - j;
+      maxi = max(maxi, temp);
+    }
+  }
+  cout << maxi << endl;
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  
+  int test = 1;
+  while (test--) {
+    solve();
+  }
+}
+```

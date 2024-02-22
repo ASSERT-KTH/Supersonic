@@ -1,0 +1,168 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+struct HLD {
+  vector<vector<int>> adj;
+  int n, root, cnt;
+  vector<int> sub, tin, tout, par, head, dep;
+
+  int dfs1(int s, int p, int d) {
+    par[s] = p;
+    dep[s] = d;
+    adj[s].erase(remove(adj[s].begin(), adj[s].end(), p), adj[s].end());
+
+    for (int i = 0; i < adj[s].size(); i++) {
+      int t = adj[s][i];
+      sub[s] += dfs1(t, s, d + 1);
+      if (sub[adj[s][0]] < sub[t])
+        swap(t, adj[s][0]);
+    }
+    return sub[s];
+  }
+
+  void dfs2(int s, int h) {
+    head[s] = h;
+    tin[s] = cnt++;
+    for (int t : adj[s]) {
+      dfs2(t, t == adj[s][0] ? h : t);
+    }
+    tout[s] = cnt;
+  }
+
+  HLD(vector<vector<int>> &g, int rt)
+      : adj(g), n(adj.size()), root(rt), cnt(0), sub(n, 1), tin(n), tout(n),
+        par(n, -1), head(n), dep(n) {
+    dfs1(root, -1, 0);
+    dfs2(root, root);
+  }
+
+  int lca(int a, int b) {
+    while (head[a] != head[b]) {
+      if (dep[head[a]] > dep[head[b]])
+        swap(a, b);
+      b = par[head[b]];
+    }
+    if (dep[a] > dep[b])
+      swap(a, b);
+    return a;
+  }
+};
+
+const int MAXN = 100100;
+vector<vector<int>> adj;
+int n, a[MAXN], q;
+
+struct dat {
+  int mx1, mx2, mn1, mn2;
+} t[4 * MAXN];
+
+dat zero;
+
+dat combine(dat x, dat y) {
+  dat res;
+  if (a[x.mx1] > a[y.mx1]) {
+    res.mx1 = x.mx1;
+    if (a[x.mx2] > a[y.mx1]) {
+      res.mx2 = x.mx2;
+    } else {
+      res.mx2 = y.mx1;
+    }
+  } else {
+    res.mx1 = y.mx1;
+    if (a[x.mx1] > a[y.mx2]) {
+      res.mx2 = x.mx1;
+    } else {
+      res.mx2 = y.mx2;
+    }
+  }
+  if (a[x.mn1] < a[y.mn1]) {
+    res.mn1 = x.mn1;
+    if (a[x.mn2] < a[y.mn1]) {
+      res.mn2 = x.mn2;
+    } else {
+      res.mn2 = y.mn1;
+    }
+  } else {
+    res.mn1 = y.mn1;
+    if (a[x.mn1] < a[y.mn2]) {
+      res.mn2 = x.mn1;
+    } else {
+      res.mn2 = y.mn2;
+    }
+  }
+  return res;
+}
+
+void build(int v, int tl, int tr) {
+  if (tl == tr) {
+    t[v].mn1 = tl;
+    t[v].mn2 = n + 1;
+    t[v].mx1 = tl;
+    t[v].mx2 = n + 2;
+  } else {
+    int tm = (tl + tr) / 2;
+    build(2 * v, tl, tm);
+    build(2 * v + 1, tm + 1, tr);
+    t[v] = combine(t[2 * v], t[2 * v + 1]);
+  }
+}
+
+dat get(int v, int tl, int tr, int l, int r) {
+  if (l > r)
+    return zero;
+  if (l == tl && r == tr)
+    return t[v];
+  int tm = (tl + tr) / 2;
+  return combine(get(v * 2, tl, tm, l, min(r, tm)),
+                 get(v * 2 + 1, tm + 1, tr, max(l, tm + 1), r));
+}
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+  cout.tie(nullptr);
+
+  cin >> n >> q;
+  zero.mn1 = n + 1;
+  zero.mn2 = n + 1;
+  zero.mx1 = n + 2;
+  zero.mx2 = n + 2;
+  adj.resize(n + 1);
+  for (int i = 1; i < n; i++) {
+    int x;
+    cin >> x;
+    adj[x - 1].push_back(i);
+  }
+  HLD hld(adj, 0);
+  for (int i = 0; i < n; i++) {
+    a[i] = hld.tin[i];
+  }
+  build(1, 0, n - 1);
+  while (q--) {
+    int l, r;
+    cin >> l >> r;
+    l--;
+    r--;
+    if (r - l < 2) {
+      int ans = r, d = hld.dep[l];
+      if (d < hld.dep[r]) {
+        ans = l;
+        d = hld.dep[r];
+      }
+      cout << ans + 1 << " " << d << endl;
+      continue;
+    }
+    dat cur = get(1, 0, n - 1, l, r);
+    int lc1 = hld.lca(cur.mx1, cur.mn2);
+    int lc2 = hld.lca(cur.mx2, cur.mn1);
+    if (hld.dep[lc1] > hld.dep[lc2]) {
+      cout << cur.mn1 + 1 << " " << hld.dep[lc1] << endl;
+    } else {
+      cout << cur.mx1 + 1 << " " << hld.dep[lc2] << endl;
+    }
+  }
+
+  return 0;
+}

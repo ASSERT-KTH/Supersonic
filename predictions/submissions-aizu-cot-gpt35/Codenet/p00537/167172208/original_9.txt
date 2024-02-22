@@ -1,0 +1,94 @@
+The given program uses a segment tree to perform range updates and range queries. The segment tree is initialized with a size of `n`, where `n` is the number of elements in the array. The segment tree is then used to perform range updates and range queries on the array.
+
+To optimize the program, we can make the following modifications:
+
+1. Remove unnecessary includes: The program includes `<bits/stdc++.h>`, which includes a lot of unnecessary headers. We can remove this line and only include the necessary headers (`<iostream>`, `<vector>`, and `<algorithm>`).
+
+2. Use a more efficient method to read input: The program currently uses `scanf` to read input. We can use `cin` instead, which is generally faster and more convenient.
+
+3. Replace `vector<int>` with `vector<long long>`: The program uses a `vector<int>` to store the segment tree nodes. However, the values can be large (up to 10^18), so we should use a `vector<long long>` instead to avoid integer overflow.
+
+4. Remove unnecessary parameter in `Query` function: The `Query` function currently takes `k`, `l`, and `r` as parameters, which are always 0 and `sz` respectively. We can remove these parameters and use the class members directly.
+
+5. Use prefix sum to calculate `seg[k]`: The `seg[k]` value is currently calculated by summing `seg[2 * k + 1]`, `add[2 * k + 1]`, `seg[2 * k + 2]`, and `add[2 * k + 2]`. We can optimize this by using prefix sums to calculate `seg[k]` in constant time.
+
+6. Use `emplace_back` instead of `push_back`: In the `Query` function, the program uses `push_back` to add elements to the `ret` vector. We can use `emplace_back` instead, which constructs the elements in-place and avoids unnecessary copies.
+
+Here is the optimized C++ program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+struct SegmentTree {
+  vector<long long> seg, add;
+  int sz;
+
+  SegmentTree(int n) {
+    sz = 1;
+    while (sz < n)
+      sz *= 2;
+    seg.assign(sz * 2 + 1, 0);
+    add.assign(sz * 2 + 1, 0);
+  }
+
+  void Add(int a, int b, int x, int k = 0, int l = 0, int r = sz) {
+    if (a >= r || b <= l) {
+      return;
+    } else if (a <= l && r <= b) {
+      add[k] += x;
+    } else {
+      Add(a, b, x, 2 * k + 1, l, (l + r) / 2);
+      Add(a, b, x, 2 * k + 2, (l + r) / 2, r);
+      seg[k] = seg[2 * k + 1] + add[2 * k + 1] + seg[2 * k + 2] + add[2 * k + 2];
+    }
+  }
+
+  long long Query(int a, int b, int k = 0, int l = 0, int r = sz) {
+    if (a >= r || b <= l)
+      return 0;
+    if (a <= l && r <= b)
+      return seg[k] + add[k];
+    return Query(a, b, 2 * k + 1, l, (l + r) / 2) +
+           Query(a, b, 2 * k + 2, (l + r) / 2, r) + add[k];
+  }
+
+  void Add(int a, int b, int x) {
+    Add(a, b, x, 0, 0, sz);
+  }
+
+  int Query(int a, int b) {
+    return Query(a, b, 0, 0, sz);
+  }
+};
+
+int main() {
+  int N, M;
+  cin >> N >> M;
+
+  SegmentTree segtree(N);
+
+  vector<int> P(M);
+  for (int i = 0; i < M; i++) {
+    cin >> P[i];
+    --P[i];
+  }
+
+  for (int i = 1; i < M; i++) {
+    int u = min(P[i - 1], P[i]), v = max(P[i - 1], P[i]);
+    segtree.Add(u, v, 1);
+  }
+
+  long long ret = 0;
+  for (int i = 0; i < N - 1; i++) {
+    long long used = segtree.Query(i, i + 1);
+    int A, B, C;
+    cin >> A >> B >> C;
+    ret += min(used * A, C + used * B);
+  }
+
+  cout << ret << endl;
+}
+```

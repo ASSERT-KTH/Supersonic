@@ -1,0 +1,157 @@
+**Code Analysis**
+
+Upon analyzing the code, it seems to be a Plane Sweep Algorithm. This is a computational geometry algorithm that deals with points on a plane. The code reads sets of points (either of type 0 or 1) from the input, each set with a radius `r`. All points are inserted to an event structure, which marks when a point comes into consideration (with a flag `in` set to 1) or when it's no longer under consideration (flag `in` set to 0). The `PlaneSweep()` function checks for overlaps between the two types of points.
+
+The main performance bottlenecks in the code are:
+
+1. High usage of `std::set` data structure: `std::set` is a red-black tree-based container with O(log n) complexity for both insert and erase operations. This could slow down the program when dealing with large datasets.
+
+2. Frequent calls to `dist2()` function: This function calculates the square of the distance between two points. It's called within a nested loop in the `PlaneSweep()` function, which could affect the performance significantly.
+
+3. Usage of `std::set::find()` function: This operation has a complexity of O(log n) which could become significant with a large number of elements.
+
+**Optimization Strategy**
+
+1. Efficient Data Structures: Instead of using `std::set`, we could use `std::unordered_set` which provides average constant-time complexity for search, insert, and delete operations. However, `std::unordered_set` does not provide order, which we need in this case. A possible solution is to maintain two data structures: `std::set` to preserve the order of elements and `std::unordered_map` for efficient search operations.
+
+2. Avoid Redundant Computations: We can avoid calling `dist2()` function multiple times for the same pair of points by storing the results for each pair in a map.
+
+3. Compiler Optimizations: We can use compiler flags to enable optimizations like `-O2` or `-O3` which perform various performance optimizations like loop unrolling, function inlining, etc.
+
+**Step-by-Step Explanation**
+
+1. Replace `std::set` with `std::unordered_map` and `std::set`:
+
+We will replace `std::set` with the combination of `std::unordered_map` and `std::set`. We will use `std::unordered_map` to store the points and their iterators in the `std::set`. This way, we can efficiently find and erase elements from the `std::set` using their iterators stored in the `std::unordered_map`.
+
+2. Store Results of `dist2()` function:
+
+We will create a `std::unordered_map` to store the result of the `dist2()` function for each pair of points. Before calculating the distance, we will check if the result for the pair is already available in the map. This will avoid the redundant computation of the `dist2()` function.
+
+3. Use Compiler Optimizations:
+
+We will compile the program with `-O2` or `-O3` flags to enable compiler optimizations.
+
+**Trade-offs**
+
+The proposed optimizations increase the memory usage slightly due to the additional `std::unordered_map` data structures. However, this increase is justified by the significant improvement in time complexity, especially for large datasets.
+
+**Optimized Code Block**
+
+Please note that without the actual data it's hard to verify the correctness of the provided code and the optimized code. Below is the optimized code based on the analysis and optimization strategy.
+
+```cpp
+#include <algorithm>
+#include <assert.h>
+#include <iostream>
+#include <math.h>
+#include <unordered_map>
+#include <unordered_set>
+#include <set>
+#include <stdio.h>
+#include <string.h>
+#include <vector>
+using namespace std;
+typedef long long ll;
+static const double EPS = 1e-9;
+static const double PI = acos(-1.0);
+
+#define REP(i, n) for (int i = 0; i < (int)(n); i++)
+#define FOR(i, s, n) for (int i = (s); i < (int)(n); i++)
+#define FOREQ(i, s, n) for (int i = (s); i <= (int)(n); i++)
+#define FORIT(it, c) for (__typeof((c).begin()) it = (c).begin(); it != (c).end(); it++)
+#define MEMSET(v, h) memset((v), h, sizeof(v))
+
+struct Point {
+  int x;
+  int y;
+  char type;
+  Point() { ; }
+  Point(double x, double y, int type) : x(x), y(y), type(type) { ; }
+  bool operator<(const Point &rhs) const {
+    if (y != rhs.y) {
+      return y < rhs.y;
+    }
+    return x < rhs.x;
+  }
+};
+
+struct Event {
+  int x;
+  Point p;
+  char in;
+  Event() { ; }
+  Event(int x, Point p, int in) : x(x), p(p), in(in) { ; }
+  bool operator<(const Event &rhs) const {
+    if (x != rhs.x) {
+      return x < rhs.x;
+    }
+    return in > rhs.in;
+  }
+};
+
+unordered_map<pair<Point, Point>, int> dist2_map; // to store results of dist2() function
+
+inline int square(int x) { return x * x; }
+
+// modified dist2() function
+inline int dist2(const Point &a, const Point &b) {
+  if (dist2_map.count({a, b}) == 0) {
+    dist2_map[{a, b}] = square(a.x - b.x) + square(a.y - b.y);
+  }
+  return dist2_map[{a, b}];
+}
+
+int an, bn, n;
+int r;
+Event event[500000];
+
+// modified PlaneSweep() function
+int PlaneSweep() {
+  int ans = 0;
+  set<Point> openSet[2];
+  unordered_map<Point, set<Point>::iterator> openMap[2]; // additional unordered_map
+  REP(iter, n) {
+    Event &e = event[iter];
+    Point &p = e.p;
+    if (e.in) {
+      set<Point>::iterator lower =
+          openSet[(int)p.type ^ 1].lower_bound(Point(0, p.y - 4 * r - 1, 0));
+      set<Point>::iterator upper =
+          openSet[(int)p.type ^ 1].upper_bound(Point(0, p.y + 4 * r + 1, 0));
+      for (set<Point>::iterator it = lower; it != upper; it++) {
+        if (dist2(*it, p) <= 16 * r * r) {
+          ans++;
+        }
+      }
+      auto insertResult = openSet[(int)p.type].insert(p);
+      openMap[(int)p.type][p] = insertResult.first;
+    } else {
+      openSet[(int)p.type].erase(openMap[(int)p.type][p]);
+      openMap[(int)p.type].erase(p);
+    }
+  }
+  return ans;
+}
+
+int main() {
+  while (scanf("%d %d %d", &an, &bn, &r), an | bn) {
+    n = (an + bn) * 2;
+    REP(i, an) {
+      int x, y;
+      scanf("%d %d", &x, &y);
+      event[2 * i + 0] = Event(x - 2 * r, Point(x, y, 0), 1);
+      event[2 * i + 1] = Event(x + 2 * r, Point(x, y, 0), 0);
+    }
+    REP(i, bn) {
+      int x, y;
+      scanf("%d %d", &x, &y);
+      event[2 * an + 2 * i + 0] = Event(x - 2 * r, Point(x, y, 1), 1);
+      event[2 * an + 2 * i + 1] = Event(x + 2 * r, Point(x, y, 1), 0);
+    }
+    sort(event, event + n);
+    int ans = PlaneSweep();
+    printf("%d\n", ans);
+  }
+}
+```

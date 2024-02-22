@@ -1,0 +1,109 @@
+The provided code is a C++ program that checks if a line segment intersects a plane, and if it does, whether the intersection point lies within a triangle on the plane. The main performance bottlenecks in this code are:
+
+1. Repeated calculations of the same values.
+2. Inefficient use of data types and structures.
+
+## Optimization Strategy
+
+1. **Inefficient data structures and alternatives:** The code uses a lot of temporary variables to store intermediate computations. We can reduce this overhead by directly using the computations in the return statements, and by using inline functions where appropriate.
+   
+2. **Redundant computations:** The code repeatedly calculates the same values. We can store these values in variables and use them multiple times instead of recalculating them.
+   
+3. **Loops or recursive calls:** There are no loops or recursive calls in this program, so we won't be optimizing these aspects.
+   
+4. **Compiler optimizations:** We can use compiler flags such as `-O2` or `-O3` to enable automatic compiler optimizations. These flags can significantly improve the performance of the program without requiring any code modifications.
+
+## Step-by-Step Explanation
+
+1. **Inlining functions:** The `abs` and `norm` functions are short and called frequently, so they are good candidates for inlining. Inlining a function can eliminate the function call overhead, speeding up the program. We can simply add the `inline` keyword before these function definitions.
+   
+2. **Eliminating temporary variables:** We can directly return the computed values in many places instead of storing them in temporary variables. For example, in the `Plane3d::distanceP` method, we can directly return the computed value instead of storing it in `a`.
+   
+3. **Storing repeated computations:** In the `Plane3d::intersectS` method, we compute `a - seg.p[0]` and `a - seg.p[1]` twice. We can compute these once and store their values in variables, which we can then use in the two places where these expressions occur. Similarly, in the `point_on_the_triangle3d` function, we compute `cross(v1, p - tri1)`, `cross(v2, p - tri2)`, and `cross(v3, p - tri3)` twice. We can compute these once, store their values in variables, and use these variables instead of recomputing these expressions.
+   
+4. **Compiler flags:** We can use the `-O2` or `-O3` compiler flags for automatic compiler optimizations. These flags instruct the compiler to perform various optimizations such as function inlining, loop unrolling, and dead code elimination.
+
+## Optimized Code Block
+
+Here is the optimized version of the code. The changes are minimal but effective, and the functionality of the original code is preserved. The changes are well-commented for clarity.
+
+```cpp
+#include <bits/stdc++.h>
+#define REP(i, s, n) for (int i = s; i < n; i++)
+#define rep(i, n) REP(i, 0, n)
+#define IINF (INT_MAX)
+#define EPS (1e-7)
+#define equals(a, b) (fabs((a) - (b)) < EPS)
+using namespace std;
+
+// Same as the original code up to this point
+
+// Inlined abs and norm functions
+inline double norm(const Point3d &p) {
+  return p.x * p.x + p.y * p.y + p.z * p.z;
+}
+
+inline double abs(const Point3d &p) {
+  return sqrt(norm(p));
+}
+
+// Same as the original code up to this point
+
+double Plane3d::distanceP(Point3d p) {
+  Point3d a = normal_vector * d;
+  return abs(dot(p - a, normal_vector)); // Eliminated temporary variable
+}
+
+bool Plane3d::intersectS(Segment3d seg) {
+  Point3d a = normal_vector * d;
+  // Stored repeated computations in variables
+  Point3d diff0 = a - seg.p[0];
+  Point3d diff1 = a - seg.p[1];
+  double res1 = dot(diff0, normal_vector);
+  double res2 = dot(diff1, normal_vector);
+  if (res1 > res2)
+    swap(res1, res2);
+  if ((equals(res1, 0.0) || res1 < 0) && (equals(res2, 0.0) || res2 > 0))
+    return true;
+  return false;
+}
+
+// Same as the original code up to this point
+
+bool point_on_the_triangle3d(Point3d tri1, Point3d tri2, Point3d tri3, Point3d p) {
+  if (on_segment3d(Segment3d(tri1, tri2), p))
+    return true;
+  if (on_segment3d(Segment3d(tri2, tri3), p))
+    return true;
+  if (on_segment3d(Segment3d(tri3, tri1), p))
+    return true;
+  Vector3d v1 = tri2 - tri1;
+  Vector3d v2 = tri3 - tri2;
+  Vector3d v3 = tri1 - tri3;
+
+  // Stored repeated computations in variables
+  Vector3d cp1 = cross(v1, p - tri1);
+  Vector3d cp2 = cross(v2, p - tri2);
+  Vector3d cp3 = cross(v3, p - tri3);
+
+  double d1 = dot(cp1, cp2);
+  double d2 = dot(cp1, cp3);
+  if ((!equals(d1, 0.0) && d1 > 0) && (!equals(d2, 0.0) && d2 > 0))
+    return true;
+  return false;
+}
+
+// Rest of the code is the same
+```
+
+To compile the optimized program with compiler optimizations, we can use one of the following commands:
+
+```
+g++ -O2 -o optimized_program optimized_program.cpp
+```
+
+or
+
+```
+g++ -O3 -o optimized_program optimized_program.cpp
+```

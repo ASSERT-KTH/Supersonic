@@ -1,0 +1,153 @@
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <deque>
+#include <map>
+#include <iostream>
+using namespace std;
+
+const int MAX_N = 1000000;
+const int MAX_DAT = 10000;
+
+struct dat {
+  static int n;
+  deque<int> A;
+  int M[MAX_N] = {0};
+  dat *next = NULL;
+  int size = 0;
+
+  int count(int p, int x) const {
+    if (p > size) {
+      int count = next->count(p - size, x);
+      count += M[x];
+      return count;
+    }
+    int ans = 0;
+    for (int i = 0; i < p; i++)
+      ans += A[i] == x;
+    return ans;
+  }
+
+  void insert(int p, int x) {
+    if (p > size) {
+      next->insert(p - size, x);
+      return;
+    }
+    A.insert(A.begin() + p, x);
+    M[x]++;
+    size++;
+    split();
+  }
+
+  int erase(int p) {
+    if (size < p)
+      return next->erase(p - size);
+    int x = A[p - 1];
+    A.erase(A.begin() + p - 1);
+    if (--M[x] == 0)
+      M[x] = 0;
+    size--;
+    merge();
+    return x;
+  }
+
+  void push_back(int x) {
+    A.push_back(x);
+    M[x]++;
+    size++;
+  }
+
+  void push_front(int x) {
+    A.push_front(x);
+    M[x]++;
+    size++;
+  }
+
+  int pop_back() {
+    int x = A.back();
+    A.pop_back();
+    if (--M[x] == 0)
+      M[x] = 0;
+    size--;
+    return x;
+  }
+
+  int pop_front() {
+    int x = A.front();
+    A.pop_front();
+    if (--M[x] == 0)
+      M[x] = 0;
+    size--;
+    return x;
+  }
+
+  void split() {
+    if (size < n << 1)
+      return;
+    dat *tmp = new dat;
+    while (size > n)
+      tmp->push_front(pop_back());
+    tmp->next = next;
+    next = tmp;
+  }
+
+  void merge() {
+    if (next == NULL || size + next->size > n)
+      return;
+    dat *tmp = next;
+    while (next->size > 0)
+      push_back(tmp->pop_front());
+    next = tmp->next;
+    delete tmp;
+  }
+
+  void print() const {
+    for (int x : A)
+      fprintf(stderr, "%3d", x);
+    if (next == NULL)
+      fprintf(stderr, "\n");
+    else
+      next->print();
+  }
+};
+
+int dat::n;
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  int n, m, last = 0;
+  cin >> n;
+  dat::n = ceil(sqrt(n << 2));
+  dat *D = new dat[MAX_DAT];
+  dat *cur = D;
+  for (int i = 0; i < n; i++) {
+    if (cur->size >= dat::n) {
+      cur->next = &D[i];
+      cur = &D[i];
+    }
+    int x;
+    cin >> x;
+    cur->push_back(x);
+  }
+  cin >> m;
+  for (; m > 0; m--) {
+    int op, l, r, k;
+    cin >> op;
+    cin >> l >> r;
+    if (op != 1)
+      cin >> k;
+    l = (l + last - 1) % n + 1;
+    r = (r + last - 1) % n + 1;
+    k = (k + last - 1) % n + 1;
+    if (l > r)
+      swap(l, r);
+    if (op == 1)
+      D->insert(l - 1, D->erase(r));
+    else {
+      l = D->count(l - 1, k);
+      r = D->count(r, k);
+      cout << (last = r - l) << "\n";
+    }
+  }
+}

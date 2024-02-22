@@ -1,0 +1,93 @@
+#include <iostream>
+#include <vector>
+#include <utility>
+#include <algorithm>
+
+using namespace std;
+
+const int NMax = 1e7 + 5;
+
+int height[NMax];
+long long cost[NMax], dp[NMax];
+
+int main() {
+  int N, M;
+  cin >> N >> M;
+
+  vector<int> heightsOfBlock(N + 1), costsOfBlock(N + 1);
+
+  for (int i = 1; i <= N; ++i) {
+    int K;
+    cin >> K;
+    
+    heightsOfBlock.resize(K);
+    costsOfBlock.resize(K);
+    
+    for (int j = 0; j < K; ++j) {
+      cin >> heightsOfBlock[j];
+    }
+    
+    for (int j = 0; j < K; ++j) {
+      cin >> costsOfBlock[j];
+    }
+  }
+
+  int Q, curr = 0;
+  cin >> Q;
+
+  for (int i = 1; i <= Q; ++i) {
+    int id, mult;
+    cin >> id >> mult;
+    
+    int K = heightsOfBlock[id].size();
+    
+    for (int j = 0; j < K; ++j) {
+      int h = heightsOfBlock[id][j], c = costsOfBlock[id][j];
+      height[++curr] = h;
+      cost[curr] = 1LL * mult * c;
+    }
+  }
+
+  heightsOfBlock.resize(0);
+  costsOfBlock.resize(0);
+
+  vector<pair<int, long long>> stackPushLeft, stackPushRight;
+
+  for (int i = 1; i <= M; ++i) {
+    long long minLeft = dp[i - 1];
+
+    while (stackPushLeft.size() && i - height[i] + 1 <= stackPushLeft.back().first) {
+      minLeft = min(minLeft, stackPushLeft.back().second);
+      stackPushLeft.pop_back();
+    }
+
+    dp[i] = minLeft + cost[i];
+
+    long long valHere = dp[i - 1];
+    minLeft = min(minLeft, valHere);
+    stackPushLeft.emplace_back(i, minLeft);
+
+    int idx = -1;
+
+    while (stackPushRight.size() && (idx = stackPushRight.back().first) && idx + height[idx] - 1 < i) {
+      stackPushRight.pop_back();
+    }
+
+    if (stackPushRight.size()) {
+      long long dpPlusCost = stackPushRight.back().second;
+      dp[i] = min(dp[i], dpPlusCost);
+    }
+
+    long long dpPlusCost = dp[i - 1] + cost[i];
+    
+    if (stackPushRight.size()) {
+      dpPlusCost = min(dpPlusCost, stackPushRight.back().second);
+    }
+    
+    stackPushRight.emplace_back(i, dpPlusCost);
+  }
+
+  cout << dp[M] << '\n';
+
+  return 0;
+}

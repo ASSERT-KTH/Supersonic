@@ -1,0 +1,99 @@
+The existing code appears to be a graph-based program performing multiple depth-first searches (DFS) and various calculations on the nodes of the graph. The optimization can be performed in various ways, like by reducing unnecessary initializations, reducing use of unordered_maps, reducing the use of vectors and swapping, and trying to use static arrays when possible.
+
+The following can be done to optimize the code:
+
+1. Remove the initialization of the vector `edg` inside the main function. The vector automatically initializes itself when declared and there is no need for manual initialization.
+
+2. The unordered_map used for storing results `ans` can be replaced with a 2-dimensional array which will be faster in accessing and storing values.
+
+3. Instead of swapping `u` and `v` multiple times in the `path` function, we can compare and assign values directly which will reduce the execution time.
+
+4. The use of the `fill_n` function for initializing `dif` and `bak` to zero can be avoided. We can manually reset these inside the loop where they are being used.
+
+Optimized code is as follows:
+
+```cpp
+#include <cstdio>
+#include <algorithm>
+#include <vector>
+using namespace std;
+const int N = 100001;
+int par[N], hev[N], siz[N], dep[N], top[N], dif[N], bak[N], ans[N][N];
+vector<int> edg[N];
+pair<int, int> out[N];
+void dfs(int u) {
+  siz[u] = 1;
+  hev[u] = -1;
+  for (int v : edg[u]) {
+    if (v == par[u]) continue;
+    par[v] = u;
+    dep[v] = dep[u] + 1;
+    dfs(v);
+    siz[u] += siz[v];
+    if (hev[u] == -1 || siz[v] > siz[hev[u]]) hev[u] = v;
+  }
+}
+void dfs2(int u) {
+  for (int v : edg[u]) {
+    if (v == par[u]) continue;
+    if (v == hev[u]) top[v] = top[u];
+    else top[v] = v;
+    dfs2(v);
+  }
+}
+void path(int u, int v) {
+  while (true) {
+    if (top[u] == top[v]) {
+      if (dep[u] > dep[v]) dif[u]++, dif[v]--;
+      else dif[v]++, dif[u]--;
+      return;
+    }
+    if (dep[top[u]] > dep[top[v]]) dif[top[v]]++, dif[v]--, bak[top[v]]++, v = par[top[v]];
+    else dif[top[u]]++, dif[u]--, bak[top[u]]++, u = par[top[u]];
+  }
+}
+void dfs3(int u, int cnt) {
+  for (int v : edg[u]) {
+    if (v == par[u]) continue;
+    if (v == hev[u]) {
+      ans[min(u, v)][max(u, v)] += cnt + dif[u];
+      dfs3(v, cnt + dif[u]);
+    } else {
+      ans[min(u, v)][max(u, v)] += bak[v];
+      dfs3(v, 0);
+    }
+    dif[u] = bak[u] = 0; // reset dif and bak to 0
+  }
+}
+int main() {
+  int n, k, u, v;
+  scanf("%d\n", &n);
+  for (int i = 0; i < n - 1; i++) {
+    scanf("%d%d", &u, &v);
+    u--;
+    v--;
+    if (u > v) swap(u, v);
+    edg[u].push_back(v);
+    edg[v].push_back(u);
+    out[i] = {u, v};
+    ans[u][v] = 0;
+  }
+  par[0] = 0;
+  dep[0] = 0;
+  dfs(0);
+  top[0] = 0;
+  dfs2(0);
+  scanf("%d\n", &k);
+  while (k--) {
+    scanf("%d%d", &u, &v);
+    u--;
+    v--;
+    path(u, v);
+  }
+  dfs3(0, 0);
+  printf("%d", ans[out[0].first][out[0].second]);
+  for (int i = 1; i < n - 1; i++)
+    printf(" %d", ans[out[i].first][out[i].second]);
+  printf("\n");
+}
+```

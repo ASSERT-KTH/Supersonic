@@ -1,0 +1,186 @@
+#include <bits/stdc++.h>
+#include <ext/pb_ds/assoc_container.hpp>
+#include <ext/pb_ds/tree_policy.hpp>
+using namespace __gnu_pbds;
+using namespace std;
+#define int long long
+typedef long long ll;
+typedef tree<int, null_type, less<int>, rb_tree_tag,
+             tree_order_statistics_node_update>
+    ordered_set;
+typedef long double ld;
+typedef vector<int> vi;
+typedef pair<int, int> pi;
+typedef vector<pi> vpi;
+#define mod 1000000007
+#define dmp(x) cerr << "line " << __LINE__ << " " << #x << ":" << x << endl
+#define fs first
+#define sc second
+#define pb push_back
+#define all(c) (c).begin(), (c).end()
+#define mt make_tuple
+#define IOS                                                                    \
+  ios::sync_with_stdio(0);                                                     \
+  cin.tie(0);                                                                  \
+  cout.tie(0)
+template <class S, class T>
+ostream &operator<<(ostream &o, const pair<S, T> &p) {
+  return o << "(" << p.fs << "," << p.sc << ")";
+}
+template <class T> ostream &operator<<(ostream &o, const vector<T> &vc) {
+  o << "{";
+  for (const T &v : vc)
+    o << v << ",";
+  o << "}";
+  return o;
+}
+mt19937 rng(chrono::steady_clock::now().time_since_epoch().count());
+struct HLD {
+  int *adj;
+  int n, root, cnt;
+  vector<int> sub, tin, tout, par, head, dep;
+  int dfs1(int s, int p, int d) {
+    par[s] = p;
+    dep[s] = d;
+    int child_count = 0;
+    for (int i = 0; i < n; i++) {
+      if (adj[s * n + i] != p) {
+        child_count += dfs1(adj[s * n + i], s, d + 1);
+      }
+    }
+    sub[s] = child_count;
+    for (int i = 0; i < n; i++) {
+      if (sub[adj[s * n + 0]] < sub[adj[s * n + i]]) {
+        swap(adj[s * n + 0], adj[s * n + i]);
+      }
+    }
+    return sub[s];
+  }
+  void dfs2(int s, int h) {
+    head[s] = h;
+    tin[s] = cnt++;
+    for (int i = 0; i < n; i++) {
+      int t = adj[s * n + i];
+      if (t != -1) {
+        dfs2(t, t == adj[s * n + 0] ? h : t);
+      }
+    }
+    tout[s] = cnt;
+  }
+  HLD(int *g, int size, int rt)
+      : adj(g), n(size), root(rt), cnt(0), sub(n), tin(n), tout(n),
+        par(n, -1), head(n), dep(n) {
+    dfs1(root, -1, 0);
+    dfs2(root, root);
+  }
+  int lca(int a, int b) {
+    while (head[a] != head[b]) {
+      if (dep[head[a]] > dep[head[b]])
+        swap(a, b);
+      b = par[head[b]];
+    }
+    if (dep[a] > dep[b])
+      swap(a, b);
+    return a;
+  }
+};
+const int MAXN = 100100;
+int adj[MAXN * 2];
+int n, a[MAXN], q;
+struct dat {
+  pair<int, int> mx;
+  pair<int, int> mn;
+} t[4 * MAXN];
+dat zero;
+dat combine(dat x, dat y) {
+  dat res;
+  if (a[x.mx.fs] > a[y.mx.fs]) {
+    res.mx.fs = x.mx.fs;
+    if (a[x.mx.sc] > a[y.mx.fs]) {
+      res.mx.sc = x.mx.sc;
+    } else {
+      res.mx.sc = y.mx.fs;
+    }
+  } else {
+    res.mx.fs = y.mx.fs;
+    if (a[x.mx.fs] > a[y.mx.sc]) {
+      res.mx.sc = x.mx.fs;
+    } else {
+      res.mx.sc = y.mx.sc;
+    }
+  }
+  if (a[x.mn.fs] < a[y.mn.fs]) {
+    res.mn.fs = x.mn.fs;
+    if (a[x.mn.sc] < a[y.mn.fs]) {
+      res.mn.sc = x.mn.sc;
+    } else {
+      res.mn.sc = y.mn.fs;
+    }
+  } else {
+    res.mn.fs = y.mn.fs;
+    if (a[x.mn.fs] < a[y.mn.sc]) {
+      res.mn.sc = x.mn.fs;
+    } else {
+      res.mn.sc = y.mn.sc;
+    }
+  }
+  return res;
+}
+void build(int v, int tl, int tr) {
+  if (tl == tr) {
+    t[v].mn = {tl, n + 1};
+    t[v].mx = {tl, n + 2};
+  } else {
+    int tm = (tl + tr) / 2;
+    build(2 * v, tl, tm);
+    build(2 * v + 1, tm + 1, tr);
+    t[v] = combine(t[2 * v], t[2 * v + 1]);
+  }
+}
+dat get(int v, int tl, int tr, int l, int r) {
+  if (l > r)
+    return zero;
+  if (l == tl && r == tr)
+    return t[v];
+  int tm = (tl + tr) / 2;
+  return combine(get(v * 2, tl, tm, l, min(r, tm)),
+                 get(v * 2 + 1, tm + 1, tr, max(l, tm + 1), r));
+}
+signed main() {
+  IOS;
+  cin >> n >> q;
+  zero.mx = {n + 2, n + 2};
+  zero.mn = {n + 1, n + 1};
+  memset(adj, -1, sizeof(adj));
+  for (int i = 1; i < n; i++) {
+    int x;
+    cin >> x;
+    adj[x - 1] = i;
+  }
+  a[n + 1] = mod;
+  a[n + 2] = 0;
+  HLD hld(adj, n, 0);
+  for (int i = 0; i < n; i++) {
+    a[i] = hld.tin[i];
+  }
+  build(1, 0, n - 1);
+  while (q--) {
+    int l, r;
+    cin >> l >> r;
+    l--;
+    r--;
+    if (r - l < 2) {
+      int ans = r, d = hld.dep[l];
+      if (d < hld.dep[r]) {
+        ans = l;
+        d = hld.dep[r];
+      }
+      cout << ans + 1 << " " << d << endl;
+      continue;
+    }
+    dat cur = get(1, 0, n - 1, l, r);
+    int lc1 = hld.lca(cur.mx.fs, cur.mn.sc);
+    int lc2 = hld.lca(cur.mx.sc, cur.mn.fs);
+    if (hld.dep[lc1] > hld.dep[lc2]) {
+      cout << cur.mn.fs + 1 << " " << hld.dep[lc1] << endl;
+    } else {

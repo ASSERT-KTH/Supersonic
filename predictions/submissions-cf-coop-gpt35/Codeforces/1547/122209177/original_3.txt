@@ -1,0 +1,145 @@
+Code Analysis:
+
+1. The code uses a segment tree to efficiently answer range gcd queries.
+2. The `build_tree` function constructs the segment tree by recursively calling itself on the left and right halves of the current range.
+3. The `query` function recursively traverses the segment tree to find the gcd of the specified range.
+4. The main `solve` function reads the input, builds the segment tree, and then iterates over each element to find the maximum subarray with gcd equal to `g`.
+5. The code uses the `__gcd` function from the standard library to calculate gcd.
+
+Potential optimizations:
+
+1. Redundant GCD calculations: The code calculates the gcd of each element separately in the `solve` function using the `rep` loop. This calculation can be avoided by precomputing the gcd of all elements before calling the `solve` function.
+2. Unnecessary memory allocation: The code uses a vector `seg_tree` to store the segment tree. However, the size of this vector is fixed at `4 * N + 5`, which is much larger than necessary. We can reduce the size of this vector to `2 * N + 5` since the maximum number of nodes in the segment tree is `2 * N - 1`.
+3. Unnecessary copying of elements: The code copies the elements of the input array `a` to the second half of the array `a`. This copying is unnecessary and can be eliminated.
+4. Unnecessary recursion: The recursive calls in the `build_tree` function can be replaced with a loop to avoid the overhead of function calls.
+5. Unnecessary `mod` and `INF` constants: The code declares constants `mod` and `INF` but never uses them. These constants can be removed.
+
+Optimization Strategy:
+
+1. Precompute gcd of all elements: Before calling the `solve` function, calculate the gcd of all elements in the array `a` and store it in a variable `g`.
+2. Reduce the size of `seg_tree`: Change the declaration of `seg_tree` to `vector<int> seg_tree(2 * N + 5, 0)`.
+3. Remove unnecessary copying of elements: Remove the line `a[i + n] = a[i]` in the `solve` function.
+4. Replace recursion with a loop in `build_tree`: Modify the `build_tree` function to use a loop instead of recursion.
+5. Remove unused constants: Remove the declarations of `mod` and `INF` constants.
+
+Step-by-Step Explanation:
+
+1. Precompute gcd of all elements:
+   - Before the `rep(i, 1, t + 1)` loop in the `main` function, add the following code:
+     ```cpp
+     rep(i, 1, 2 * n + 1) g = __gcd(g, a[i]);
+     ```
+
+2. Reduce the size of `seg_tree`:
+   - Change the declaration of `seg_tree` to:
+     ```cpp
+     vector<int> seg_tree(2 * N + 5, 0);
+     ```
+
+3. Remove unnecessary copying of elements:
+   - Remove the line `a[i + n] = a[i]` in the `solve` function.
+
+4. Replace recursion with a loop in `build_tree`:
+   - Replace the `build_tree` function with the following optimized version:
+     ```cpp
+     void build_tree(int tree_index, int strt_i, int end_i) {
+       stack<tuple<int, int, int>> stk;
+       stk.emplace(tree_index, strt_i, end_i);
+       while (!stk.empty()) {
+         tie(tree_index, strt_i, end_i) = stk.top();
+         stk.pop();
+         if (strt_i == end_i) {
+           seg_tree[tree_index] = a[strt_i];
+           continue;
+         }
+         int mid = (strt_i + end_i) / 2;
+         stk.emplace(tree_index * 2 + 1, mid + 1, end_i);
+         stk.emplace(tree_index * 2, strt_i, mid);
+       }
+     }
+     ```
+
+5. Remove unused constants:
+   - Remove the declarations of `mod` and `INF` constants.
+
+Optimized Code:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+#define int long long int
+#define pb push_back
+#define ppb pop_back
+#define rep(i, a, n) for (int i = a; i < n; i++)
+#define repr(i, n, a) for (int i = n; i >= a; i--)
+#define yes cout << "YES\n"
+#define no cout << "NO\n"
+#define dbg(x) cout << #x << " " << x << " "
+#define F first
+#define S second
+#define endl "\n"
+const int N = 4e5 + 5;
+vector<int> seg_tree(2 * N + 5, 0);
+int a[N];
+void build_tree(int tree_index, int strt_i, int end_i) {
+  stack<tuple<int, int, int>> stk;
+  stk.emplace(tree_index, strt_i, end_i);
+  while (!stk.empty()) {
+    tie(tree_index, strt_i, end_i) = stk.top();
+    stk.pop();
+    if (strt_i == end_i) {
+      seg_tree[tree_index] = a[strt_i];
+      continue;
+    }
+    int mid = (strt_i + end_i) / 2;
+    stk.emplace(tree_index * 2 + 1, mid + 1, end_i);
+    stk.emplace(tree_index * 2, strt_i, mid);
+  }
+}
+int query(int tree_index, int strt_i, int end_i, int q_strt, int q_end) {
+  if (strt_i > q_end || end_i < q_strt)
+    return 0;
+  if (q_strt <= strt_i && q_end >= end_i)
+    return seg_tree[tree_index];
+  int mid = (strt_i + end_i) / 2;
+  int l = query(2 * tree_index, strt_i, mid, q_strt, q_end);
+  int r = query(2 * tree_index + 1, mid + 1, end_i, q_strt, q_end);
+  return __gcd(l, r);
+}
+void solve() {
+  int n;
+  cin >> n;
+  rep(i, 1, n + 1) cin >> a[i];
+  int g = 0;
+  rep(i, 1, 2 * n + 1) g = __gcd(g, a[i]);
+  build_tree(1, 1, 2 * n);
+  int ans = 0;
+  rep(i, 1, n + 1) {
+    int r = 2 * n, l = i + 1, temp = INT_MAX, cnt = 0;
+    if (a[i] == g)
+      continue;
+    while (l <= r) {
+      int mid = (l + r) / 2;
+      int x = query(1, 1, 2 * n, l, mid);
+      int y = __gcd(x, a[i]);
+      if (y == g)
+        temp = min(temp, mid - l + 1 + cnt), r = mid - 1;
+      else
+        a[i] = __gcd(a[i], x), cnt += mid - l + 1, l = mid + 1;
+    }
+    ans = max(ans, temp);
+  }
+  cout << ans << endl;
+  return;
+}
+signed main() {
+  ios::sync_with_stdio(0);
+  cin.tie(0);
+  int t = 1;
+  cin >> t;
+  rep(i, 1, t + 1) { solve(); }
+  return 0;
+}
+```
+
+This optimized code eliminates redundant gcd calculations, reduces unnecessary memory allocation, removes unnecessary copying of elements, and replaces recursion with a loop. These optimizations should improve the efficiency of the program.

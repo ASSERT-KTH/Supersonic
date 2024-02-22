@@ -1,0 +1,191 @@
+The given C++ program is a solution to a problem involving finding the maximum length of a path in a tree that can be split into multiple segments of equal length. The program uses various optimization techniques such as precomputing values and memoization to improve performance.
+
+To optimize the program further, we can make the following changes:
+
+1. Remove unnecessary includes: The program includes the `<bits/stdc++.h>` header, which includes all the standard library headers. This can increase compilation time and memory usage. We can remove this line and only include the necessary headers.
+
+2. Remove unnecessary macros: The program defines several macros that are not used in the code. We can remove these macros to improve readability.
+
+3. Remove unnecessary typedefs: The program defines several typedefs that are not used in the code. We can remove these typedefs to improve readability.
+
+4. Use standard input/output functions: The program uses custom input/output functions (`getChar()`, `ni()`, `putChar()`, `printInt()`) to read and write integers. We can replace these functions with the standard `cin` and `cout` functions for better performance.
+
+5. Replace `memset` with `fill`: The program uses `memset` to initialize arrays with a specific value. We can replace these calls with `fill` for better readability.
+
+6. Use range-based for loops: The program uses index-based for loops to iterate over vectors. We can replace these loops with range-based for loops for better readability.
+
+7. Remove unnecessary variables: The program defines several variables that are not used in the code. We can remove these variables to improve readability.
+
+8. Simplify the main function: The main function is quite long and complex. We can simplify it by splitting it into smaller functions and using meaningful variable names.
+
+Here is the optimized C++ program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <deque>
+#include <cmath>
+#include <cassert>
+
+using namespace std;
+
+const int MAXN = 400002;
+
+int a;
+vector<int> l[MAXN];
+int skok[MAXN], o[MAXN], zam[MAXN], GR[MAXN][2], mxd[MAXN], mxp[MAXN], dp[MAXN][2], sz[MAXN], good[MAXN];
+
+int CALC(int v, int p, int D) {
+    mxd[v] = 1;
+    sz[v] = 1;
+    int c1 = 0, c2 = 0;
+    for (int h : l[v]) {
+        if (h == p)
+            continue;
+        int x = CALC(h, v, D + 1);
+        mxd[v] = max(mxd[v], x + 1);
+        sz[v] += sz[h];
+        if (x >= c1)
+            c2 = c1, c1 = x;
+        else if (x > c2)
+            c2 = x;
+    }
+    mxp[v] = c1 + c2 + 1;
+    return mxd[v];
+}
+
+int find_centroid(int v, int p) {
+    int MX = 0, num = -1;
+    for (int h : l[v]) {
+        if (h != p && sz[h] > MX)
+            MX = sz[h], num = h;
+    }
+    return MX > a / 2 ? find_centroid(num, v) : v;
+}
+
+void KROLIK(int v, vector<int>& gd, vector<int>& bd) {
+    if (good[v])
+        gd.push_back(v);
+    else
+        bd.push_back(v);
+    for (int h : l[v]) {
+        if (!good[h])
+            KROLIK(h, gd, bd);
+    }
+}
+
+void RIP_PAPA(int v, int p) {
+    for (int q = 0; q < l[v].size(); q++) {
+        if (l[v][q] == p) {
+            l[v].erase(l[v].begin() + q);
+            break;
+        }
+    }
+    for (int h : l[v])
+        RIP_PAPA(h, v);
+}
+
+void rnm(int v, int& eba) {
+    zam[v] = eba++;
+    deque<int> dq = {v};
+    for (; dq.size();) {
+        int x = dq[0];
+        dq.pop_front();
+        for (int h : l[x]) {
+            if (zam[h] != -1)
+                continue;
+            dq.push_back(h);
+            zam[h] = eba++;
+        }
+    }
+}
+
+void rnm2(int v, int& iba) {
+    zam[v] = iba++;
+    deque<int> dq = {v};
+    for (; dq.size();) {
+        int x = dq[0];
+        dq.pop_front();
+        for (int h : l[x]) {
+            zam[h] = iba++;
+            if (good[h])
+                continue;
+            dq.push_back(h);
+        }
+    }
+}
+
+int GA(int LEN) {
+    if (o[LEN] != -1)
+        return o[LEN];
+    int d1, d2, w, rg;
+    for (int q = a; q >= 0; q--) {
+        if (good[q]) {
+            dp[q][0] = sz[q] / LEN;
+            dp[q][1] = sz[q] % LEN;
+            continue;
+        }
+        dp[q][0] = 0;
+        d1 = d2 = 0, w = GR[q][0], rg = GR[q][1];
+        for (; w <= rg; w++) {
+            dp[q][0] += dp[w][0];
+            if (dp[w][1] >= d1)
+                d2 = d1, d1 = dp[w][1];
+            else
+                d2 = max(d2, dp[w][1]);
+        }
+        if (d1 + d2 + 1 < LEN)
+            dp[q][1] = d1 + 1;
+        else
+            dp[q][0]++, dp[q][1] = 0;
+    }
+    return o[LEN] = dp[0][0];
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    cout.tie(nullptr);
+
+    cin >> a;
+    o[1] = a;
+    int ST = a - 1;
+    for (int q = 1; q <= a; q++)
+        skok[a / q]++;
+    for (int &i : skok)
+        i /= 2;
+    vector<pair<int, int>> reb(a - 1);
+    for (int q = 0; q < a - 1; q++) {
+        int x, y;
+        cin >> x >> y;
+        x--, y--;
+        reb[q] = {x, y};
+        l[x].push_back(y);
+        l[y].push_back(x);
+    }
+    int eba = 0;
+    rnm(0, eba);
+    for (int q = 0; q < a; q++)
+        l[q].clear();
+    for (pair<int, int> p : reb) {
+        l[zam[p.first]].push_back(zam[p.second]);
+        l[zam[p.second]].push_back(zam[p.first]);
+    }
+    RIP_PAPA(0, -1);
+    reb.clear();
+    for (int q = 0; q < a; q++) {
+        for (int h : l[q])
+            reb.push_back({q, h});
+    }
+    CALC(0, -1, 1);
+    for (int q = 0; q < a; q++)
+        good[q] = sz[q] == mxd[q];
+    fill(zam, zam + a, -1);
+    zam[0] = 0;
+    int iba = 0;
+    if (!good[0])
+        rnm2(0, iba);
+    else
+        iba = 1;
+    ST = iba - 1;
+    for (int q =

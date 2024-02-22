@@ -1,0 +1,107 @@
+Your C++ program is already quite optimized. However, there are still a couple of small improvements that could be made. Here is a step-by-step explanation of these optimizations:
+
+1. One of the major ways to optimize a C++ program is by reducing memory allocations. In your case, you can avoid the memory allocation for `node sgt0[X * 4 + 1], sgt1[X * 4 + 1];` by declaring them as global variables. Global variables are stored in the data segment of the program's memory space, which is faster to access than the stack.
+
+2. Your implementation of the inv function includes a ternary operator which checks if x is even and then performs different operations depending upon that. This can be simplified and optimized by using bitwise operators.
+
+3. In the 'update' function, you are performing 'pushdown' operation at the beginning. There is no need to perform 'pushdown' if the condition `if (l <= sgt[x].l && r >= sgt[x].r)` is true because the function will return after this condition. So, move the 'pushdown' operation after this condition.
+
+4. 'sgt[x].l' and 'sgt[x].r' are used many times. These can be stored in local variables to avoid multiple memory accesses.
+
+Now, let's create an optimized version of your program based on these explanations:
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+using namespace std;
+const int X = 1e5;
+struct node {
+  int l, r;
+  int lz;
+  int sgn;
+} sgt0[X * 4 + 1], sgt1[X * 4 + 1];
+
+inline void inv(int &x) { x = x ^ 1; }
+
+inline void pushup(node sgt[], int x) {
+  sgt[x].sgn = sgt[x << 1].sgn == sgt[x << 1 | 1].sgn ? sgt[x << 1].sgn : 0;
+}
+
+void pushdown(node sgt[], int x) {
+  if (sgt[x].lz == 2) {
+    sgt[x << 1].sgn = -sgt[x << 1].sgn;
+    sgt[x << 1 | 1].sgn = -sgt[x << 1 | 1].sgn;
+    inv(sgt[x << 1].lz);
+    inv(sgt[x << 1 | 1].lz);
+    sgt[x].lz = 0;
+  } else if (sgt[x].lz) {
+    sgt[x << 1].sgn = sgt[x].lz;
+    sgt[x << 1 | 1].sgn = sgt[x].lz;
+    sgt[x << 1].lz = sgt[x].lz;
+    sgt[x << 1 | 1].lz = sgt[x].lz;
+    sgt[x].lz = 0;
+  }
+}
+
+void build(node sgt[], int l, int r, int x) {
+  sgt[x].l = l;
+  sgt[x].r = r;
+  sgt[x].lz = 0;
+  if (l == r) {
+    sgt[x].sgn = 1;
+    return;
+  }
+  int mid = (l + r) >> 1;
+  build(sgt, l, mid, x << 1);
+  build(sgt, mid + 1, r, x << 1 | 1);
+  pushup(sgt, x);
+}
+
+void update(node sgt[], int l, int r, int x, int val) {
+  int lx = sgt[x].l, rx = sgt[x].r;
+  if (l <= lx && r >= rx) {
+    if (val == 2) {
+      inv(sgt[x].sgn);
+      inv(sgt[x].lz);
+    } else {
+      sgt[x].sgn = val;
+      sgt[x].lz = val;
+    }
+    return;
+  }
+  pushdown(sgt, x);
+  int mid = (lx + rx) >> 1;
+  if (l <= mid) {
+    update(sgt, l, r, x << 1, val);
+  }
+  if (r > mid) {
+    update(sgt, l, r, x << 1 | 1, val);
+  }
+  pushup(sgt, x);
+}
+
+int query(node sgt[], int a, int x) {
+  int lx = sgt[x].l, rx = sgt[x].r;
+  if (lx == a && rx == a) {
+    return sgt[x].sgn;
+  }
+  pushdown(sgt, x);
+  int mid = (lx + rx) >> 1;
+  return a <= mid ? query(sgt, a, x << 1) : query(sgt, a, x << 1 | 1);
+}
+
+int main() {
+  int n, q;
+  scanf("%d %d", &n, &q);
+  int a[n];
+  for (int i = 0; i < n; i++) {
+    scanf("%d", &a[i]);
+  }
+  getchar();
+  build(sgt0, 1, X, 1);
+  build(sgt1, 1, X, 1);
+  // rest of the code...
+
+  return 0;
+}
+```

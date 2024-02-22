@@ -1,0 +1,88 @@
+This program calculates the greatest common divisor (GCD) of subarrays of an array and stores the count of each GCD in a map.
+
+Here are some steps to optimize this program:
+
+1. Use `ios_base::sync_with_stdio(false); cin.tie(NULL);` to make input/output operations faster.
+
+2. Use `std::cin` and `std::cout` instead of `scanf` and `printf` for consistency. Also, it's good to use `'\n'` instead of `std::endl` to avoid unnecessary flush of the output buffer.
+
+3. To reduce the memory usage, we can remove the array `a` and directly store the input into `st[i][0]`. No need to keep two copies of the same data.
+
+4. Use prefix increment (++i) instead of postfix (i++) in loops. This is because postfix increment involves a copy of `i` before incrementing, while prefix does not.
+
+5. Use `auto` when declaring the iterator `it` in the for loop to simplify the code.
+
+The optimized code is as follows:
+
+```cpp
+#include <cstdio>
+#include <cstdlib>
+#include <iostream>
+#include <map>
+using namespace std;
+
+int gcd(int a, int b) {
+  if (b == 0) {
+    return a;
+  }
+  return gcd(b, a % b);
+}
+
+int n;
+int q;
+map<int, long long> ans;
+int st[100100][20];
+int get_log[200100];
+
+int get(int l, int r) {
+  int sz = get_log[r - l];
+  return gcd(st[l][sz], st[r - (1LL << sz)][sz]);
+}
+
+signed main() {
+  ios_base::sync_with_stdio(false); cin.tie(NULL);
+  get_log[1] = 0;
+  for (int i = 2; i < 200000; ++i) {
+    get_log[i] = get_log[i - 1];
+    while ((1 << get_log[i]) <= i)
+      ++get_log[i];
+    --get_log[i];
+  }
+  cin >> n;
+  for (int i = 0; i < n; ++i) {
+    cin >> st[i][0];
+  }
+  for (int nowP = 1; nowP < 20; ++nowP) {
+    for (int i = 0; i + (1LL << nowP) <= n; ++i) {
+      st[i][nowP] = gcd(st[i][nowP - 1], st[i + (1LL << (nowP - 1))][nowP - 1]);
+    }
+  }
+  for (int L = 0; L < n; ++L) {
+    int prev_ind = L;
+    int now_ind = L;
+    while (now_ind < n) {
+      int now_gcd = get(L, now_ind + 1);
+      int l = now_ind;
+      int r = n;
+      while (r - l > 1) {
+        int m = (l + r) / 2;
+        int x = get(L, m + 1);
+        if (x < now_gcd)
+          r = m;
+        else
+          l = m;
+      }
+      ans[now_gcd] += r - prev_ind;
+      now_ind = r;
+      prev_ind = r;
+    }
+  }
+  cin >> q;
+  while (q--) {
+    int x;
+    cin >> x;
+    cout << ans[x] << '\n';
+  }
+  return 0;
+}
+```

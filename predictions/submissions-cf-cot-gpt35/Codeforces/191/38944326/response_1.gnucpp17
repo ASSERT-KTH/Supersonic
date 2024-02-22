@@ -1,0 +1,107 @@
+#include <cstdio>
+#include <map>
+#include <vector>
+
+const int N = 100001;
+int par[N], hev[N], siz[N], dep[N], top[N], dif[N], bak[N];
+int edg[N][2];
+std::map<std::pair<int, int>, int> ans;
+
+void dfs(int u) {
+  siz[u] = 1;
+  hev[u] = -1;
+  for (int i = 0; i < siz[u]; i++) {
+    int v = edg[u][i];
+    if (v == par[u])
+      continue;
+    par[v] = u;
+    dep[v] = dep[u] + 1;
+    dfs(v);
+    siz[u] += siz[v];
+    if (hev[u] == -1 || siz[v] > siz[hev[u]])
+      hev[u] = v;
+  }
+}
+
+void dfs2(int u) {
+  for (int i = 0; i < siz[u]; i++) {
+    int v = edg[u][i];
+    if (v == par[u])
+      continue;
+    if (v == hev[u])
+      top[v] = top[u];
+    else
+      top[v] = v;
+    dfs2(v);
+  }
+}
+
+void path(int u, int v) {
+  while (true) {
+    if (top[u] == top[v]) {
+      if (dep[u] > dep[v])
+        std::swap(u, v);
+      dif[u]++;
+      dif[v]--;
+      return;
+    }
+    if (dep[top[u]] > dep[top[v]])
+      std::swap(u, v);
+    dif[top[v]]++;
+    dif[v]--;
+    bak[top[v]]++;
+    v = par[top[v]];
+  }
+}
+
+void dfs3(int u, int cnt) {
+  for (int i = 0; i < siz[u]; i++) {
+    int v = edg[u][i];
+    if (v == par[u])
+      continue;
+    if (v == hev[u]) {
+      ans[std::make_pair(std::min(u, v), std::max(u, v))] += cnt + dif[u];
+      dfs3(v, cnt + dif[u]);
+    } else {
+      ans[std::make_pair(std::min(u, v), std::max(u, v))] += bak[v];
+      dfs3(v, 0);
+    }
+  }
+}
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(nullptr);
+
+  int n, k, u, v;
+  std::scanf("%d\n", &n);
+  for (int i = 0; i < n - 1; i++) {
+    std::scanf("%d%d", &u, &v);
+    u--;
+    v--;
+    edg[u][i] = v;
+    edg[v][i] = u;
+    ans[std::make_pair(u, v)] = 0;
+  }
+  par[0] = 0;
+  dep[0] = 0;
+  dfs(0);
+  top[0] = 0;
+  dfs2(0);
+  std::memset(dif, 0, sizeof(dif));
+  std::memset(bak, 0, sizeof(bak));
+  std::scanf("%d\n", &k);
+  while (k--) {
+    std::scanf("%d%d", &u, &v);
+    u--;
+    v--;
+    path(u, v);
+  }
+  dfs3(0, 0);
+  std::printf("%d", ans[std::make_pair(edg[0][0], edg[0][1])]);
+  for (int i = 1; i < n - 1; i++)
+    std::printf(" %d", ans[std::make_pair(edg[i][0], edg[i][1])]);
+  std::cout << '\n';
+
+  return 0;
+}

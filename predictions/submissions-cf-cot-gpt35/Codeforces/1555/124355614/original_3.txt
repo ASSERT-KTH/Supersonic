@@ -1,0 +1,106 @@
+The given program is using a segment tree to solve a range update and range minimum query problem. The program takes an input `n` and `m`, where `n` is the number of intervals and `m` is the length of the range. It then reads `n` intervals and stores them in a vector of pairs. The intervals are sorted by their weights in ascending order. 
+
+The program initializes a pointer `ptr` to -1 and an answer variable `ans` to `INT_MAX`. It then iterates over each interval `i` from 0 to `n-1`. 
+
+Inside the loop, it calls the `add` function to subtract 1 from the interval `i-1` and adds 1 to the interval `ptr+1` until the minimum value in the segment tree `t[1]` is not equal to 0. It then checks if `t[1]` is non-zero and updates the answer `ans` with the difference between the weight of the current interval `i` and the weight of the interval `ptr`.
+
+Finally, it prints the answer `ans`.
+
+To optimize this program, we can make the following changes:
+
+1. Remove unnecessary includes: The program includes the entire `bits/stdc++.h` header, which is not needed. We can remove this include and add specific includes for the required libraries.
+
+2. Use `constexpr` instead of `const`: The program defines `N` as a constant. We can use `constexpr` instead of `const` to allow the compiler to evaluate the constant at compile time.
+
+3. Use `memset` instead of a loop to initialize arrays: The program initializes the `t` and `push` arrays to 0. We can use `memset` to initialize these arrays in a more efficient way.
+
+4. Avoid unnecessary calculations in the `add` function: The `add` function calculates the mid-point `tm` in each recursive call. We can calculate `tm` only once at the beginning and reuse it in both recursive calls.
+
+5. Use a more efficient sorting algorithm: The program uses `std::sort` to sort the intervals based on their weights. We can use a more efficient sorting algorithm like `std::stable_sort` since we don't require a total order.
+
+6. Avoid unnecessary comparisons and additions in the main loop: In each iteration of the main loop, the program checks if `i > 0` and performs an additional `add` operation. We can avoid this by initializing the tree before the loop and starting the loop from `i=1`.
+
+7. Use a more efficient data structure for `push` and `t` arrays: The program uses an array of size `4*N` for the `push` and `t` arrays. We can use a `std::vector` instead of an array to avoid potential overflow issues.
+
+8. Use `reserve` for the vector `s`: The program uses a vector `s` to store the intervals. We can use `reserve` to allocate memory for the vector in advance, based on the value of `n`, to avoid reallocation and improve performance.
+
+Here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <climits>
+
+constexpr int N = 2e6 + 5;
+
+std::vector<int> t(4 * N);
+std::vector<int> push(4 * N);
+
+void makepush(int v, int tl, int tr) {
+  if (!push[v])
+    return;
+  if (tl != tr) {
+    push[v * 2] += push[v];
+    push[v * 2 + 1] += push[v];
+    t[v * 2] += push[v];
+    t[v * 2 + 1] += push[v];
+  }
+  push[v] = 0;
+}
+
+void add(int v, int tl, int tr, int l, int r, int x) {
+  if (l > r)
+    return;
+  makepush(v, tl, tr);
+  if (tl == l && tr == r) {
+    t[v] += x;
+    push[v] += x;
+    return;
+  }
+  int tm = (tl + tr) / 2;
+  add(v * 2, tl, tm, l, std::min(r, tm), x);
+  add(v * 2 + 1, tm + 1, tr, std::max(l, tm + 1), r, x);
+  t[v] = std::min(t[v * 2], t[v * 2 + 1]);
+}
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(nullptr);
+  std::cout.tie(nullptr);
+
+  int n, m;
+  std::cin >> n >> m;
+
+  std::vector<std::pair<int, std::pair<int, int>>> s;
+  s.reserve(n);
+
+  for (int i = 0; i < n; ++i) {
+    int l, r, w;
+    std::cin >> l >> r >> w;
+    s.push_back({w, {l, r - 1}});
+  }
+
+  std::stable_sort(s.begin(), s.end(),
+       [&](const std::pair<int, std::pair<int, int>>& x,
+           const std::pair<int, std::pair<int, int>>& y) { return x.first < y.first; });
+
+  int ptr = -1, ans = INT_MAX;
+
+  add(1, 1, m - 1, s[0].second.first, s[0].second.second, 1);
+
+  for (int i = 1; i < n; ++i) {
+    while (ptr + 1 < n && t[1] == 0) {
+      ++ptr;
+      add(1, 1, m - 1, s[ptr].second.first, s[ptr].second.second, 1);
+    }
+    if (t[1])
+      ans = std::min(ans, s[ptr].first - s[i].first);
+    add(1, 1, m - 1, s[i].second.first, s[i].second.second, -1);
+  }
+
+  std::cout << ans;
+
+  return 0;
+}
+```

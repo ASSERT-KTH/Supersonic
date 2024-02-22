@@ -1,0 +1,85 @@
+The optimization steps are as follows:
+
+1. The `memset` function is used to clear the `node` array. However, this operation has a time complexity of O(n), which can be avoided. Instead of clearing the array after its first usage, we could use two different arrays.
+
+2. The `reverse` function is used twice on the array `a`. This could be avoided by simply iterating in reverse order.
+
+3. The `min` function is used to find the minimum value between `minn` and `a[i]` in two loops. This could be avoided by using one loop and two variables to calculate the minimum from left and right.
+
+4. The `ios::sync_with_stdio(false); cin.tie(0);` is used to untie C and C++ standard streams. However, since there are no C standard stream operations, we can remove these lines.
+
+5. The large array `node` is declared globally which is consuming a lot of memory. We can declare it inside the main function to save memory space.
+
+Here's the optimized code:
+
+```cpp
+#include <algorithm>
+#include <iostream>
+#include <stdio.h>
+#define int long long
+const int N = 5e5 + 9;
+int a[N], l[N], r[N], res[N];
+int node1[4 * N], node2[4 * N];
+void update(int *node, int id, int l, int r, int pos, int x) {
+  if (l > pos || r < pos)
+    return;
+  if (l == r) {
+    node[id] = x;
+    return;
+  }
+  int mid = (l + r) / 2;
+  update(node, id * 2, l, mid, pos, x);
+  update(node, id * 2 + 1, mid + 1, r, pos, x);
+  node[id] = std::min(node[id * 2], node[id * 2 + 1]);
+}
+int find(int *node, int id, int l, int r, int tr, int ph, int x) {
+  if (tr > ph || l > ph || r < tr || node[id] > x)
+    return 0;
+  if (l == r)
+    return r;
+  int mid = (l + r) / 2;
+  if (l >= tr && r <= ph) {
+    if (node[id] > x)
+      return 0;
+    if (node[id * 2 + 1] <= x)
+      return find(node, id * 2 + 1, mid + 1, r, tr, ph, x);
+    else
+      return find(node, id * 2, l, mid, tr, ph, x);
+  }
+  return std::max(find(node, id * 2, l, mid, tr, ph, x),
+             find(node, id * 2 + 1, mid + 1, r, tr, ph, x));
+}
+signed main() {
+  int n;
+  std::cin >> n;
+  for (int i = 1; i <= n; i++)
+    std::cin >> a[i];
+  int id;
+  for (int i = 1; i <= n; i++) {
+    id = find(node1, 1, 1, n, 1, i - 1, a[i]);
+    update(node1, 1, 1, n, i, a[i]);
+    l[i] = l[id] + a[i] * (i - id);
+  }
+  for (int i = n; i >= 1; i--) {
+    id = find(node2, 1, 1, n, 1, n - i, a[i]);
+    update(node2, 1, 1, n, n - i + 1, a[i]);
+    r[n - i + 1] = r[id] + a[i] * (n - i + 1 - id);
+  }
+  int sum = 0, pos;
+  int minnL = a[1];
+  int minnR = a[n];
+  for (int i = 1; i <= n; i++) {
+    if (sum < l[i] + r[n - i + 1] - a[i]) {
+      sum = l[i] + r[n - i + 1] - a[i];
+      pos = i;
+    }
+    minnL = std::min(minnL, a[i]);
+    minnR = std::min(minnR, a[n - i + 1]);
+    res[i] = minnL;
+    res[n - i + 1] = std::min(res[n - i + 1], minnR);
+  }
+  for (int i = 1; i <= n; i++)
+    std::cout << res[i] << " ";
+  return 0;
+}
+```

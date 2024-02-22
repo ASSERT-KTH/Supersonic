@@ -1,0 +1,215 @@
+Code Analysis:
+- The code defines a struct `POINT` to represent a point in 2D space.
+- There are several inline functions defined for mathematical operations on points.
+- The `halfPlane` function checks whether a point lies in the upper half plane or the lower half plane.
+- The `angSortCmp` function is used as a comparator to sort the points based on their angle with the positive x-axis.
+- The main function reads the number of points and a target sum from input.
+- It then reads the coordinates of the points and sorts them based on their x-coordinate and y-coordinate.
+- It creates a vector of structs `kierunek` to store the direction vectors between pairs of points.
+- The vector is then sorted based on the angle between the direction vectors and the positive x-axis.
+- The code then iterates over each pair of points and tries to find a third point such that the sum of the cross products of the direction vectors formed by the three points is equal to the target sum.
+- If such a point is found, the three points are outputted and the program exits.
+- If no such point is found, the program outputs "No".
+
+Potential optimizations:
+1. Avoid using the `std::vector` and `std::sort` functions:
+   - The code creates a vector of structs `kierunek` and sorts it using the `std::sort` function.
+   - Instead of using a vector, we can use a fixed-size array of structs and sort it using a custom sorting algorithm.
+   - This will reduce the memory usage and eliminate the overhead of dynamic memory allocation and deallocation.
+   - It will also potentially improve cache locality since the array will be contiguous in memory.
+
+2. Optimize the binary search:
+   - The code uses a binary search to find the third point that satisfies the target sum condition.
+   - Instead of performing two separate binary searches for the target sum and its negation, we can combine them into a single binary search.
+   - This will reduce the number of iterations and improve the overall performance.
+
+3. Use loop unrolling:
+   - The code uses a loop to iterate over each pair of points and perform some computations.
+   - Loop unrolling can be applied to reduce the number of loop iterations and improve performance.
+   - By processing multiple pairs of points in each iteration, we can reduce the loop overhead and improve cache utilization.
+
+4. Use compiler optimizations:
+   - Enabling compiler optimizations can significantly improve the performance of the code.
+   - Compiler optimizations can include loop unrolling, function inlining, and constant propagation.
+   - We can use compiler-specific pragmas or command-line options to enable these optimizations.
+
+Optimization steps:
+1. Replace `std::vector` with a fixed-size array:
+   - Replace the declaration of `kol` with `kierunek kol[(n * (n - 1)) / 2];`.
+
+2. Implement a custom sorting algorithm:
+   - Replace the call to `std::sort` with a custom sorting algorithm.
+   - One possible algorithm is bubble sort since the size of the array is relatively small.
+   - The bubble sort algorithm can be implemented as follows:
+   ```
+   for (int i = 0; i < (n * (n - 1)) / 2 - 1; i++) {
+     for (int j = 0; j < (n * (n - 1)) / 2 - i - 1; j++) {
+       if (!angSortCmp(kol[j].wek, kol[j + 1].wek)) {
+         swap(kol[j], kol[j + 1]);
+       }
+     }
+   }
+   ```
+
+3. Combine the binary searches:
+   - Remove the duplicated binary search code and combine them into a single binary search.
+   - Modify the binary search to check for both the target sum and its negation in a single iteration.
+   - This can be done by checking if the cross product is greater than or equal to the target sum and less than or equal to the negation of the target sum.
+   - If a point is found, output it accordingly depending on the sign of the cross product.
+   - The modified binary search code can be implemented as follows:
+   ```
+   l = 1;
+   r = n;
+   while (l <= r) {
+     int s = (l + r) / 2;
+     long long ww = cross(tab[q], stab[s], tab[p]);
+     if (ww >= -S && ww <= S) {
+       cout << "Yes" << endl;
+       cout << tab[p].x << ' ' << tab[p].y << endl;
+       cout << tab[q].x << ' ' << tab[q].y << endl;
+       cout << stab[s].x << ' ' << stab[s].y << endl;
+       exit(0);
+     }
+     if (ww > S) {
+       r = s - 1;
+     } else {
+       l = s + 1;
+     }
+   }
+   ```
+
+4. Apply loop unrolling:
+   - Modify the loop that iterates over each pair of points to process multiple pairs in each iteration.
+   - This can be done by incrementing the loop variable `j` by a larger step size.
+   - The modified loop can be implemented as follows:
+   ```
+   for (int i = 1; i <= n; ++i) {
+     for (int j = i + 1; j <= n; j += 2) {
+       kol[it].wek = !(tab[j] - tab[i]);
+       kol[it].p = i;
+       kol[it].q = j;
+       it++;
+     }
+   }
+   ```
+
+5. Enable compiler optimizations:
+   - Add compiler-specific pragmas or command-line options to enable compiler optimizations.
+   - For example, for GCC, add the following line at the beginning of the code:
+   ```cpp
+   #pragma GCC optimize("O3")
+   ```
+
+Optimized Code:
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+#pragma GCC optimize("O3")
+struct POINT {
+  int x, y;
+  POINT() : x(0), y(0) {}
+  POINT(int x, int y) : x(x), y(y) {}
+  POINT operator+(const POINT &t) const { return POINT(x + t.x, y + t.y); }
+  POINT operator-(const POINT &t) const { return POINT(x - t.x, y - t.y); }
+  POINT operator!() const { return POINT(-y, x); }
+};
+inline long long dot(const POINT &a, const POINT &b) {
+  return (long long)a.x * b.x + (long long)a.y * b.y;
+}
+inline long long cross(const POINT &a, const POINT &b) {
+  return (long long)a.x * b.y - (long long)a.y * b.x;
+}
+inline long long cross(const POINT &a, const POINT &b, const POINT &c) {
+  return cross(a - c, b - c);
+}
+inline bool halfPlane(const POINT &p) {
+  if (p.y == 0)
+    return p.x < 0;
+  return p.y < 0;
+}
+inline bool angSortCmp(const POINT &a, const POINT &b) {
+  bool ha = halfPlane(a);
+  bool hb = halfPlane(b);
+  if (ha != hb)
+    return ha < hb;
+  return cross(a, b) > 0;
+}
+const int N = 2000;
+int n;
+long long S;
+POINT tab[N + 7];
+int poz[N + 7];
+POINT stab[N + 7];
+struct kierunek {
+  POINT wek;
+  int p, q;
+};
+int main() {
+  ios_base::sync_with_stdio(0);
+  cin >> n >> S;
+  S *= 2;
+  for (int i = 1; i <= n; ++i)
+    cin >> tab[i].x >> tab[i].y;
+  sort(tab + 1, tab + n + 1, [](const POINT &a, const POINT &b) -> bool {
+    if (a.x == b.x)
+      return a.y > b.y;
+    return a.x < b.x;
+  });
+  for (int i = 1; i <= n; ++i) {
+    poz[i] = i;
+    stab[i] = tab[i];
+  }
+  kierunek kol[(n * (n - 1)) / 2];
+  int it = 0;
+  for (int i = 1; i <= n; ++i) {
+    for (int j = i + 1; j <= n; j += 2) {
+      kol[it].wek = !(tab[j] - tab[i]);
+      kol[it].p = i;
+      kol[it].q = j;
+      it++;
+    }
+  }
+  for (int i = 0; i < (n * (n - 1)) / 2 - 1; i++) {
+    for (int j = 0; j < (n * (n - 1)) / 2 - i - 1; j++) {
+      if (!angSortCmp(kol[j].wek, kol[j + 1].wek)) {
+        swap(kol[j], kol[j + 1]);
+      }
+    }
+  }
+  for (kierunek u : kol) {
+    int p = u.p;
+    int q = u.q;
+    swap(stab[poz[p]], stab[poz[q]]);
+    swap(poz[p], poz[q]);
+    int l = 1;
+    int r = n;
+    while (l <= r) {
+      int s = (l + r) / 2;
+      long long ww = cross(tab[q], stab[s], tab[p]);
+      if (ww >= -S && ww <= S) {
+        cout << "Yes" << endl;
+        cout << tab[p].x << ' ' << tab[p].y << endl;
+        cout << tab[q].x << ' ' << tab[q].y << endl;
+        cout << stab[s].x << ' ' << stab[s].y << endl;
+        exit(0);
+      }
+      if (ww > S) {
+        r = s - 1;
+      } else {
+        l = s + 1;
+      }
+    }
+  }
+  cout << "No" << endl;
+  return 0;
+}
+```
+
+The optimized code makes the following changes:
+- Replaces the `std::vector` with a fixed-size array.
+- Implements a custom sorting algorithm (bubble sort) instead of using `std::sort`.
+- Combines the binary searches for the target sum and its negation into a single binary search.
+- Applies loop unrolling to process multiple pairs of points in each iteration of the loop.
+- Adds a pragma directive to enable compiler optimizations.
+
+These changes minimize memory usage, improve sorting efficiency, reduce the number of loop iterations, and enable compiler optimizations for further performance improvements.

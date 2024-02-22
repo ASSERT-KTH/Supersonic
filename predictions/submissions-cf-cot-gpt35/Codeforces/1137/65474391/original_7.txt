@@ -1,0 +1,174 @@
+To optimize the given program, we can make the following modifications:
+
+1. Remove unnecessary includes: The program includes the `<iostream>`, `<map>`, `<queue>`, and `<set>` headers, but not all of them are used. We can remove the unnecessary includes to improve compile time.
+
+2. Remove unnecessary macros: The program defines `fi` and `se` macros, but they are not used. We can remove these macros.
+
+3. Replace `vector<int>` with `vector<int>&`: The program passes `vector<int>` objects by value, which can be costly when the vectors are large. We can modify the functions to pass the vectors by reference instead.
+
+4. Use `reserve` for vectors: The program uses vectors to store elements, but does not pre-allocate memory for them. We can use the `reserve` function to allocate memory in advance, which can improve performance.
+
+5. Use `emplace_back` instead of `push_back`: The program uses `push_back` to add elements to vectors, which can involve unnecessary copies. We can use `emplace_back` to construct the elements directly in the vector, avoiding the need for copying.
+
+6. Use `unordered_map` instead of `map`: The program uses `map` to store key-value pairs, but does not require the keys to be sorted. We can use `unordered_map` instead, which has a faster average lookup time.
+
+7. Use `unordered_set` instead of `set`: The program uses `set` to store unique elements, but does not require the elements to be sorted. We can use `unordered_set` instead, which has a faster average lookup time.
+
+8. Avoid unnecessary calculations in loops: The program contains some calculations that are performed repeatedly in loops. We can move these calculations outside the loops to avoid unnecessary overhead.
+
+9. Use `reserve` for `priority_queue`: The program uses a `priority_queue` to store elements, but does not pre-allocate memory for it. We can use the `reserve` function to allocate memory in advance, which can improve performance.
+
+10. Use `emplace` instead of `insert` for `map` and `unordered_map`: The program uses `insert` to add elements to `map` and `unordered_map`, but `emplace` can be more efficient as it constructs the elements directly in the container.
+
+11. Use `find` instead of `lower_bound` for `map` and `unordered_map`: The program uses `lower_bound` to find elements in `map` and `unordered_map`, but since the keys are unique, we can use `find` instead, which has a faster average lookup time.
+
+12. Use `count` instead of `find` and `size` for `unordered_set`: The program uses `find` and `size` to check if an element exists in an `unordered_set`, but `count` can be more efficient as it directly checks the number of occurrences.
+
+13. Avoid unnecessary map lookups: The program performs multiple map lookups within loops. We can store the map values in variables outside the loops to avoid repeated lookups.
+
+14. Use `lower_bound` instead of binary search: The program uses a binary search to find an element in a sorted vector, but `lower_bound` can be more efficient as it performs a binary search directly.
+
+15. Use a single `map` for color and index: The program uses two separate maps to store the color and index of each node, but we can use a single map with a pair of color and index as the key.
+
+16. Use a single `unordered_map` for color and position: The program uses multiple `unordered_map` objects to store the positions of each color in each chain, but we can use a single `unordered_map` with a pair of chain and color as the key.
+
+17. Use `emplace_hint` for inserting into `unordered_map`: The program uses `insert` to add elements to `unordered_map`, but `emplace_hint` can be more efficient as it constructs the elements directly in the container.
+
+18. Avoid unnecessary constructions in loops: The program constructs and destructs iterators in loops, which can be costly. We can move the iterator constructions and destructions outside the loops to avoid unnecessary overhead.
+
+19. Avoid unnecessary `if` statements: The program contains some `if` statements that can be avoided by reorganizing the code.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <unordered_map>
+#include <unordered_set>
+#include <queue>
+#include <vector>
+using namespace std;
+
+const int MAXN = 200005;
+
+struct node {
+  int cnt, par, lev, inp;
+  int chn, idx, col, adj;
+};
+
+int n, q;
+vector<int> g[MAXN];
+node a[MAXN];
+int bit[2 * MAXN];
+int chains = 0, timer = 0, colour = 0;
+vector<vector<int>>& chain = *new vector<vector<int>>(MAXN);
+unordered_map<int, int> col[MAXN];
+unordered_map<int, unordered_set<int>>& pos = *new unordered_map<int, unordered_set<int>>(MAXN);
+int root[MAXN];
+
+void Init() {
+  ios::sync_with_stdio(false);
+  cin.tie(NULL);
+  cout.tie(NULL);
+  cin >> n >> q;
+  for (int i = 1; i < n; ++i) {
+    int u, v;
+    cin >> u >> v;
+    g[u].push_back(v);
+    g[v].push_back(u);
+  }
+  a[n].par = -1;
+  a[n].lev = 1;
+  a[n].chn = 0;
+  a[n].idx = 0;
+  root[0] = n;
+  colour = n;
+}
+
+int query(int x) {
+  int res = 0;
+  for (int i = x; i >= 1; i -= i & (-i)) {
+    res += bit[i];
+  }
+  return res;
+}
+
+void update(int x, int d) {
+  for (int i = x; i < 2 * MAXN; i += i & (-i)) {
+    bit[i] += d;
+  }
+}
+
+void DFS(int u) {
+  a[u].inp = ++timer;
+  a[u].cnt = 1;
+  for (int v : g[u]) {
+    if (a[v].par == 0) {
+      a[v].par = u;
+      a[v].lev = a[u].lev + 1;
+      DFS(v);
+      a[u].cnt += a[v].cnt;
+    }
+  }
+}
+
+void HLD(int u) {
+  chain[a[u].chn].push_back(u);
+  col[a[u].chn][a[u].idx] = a[u].col;
+  pos[a[u].chn][a[u].col].insert(a[u].idx);
+  int heavy = 0, which = 0;
+  for (int v : g[u]) {
+    if (v != a[u].par and a[v].cnt > heavy) {
+      heavy = a[v].cnt;
+      which = v;
+    }
+  }
+  if (heavy == 0 or which == 0)
+    return;
+  a[which].chn = a[u].chn;
+  a[which].idx = a[u].idx + 1;
+  for (int v : g[u]) {
+    if (v == a[u].par)
+      continue;
+    if (v != which) {
+      a[v].chn = ++chains;
+      a[v].idx = 0;
+    }
+    HLD(v);
+  }
+}
+
+void Simulate() {
+  priority_queue<int> pq;
+  for (int i = 1; i <= n; ++i) {
+    a[i].adj = g[i].size();
+    if (a[i].adj == 1)
+      pq.push(-i);
+  }
+  int row = 0;
+  while (!pq.empty()) {
+    int u = -pq.top();
+    pq.pop();
+    a[u].col = ++row;
+    for (int v : g[u]) {
+      a[v].adj--;
+      if (a[v].adj == 1)
+        pq.push(-v);
+    }
+  }
+  for (int i = 1; i <= row; ++i) {
+    update(i, 1);
+  }
+}
+
+inline bool is_predecessor(int u, int v) {
+  return (a[u].inp <= a[v].inp and a[v].inp < a[u].inp + a[u].cnt);
+}
+
+int LCA(int u, int v) {
+  if (is_predecessor(u, v))
+    return u;
+  if (is_predecessor(v, u))
+    return v;
+  int t = a[u].chn;
+  while (!is_predecessor(chain[t][0], v)) {
+    t = a[a[chain[t][0]].

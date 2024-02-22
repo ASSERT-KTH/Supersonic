@@ -1,0 +1,156 @@
+To optimize the given C/C++ program, we can make the following modifications:
+
+1. Remove unnecessary header files: The program includes many header files that are not used in the code. We can remove those unused header files to reduce compilation time and memory usage.
+
+2. Remove unnecessary function definitions: The program includes several unused function definitions, such as `toStr`, `toInt`, `toBinStr`, `rnd`, and `random_gen`. We can remove those unused function definitions to reduce code size and memory usage.
+
+3. Remove unnecessary global variables: The program defines several global variables that are not used in the code, such as `MAX_NODE` and `RNG`. We can remove those unused global variables to reduce memory usage.
+
+4. Remove unnecessary comments: The program includes many unnecessary comments that do not provide any useful information. We can remove those unnecessary comments to reduce code size.
+
+5. Remove unnecessary preprocessor directives: The program includes several unnecessary preprocessor directives, such as `#pragma comment(linker, "/stack:200000000")`, `#pragma GCC optimize("Ofast,no-stack-protector")`, and `#pragma GCC target("avx")`. We can remove those unnecessary preprocessor directives to simplify the code.
+
+6. Simplify data structures: The program uses a `set` and a `vector` to store edges of the minimum spanning tree (MST). We can simplify the data structures by using only a `vector` to store the edges of the MST. This will reduce memory usage.
+
+7. Simplify sorting: The program sorts the neighbors of node 1 based on their degrees and node values. We can simplify the sorting process by sorting only based on node values.
+
+8. Remove unnecessary variables: The program defines several variables that are not used, such as `A`, `B`, `C`, and `D`. We can remove those unnecessary variables to reduce memory usage.
+
+9. Simplify output: The program uses `printf` to output the edges of the MST. We can simplify the output process by using `cout` instead of `printf`.
+
+Here is the optimized C/C++ program:
+
+```cpp
+#include <algorithm>
+#include <iostream>
+#include <vector>
+using namespace std;
+
+const int MAXN = 2e5 + 100;
+
+int deg[MAXN];
+int chose[MAXN];
+int par[MAXN];
+vector<int> g[MAXN], g_MST[MAXN];
+vector<pair<int, int>> edge, MST;
+
+bool cmp(int u, int v) {
+  return u < v;
+}
+
+void dfs(int u) {
+  for (auto v : g[u]) {
+    if (par[v] != -1) continue;
+    par[v] = u;
+    g_MST[u].push_back(v);
+    g_MST[v].push_back(u);
+    dfs(v);
+  }
+}
+
+void build_tree(int u) {
+  for (auto v : g_MST[u]) {
+    if (par[v] == -1) {
+      par[v] = u;
+      build_tree(v);
+    }
+  }
+}
+
+void output_MST() {
+  cout << "YES\n";
+  for (auto x : MST) {
+    cout << x.first << " " << x.second << "\n";
+  }
+}
+
+int main() {
+  int n, m, k;
+  cin >> n >> m >> k;
+
+  while (m--) {
+    int u, v;
+    cin >> u >> v;
+    g[u].push_back(v);
+    g[v].push_back(u);
+    ++deg[u];
+    ++deg[v];
+    edge.emplace_back(u, v);
+  }
+
+  if (deg[1] < k) {
+    cout << "NO";
+    return 0;
+  }
+
+  sort(g[1].begin(), g[1].end(), cmp);
+
+  int cnt = 0;
+  for (auto v : g[1]) {
+    if (deg[v] == 1) {
+      ++cnt;
+      par[v] = 1;
+      g_MST[1].push_back(v);
+      g_MST[v].push_back(1);
+      MST.emplace_back(1, v);
+      if (cnt == k) {
+        output_MST();
+        return 0;
+      }
+    }
+  }
+
+  for (auto v : g[1]) {
+    if (deg[v] == 1) continue;
+    if (par[v] != -1) continue;
+    par[v] = 1;
+    g_MST[1].push_back(v);
+    g_MST[v].push_back(1);
+    chose[v] = true;
+    dfs(v);
+    ++cnt;
+    if (cnt == k) break;
+  }
+
+  for (auto E : edge) {
+    int u = E.first, v = E.second;
+    if (u == 1 || v == 1) continue;
+    if (par[u] != -1 && par[v] != -1) continue;
+    if (par[u] == -1) par[u] = u;
+    if (par[v] == -1) par[v] = v;
+    g_MST[u].push_back(v);
+    g_MST[v].push_back(u);
+    MST.emplace_back(u, v);
+  }
+
+  if (cnt > k || MST.size() < n - 1) {
+    cout << "NO";
+    return 0;
+  }
+
+  if (cnt == k) {
+    output_MST();
+    return 0;
+  }
+
+  int root = 1;
+  par[root] = root;
+  build_tree(root);
+
+  for (auto v : g[1]) {
+    if (!chose[v]) {
+      int p = par[v];
+      if (p == 1) continue;
+      MST.erase(remove(MST.begin(), MST.end(), make_pair(p, v)), MST.end());
+      MST.emplace_back(1, v);
+      par[v] = 1;
+      ++cnt;
+      if (cnt == k) break;
+    }
+  }
+
+  output_MST();
+
+  return 0;
+}
+```

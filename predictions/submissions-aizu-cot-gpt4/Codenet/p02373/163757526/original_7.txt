@@ -1,0 +1,82 @@
+The given program is already optimized in terms of running time and memory usage. It uses the depth-first search (DFS) algorithm to solve the Lowest Common Ancestor problem on a tree. The Sparse Table (ST) data structure is used to store the depth and node value of each node, which is efficient in both space and time. The dfs function uses tail recursion which can be optimized by the compiler to run as efficiently as a loop. 
+
+However, the only two small improvements that I can suggest are:
+
+1. Using cin and cout can sometimes be slower than scanf and printf due to synchronization issues. So, we can disable the synchronization between the C and C++ standard streams by using `ios::sync_with_stdio(false)`.
+
+2. `cin.tie(NULL)` can be used to untie cin from cout. By default, before each input operation, cin checks whether there is an output operation pending on cout and if so, it executes it. This is not required here and can be disabled to make cin and cout independent of each other which can speed up the execution time.
+
+Here is the modified program:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+#define fi first
+#define se second
+typedef pair<int, int> ii;
+typedef vector<int> vi;
+const int MAXN = 100005;
+const int LOGN = 20;
+int idx_in_path[MAXN];
+ii path[MAXN << 1];
+vi adjList[MAXN];
+int path_size = 0;
+
+void dfs(int u, int depth = 0) {
+  idx_in_path[u] = path_size;
+  path[path_size++] = ii(depth, u);
+  for (int v : adjList[u]) {
+    dfs(v, depth + 1);
+    path[path_size++] = ii(depth, u);
+  }
+}
+
+ii ST[LOGN][MAXN << 1];
+
+void build(int n) {
+  int h = ceil(log2(n + 1));
+  for (int i = 0; i < n; i++)
+    ST[0][i] = path[i];
+  for (int i = 1; i < h; i++)
+    for (int j = 0; j + (1 << i) <= n; j++)
+      ST[i][j] = min(ST[i - 1][j], ST[i - 1][j + (1 << (i - 1))]);
+}
+
+int lca(int u, int v) {
+  int l = idx_in_path[u], r = idx_in_path[v];
+  if (l > r)
+    swap(l, r);
+  r++;
+  int p = 31 - __builtin_clz(r - l);
+  return min(ST[p][l], ST[p][r - (1 << p)]).se;
+}
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(NULL);
+  
+  int num_nodes;
+  cin >> num_nodes;
+  for (int u = 0; u < num_nodes; u++) {
+    int num_neighbors;
+    cin >> num_neighbors;
+    for (int i = 0; i < num_neighbors; i++) {
+      int v;
+      cin >> v;
+      adjList[u].push_back(v);
+    }
+  }
+  dfs(0);
+  build(path_size);
+  int num_queries;
+  cin >> num_queries;
+  for (int i = 0; i < num_queries; i++) {
+    int u, v;
+    cin >> u >> v;
+    cout << lca(u, v) << "\n";
+  }
+  return 0;
+}
+```
+
+This may not result in a very significant improvement, but these are well-known tricks to speed up the input/output operations in C++.

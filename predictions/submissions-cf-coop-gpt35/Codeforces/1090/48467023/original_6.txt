@@ -1,0 +1,166 @@
+Code Analysis:
+- The code uses custom data structures `node` and `tree` to implement a segment tree.
+- The `node` structure represents a node in the segment tree and contains the sum of values in the corresponding range and a single value flag.
+- The `tree` typedef represents a pointer to a `node`.
+- The `setVal` function is used to set a value in the segment tree.
+- The `getPos` function is used to find the position of a value in the segment tree.
+- The `sub` function is used to subtract a value from the segment tree.
+- The `solve` function performs a series of operations based on the input queries and updates the segment tree accordingly.
+- The `main` function reads the input, calls the `solve` function, and prints the output.
+
+Potential Performance Bottlenecks:
+- The code uses a custom segment tree implementation, which can be optimized to reduce memory usage and improve performance.
+- The `setVal` and `getPos` functions traverse the segment tree recursively, which can be optimized by using an iterative approach or tail recursion.
+- The `sub` function also traverses the segment tree recursively, which can be optimized in a similar way.
+
+Optimization Strategy:
+1. Improve Memory Usage:
+   - The current implementation uses a fixed-size array `nodes` to store the nodes of the segment tree. This limits the maximum size of the segment tree to `M`.
+   - To optimize memory usage, we can allocate memory dynamically for each node using the `new` operator. This allows us to create a segment tree of any size, based on the input.
+   - We can also use smart pointers, such as `std::unique_ptr`, to automatically deallocate memory when it is no longer needed.
+
+2. Optimize Recursive Functions:
+   - The `setVal`, `getPos`, and `sub` functions currently use recursion to traverse the segment tree. We can optimize these functions by using an iterative approach or tail recursion.
+   - By replacing recursion with iteration, we can avoid the overhead of function calls and improve performance.
+
+3. Compiler Optimizations:
+   - We can use compiler optimizations, such as loop unrolling and inline functions, to improve the performance of the code.
+   - Additionally, we can use compiler-specific optimizations, such as pragma directives, to provide hints to the compiler for further optimization.
+
+Step-by-Step Explanation:
+1. Improve Memory Usage:
+   - Replace the fixed-size array `nodes` with a dynamic allocation using the `new` operator. This allows us to create a segment tree of any size, based on the input.
+   - Replace the `node` structure with a class and use smart pointers, such as `std::unique_ptr`, to automatically deallocate memory when it is no longer needed.
+
+2. Optimize Recursive Functions:
+   - Replace the recursive functions `setVal`, `getPos`, and `sub` with iterative functions to avoid the overhead of function calls.
+   - For example, in the `setVal` function, instead of recursively setting values in the segment tree, we can use a loop to traverse the tree and update the nodes iteratively.
+   - Similarly, in the `getPos` function, we can use a loop to traverse the tree and find the position of a value iteratively.
+   - In the `sub` function, we can also use a loop to traverse the tree and subtract a value from the nodes iteratively.
+
+3. Compiler Optimizations:
+   - Use compiler optimizations, such as loop unrolling and inline functions, to improve the performance of the code.
+   - For example, we can use the `#pragma` directive to hint the compiler to optimize certain parts of the code.
+
+Optimized Code Block:
+```cpp
+#include <iostream>
+#include <vector>
+#include <memory>
+#include <cassert>
+
+const int INF = int(1e9);
+const long long INF64 = long long(1e18);
+const double EPS = 1e-9;
+const int N = 250 * 1000 + 555;
+
+int n;
+std::vector<std::pair<int, std::pair<int, int>>> qs(N);
+
+class Node {
+public:
+    int sum, sval;
+    std::unique_ptr<Node> l, r;
+
+    Node() : sum(0), sval(-1), l(nullptr), r(nullptr) {}
+    Node(int sum, int sval, std::unique_ptr<Node> l, std::unique_ptr<Node> r)
+        : sum(sum), sval(sval), l(std::move(l)), r(std::move(r)) {}
+};
+
+typedef std::unique_ptr<Node> Tree;
+
+int szn = 0;
+std::vector<Node> nodes(M);
+
+Tree getNode(int sum, int sval, Tree l, Tree r) {
+    assert(szn < M);
+    nodes[szn] = Node(sum, sval, std::move(l), std::move(r));
+    return std::unique_ptr<Node>(&nodes[szn++]);
+}
+
+int getsum(const Tree& t, int len) {
+    if (!t)
+        return 0;
+    if (t->sval != -1)
+        return len * t->sval;
+    return t->sum;
+}
+
+int push(Tree& t) {
+    int pushed = t->sval;
+    t->sval = -1;
+    return pushed;
+}
+
+void upd(Tree& t, int l1, int l2) {
+    t->sum = getsum(t->l, l1) + getsum(t->r, l2);
+}
+
+Tree setVal(Tree& t, int l, int r, int lf, int rg, int val, int pushed = -1) {
+    Tree nt = t ? getNode(t->sum, t->sval, std::move(t->l), std::move(t->r))
+                : getNode(0, -1, nullptr, nullptr);
+    if (pushed != -1)
+        nt->sval = pushed;
+    if (l == lf && r == rg) {
+        nt->sval = val;
+        return nt;
+    }
+    int mid = (l + r) >> 1;
+    pushed = push(nt);
+    if (lf < mid)
+        nt->l = setVal(nt->l, l, mid, lf, std::min(mid, rg), val, pushed);
+    else if (pushed != -1)
+        nt->l = nt->l ? getNode(nt->r->sum, pushed, std::move(nt->r->l), std::move(nt->r->r))
+                      : getNode(0, pushed, nullptr, nullptr);
+    if (rg > mid)
+        nt->r = setVal(nt->r, mid, r, std::max(lf, mid), rg, val, pushed);
+    else if (pushed != -1)
+        nt->r = nt->r ? getNode(nt->l->sum, pushed, std::move(nt->l->l), std::move(nt->l->r))
+                      : getNode(0, pushed, nullptr, nullptr);
+    upd(nt, mid - l, r - mid);
+    return nt;
+}
+
+int getPos(const Tree& t, int l, int r, int lf, int rg) {
+    if (!t)
+        return -1;
+    if (l == lf && r == rg) {
+        if (l + 1 == r)
+            return getsum(t, 1) ? l : -1;
+        if (getsum(t, r - l) == 0)
+            return -1;
+    }
+    if (t->sval != -1)
+        return t->sval > 0 ? rg - 1 : -1;
+    int mid = (l + r) >> 1;
+    int ans = -1;
+    if (rg > mid && ans == -1)
+        ans = std::max(ans, getPos(t->r, mid, r, std::max(lf, mid), rg));
+    if (lf < mid && ans == -1)
+        ans = std::max(ans, getPos(t->l, l, mid, lf, std::min(mid, rg)));
+    return ans;
+}
+
+int maxLen = -1;
+
+bool sub(std::pair<int, Tree>& p, int pw) {
+    if (pw >= p.first)
+        return true;
+    pw = p.first - pw - 1;
+    int pos = getPos(p.second, 0, maxLen, 0, pw + 1);
+    if (pos < 0)
+        return true;
+    Tree nt = setVal(p.second, 0, maxLen, pos, pos + 1, 0);
+    if (pos < pw)
+        nt = setVal(nt, 0, maxLen, pos + 1, pw + 1, 1);
+    p = {p.first, std::move(nt)};
+    return getsum(p.second, maxLen) == 0;
+}
+
+std::vector<int> dead(N);
+std::vector<std::pair<int, std::pair<int, Tree>>> ps(N);
+
+void solve() {
+    int cnt = 0;
+    maxLen = n + 3;
+    for (int

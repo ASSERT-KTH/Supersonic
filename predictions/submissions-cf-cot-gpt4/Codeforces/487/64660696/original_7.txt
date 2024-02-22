@@ -1,0 +1,105 @@
+The given code is already well optimized in terms of algorithms and data structures. The memory usage is also optimal since the necessary data structures are declared globally to avoid stack overflow. However, there are still some minor optimizations that can be done:
+
+1. Remove `#include <bits/stdc++.h>`: This header file includes almost all the standard C++ libraries and headers. This is not good practice because it increases the compilation time and memory usage. Instead, include only the libraries that are actually being used in the program.
+
+2. Avoid using `std::endl`: `std::endl` not only inserts a newline character but also flushes the output buffer, which can slow down the program. Use `"\n"` instead.
+
+3. Use `ios::sync_with_stdio(false); cin.tie(NULL); cout.tie(NULL);`: These lines can help to speed up `cin` and `cout` operations by decoupling the standard C++ streams from their C counterparts.
+
+4. Use pre-increment instead of post-increment where possible: Pre-increment is usually faster than post-increment in C++ because it does not need to create a temporary object.
+
+The optimized code:
+
+```cpp
+#include <iostream>
+#include <algorithm>
+using namespace std;
+using pii = pair<int, int>;
+const int maxLig = (1e5) + 5;
+const int maxCol = 12;
+const int maxReq = (1e5) + 5;
+const int sqr = 600;
+int nbLig, nbCol, nbReq;
+char grille[maxLig][maxCol];
+int proc[maxLig][maxCol];
+int tps = 0;
+pair<int, int> go[maxLig][maxCol];
+void comp(int lig, int col, int safeLig) {
+  if (proc[lig][col] == tps)
+    return;
+  proc[lig][col] = tps;
+  int nextLig = lig, nextCol = col;
+  if (grille[lig][col] == '<')
+    --nextCol;
+  else if (grille[lig][col] == '>')
+    ++nextCol;
+  else if (grille[lig][col] == '^')
+    --nextLig;
+  if (nextLig == safeLig || grille[nextLig][nextCol] == '~') {
+    go[lig][col] = {nextLig, nextCol};
+  } else if (grille[lig][col] != '^' && grille[lig][nextCol] != '^' &&
+             grille[lig][col] != grille[lig][nextCol]) {
+    go[lig][col] = {0, 0};
+  } else {
+    comp(nextLig, nextCol, safeLig);
+    go[lig][col] = go[nextLig][nextCol];
+  }
+}
+pii getFin(int lig, int col) {
+  while (grille[lig][col] != '~') {
+    pii e = go[lig][col];
+    lig = e.first;
+    col = e.second;
+  }
+  return {lig, col};
+}
+int blocRef[maxLig];
+bool compBloc(int bloc) {
+  int deb = bloc * sqr, fin = min(nbLig, (bloc + 1) * sqr);
+  if (deb > nbLig)
+    return false;
+  for (int lig = deb + 1; lig <= fin; ++lig) {
+    blocRef[lig] = bloc;
+    for (int col = 1; col <= nbCol; ++col) {
+      comp(lig, col, deb);
+    }
+  }
+  return true;
+}
+int main() {
+  ios::sync_with_stdio(false); cin.tie(NULL); cout.tie(NULL);
+  cin >> nbLig >> nbCol >> nbReq;
+  fill_n(&grille[0][0], maxLig * maxCol, '~');
+  for (int lig = 1; lig <= nbLig; ++lig) {
+    for (int col = 1; col <= nbCol; ++col) {
+      cin >> grille[lig][col];
+    }
+  }
+  ++tps;
+  for (int bloc = 0;; ++bloc) {
+    if (!compBloc(bloc))
+      break;
+  }
+  for (int req = 0; req < nbReq; ++req) {
+    char mode;
+    cin >> mode;
+    int lig, col;
+    cin >> lig >> col;
+    if (mode == 'A') {
+      pii res = getFin(lig, col);
+      if (res == pii{0, 0})
+        res = {-1, -1};
+      cout << res.first << " " << res.second << "\n";
+    } else {
+      ++tps;
+      char nv;
+      cin >> nv;
+      grille[lig][col] = nv;
+      int bloc = blocRef[lig];
+      compBloc(bloc);
+      if (bloc)
+        compBloc(bloc - 1);
+    }
+  }
+}
+```

@@ -1,0 +1,113 @@
+The given program seems to be a problem-solving task that involves graph traversal and search. It is essentially a flood-fill algorithm, which is a common algorithm for determining connected components in a graph.
+
+Here's a step-by-step optimization plan:
+
+1. Code Analysis: 
+
+The main performance bottlenecks in this program are the recursive calls and the copying of the 2D vector. The function `calc()` is a standard recursive flood-fill which marks and counts similar cells. The function `on()` modifies the grid, counts the new result, and calls itself multiple times with the modified grid. The issue here is that the function creates a copy of the entire grid every time it is called, which is an expensive operation in terms of time and memory.
+
+2. Optimization Strategy:
+
+    1. Reducing the copying of 2D vectors: Instead of copying the entire 2D vector every time, we can use a single global 2D vector and revert the changes made after each recursive call. This approach will dramatically reduce the memory usage and the time complexity of the function.
+
+    2. Compiler optimizations: Using the `-O2` or `-O3` options for g++ will enable more optimizations at the compiler level, which can further increase the performance of the program.
+
+    3. Use of C++ Standard Template Library (STL): This code uses C++ STL which is already highly optimized. However, the usage of `queue` in the `on()` function can be improved. Instead of pushing elements to the queue and checking if they have been used later, we can check if the elements have been used before pushing them to the queue. This will avoid pushing duplicate elements to the queue, resulting in improved performance.
+
+3. Step-by-Step Explanation:
+
+    1. We replace the local 2D vector `N` in `on()` function with a global 2D vector `G`. We make the necessary changes and then revert those changes after the recursive calls. This avoids the need to copy the entire 2D vector for each function call.
+
+    2. In the `on()` function, before pushing a pair of coordinates into the queue, we check if it has been used. If not, we mark it as used and then push it into the queue. This avoids pushing duplicate coordinates into the queue, reducing the size of the queue and the number of operations performed on it. 
+
+    3. We compile the code with the `-O2` or `-O3` flag for g++ to enable more compiler-level optimizations.
+
+4. Optimized Code Block:
+
+```cpp
+#include <iostream>
+#include <queue>
+#include <vector>
+using namespace std;
+
+typedef pair<int, int> C;
+typedef vector<vector<int>> P;
+P V, G;
+int w, h, Col, res, tres;
+int dx[4] = {0, 1, 0, -1};
+int dy[4] = {1, 0, -1, 0};
+
+void calc(int y, int x) {
+  if (y < 0 || x < 0 || x >= w || y >= h || G[y][x] != Col)
+    return;
+  tres++;
+  G[y][x] = 0;
+  for (int r = 0; r < 4; r++)
+    calc(y + dy[r], x + dx[r]);
+}
+
+void on(int count, int c) {
+  if (count == 5) {
+    tres = 0;
+    calc(0, 0);
+    res = max(res, tres);
+    return;
+  }
+  int nc = G[0][0];
+  queue<C> Q;
+  Q.push(make_pair(0, 0));
+  bool used[8][8] = {false};
+  int tres = 0;
+  while (!Q.empty()) {
+    C now = Q.front();
+    Q.pop();
+    G[now.first][now.second] = c;
+    for (int r = 0; r < 4; r++) {
+      int ny = now.first + dy[r], nx = now.second + dx[r];
+      if (ny < 0 || nx < 0 || ny >= h || nx >= w || used[ny][nx] || G[ny][nx] != nc)
+        continue;
+      used[ny][nx] = true;
+      Q.push(make_pair(ny, nx));
+    }
+  }
+  if (count != 4)
+    for (int i = 1; i <= 6; i++) {
+      on(count + 1, i);
+      G = V; // revert the changes
+    }
+  else {
+    on(count + 1, Col);
+    G = V; // revert the changes
+  }
+}
+
+void solve() {
+  res = 0;
+  V.clear();
+  V.resize(h);
+  for (int y = 0; y < h; y++)
+    for (int x = 0; x < w; x++) {
+      int t;
+      cin >> t;
+      V[y].push_back(t);
+    }
+  G = V; // copy the initial grid
+  for (int i = 1; i <= 6; i++) {
+    if (G[0][0] != i)
+      on(0, i);
+    G = V; // revert the changes
+  }
+  cout << res << endl;
+}
+
+int main() {
+  while (cin >> h >> w >> Col) {
+    if (w == 0)
+      break;
+    solve();
+  }
+  return 0;
+}
+```
+
+These modifications should improve the performance of the code without changing its functionality. The trade-off is that the code is now a bit more complex due to the explicit handling of the grid modifications and reverting them.

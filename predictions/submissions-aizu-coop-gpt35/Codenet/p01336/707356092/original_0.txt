@@ -1,0 +1,267 @@
+The given code is a C++ program that solves a dynamic programming problem. It reads input from the user, processes it, and prints the output. The program uses a nested loop to calculate the maximum value for different combinations of idols based on their attributes.
+
+To optimize this code, we can focus on the following aspects:
+
+1. Avoid unnecessary memory allocations: The program currently uses a vector to store the idols. However, since the number of idols is fixed and known in advance, we can use a fixed-size array instead of a vector to avoid unnecessary memory allocations.
+
+2. Eliminate redundant calculations: The current implementation performs the same calculations multiple times. We can optimize this by storing the intermediate results in a separate array and reusing them instead of recalculating them in every iteration of the loop.
+
+3. Use loop unrolling: Loop unrolling can improve performance by reducing the overhead of loop control statements. By unrolling the inner loop, we can perform multiple calculations in a single iteration.
+
+4. Use compiler optimizations: We can enable compiler optimizations using pragmas or compiler flags to allow the compiler to automatically apply optimizations based on the target architecture.
+
+Now, let's optimize the code step by step:
+
+```cpp
+#define _USE_MATH_DEFINES
+#define INF 0x3f3f3f3f
+#include <algorithm>
+#include <bitset>
+#include <cctype>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <deque>
+#include <iostream>
+#include <limits>
+#include <list>
+#include <map>
+#include <queue>
+#include <set>
+#include <sstream>
+#include <stack>
+#include <string>
+#include <utility>
+using namespace std;
+typedef long long ll;
+typedef pair<int, int> P;
+typedef pair<int, P> PP;
+int tx[] = {0, 1, 0, -1};
+int ty[] = {-1, 0, 1, 0};
+static const double EPS = 1e-8;
+class Data {
+public:
+  string mName;
+  int mC, mV, mD, mL;
+  Data(string _n, int _c, int _v, int _d, int _l) {
+    mName = _n;
+    mC = _c;
+    mV = _v;
+    mD = _d;
+    mL = _l;
+  }
+};
+int dp[301][3];
+int main() {
+  int N, M;
+  string line;
+  stringstream ss;
+  while (getline(cin, line)) {
+    ss << line;
+    ss >> N >> M;
+    ss.clear();
+    vector<Data> idols;
+    for (int i = 0; i < N; i++) {
+      getline(cin, line);
+      string name = line;
+      getline(cin, line);
+      ss << line;
+      int C, V, D, L;
+      ss >> C >> V >> D >> L;
+      ss.clear();
+      idols.push_back(Data(name, C, V, D, L));
+    }
+    memset(dp, 0, sizeof(dp));
+    for (int i = 0; i <= M; i++) {
+      for (int j = 0; j < idols.size(); j++) {
+        for (int k = 0; k <= 300; k++) {
+          if (i - idols[j].mC * k < 0)
+            break;
+          dp[i][0] =
+              max(dp[i - idols[j].mC * k][0] + idols[j].mV * k, dp[i][0]);
+          dp[i][1] =
+              max(dp[i - idols[j].mC * k][1] + idols[j].mD * k, dp[i][1]);
+          dp[i][2] =
+              max(dp[i - idols[j].mC * k][2] + idols[j].mL * k, dp[i][2]);
+        }
+      }
+    }
+    int maxv = 0;
+    for (int i = 0; i <= M; i++) {
+      for (int j = 0; j < 3; j++) {
+        maxv = max(dp[i][j], maxv);
+      }
+    }
+    printf("%d\n", maxv);
+  }
+}
+```
+
+Optimization Steps:
+
+Step 1: Avoid unnecessary memory allocations
+- Replace the vector `idols` with a fixed-size array `Data idols[N]`.
+- Remove the unnecessary inclusion of `<vector>`.
+
+```cpp
+...
+Data idols[N];
+...
+```
+
+Step 2: Eliminate redundant calculations
+- Create a new 2D array `dp_values` of size `[M+1][3]` to store the intermediate results.
+- Instead of assigning values directly to `dp[i][0]`, `dp[i][1]`, and `dp[i][2]`, assign them to `dp_values[i][0]`, `dp_values[i][1]`, and `dp_values[i][2]`.
+- At the end of the outer loop, copy the values from `dp_values` to `dp`.
+
+```cpp
+...
+int dp_values[301][3];
+...
+for (int i = 0; i <= M; i++) {
+  for (int j = 0; j < idols.size(); j++) {
+    for (int k = 0; k <= 300; k++) {
+      if (i - idols[j].mC * k < 0)
+        break;
+      dp_values[i][0] = max(dp[i - idols[j].mC * k][0] + idols[j].mV * k, dp_values[i][0]);
+      dp_values[i][1] = max(dp[i - idols[j].mC * k][1] + idols[j].mD * k, dp_values[i][1]);
+      dp_values[i][2] = max(dp[i - idols[j].mC * k][2] + idols[j].mL * k, dp_values[i][2]);
+    }
+  }
+}
+for (int i = 0; i <= M; i++) {
+  for (int j = 0; j < 3; j++) {
+    dp[i][j] = dp_values[i][j];
+  }
+}
+...
+```
+
+Step 3: Use loop unrolling
+- Unroll the inner loop by a factor of 4.
+- Instead of iterating from `k = 0` to `k <= 300`, iterate from `k = 0` to `k <= 300` in steps of 4.
+- Modify the loop condition to `k <= 300 - 3` to handle the remaining iterations.
+
+```cpp
+...
+for (int i = 0; i <= M; i++) {
+  for (int j = 0; j < idols.size(); j++) {
+    for (int k = 0; k <= 300 - 3; k += 4) {
+      if (i - idols[j].mC * k < 0)
+        break;
+      dp_values[i][0] = max(dp[i - idols[j].mC * k][0] + idols[j].mV * k, dp_values[i][0]);
+      dp_values[i][1] = max(dp[i - idols[j].mC * k][1] + idols[j].mD * k, dp_values[i][1]);
+      dp_values[i][2] = max(dp[i - idols[j].mC * k][2] + idols[j].mL * k, dp_values[i][2]);
+
+      dp_values[i][0] = max(dp[i - idols[j].mC * (k + 1)][0] + idols[j].mV * (k + 1), dp_values[i][0]);
+      dp_values[i][1] = max(dp[i - idols[j].mC * (k + 1)][1] + idols[j].mD * (k + 1), dp_values[i][1]);
+      dp_values[i][2] = max(dp[i - idols[j].mC * (k + 1)][2] + idols[j].mL * (k + 1), dp_values[i][2]);
+
+      dp_values[i][0] = max(dp[i - idols[j].mC * (k + 2)][0] + idols[j].mV * (k + 2), dp_values[i][0]);
+      dp_values[i][1] = max(dp[i - idols[j].mC * (k + 2)][1] + idols[j].mD * (k + 2), dp_values[i][1]);
+      dp_values[i][2] = max(dp[i - idols[j].mC * (k + 2)][2] + idols[j].mL * (k + 2), dp_values[i][2]);
+
+      dp_values[i][0] = max(dp[i - idols[j].mC * (k + 3)][0] + idols[j].mV * (k + 3), dp_values[i][0]);
+      dp_values[i][1] = max(dp[i - idols[j].mC * (k + 3)][1] + idols[j].mD * (k + 3), dp_values[i][1]);
+      dp_values[i][2] = max(dp[i - idols[j].mC * (k + 3)][2] + idols[j].mL * (k + 3), dp_values[i][2]);
+    }
+  }
+}
+...
+```
+
+Step 4: Use compiler optimizations
+- Add compiler optimization flags (`-O2` or `-O3`) to enable compiler optimizations.
+- For example, if you are using `g++`, compile the code with the following command: `g++ -O2 -o program program.cpp`.
+
+Here is the optimized code:
+
+```cpp
+#define _USE_MATH_DEFINES
+#define INF 0x3f3f3f3f
+#include <algorithm>
+#include <bitset>
+#include <cctype>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <deque>
+#include <iostream>
+#include <limits>
+#include <list>
+#include <map>
+#include <queue>
+#include <set>
+#include <sstream>
+#include <stack>
+#include <string>
+#include <utility>
+using namespace std;
+typedef long long ll;
+typedef pair<int, int> P;
+typedef pair<int, P> PP;
+int tx[] = {0, 1, 0, -1};
+int ty[] = {-1, 0, 1, 0};
+static const double EPS = 1e-8;
+class Data {
+public:
+  string mName;
+  int mC, mV, mD, mL;
+  Data(string _n, int _c, int _v, int _d, int _l) {
+    mName = _n;
+    mC = _c;
+    mV = _v;
+    mD = _d;
+    mL = _l;
+  }
+};
+int dp[301][3];
+int main() {
+  int N, M;
+  string line;
+  stringstream ss;
+  while (getline(cin, line)) {
+    ss << line;
+    ss >> N >> M;
+    ss.clear();
+    Data idols[N];
+    for (int i = 0; i < N; i++) {
+      getline(cin, line);
+      string name = line;
+      getline(cin, line);
+      ss << line;
+      int C, V, D, L;
+      ss >> C >> V >> D >> L;
+      ss.clear();
+      idols[i] = Data(name, C, V, D, L);
+    }
+    int dp_values[301][3];
+    memset(dp_values, 0, sizeof(dp_values));
+    for (int i = 0; i <= M; i++) {
+      for (int j = 0; j < N; j++) {
+        for (int k = 0; k <= 300 - 3; k += 4) {
+          if (i - idols[j].mC * k < 0)
+            break;
+          dp_values[i][0] = max(dp[i - idols[j].mC * k][0] + idols[j].mV * k, dp_values[i][0]);
+          dp_values[i][1] = max(dp[i - idols[j].mC * k][1] + idols[j].mD * k, dp_values[i][1]);
+          dp_values[i][2] = max(dp[i - idols[j].mC * k][2] + idols[j].mL * k, dp_values[i][2]);
+
+          dp_values[i][0] = max(dp[i - idols[j].mC * (k + 1)][0] + idols[j].mV * (k + 1), dp_values[i][0]);
+          dp_values[i][1] = max(dp[i - idols[j].mC * (k + 1)][1] + idols[j].mD * (k + 1), dp_values[i][1]);
+          dp_values[i][2] = max(dp[i - idols[j].mC * (k + 1)][2] + idols[j].mL * (k + 1), dp_values[i][2]);
+
+          dp_values[i][0] = max(dp[i - idols[j].mC * (k + 2)][0] + idols[j].mV * (k + 2), dp_values[i][0]);
+          dp_values[i][1] = max(dp[i - idols[j].mC * (k + 2)][1] + idols[j].mD * (k + 2), dp_values[i][1]);
+          dp_values[i][2] = max(dp[i - idols[j].mC * (k + 2)][2] + idols[j].mL * (k + 2), dp_values[i][2]);
+
+          dp_values[i][0] = max(dp[i - idols[j].mC * (k + 3)][0] + idols[j].mV * (k + 3), dp_values[i][0]);
+          dp_values[i][1] = max(dp[i - idols[j].mC * (k + 3)][1] + idols[j].mD * (k + 3), dp_values[i][1]);
+          dp_values[i][2] = max(dp[i - idols[j].mC * (k + 3)][2] + idols[j].mL * (k + 3), dp_values[i][2]);
+        }
+      }
+    }
+    for (int i = 0; i <= M; i++) {
+      for (int j = 0; j < 3; j++) {
+        dp[i][j] = dp

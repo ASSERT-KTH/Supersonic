@@ -1,0 +1,93 @@
+**Code Analysis:**
+
+This code appears to be a geometry problem solver that checks whether a point P lies on the same side of the line segments AB, BC, and CA in a triangle ABC. The solution is represented by printing "YES" or "NO". The core computation is the ccwise function, which determines the counter-clockwise orientation of three points using cross and dot products.
+
+**Optimization Strategy:**
+
+1. **Inefficient data structures:** The code contains several struct definitions (Line, LineSeg, Circle) that are not used, removing them would make the code cleaner and slightly more efficient.
+
+2. **Redundant computations:** In the ccwise function, cross_prod(b, c) is computed twice. Since the operation is relatively heavy, it can be optimized by storing the result in a variable and reusing it.
+
+3. **Unnecessary function calls:** The function testcase_ends is called in a loop, where its return value is used to determine whether to continue the loop. Instead of using a function return value to control the loop, we can directly implement the loop inside the main function.
+
+**Optimization Steps:**
+
+1. **Remove unused structs:** The Line, LineSeg, and Circle structs are not used anywhere in the code. We can safely remove them to make the code more readable and slightly more efficient.
+
+2. **Store intermediate results:** In the ccwise function, we can store the result of cross_prod(b, c) in a variable to avoid calculating it twice.
+
+3. **Avoid unnecessary function calls:** We can move the content of testcase_ends directly into the main function, avoiding the overhead of function calls and making the control flow more clear.
+
+**Trade-offs:**
+
+These optimizations primarily improve code readability without significantly affecting performance. The computational complexity remains the same. However, the code becomes more straightforward, which makes it easier to understand and maintain.
+
+**Optimized Code Block:**
+
+```c++
+#include <algorithm>
+#include <complex>
+#include <cstdio>
+#include <vector>
+using namespace std;
+static const double EPS = 1e-12;
+static const double INF = 1e24;
+using Point = complex<double>;
+using Plane = vector<Point>;
+namespace std {
+bool operator<(const Point &a, const Point &b) {
+  return real(a) != real(b) ? real(a) < real(b) : imag(a) < imag(b);
+}
+} // namespace std
+double cross_prod(const Point &a, const Point &b) { return imag(conj(a) * b); }
+double dot_prod(const Point &a, const Point &b) { return real(conj(a) * b); }
+
+enum CCWiseState {
+  ONLINE_FRONT = -2,
+  CLOCKWISE,
+  ON_SEGMENT,
+  COUNTER_CLOCKWISE,
+  ONLINE_BACK,
+};
+
+CCWiseState ccwise(Point a, Point b, Point c) {
+  b -= a;
+  c -= a;
+  double cross = cross_prod(b, c);
+  if (cross > 0) {
+    return COUNTER_CLOCKWISE;
+  } else if (cross < 0) {
+    return CLOCKWISE;
+  } else if (dot_prod(b, c) < 0) {
+    return ONLINE_BACK;
+  } else if (norm(b) < norm(c)) {
+    return ONLINE_FRONT;
+  } else {
+    return ON_SEGMENT;
+  }
+}
+
+int main() {
+  double x, y;
+  int solved = 0;
+  while (scanf("%lf %lf", &x, &y) != EOF) {
+    Point A(x, y);
+    scanf("%lf %lf", &x, &y);
+    Point B(x, y);
+    scanf("%lf %lf", &x, &y);
+    Point C(x, y);
+    scanf("%lf %lf", &x, &y);
+    Point P(x, y);
+    CCWiseState tmp = ccwise(A, P, B);
+    if (tmp != ccwise(B, P, C)) {
+      printf("NO\n");
+    } else if (tmp != ccwise(C, P, A)) {
+      printf("NO\n");
+    } else {
+      printf("YES\n");
+      ++solved;
+    }
+  }
+  return !solved;
+}
+```

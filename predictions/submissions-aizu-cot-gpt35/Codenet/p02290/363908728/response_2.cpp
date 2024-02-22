@@ -1,0 +1,17 @@
+Optimization steps:
+
+1. Remove unnecessary includes - The `#include <bits/stdc++.h>` includes a large number of standard library headers, which is not necessary for this program. We only need `iostream` and `iomanip` headers.
+
+2. Remove unused constant - The constant `EPS` is defined but not used in the program. We can remove it.
+
+3. Remove unused struct - The struct `CWW` is defined but not used in the program. We can remove it.
+
+4. Avoid unnecessary copying - In the `Segment` and `Line` constructors, the input points are copied into member variables. Instead, we can use references to avoid unnecessary copying.
+
+5. Use `const` references in function parameters - The functions `dot`, `cross`, and `projection` take input points by value. We can modify them to take `const` references to avoid unnecessary copying.
+
+6. Avoid unnecessary calculations - In the `projection` function, the expression `b / a` calculates the division of two complex numbers. Since we only need the real part of the result, we can use `real(b / a)` directly instead of calculating the entire division.
+
+7. Avoid unnecessary output precision setting - The line `cout << fixed << setprecision(15);` sets the output precision to 15 decimal places. However, the program only outputs the x and y coordinates of the points, which do not require such high precision. We can reduce the precision to a smaller value, such as 6 decimal places.
+
+8. Avoid unnecessary endl - The program uses `endl` to end the line after printing each point. However, `endl` flushes the output stream, which can be inefficient. We can use `"\n"` instead to end the line without flushing the stream.

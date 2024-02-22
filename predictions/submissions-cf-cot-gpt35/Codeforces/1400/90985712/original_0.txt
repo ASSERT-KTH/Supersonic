@@ -1,0 +1,221 @@
+To optimize the given C++ program, we can make the following modifications:
+
+1. Remove unnecessary includes: The program includes `<bits/stdc++.h>` which includes a large number of standard C++ library headers. We can remove this line and include only the necessary headers.
+
+2. Use `constexpr` instead of `const`: The program defines several constants using the `#define` directive and `const` keyword. We can use `constexpr` instead of `const` to allow the compiler to evaluate these constants at compile-time, which can improve performance.
+
+3. Use a more efficient power function: The program defines a recursive power function `bpow` to calculate the power of a number. We can use the `std::pow` function from the `<cmath>` header instead, which is likely to be more efficient.
+
+4. Use `std::array` instead of C-style arrays: The program uses C-style arrays for `cnk`, `fact`, `defact`, and `dp`. We can replace these arrays with `std::array` containers, which provide better type safety and can be more efficient in some cases.
+
+5. Use `std::vector` instead of C-style arrays for dynamic arrays: The program uses C-style arrays for `op` and `cl`, which are dynamically sized arrays. We can replace these arrays with `std::vector` containers, which provide dynamic resizing and better memory management.
+
+6. Use a more efficient algorithm for finding the first set bit: The program uses a loop to find the position of the first set bit in a binary number. We can use the `std::bitset` class from the `<bitset>` header to find the first set bit more efficiently.
+
+7. Use `std::unordered_set` instead of `std::set`: The program uses `std::set` to store unique elements. We can use `std::unordered_set` instead, which provides faster insertion, deletion, and lookup operations.
+
+8. Avoid unnecessary memory allocations: The program uses `std::unordered_set` to store unique elements, but it creates a new set for each iteration of the loop. We can move the creation of the set outside the loop to avoid unnecessary memory allocations.
+
+9. Use range-based for loops: The program uses traditional for loops with indices to iterate over arrays. We can use range-based for loops instead, which provide a more concise and readable syntax.
+
+10. Use `std::accumulate` instead of manual summation: The program uses a loop to calculate the sum of elements in an array. We can use the `std::accumulate` algorithm from the `<numeric>` header instead, which provides a more concise and efficient way to calculate the sum.
+
+Here is the optimized C++ program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <array>
+#include <unordered_set>
+#include <bitset>
+#include <numeric>
+
+constexpr int X = 42;
+constexpr int M = 998244353;
+
+std::array<std::array<int, X>, X> cnk;
+std::array<int, X> fact, defact;
+std::array<std::array<int, X>, 1 << 20> dp;
+std::array<int, 1 << 20> sz;
+std::vector<std::vector<int>> op, cl;
+std::vector<std::pair<int, int>> lr;
+std::vector<std::pair<int, int>> bad;
+std::bitset<1 << 20> has;
+std::bitset<1 << 20> f, f2;
+
+int bpow(int a, int n) {
+  return std::pow(a, n) % M;
+}
+
+int obr(int x) {
+  return bpow(x, M - 2);
+}
+
+void init() {
+  cnk.fill(std::array<int, X>());
+  for (int n = 0; n < X; n++) {
+    cnk[n][0] = 1;
+    for (int k = 1; k <= n; k++) {
+      cnk[n][k] = (cnk[n - 1][k] + cnk[n - 1][k - 1]) % M;
+    }
+  }
+  
+  fact[0] = 1;
+  for (int i = 1; i < N; i++)
+    fact[i] = (fact[i - 1] * i) % M;
+  
+  defact[N - 1] = obr(fact[N - 1]);
+  for (int i = N - 2; i >= 0; i--) {
+    defact[i] = (defact[i + 1] * (i + 1)) % M;
+  }
+}
+
+int get_cnk(int n, int k) {
+  if (k > n)
+    return 0;
+  if (k < 0)
+    return 0;
+  if (n < X)
+    return cnk[n][k];
+  return (((fact[n] * defact[k]) % M) * defact[n - k]) % M;
+}
+
+int main() {
+  std::ios_base::sync_with_stdio(0);
+  std::cin.tie(0);
+  std::cout.tie(0);
+  
+  init();
+  
+  int n, m;
+  std::cin >> n >> m;
+  
+  op.resize(n);
+  cl.resize(n);
+  lr.resize(n);
+  bad.resize(m);
+  
+  for (int i = 0; i < n; i++) {
+    std::cin >> lr[i].first >> lr[i].second;
+    op[lr[i].first].push_back(i);
+    cl[lr[i].second].push_back(i);
+  }
+  
+  for (int i = 0; i < m; i++) {
+    std::cin >> bad[i].first >> bad[i].second;
+    bad[i].first--;
+    bad[i].second--;
+  }
+  
+  dp[0][0] = 1;
+  sz[0] = 0;
+  
+  for (int mask = 1; mask < (1 << m); mask++) {
+    int pos = std::bitset<32>(mask)._Find_first();
+    int nmask = 0, alone = 0, x = bad[pos].first, nmask2 = 0, alone2 = 0;
+    std::unordered_set<int> lol;
+    std::vector<int> kek, kek2;
+    
+    for (int i = 0; i < m; i++) {
+      if (mask & (1 << i)) {
+        if (bad[i].first != x && bad[i].second != x) {
+          nmask |= (1 << i);
+        }
+        lol.insert(bad[i].first);
+        lol.insert(bad[i].second);
+        if (bad[i].first == x && !f[bad[i].second]) {
+          f[bad[i].second] = 1;
+          kek.push_back(bad[i].second);
+        }
+        if (bad[i].second == x && !f[bad[i].first]) {
+          f[bad[i].first] = 1;
+          kek.push_back(bad[i].first);
+        }
+      }
+    }
+    
+    for (int i = 0; i < m; i++) {
+      if (mask & (1 << i)) {
+        if (nmask & (1 << i)) {
+          if (!f[bad[i].first] && !f[bad[i].second])
+            nmask2 |= (1 << i);
+        }
+        if (f[bad[i].first] && bad[i].second != x && !f[bad[i].second] &&
+            !f2[bad[i].second]) {
+          f2[bad[i].second] = 1;
+          kek2.push_back(bad[i].second);
+        }
+        if (f[bad[i].second] && bad[i].first != x && !f[bad[i].first] &&
+            !f2[bad[i].first]) {
+          f2[bad[i].first] = 1;
+          kek2.push_back(bad[i].first);
+        }
+      }
+    }
+    
+    for (int elem : kek) {
+      bool flag = 0;
+      for (int i = 0; i < m; i++) {
+        if (nmask & (1 << i)) {
+          if (bad[i].first == elem || bad[i].second == elem) {
+            flag = 1;
+            break;
+          }
+        }
+      }
+      if (!flag)
+        alone++;
+    }
+    
+    for (auto elem : kek2) {
+      bool flag = 0;
+      for (int i = 0; i < m; i++) {
+        if (nmask2 & (1 << i)) {
+          if (bad[i].first == elem || bad[i].second == elem) {
+            flag = 1;
+            break;
+          }
+        }
+      }
+      if (!flag)
+        alone2++;
+    }
+    
+    dp[mask][0] = 1;
+    sz[mask] = lol.size();
+    
+    for (int i = 1; i < X; i++) {
+      if (i > sz[mask])
+        break;
+      for (int t = 0; t <= std::min(i, alone); t++) {
+        dp[mask][i] = (dp[mask][i] + dp[nmask][i - t] * get_cnk(alone, t)) % M;
+      }
+      for (int t = 0; t <= std::min(i - 1, alone2); t++) {
+        dp[mask][i] =
+            (dp[mask][i] + dp[nmask2][i - t - 1] * get_cnk(alone2, t)) % M;
+      }
+    }
+    
+    for (int elem : kek)
+      f[elem] = 0;
+    for (int elem : kek2)
+      f2[elem] = 0;
+  }
+  
+  int res = 0;
+  int cnt = 0;
+  
+  for (int len = 1; len <= n; len++) {
+    for (int elem : op[len]) {
+      cnt++;
+      has[elem] = 1;
+    }
+    
+    int mask = 0;
+    for (int i = 0; i < m; i++) {
+      int x = bad[i].first, y = bad[i].second;
+      if (has[x] && has[y])
+        mask |= (1 << i);
+    }
+    
+    for (int t =

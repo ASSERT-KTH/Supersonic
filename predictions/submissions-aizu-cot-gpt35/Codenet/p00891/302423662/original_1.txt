@@ -1,0 +1,158 @@
+The given C/C++ program can be optimized in the following steps:
+
+1. Remove unnecessary header file inclusion: `#include <bits/stdc++.h>` includes a large number of header files, which may not be required for this particular program. We can include only the required header files instead.
+
+2. Optimize the data types: The program uses `unsigned long long` for storing values in arrays. However, the maximum value for `p` is 110, which means the maximum number of bits required to store a value in `pa` is 110 * 110 = 12100 bits. We can use a smaller data type, such as `unsigned int`, to save memory.
+
+3. Reduce the size of the `used` vector: The `used` vector is used to store previously encountered values of `a`. However, the maximum number of unique values for `a` is limited by the size of `pa`. We can calculate the maximum number of unique values and resize the `used` vector accordingly to save memory.
+
+4. Reduce the number of iterations in the nested loops: The program uses nested loops to iterate over the elements of `pa` and `im`. We can optimize the loops to reduce the number of iterations and improve performance.
+
+5. Use bitwise operations instead of multiplication and division: The program uses multiplication and division operations to calculate values for `a`, `b`, and `g`. We can replace these operations with bitwise operations, such as left shift (`<<`) and right shift (`>>`), to improve performance.
+
+6. Optimize the character to integer conversion: The program uses a lookup table (`D`) to convert characters to integers. We can optimize this conversion by using bitwise operations instead of division and addition.
+
+7. Optimize the image encoding process: The program converts characters to bits using a loop. We can optimize this process by using bitwise operations and bit manipulation instead of division and modulus operations.
+
+Based on these optimization steps, the optimized C/C++ program is as follows:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <string>
+using namespace std;
+
+#define N 3
+#define MAX_P 110
+
+typedef unsigned int ull;
+
+bool im[1010][1010], pa[MAX_P][MAX_P];
+int w, h, p, ans;
+vector<ull> used;
+
+void ppp() {
+  ull a = 0;
+  ull roll[1001][1001] = {};
+  
+  // Calculate a using bitwise operations
+  for (int i = 0; i < p; i++) {
+    for (int j = 0; j < p; j++) {
+      a = (a << 1) | pa[i][j];
+    }
+    a = a * N;
+  }
+  
+  // Check if a is already used
+  for (int i = 0; i < used.size(); i++) {
+    if (used[i] == a)
+      return;
+  }
+  
+  used.push_back(a);
+  
+  for (int j = 0; j < h; j++) {
+    ull b = 0, g = 1;
+    for (int i = 0; i < p; i++) {
+      b = (b << N) | im[j][i];
+      g *= N;
+    }
+    roll[j][p - 1] = b;
+    for (int i = p; i < w; i++) {
+      b = (b << N) | im[j][i] - im[j][i - p] * g;
+      roll[j][i] = b;
+    }
+  }
+  
+  for (int j = p - 1; j < w; j++) {
+    ull b = 0, g = 1, n = 1;
+    for (int i = 0; i < p; i++)
+      n *= N;
+    for (int i = 0; i < p; i++)
+      b = (b << n) | roll[i][j], g *= n;
+    if (b == a)
+      ans++;
+    for (int i = p; i < h; i++) {
+      b = (b << n) | roll[i][j] - roll[i - p][j] * g;
+      if (b == a)
+        ans++;
+    }
+  }
+}
+
+void ch() {
+  bool npa[MAX_P][MAX_P];
+  for (int i = 0; i < p; i++)
+    for (int j = 0; j < p; j++)
+      npa[i][j] = pa[j][p - i - 1];
+  for (int i = 0; i < p; i++)
+    for (int j = 0; j < p; j++)
+      pa[i][j] = npa[i][j];
+}
+
+void ch1() {
+  for (int i = 0; i < p; i++)
+    for (int j = 0; j < p / 2; j++)
+      swap(pa[i][j], pa[i][p - j - 1]);
+}
+
+int main() {
+  int D[256];
+  for (int i = 'A'; i <= 'Z'; i++)
+    D[i] = i - 'A';
+  for (int i = 'a'; i <= 'z'; i++)
+    D[i] = i - 'a' + 26;
+  for (int i = '0'; i <= '9'; i++)
+    D[i] = i - '0' + 52;
+  D['+'] = 62, D['/'] = 63;
+  
+  while (cin >> w >> h >> p, w) {
+    string s;
+    used.clear();
+    
+    // Calculate the maximum number of unique values for a
+    int max_used_size = 1;
+    for (int i = 0; i < p * p; i++) {
+      max_used_size *= N;
+    }
+    used.reserve(max_used_size);
+    
+    for (int i = 0; i < h; i++) {
+      cin >> s;
+      for (int j = 0; j < s.size(); j++) {
+        int t = D[s[j]];
+        int a = 6;
+        while (a--) {
+          im[i][j * 6 + a] = t & 1;
+          t >>= 1;
+        }
+      }
+    }
+    
+    for (int i = 0; i < p; i++) {
+      cin >> s;
+      for (int j = 0; j < s.size(); j++) {
+        int t = D[s[j]];
+        int a = 6;
+        while (a--) {
+          pa[i][j * 6 + a] = t & 1;
+          t >>= 1;
+        }
+      }
+    }
+    
+    ans = 0;
+    for (int i = 0; i < 4; i++) {
+      ppp();
+      ch1();
+      ppp();
+      ch1();
+      ch();
+    }
+    
+    cout << ans << endl;
+  }
+  
+  return 0;
+}
+```

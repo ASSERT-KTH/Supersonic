@@ -1,0 +1,108 @@
+This program uses a plane sweep algorithm to find overlapping points within a certain radius. The algorithm works by scanning the plane from left to right, maintaining an active set of points and handling events when a point enters or leaves the set.
+
+Optimization steps:
+1. Use `std::ios_base::sync_with_stdio(false);` to speed up I/O operations.
+2. The `scanf` and `printf` functions are slower compared to `cin` and `cout`. Therefore, replacing them may increase the speed of the program.
+3. Since the distance between two points is computed multiple times, we could store these values in a lookup table to reduce redundant calculations. However, because the distance is calculated between two points (pair), a 2D array is needed, which could increase memory usage.
+4. The current implementation of the `dist2` function performs integer multiplication, which is slower than bitwise shift operations. We can replace the multiplication with a shift operation to speed up the program.
+5. The `set` data structure is used to store open points, and each insertion or deletion operation requires O(log N) time. To speed up this process, we could use a hash table or an unordered set. However, this would not maintain the sorted order of the elements, which is required in this program, so this change is not applicable here.
+
+Here's the optimized version of the code:
+
+```c++
+#include <algorithm>
+#include <assert.h>
+#include <iostream>
+#include <math.h>
+#include <set>
+#include <string.h>
+#include <vector>
+using namespace std;
+typedef long long ll;
+static const double EPS = 1e-9;
+static const double PI = acos(-1.0);
+#define REP(i, n) for (int i = 0; i < (int)(n); i++)
+#define FOR(i, s, n) for (int i = (s); i < (int)(n); i++)
+#define FOREQ(i, s, n) for (int i = (s); i <= (int)(n); i++)
+#define FORIT(it, c) for (__typeof((c).begin()) it = (c).begin(); it != (c).end(); it++)
+#define MEMSET(v, h) memset((v), h, sizeof(v))
+struct Point {
+  int x;
+  int y;
+  char type;
+  Point() { ; }
+  Point(double x, double y, int type) : x(x), y(y), type(type) { ; }
+  bool operator<(const Point &rhs) const {
+    if (y != rhs.y) {
+      return y < rhs.y;
+    }
+    return x < rhs.x;
+  }
+};
+struct Event {
+  int x;
+  Point p;
+  char in;
+  Event() { ; }
+  Event(int x, Point p, int in) : x(x), p(p), in(in) { ; }
+  bool operator<(const Event &rhs) const {
+    if (x != rhs.x) {
+      return x < rhs.x;
+    }
+    return in > rhs.in;
+  }
+};
+inline int square(int x) { return x << 1; } // Shift operation
+inline int dist2(const Point &a, const Point &b) {
+  return square(a.x - b.x) + square(a.y - b.y);
+}
+int an, bn, n;
+int r;
+Event event[500000];
+int PlaneSweep() {
+  int ans = 0;
+  set<Point> open[2];
+  REP(iter, n) {
+    Event &e = event[iter];
+    Point &p = e.p;
+    if (e.in) {
+      set<Point>::iterator lower =
+          open[(int)p.type ^ 1].lower_bound(Point(0, p.y - 4 * r - 1, 0));
+      set<Point>::iterator upper =
+          open[(int)p.type ^ 1].upper_bound(Point(0, p.y + 4 * r + 1, 0));
+      for (set<Point>::iterator it = lower; it != upper; it++) {
+        if (dist2(*it, p) <= 16 * r * r) {
+          ans++;
+        }
+      }
+      open[(int)p.type].insert(p);
+    } else {
+      open[(int)p.type].erase(open[(int)p.type].find(p));
+    }
+  }
+  return ans;
+}
+int main() {
+  ios_base::sync_with_stdio(false); // Speed up I/O operations
+  while (cin >> an >> bn >> r, an | bn) {
+    n = (an + bn) * 2;
+    REP(i, an) {
+      int x, y;
+      cin >> x >> y;
+      event[2 * i + 0] = Event(x - 2 * r, Point(x, y, 0), 1);
+      event[2 * i + 1] = Event(x + 2 * r, Point(x, y, 0), 0);
+    }
+    REP(i, bn) {
+      int x, y;
+      cin >> x >> y;
+      event[2 * an + 2 * i + 0] = Event(x - 2 * r, Point(x, y, 1), 1);
+      event[2 * an + 2 * i + 1] = Event(x + 2 * r, Point(x, y, 1), 0);
+    }
+    sort(event, event + n);
+    int ans = PlaneSweep();
+    cout << ans << "\n";
+  }
+}
+```
+
+Please note that the overall efficiency of the program depends on the input and the specific requirements of the task.

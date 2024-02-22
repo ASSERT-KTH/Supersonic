@@ -1,0 +1,33 @@
+This code seems to be a complex one with multiple templates and structures in it. It appears to be a solution to a competitive programming problem, containing a lot of advanced data structures and algorithms. 
+
+Looking at the code, it seems to be well-optimized in terms of data structures and algorithmic complexity. However, there are still some points where it can be optimized further. 
+
+Optimization Strategy:
+
+1. Avoiding the use of `std::endl`: Using `std::endl` to end a line in C++ can result in unnecessary performance costs, since it forces a flush of the output buffer. We can replace this with '\n' which doesn't force a flush.
+
+2. Avoiding unnecessary use of `std::pair`: The code contains numerous instances of `std::pair`. While this is not inherently inefficient, it can lead to increased memory usage due to the overhead of the pair structure. If the pair elements are always used together, it might be more efficient to use a struct or class.
+
+3. Avoiding unnecessary use of `std::function`: `std::function` is a heavy-weight class, and can lead to performance overhead. If possible, we can replace it with function pointers or lambda functions.
+
+4. Using efficient I/O functions: The functions `scanf` and `printf` are more efficient than their C++ counterparts `std::cin` and `std::cout`. We can stick to these for maximum efficiency.
+
+5. Avoiding unnecessary copying of data: The code contains some parts where data is copied unnecessarily. We can replace these with references or pointers to avoid the overhead of copying.
+
+6. Making use of compiler optimizations: We can use the `-O2` or `-O3` flags when compiling the program. These flags tell the compiler to optimize the program for speed, which can result in significant performance improvements.
+
+Step-By-Step Explanation:
+
+1. Replacing `std::endl` with '\n': This is a simple text replacement. The reason for doing this is that `std::endl` forces a flush of the output buffer, which can result in unnecessary performance costs. '\n' does not force a flush, and is therefore more efficient.
+   
+2. Replacing `std::pair` with a custom struct: This involves replacing every instance of `std::pair` with a struct that contains the same two elements. The reason for doing this is that `std::pair` can result in increased memory usage due to the overhead of the pair structure.
+
+3. Replacing `std::function` with function pointers: This involves replacing every instance of `std::function` with a function pointer. The reason for doing this is that `std::function` is a heavy-weight class, and can result in performance overhead.
+
+4. Using `scanf` and `printf`: This is already being done in the code, and we don't need to make any changes here.
+
+5. Avoiding unnecessary copying of data: This involves replacing instances where data is copied with instances where references or pointers are used instead. The reason for doing this is to avoid the overhead of copying data.
+
+6. Using compiler optimizations: This involves adding the `-O2` or `-O3` flags when compiling the program. The reason for doing this is that these flags tell the compiler to optimize the program for speed.
+
+Optimized Code Block:

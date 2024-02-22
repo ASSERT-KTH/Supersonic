@@ -1,0 +1,206 @@
+Analysis:
+
+1. The `cket` function is used to find the index of the closing parenthesis corresponding to a given opening parenthesis. It iterates through the string from the current index until it finds the matching closing parenthesis. However, this function is not efficient because it iterates through the string linearly and performs multiple checks for each character.
+
+2. The `expand` function recursively expands the given string based on the given number of repetitions. It also calls the `cket` function to find the closing parenthesis index when encountering an opening parenthesis. However, the recursive nature of this function can lead to multiple redundant computations, especially when expanding the same substring multiple times.
+
+3. The `main` function reads input from the user and calls the `expand` function to get the expanded string. It then prints the result. There is nothing inherently inefficient about this part of the code.
+
+Optimization Strategy:
+
+1. Improve the `cket` function by using a stack to efficiently find the closing parenthesis index. Instead of linearly iterating through the string and checking each character, we can push the index of each opening parenthesis onto the stack. When encountering a closing parenthesis, we can simply pop the stack to get the corresponding opening parenthesis index.
+
+2. Optimize the `expand` function by avoiding redundant computations. Currently, the function recursively calls itself for each repetition of a substring, even if the same substring has already been expanded before. We can optimize this by using memoization, where we store the expanded substring along with its result in a map. Before expanding a substring, we can check if it has already been expanded and return the result directly.
+
+3. Since the `n` variable is used to keep track of the number of remaining repetitions, we can move it as a parameter to the `expand` function instead of using a global variable.
+
+4. Add compiler optimizations using pragmas to hint the compiler to optimize certain parts of the code, such as loop unrolling and inlining functions.
+
+Step-by-Step Explanation:
+
+1. Let's start by improving the `cket` function. We'll replace the linear iteration with a stack-based approach. We'll also rename the function to `findClosingParenthesis` to better reflect its purpose.
+
+```cpp
+#include <stack>
+
+int findClosingParenthesis(const std::string& str, int i) {
+  std::stack<int> parenthesesStack;
+  
+  for (; i < str.size(); ++i) {
+    if (str[i] == '(') {
+      parenthesesStack.push(i);
+    } else if (str[i] == ')') {
+      parenthesesStack.pop();
+      if (parenthesesStack.empty()) {
+        break;
+      }
+    }
+  }
+  
+  return i;
+}
+```
+
+2. Now, let's optimize the `expand` function. We'll introduce a memoization map to store the expanded substrings and their results. We'll also move the `n` variable as a parameter to the function.
+
+```cpp
+#include <unordered_map>
+
+char expand(const std::string& str, int n, std::unordered_map<std::string, char>& memo) {
+  if (n == 0) {
+    return str[0];
+  }
+  
+  if (memo.count(str) > 0) {
+    return memo[str];
+  }
+  
+  std::string res;
+  for (int i = 0; i < str.size(); ++i) {
+    if (isdigit(str[i])) {
+      int j = 1;
+      while (isdigit(str[i + j])) {
+        j++;
+      }
+      int num = std::atoi(str.substr(i, j).c_str());
+      int s, e;
+      if (str[i + j] == '(') {
+        int k;
+        k = findClosingParenthesis(str, i + j + 1);
+        s = i + j + 1;
+        e = k - (i + j + 1);
+        i = k;
+      } else {
+        s = i + j;
+        e = 1;
+        i = i + j;
+      }
+      for (int l = 0; l < num; ++l) {
+        char a = expand(str.substr(s, e), n - 1, memo);
+        if (a != '0') {
+          memo[str] = a;
+          return a;
+        }
+      }
+    } else {
+      if (n == 0) {
+        return str[i];
+      }
+      n--;
+    }
+  }
+  
+  return '0';
+}
+```
+
+3. Finally, let's add some compiler optimizations using pragmas. We'll use the `#pragma unroll` directive to hint the compiler to unroll the loop for expanding the substring repetitions. We'll also use the `#pragma inline` directive to suggest inlining the `findClosingParenthesis` function.
+
+```cpp
+#pragma unroll
+for (int l = 0; l < num; ++l) {
+  char a = expand(str.substr(s, e), n - 1, memo);
+  if (a != '0') {
+    memo[str] = a;
+    return a;
+  }
+}
+```
+
+```cpp
+#pragma inline(findClosingParenthesis)
+```
+
+Optimized Code Block:
+
+```cpp
+#include <cstdlib>
+#include <iostream>
+#include <string>
+#include <stack>
+#include <unordered_map>
+
+int findClosingParenthesis(const std::string& str, int i) {
+  std::stack<int> parenthesesStack;
+  
+  for (; i < str.size(); ++i) {
+    if (str[i] == '(') {
+      parenthesesStack.push(i);
+    } else if (str[i] == ')') {
+      parenthesesStack.pop();
+      if (parenthesesStack.empty()) {
+        break;
+      }
+    }
+  }
+  
+  return i;
+}
+
+char expand(const std::string& str, int n, std::unordered_map<std::string, char>& memo) {
+  if (n == 0) {
+    return str[0];
+  }
+  
+  if (memo.count(str) > 0) {
+    return memo[str];
+  }
+  
+  std::string res;
+  for (int i = 0; i < str.size(); ++i) {
+    if (isdigit(str[i])) {
+      int j = 1;
+      while (isdigit(str[i + j])) {
+        j++;
+      }
+      int num = std::atoi(str.substr(i, j).c_str());
+      int s, e;
+      if (str[i + j] == '(') {
+        int k;
+        k = findClosingParenthesis(str, i + j + 1);
+        s = i + j + 1;
+        e = k - (i + j + 1);
+        i = k;
+      } else {
+        s = i + j;
+        e = 1;
+        i = i + j;
+      }
+      #pragma unroll
+      for (int l = 0; l < num; ++l) {
+        char a = expand(str.substr(s, e), n - 1, memo);
+        if (a != '0') {
+          memo[str] = a;
+          return a;
+        }
+      }
+    } else {
+      if (n == 0) {
+        return str[i];
+      }
+      n--;
+    }
+  }
+  
+  return '0';
+}
+
+int main(void) {
+  std::unordered_map<std::string, char> memo;
+  
+  while (true) {
+    std::string str;
+    std::cin >> str;
+    int n;
+    std::cin >> n;
+    if (str == "0" && n == 0) {
+      break;
+    }
+    std::cout << expand(str, n, memo) << std::endl;
+  }
+  
+  return 0;
+}
+```
+
+The optimized code improves the efficiency of the original program by using a stack-based approach to find the closing parenthesis index and by avoiding redundant computations through memoization. Additionally, compiler optimizations are suggested to further improve performance.

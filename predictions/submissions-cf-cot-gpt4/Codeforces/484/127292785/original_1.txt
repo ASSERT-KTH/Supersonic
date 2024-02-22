@@ -1,0 +1,84 @@
+This code is already highly optimized for both running time and memory usage. It uses a variety of strategies to achieve this, such as precomputing logarithms, utilizing a sparse table, and using bit manipulation for efficient arithmetic. There are a few minor improvements that can be made though.
+
+1. Remove unused macros: There are several macros defined in this code that are not actually used anywhere. Removing these will slightly reduce the memory footprint of the program, and make it easier to understand for others reading the code. The unused macros are `pll`, `vep`, `mp`, `mt`, `all`, `frx`, `lb`, `ub`, `F`, `S`, `op2`, `parr`, `yes`, `no`, and `db2`.
+
+2. Avoid using `std::endl`: The `std::endl` manipulator not only inserts a newline character, but also flushes the output stream. This can be unnecessarily slow, especially in a loop. It's faster to just output '\n' directly, and flush the stream only when necessary.
+
+3. Use `std::ios::sync_with_stdio(false)`: This disables the synchronization between the C and C++ standard streams. By default, all standard streams are synchronized, which means that they can be mixed in the same program and order is preserved. But this synchronization can cause a performance overhead when one does not need to mix C and C++ style I/O. Since this program is not using C-style I/O, this synchronization is unnecessary.
+
+Here's the optimized version of your program:
+
+```c++
+#pragma GCC optimize("Ofast")
+#pragma GCC target("avx,avx2,fma")
+#pragma GCC target("sse,sse2,sse3,ssse3,sse4,popcnt,abm,mmx,avx,tune=native")
+#pragma comment(linker, "/stack:200000000")
+#include <bits/stdc++.h>
+using namespace std;
+#define lli int
+#define ve vector<lli>
+#define pb push_back
+#define fr(i, a, n) for (lli i = a; i < (n); i++)
+#define op(x) cout << x << '\n'
+#define mem(a, x) memset(a, x, sizeof(a))
+#define sz(a) ((lli)a.size())
+
+struct SparseTable {
+  lli N, K;
+  vector<ve> table;
+  ve logtwo;
+  lli f(lli a, lli b) { return max(a, b); }
+  SparseTable(ve a) {
+    N = sz(a);
+    K = log2(N) + 2;
+    table = vector<ve>(N, ve(K));
+    logtwo = ve(N + 5);
+    logtwo[1] = 0;
+    fr(i, 2, N + 1) { logtwo[i] = logtwo[i / 2] + 1; }
+    for (lli i = N - 1; i >= 0; i--) {
+      table[i][0] = a[i];
+      for (lli j = 1; i + (1LL << j) - 1 < N; j++) {
+        table[i][j] = f(table[i][j - 1], table[i + (1LL << (j - 1))][j - 1]);
+      }
+    }
+  }
+  lli query(lli l, lli r) {
+    lli temp = logtwo[r - l + 1];
+    lli ans = f(table[l][temp], table[r - (1LL << temp) + 1][temp]);
+    return ans;
+  }
+};
+
+void solve() {
+  lli R = 1e6;
+  ve a(R + 5, 0);
+  lli n;
+  cin >> n;
+  fr(i, 0, n) {
+    lli x;
+    cin >> x;
+    a[x] = x;
+  }
+  SparseTable tab(a);
+  lli maxi = 0;
+  for (lli i = 2; i < R + 1; i++) {
+    if (!a[i])
+      continue;
+    for (lli j = i; j < R + 1; j += i) {
+      lli temp = tab.query(j, min(j + i - 1, R)) - j;
+      maxi = max(maxi, temp);
+    }
+  }
+  op(maxi);
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  lli test = 1;
+  while (test--) {
+    solve();
+  }
+}
+```
+Please note that `std::bits/stdc++.h` is a non-standard header file and it's considered bad practice to use it in production code. It's mostly used in competitive programming for the sake of convenience. In a real-world application, you should include only the specific standard libraries that you need.

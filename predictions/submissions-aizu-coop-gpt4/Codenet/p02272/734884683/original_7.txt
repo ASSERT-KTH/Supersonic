@@ -1,0 +1,90 @@
+## Code Analysis
+
+The given program is a simple implementation of the merge sort algorithm in C++. Merge sort is a divide-and-conquer algorithm that sorts an array by dividing it into two halves, sorting them separately, and then merging them.
+
+The given code uses `std::vector` to store the left and right halves of the array during the merging process. These vectors are declared as static and have a fixed size, which might lead to unnecessary memory usage if the array size is smaller than the vector size.
+
+The key performance bottleneck here is likely the use of vectors for left and right halves (`L` and `R`). Vectors have a dynamic size and use dynamic memory allocation, which is slower compared to static arrays. Every time `assign()` is called, new memory is allocated and old memory is freed, which is costly.
+
+Moreover, the code uses a global variable `compared` to count the number of comparisons made. While this is not a performance issue, it is not a good practice since it can lead to unexpected results if the code is used in a multithreaded context.
+
+## Optimization Strategy
+
+1. **Replace Vectors with Static Arrays:** Vectors are dynamic and involve memory allocation and deallocation, which is slower compared to static arrays. Moreover, the vector size is fixed and might not be necessary for smaller arrays. Therefore, we can replace these vectors with static arrays which are allocated once and used throughout the execution.
+
+2. **Remove Global Variable:** The global variable `compared` can be removed and instead passed as a reference parameter to the `mergeSort` and `merge` functions to avoid potential issues in a multithreaded context.
+
+3. **Use `std::ios_base::sync_with_stdio(false)`:** This can significantly speed up `cin` and `cout` operations by disabling synchronization with `stdio`.
+
+4. **Avoid Recalculating Variables:** Avoid recalculating `mid` and `right` in the `merge` function by passing them directly from the `mergeSort` function.
+
+## Optimized Code
+
+Here is the optimized version of the code:
+
+```cpp
+#include <cstdint>
+#include <iostream>
+using namespace std;
+
+static void inputArray(uint32_t A[], int num) {
+  for (int i = 0; i < num; i++) {
+    cin >> A[i];
+  }
+}
+
+static void printArray(uint32_t A[], int num) {
+  for (int i = 0; i < num; i++) {
+    cout << (i != 0 ? " " : "") << A[i];
+  }
+  cout << endl;
+}
+
+static uint32_t L[250000];
+static uint32_t R[250000];
+
+static inline void merge(uint32_t A[], uint32_t left, uint32_t mid,
+                         uint32_t right, uint32_t &compared) {
+  uint32_t n1 = mid - left;
+  uint32_t n2 = right - mid;
+  for (uint32_t i = 0; i < n1; i++)
+    L[i] = A[left + i];
+  for (uint32_t i = 0; i < n2; i++)
+    R[i] = A[mid + i];
+  L[n1] = R[n2] = UINT32_MAX;
+  for (uint32_t i = 0, j = 0, k = left; k < right; k++) {
+    compared++;
+    if (L[i] <= R[j]) {
+      A[k] = L[i];
+      i++;
+    } else {
+      A[k] = R[j];
+      j++;
+    }
+  }
+}
+
+static inline void mergeSort(uint32_t A[], uint32_t left, uint32_t right, uint32_t &compared) {
+  if (left + 1 < right) {
+    uint32_t mid = (left + right) / 2;
+    mergeSort(A, left, mid, compared);
+    mergeSort(A, mid, right, compared);
+    merge(A, left, mid, right, compared);
+  }
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  int n;
+  cin >> n;
+  uint32_t A[n];
+  inputArray(A, n);
+  uint32_t compared = 0;
+  mergeSort(A, 0, n, compared);
+  printArray(A, n);
+  cout << compared << endl;
+  return 0;
+}
+```
+The optimized code is still quite readable, and the functionality is preserved. It should be faster and use less memory due to the reasons explained above.

@@ -1,0 +1,96 @@
+#include <iostream>
+#include <vector>
+using namespace std;
+
+const int N = 1e5 + 5;
+const int MAX_M = 2 * N;
+
+int n, vis[MAX_M], ord[MAX_M], ordn, cnt, cmp[MAX_M], val[N];
+vector<int> adj[MAX_M], adjt[MAX_M];
+
+int m, st[N], sw[N][2];
+vector<int> stk;
+
+int v(int x) { return 2 * x; }
+int nv(int x) { return 2 * x + 1; }
+
+void add(int a, int b) {
+  adj[a ^ 1].push_back(b);
+  adj[b ^ 1].push_back(a);
+  adjt[b].push_back(a ^ 1);
+  adjt[a].push_back(b ^ 1);
+}
+
+void dfs(int x) {
+  vis[x] = 1;
+  for (const auto& v : adj[x])
+    if (!vis[v])
+      dfs(v);
+  ord[ordn++] = x;
+}
+
+void dfst(int x) {
+  cmp[x] = cnt;
+  vis[x] = 0;
+  for (const auto& v : adjt[x])
+    if (vis[v])
+      dfst(v);
+}
+
+bool run2sat() {
+  bool vis_v, vis_nv;
+  for (int i = 1; i <= m; i++) {
+    vis_v = vis[v(i)];
+    vis_nv = vis[nv(i)];
+    if (!vis_v)
+      dfs(v(i));
+    if (!vis_nv)
+      dfs(nv(i));
+  }
+  for (int i = ordn - 1; i >= 0; i--)
+    if (vis[ord[i]])
+      cnt++, dfst(ord[i]);
+  for (int i = m; i >= 0; i--)
+    if (vis[ord[i]])
+      cnt++, dfst(ord[i]);
+  for (int i = 1; i <= m; i++) {
+    vis_v = vis[v(i)];
+    vis_nv = vis[nv(i)];
+    if (vis_v && vis_nv)
+      return false;
+    val[i] = cmp[v(i)] > cmp[nv(i)];
+  }
+  return true;
+}
+
+int main() {
+  ios_base::sync_with_stdio(0);
+  cin.tie(0);
+
+  scanf("%d%d", &n, &m);
+
+  for (int i = 1; i <= n; i++)
+    scanf("%d", &st[i]);
+
+  int q, a;
+  for (int i = 1; i <= m; i++) {
+    scanf("%d", &q);
+    while (q--) {
+      scanf("%d", &a);
+      sw[a][0] ? sw[a][1] = i : sw[a][0] = i;
+    }
+  }
+
+  for (int i = 1; i <= n; i++) {
+    int p = sw[i][0];
+    int q = sw[i][1];
+    if (!st[i])
+      add(v(p), v(q)), add(nv(p), nv(q));
+    else
+      add(nv(p), v(q)), add(v(p), nv(q));
+  }
+
+  printf("%s\n", run2sat() ? "YES" : "NO");
+
+  return 0;
+}

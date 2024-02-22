@@ -1,0 +1,80 @@
+The given program can be optimized by reducing the number of unnecessary function calls and by avoiding repeated calculations.
+
+Here are the optimization steps:
+
+1. Remove unnecessary includes: The program includes the `<bits/stdc++.h>` header, which includes a lot of unnecessary headers. We can remove this line and include only the necessary headers.
+
+2. Remove unnecessary template specialization: The `RandomizedBinarySearchTree` class template has a `propagete` function that calls the `update` function. However, the `update` function is already called in the `merge` and `split` functions, so the `propagete` function is unnecessary. We can remove it.
+
+3. Optimize the `build` function: The `build` function in the `RandomizedBinarySearchTree` class is inefficient because it creates a new vector `v` in each recursive call to `build` function. We can optimize this by passing the vector `v` by reference instead of by value. This way, we avoid creating unnecessary copies of the vector.
+
+4. Optimize the `dump` function: The `dump` function in the `RandomizedBinarySearchTree` class creates a new vector `v` and iterator `it` in each call to `dump` function. We can optimize this by creating the vector `v` only once in the `dump` function and passing it by reference to the `dump` function.
+
+5. Optimize the `lower_bound` and `upper_bound` functions: The `lower_bound` and `upper_bound` functions in the `OrderedMultiSet` class use recursion to search for the lower and upper bounds of a given key. We can optimize these functions by using an iterative binary search instead of recursion.
+
+6. Optimize the `query` function: The `query` function in the `CentroidPathDecomposition` class uses recursion to traverse the centroid tree and call a function `f` for each centroid path. We can optimize this by using an iterative approach instead of recursion.
+
+7. Avoid repeated calculations: The main loop in the `main` function repeatedly calls the `gg.LCA` function, which calculates the lowest common ancestor of two nodes. We can optimize this by calculating the LCA only once for each pair of nodes and storing the result in an array.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <functional>
+
+using namespace std;
+
+template <class Key> struct RandomizedBinarySearchTree {
+  struct Node {
+    Node *l, *r;
+    int cnt;
+    Key key;
+    Node() {}
+    Node(const Key &k) : cnt(1), key(k), l(nullptr), r(nullptr) {}
+  };
+  vector<Node> pool;
+  int ptr;
+  RandomizedBinarySearchTree(int sz) : pool(sz), ptr(0) {}
+  inline Node *alloc(const Key &key) { return &(pool[ptr++] = Node(key)); }
+  virtual Node *clone(Node *t) { return t; }
+  inline int count(const Node *t) { return t ? t->cnt : 0; }
+  inline Node *update(Node *t) {
+    t->cnt = count(t->l) + count(t->r) + 1;
+    return t;
+  }
+  Node *merge(Node *l, Node *r) {
+    if (!l || !r)
+      return l ? l : r;
+    if (rand() % (l->cnt + r->cnt) < l->cnt) {
+      l = update(l);
+      l->r = merge(l->r, r);
+      return update(l);
+    } else {
+      r = update(r);
+      r->l = merge(l, r->l);
+      return update(r);
+    }
+  }
+  pair<Node *, Node *> split(Node *t, int k) {
+    if (!t)
+      return {t, t};
+    if (k <= count(t->l)) {
+      auto s = split(t->l, k);
+      t->l = s.second;
+      return {s.first, update(t)};
+    } else {
+      auto s = split(t->r, k - count(t->l) - 1);
+      t->r = s.first;
+      return {update(t), s.second};
+    }
+  }
+  Node *build(int l, int r, const vector<Key> &v) {
+    if (l + 1 >= r)
+      return alloc(v[l]);
+    return merge(build(l, (l + r) >> 1, v), build((l + r) >> 1, r, v));
+  }
+  Node *build(const vector<Key> &v) {
+    ptr = 0;
+    return build(0, (int)v.size(), v);

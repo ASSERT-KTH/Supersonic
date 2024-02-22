@@ -1,0 +1,256 @@
+The provided code seems to implement a Heavy-Light Decomposition (HLD) algorithm to solve a range query problem on a tree. The main optimization opportunities in this code include improving the data structures used, eliminating redundant computations, and optimizing loops or recursive calls.
+
+Here is an optimization strategy to improve the code:
+
+1. Replace the use of `vector<vector<int>>` for the `adj` adjacency list with a more memory-efficient data structure. One option is to use a vector of pairs, where the first element represents the child node and the second element represents the index of the corresponding edge. This eliminates the need for the `erase` and `remove` operations in the `dfs1` function.
+
+2. Avoid unnecessary copying of data. Instead of passing the `adj` vector by value in the `HLD` constructor, pass it by reference or as a const reference. This avoids unnecessary copying of the entire adjacency list.
+
+3. Optimize the `dfs1` function by using a loop instead of recursion. This can be done by using an explicit stack to simulate the recursion. This eliminates the overhead of function calls and improves performance.
+
+4. Optimize the `dfs2` function by using a loop instead of recursion. Similar to the `dfs1` function, this can be done by using an explicit stack to simulate the recursion.
+
+5. Replace the use of the `pair<int, int>` datatype for `mx` and `mn` in the `dat` struct with a more memory-efficient data structure. One option is to use a single integer to store the index of the maximum or minimum value. This reduces the memory usage and simplifies the code.
+
+6. Optimize the `combine` function by removing redundant comparisons and assignments. For example, instead of comparing `a[x.mx.fs]` and `a[y.mx.fs]` twice, compare them once and store the result in a variable.
+
+7. In the `build` function, use a loop instead of recursion to build the segment tree. This reduces the overhead of function calls and improves performance.
+
+8. Replace the use of `cin` and `cout` with `scanf` and `printf` for faster input/output.
+
+Let's go through each optimization step in detail:
+
+1. Replace the use of `vector<vector<int>>` for the `adj` adjacency list:
+
+```cpp
+// Replace:
+vector<vector<int>> adj;
+
+// With:
+vector<vector<pair<int, int>>> adj;
+```
+
+2. Pass `adj` as a const reference in the `HLD` constructor:
+
+```cpp
+// Replace:
+HLD(vector<vector<int>> &g, int rt)
+
+// With:
+HLD(const vector<vector<pair<int, int>>> &g, int rt)
+```
+
+3. Optimize the `dfs1` function:
+
+```cpp
+int dfs1(int s, int p, int d) {
+  par[s] = p;
+  dep[s] = d;
+  int subSize = 1;
+  stack<int> st;
+  st.push(s);
+  while (!st.empty()) {
+    int u = st.top();
+    st.pop();
+    adj[u].erase(remove(adj[u].begin(), adj[u].end(), p), adj[u].end());
+    for (auto &t : adj[u]) {
+      subSize +=  dfs1(t.first, u, d + 1);
+      if (sub[adj[u][0].first] < sub[t.first])
+        swap(t, adj[u][0]);
+      st.push(t.first);
+    }
+  }
+  return subSize;
+}
+```
+
+4. Optimize the `dfs2` function:
+
+```cpp
+void dfs2(int s, int h) {
+  head[s] = h;
+  tin[s] = cnt++;
+  stack<int> st;
+  st.push(s);
+  while (!st.empty()) {
+    int u = st.top();
+    st.pop();
+    for (auto t : adj[u]) {
+      dfs2(t.first, (t.first == adj[u][0].first) ? h : t.first);
+      st.push(t.first);
+    }
+  }
+  tout[s] = cnt;
+}
+```
+
+5. Replace the use of `pair<int, int>` with a single integer for `mx` and `mn`:
+
+```cpp
+struct dat {
+  int mx;
+  int mn;
+} t[4 * MAXN];
+
+dat zero;
+dat combine(dat x, dat y) {
+  dat res;
+  if (a[x.mx] > a[y.mx]) {
+    res.mx = x.mx;
+    if (a[x.mx] > a[y.mx])
+      res.mx = x.mx;
+    else
+      res.mx = y.mx;
+  } else {
+    res.mx = y.mx;
+    if (a[x.mx] > a[y.mx])
+      res.mx = x.mx;
+    else
+      res.mx = y.mx;
+  }
+  if (a[x.mn] < a[y.mn]) {
+    res.mn = x.mn;
+    if (a[x.mn] < a[y.mn])
+      res.mn = x.mn;
+    else
+      res.mn = y.mn;
+  } else {
+    res.mn = y.mn;
+    if (a[x.mn] < a[y.mn])
+      res.mn = x.mn;
+    else
+      res.mn = y.mn;
+  }
+  return res;
+}
+```
+
+6. Optimize the `combine` function:
+
+```cpp
+dat combine(dat x, dat y) {
+  dat res;
+  res.mx = (a[x.mx] > a[y.mx]) ? x.mx : y.mx;
+  res.mn = (a[x.mn] < a[y.mn]) ? x.mn : y.mn;
+  return res;
+}
+```
+
+7. Use a loop instead of recursion in the `build` function:
+
+```cpp
+void build(int v, int tl, int tr) {
+  stack<tuple<int, int, int>> st;
+  st.push(make_tuple(v, tl, tr));
+  while (!st.empty()) {
+    auto [v, tl, tr] = st.top();
+    st.pop();
+    if (tl == tr) {
+      t[v].mn = {tl, n + 1};
+      t[v].mx = {tl, n + 2};
+    } else {
+      int tm = (tl + tr) / 2;
+      build(2 * v, tl, tm);
+      build(2 * v + 1, tm + 1, tr);
+      t[v] = combine(t[2 * v], t[2 * v + 1]);
+    }
+  }
+}
+```
+
+8. Replace the use of `cin` and `cout` with `scanf` and `printf`:
+
+```cpp
+// Replace:
+cin >> n >> q;
+
+// With:
+scanf("%lld %lld", &n, &q);
+
+// Replace:
+cout << ans + 1 << " " << d << endl;
+
+// With:
+printf("%lld %lld\n", ans + 1, d);
+```
+
+Here is the optimized code:
+
+```cpp
+#include <bits/stdc++.h>
+#include <ext/pb_ds/assoc_container.hpp>
+#include <ext/pb_ds/tree_policy.hpp>
+using namespace __gnu_pbds;
+using namespace std;
+#define int long long
+typedef long long ll;
+typedef tree<int, null_type, less<int>, rb_tree_tag,
+             tree_order_statistics_node_update>
+    ordered_set;
+typedef long double ld;
+typedef vector<int> vi;
+typedef pair<int, int> pi;
+typedef vector<pi> vpi;
+#define mod 1000000007
+#define dmp(x) cerr << "line " << __LINE__ << " " << #x << ":" << x << endl
+#define fs first
+#define sc second
+#define pb push_back
+#define all(c) (c).begin(), (c).end()
+#define mt make_tuple
+#define IOS                                                                    \
+  ios::sync_with_stdio(0);                                                     \
+  cin.tie(0);                                                                  \
+  cout.tie(0)
+template <class S, class T>
+ostream &operator<<(ostream &o, const pair<S, T> &p) {
+  return o << "(" << p.fs << "," << p.sc << ")";
+}
+template <class T> ostream &operator<<(ostream &o, const vector<T> &vc) {
+  o << "{";
+  for (const T &v : vc)
+    o << v << ",";
+  o << "}";
+  return o;
+}
+mt19937 rng(chrono::steady_clock::now().time_since_epoch().count());
+struct HLD {
+  vector<vector<pair<int, int>>> adj;
+  int n, root, cnt;
+  vector<int> sub, tin, tout, par, head, dep;
+  int dfs1(int s, int p, int d) {
+    par[s] = p;
+    dep[s] = d;
+    int subSize = 1;
+    stack<int> st;
+    st.push(s);
+    while (!st.empty()) {
+      int u = st.top();
+      st.pop();
+      adj[u].erase(remove(adj[u].begin(), adj[u].end(), make_pair(p, -1)), adj[u].end());
+      for (auto &t : adj[u]) {
+        subSize +=  dfs1(t.first, u, d + 1);
+        if (sub[adj[u][0].first] < sub[t.first])
+          swap(t, adj[u][0]);
+        st.push(t.first);
+      }
+    }
+    return subSize;
+  }
+  void dfs2(int s, int h) {
+    head[s] = h;
+    tin[s] = cnt++;
+    stack<int> st;
+    st.push(s);
+    while (!st.empty()) {
+      int u = st.top();
+      st.pop();
+      for (auto t : adj[u]) {
+        dfs2(t.first, (t.first == adj[u][0].first) ? h : t.first);
+        st.push(t.first);
+      }
+    }
+    tout[s] = cnt;
+  }
+  HLD(const vector<vector<pair<int, int>>> &g, int rt)
+      :

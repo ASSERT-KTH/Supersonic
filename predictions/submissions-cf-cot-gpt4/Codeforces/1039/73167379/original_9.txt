@@ -1,0 +1,159 @@
+This is quite a complex code to optimize, but from a first glance, there are a few things that can be done:
+
+1. Remove unnecessary calls to `std::vector::clear()`. The `std::vector::clear()` method deallocates the memory allocated to the vector. If you are going to reuse the vector later, it's better to use `std::vector::erase()` instead. This will remove elements but keep the memory allocated for future use. In this case, `reb.clear()` seems unnecessary as `reb` is not used after this point.
+
+2. Avoid computing the same values multiple times. There are several calculations that are done multiple times on the same values. These could be stored in variables and reused. For example, `zam[p.F]` and `zam[p.S]` are calculated twice in the loop body over `reb`. 
+
+3. Use `std::vector::reserve()` for known sizes. If you know the size of a vector ahead of time, it's more efficient to allocate the memory all at once with `std::vector::reserve()`. 
+
+4. Use prefix increment instead of postfix increment where applicable. Prefix increment (++i) is usually faster than postfix increment (i++) because postfix increment creates a temporary object that is discarded immediately.
+
+5. Avoid unnecessary `if` checks. There are some `if` checks that can be avoided. For example, the check `if (zam[q] == -1) continue;` can be avoided if `zam[q]` is always guaranteed to be non-negative in the loop over `reb`.
+
+Here is the optimized code:
+
+```c++
+#pragma optimization_level 3
+#pragma GCC optimize("Ofast")
+#pragma GCC target("avx,avx2,fma")
+#include <bits/stdc++.h>
+#define F first
+#define S second
+#define vec vector
+#define ms multiset
+#define pb push_back
+#define pll pair<ll, ll>
+#define pdd pair<ld, ld>
+#define pq priority_queue
+#define umap unordered_map
+#define uset unordered_set
+#define pii pair<int, int>
+#define pnn pair<Node *, Node *>
+#define uid uniform_int_distribution
+#define FILE                                                                   \
+  ifstream in("sumsqr.in");                                                    \
+  ofstream out("sumsqr.out");
+#define fast                                                                   \
+  cin.tie(0);                                                                  \
+  cout.tie(0);                                                                 \
+  cin.sync_with_stdio(0);                                                      \
+  cout.sync_with_stdio(0);
+using namespace std;
+typedef string str;
+typedef long long ll;
+typedef long double ld;
+mt19937 rnd(chrono::steady_clock::now().time_since_epoch().count());
+const int G = 400002;
+int a, OPA = -1;
+vec<int> l[G];
+int skok[G], o[G], zam[G], GR[G][2], mxd[G], mxp[G], dp[G][2], sz[G], good[G];
+vec<int> gd, bd;
+int ST;
+int GA(int LEN) {
+  if (o[LEN] != -1)
+    return o[LEN];
+  int d1, d2, w, rg;
+  for (int q = ST; q >= 0; --q) {
+    if (good[q]) {
+      dp[q][0] = sz[q] / LEN;
+      dp[q][1] = sz[q] % LEN;
+      continue;
+    }
+    dp[q][0] = 0;
+    d1 = d2 = 0, w = GR[q][0], rg = GR[q][1];
+    for (; w <= rg; ++w) {
+      dp[q][0] += dp[w][0];
+      if (dp[w][1] >= d1)
+        d2 = d1, d1 = dp[w][1];
+      else
+        d2 = max(d2, dp[w][1]);
+    }
+    if (d1 + d2 + 1 < LEN)
+      dp[q][1] = d1 + 1;
+    else
+      dp[q][0]++, dp[q][1] = 0;
+  }
+  return o[LEN] = dp[0][0];
+}
+int main() {
+  fast;
+  memset(o, -1, sizeof(o));
+  memset(zam, -1, sizeof(zam));
+  cin >> a;
+  o[1] = a;
+  ST = a - 1;
+  for (int i = 1; i <= a; ++i)
+    skok[a / i]++;
+  for (int &i : skok)
+    i /= 2;
+  vec<pii> reb;
+  reb.reserve(a - 1);
+  for (int q = 0; q < a - 1; ++q) {
+    int x, y;
+    cin >> x >> y;
+    --x;
+    --y;
+    reb.push_back({x, y});
+    l[x].pb(y);
+    l[y].pb(x);
+  }
+  for (pii p : reb) {
+    int zamF = zam[p.F];
+    int zamS = zam[p.S];
+    if (zamF > -1 && zamS > -1) {
+      l[zamF].pb(zamS);
+      l[zamS].pb(zamF);
+    }
+  }
+  for (int q = 0; q < a; q++) {
+    if (zam[q] != -1) {
+      sz[zam[q]] = sz[q];
+      mxd[zam[q]] = mxd[q];
+      mxp[zam[q]] = mxp[q];
+    }
+  }
+  for (int q = 0; q < a; q++) {
+    GR[q][0] = l[q].size() ? l[q][0] : a;
+    GR[q][1] = l[q].size() ? l[q].back() : q;
+    assert(l[q].empty() || GR[q][1] - GR[q][0] + 1 == l[q].size());
+  }
+  for (int q = 0; q < a; q++)
+    good[q] = sz[q] == mxd[q];
+  int diam = 0;
+  for (int &i : mxp)
+    diam = max(i, diam);
+  o[diam] = 1;
+  for (int q = diam + 1; q <= a; q++)
+    o[q] = 0;
+  int H = min(a - 1, (int)(sqrt(a * log2(a)) / 2)), I = 2;
+  for (; I <= H; ++I) {
+    o[I] = GA(I);
+    OPA = I / 2;
+  }
+  int tyt;
+  for (; I <= a;) {
+    OPA = I / 2;
+    tyt = GA(I);
+    int lf = I, rg = min(a + 1, lf + skok[tyt] + 1);
+    if (tyt == 0)
+      break;
+    if (tyt == 1)
+      lf = diam, rg = diam + 1;
+    for (; lf + 1 < rg;) {
+      int md = (lf + rg) / 2;
+      if (GA(md) == tyt)
+        lf = md;
+      else
+        rg = md;
+    }
+    for (; I < rg; ++I)
+      o[I] = tyt;
+  }
+  for (int q = 1; q <= a; ++q) {
+    printInt(max(0, o[q]));
+  }
+  putChar(EOF);
+}
+```
+
+Please note that the provided code is very complex and without a clear understanding of the problem domain, it's hard to make more significant optimizations. The above suggestions should lead to some improvements, but you should consider profiling the code to find out where the actual bottlenecks are.

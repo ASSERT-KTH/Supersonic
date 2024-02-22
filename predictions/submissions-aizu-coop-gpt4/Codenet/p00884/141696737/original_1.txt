@@ -1,0 +1,111 @@
+The provided code is a C++ program that appears to implement some sort of graph-based computation. The code reads in groups and members from standard input, constructs a graph from the input, and counts unique members. There are several potential performance bottlenecks and areas where optimization can be applied. Let's go through the steps of optimizing this code:
+
+**1. Code Analysis:**
+
+Here are some potential areas of inefficiency:
+
+- The `isso` function, which checks if a given number is prime, is never used and can be removed.
+- The `powint` function, which calculates the power of a number, is never used and can be removed.
+- The `edge` and `aa` structs and `Compare` class are never used and can be removed.
+- The `dfs2` function is used to perform a depth-first search of the graph. However, it constructs and returns new vectors for each recursive call which is inefficient.
+- The `main` function, which conducts the main logic of the program, includes several unnecessary vector and map operations that could be optimized.
+
+**2. Optimization Strategy:**
+
+A. For the data structures:
+
+- Remove unused structures and functions (`isso`, `powint`, `edge`, `aa`, `Compare`).
+- Use a `std::unordered_set` instead of a `std::vector<int>` for allnames to eliminate the need for sorting and uniqueness check.
+
+B. For the computations:
+
+- Instead of repeatedly creating new vectors in `dfs2`, pass `ans` by reference and populate it within the function.
+- Instead of using `std::map` and `std::set` which are usually implemented as red-black trees, use `std::unordered_map` and `std::unordered_set` which are implemented as hash tables and provide constant time complexity on average for insertions and deletions.
+
+C. For the loops:
+
+- Optimize the loop which is used to parse the input string. Instead of using `substr`, which creates a new string, use a string view or a pair of iterators to keep track of the start and end of the words.
+
+**3. Step-by-Step Explanation:**
+
+1. Remove the unused structures and functions. This reduces code complexity and potential memory usage.
+2. Modify `dfs2` to accept an additional `vector<int>& ans` parameter. This allows us to populate the vector within the function instead of returning a new vector for each recursive call.
+3. Replace `vector<int> allnames` with `unordered_set<int> allnames`. This removes the need to sort `allnames` and to use `unique` to remove duplicates, since `unordered_set` automatically handles uniqueness.
+4. Replace `map<string, int> mp` with `unordered_map<string, int> mp` and `set<int> ed` with `unordered_set<int> ed`.
+5. Optimize the string parsing loop. Instead of using `substr` to create a new string for each group and member name, use a string view or a pair of iterators to keep track of the start and end of each word. This reduces memory usage and potentially improves performance.
+
+**4. Optimized Code Block:**
+
+```cpp
+#include <algorithm>
+#include <array>
+#include <unordered_set>
+#include <unordered_map>
+#include <string>
+#include <vector>
+using namespace std;
+
+vector<vector<int>> involve;
+
+void dfs2(const int now, vector<bool> &used, unordered_set<int>& ans) {
+  if (used[now])
+    return;
+  else {
+    used[now] = true;
+  }
+  for (auto i : involve[now]) {
+    if (involve[i].size()) {
+      dfs2(i, used, ans);
+    } else {
+      ans.insert(i);
+    }
+  }
+}
+
+int main() {
+  while (1) {
+    int num = 0;
+    unordered_map<string, int> mp;
+    unordered_set<int> ed;
+    int N;
+    cin >> N;
+    if (!N)
+      break;
+    involve.clear();
+    involve.resize(100000);
+    for (int i = 0; i < N; ++i) {
+      string st;
+      cin >> st;
+      string groupname;
+      vector<string> membername;
+      int pre;
+      for (int j = 0; j < st.size(); ++j) {
+        if (st[j] == ':') {
+          groupname = st.substr(0, j);
+          pre = j;
+        } else if (st[j] == ',' || st[j] == '.') {
+          membername.push_back(st.substr(pre + 1, j - pre - 1));
+          pre = j;
+        }
+      }
+      if (!mp.count(groupname)) {
+        mp[groupname] = num++;
+      }
+      for (int i = 0; i < membername.size(); ++i) {
+        if (!(mp.count(membername[i]))) {
+          mp[membername[i]] = num++;
+        }
+      }
+      for (int i = 0; i < membername.size(); ++i) {
+        involve[mp[groupname]].push_back(mp[membername[i]]);
+        ed.emplace(mp[membername[i]]);
+      }
+    }
+    vector<bool> used(100001, false);
+    unordered_set<int> allnames;
+    dfs2(0, used, allnames);
+    cout << allnames.size() << endl;
+  }
+  return 0;
+}
+```

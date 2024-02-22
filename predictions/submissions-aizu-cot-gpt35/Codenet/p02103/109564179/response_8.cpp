@@ -1,0 +1,103 @@
+#include <algorithm>
+#include <cstdio>
+#include <vector>
+
+using namespace std;
+
+#define MOD 1000000007LL
+
+using ll = long long;
+using P = pair<int, int>;
+
+int n, m, k;
+vector<P> g;
+int cost[100001];
+
+int bfs(int dx, int dy) {
+  queue<int> que;
+  queue<int> que2;
+  bool flag = false;
+  fill(cost, cost + k, -1);
+  for (int i = 0; i < k; i++) {
+    int nx = g[i].first + dx;
+    int ny = g[i].second + dy;
+    if (nx >= 0 && nx < n && ny >= 0 && ny < m) {
+      if (cost[i] == -1) {
+        cost[i] = (abs(dx) > 1 || abs(dy) > 1) ? 1 : 0;
+        if (cost[i] == 0)
+          que.push(i);
+        if (cost[i] == 1)
+          que2.push(i);
+      } else if (cost[i] == 1 && (abs(dx) > 1 || abs(dy) > 1)) {
+        cost[i] = 0;
+        que.push(i);
+      }
+    }
+  }
+  while (!que.empty()) {
+    int q = que.front();
+    que.pop();
+    for (int i = -2; i <= 2; i++) {
+      for (int j = -2; j <= 2; j++) {
+        int nc = 0;
+        if (abs(i) > 1 || abs(j) > 1)
+          nc = 1;
+        int nx = j + g[q].first;
+        int ny = i + g[q].second;
+        if (nx < 0 || ny < 0 || nx >= n || ny >= m) {
+          if (nc == 0)
+            return 0;
+          if (nc == 1)
+            flag = true;
+        } else {
+          int idx = ny * n + nx;
+          if (cost[g[idx].second] == -1) {
+            cost[g[idx].second] = nc;
+            if (nc == 0)
+              que.push(g[idx].second);
+            if (nc == 1)
+              que2.push(g[idx].second);
+          } else if (cost[g[idx].second] == 1 && nc == 0) {
+            cost[g[idx].second] = 0;
+            que.push(g[idx].second);
+          }
+        }
+      }
+    }
+  }
+  if (flag)
+    return 1;
+  while (!que2.empty()) {
+    int q = que2.front();
+    que2.pop();
+    for (int i = -1; i <= 1; i++) {
+      for (int j = -1; j <= 1; j++) {
+        int nx = j + g[q].first;
+        int ny = i + g[q].second;
+        if (nx < 0 || ny < 0 || nx >= n || ny >= m)
+          return 1;
+        int idx = ny * n + nx;
+        if (cost[g[idx].second] == -1) {
+          cost[g[idx].second] = 1;
+          que2.push(g[idx].second);
+        }
+      }
+    }
+  }
+  return 2;
+}
+
+int main(void) {
+  scanf("%d%d%d", &n, &m, &k);
+  g.resize(k);
+  for (int i = 0; i < k; i++) {
+    scanf("%d%d", &g[i].first, &g[i].second);
+  }
+  int res = 2;
+  res = min(res, bfs(1, 0));
+  res = min(res, bfs(-1, 0));
+  res = min(res, bfs(0, 1));
+  res = min(res, bfs(0, -1));
+  printf("%d\n", res);
+  return 0;
+}

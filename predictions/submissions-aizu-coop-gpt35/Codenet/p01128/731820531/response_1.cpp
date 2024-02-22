@@ -1,0 +1,45 @@
+Code Analysis:
+- The code includes a lot of unnecessary header files that are not being used.
+- The code defines a lot of unnecessary macros that are not being used.
+- The code includes unnecessary functions for printing and inputting data.
+- The code includes unnecessary typedefs for data types.
+- The code includes unnecessary operators for custom data types.
+- The code includes unnecessary functions for geometric calculations.
+- The code includes unnecessary includes for classes that are not being used.
+- The code includes unnecessary using directives.
+- The code includes unnecessary global variables.
+- The code includes unnecessary code for rotating the points.
+
+Optimization Strategy:
+1. Remove unnecessary header files.
+2. Remove unnecessary macros.
+3. Remove unnecessary functions for printing and inputting data.
+4. Remove unnecessary typedefs for data types.
+5. Remove unnecessary operators for custom data types.
+6. Remove unnecessary functions for geometric calculations.
+7. Remove unnecessary includes for classes that are not being used.
+8. Remove unnecessary using directives.
+9. Remove unnecessary global variables.
+10. Remove unnecessary code for rotating the points.
+11. Remove unnecessary code for sorting and counting the intersections.
+
+Step-by-Step Explanation:
+1. Remove unnecessary header files:
+   - Remove the following unnecessary header files: <algorithm>, <cassert>, <cfloat>, <climits>, <cmath>, <complex>, <cstdio>, <cstdlib>, <cstring>, <ctime>, <fstream>, <functional>, <iomanip>, <iostream>, <list>, <memory>, <numeric>, <queue>, <set>, <sstream>, <stack>, <utility>.
+2. Remove unnecessary macros:
+   - Remove the following unnecessary macros: rep, foreach, rforeach, all, rall, CL, COPY, ten, bin, erep, revrep, pb.
+3. Remove unnecessary functions for printing and inputting data:
+   - Remove the following unnecessary functions: uniq, to_s, to_T, print_container, operator<<, print, print2d, input, fix_pre, fast_io.
+4. Remove unnecessary typedefs for data types:
+   - Remove the following unnecessary typedefs: ll, pint, G, Convex.
+5. Remove unnecessary operators for custom data types:
+   - Remove the following unnecessary operators: operator<, operator>>, operator<<.
+6. Remove unnecessary functions for geometric calculations:
+   - Remove the following unnecessary functions: side_G, dot, cross, ccw, is_orthogonal, is_parallel, intersect_LP, intersect_SP, intersect_LL, intersect_LS, intersect_SL, intersect_SS, dist_LP, dist_PL, dist_LL, dist_LS, dist_SL, dist_SP, dist_PS, dist_SS, ip_SS, ip_LL.
+7. Remove unnecessary includes for classes that are not being used:
+   - Remove the following unnecessary includes: <bitset>, <map>, <multiset>, <deque>.
+8. Remove unnecessary using directives:
+   - Remove the following unnecessary using directives: using namespace std.
+9. Remove unnecessary global variables:
+   - Remove the following unnecessary global variables: dx, dy, PI, EPS_FOR_LIB.
+10. Remove unnecessary code for rotating the points:

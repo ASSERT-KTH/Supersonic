@@ -1,0 +1,79 @@
+## Code Analysis
+Let's begin by analyzing the provided code:
+
+1. The code defines a `struct edge` to represent an edge in a graph. It has three members: `to` (the destination vertex), `cap` (the capacity of the edge), and `rev` (the reverse edge index).
+
+2. The code also defines a `struct node_t` to represent a node in a splay tree. It has several members including `pp` (parent pointer), `lp` (left child pointer), `rp` (right child pointer), `id` (the ID of the node), `val` (the value of the node), `mini` (the minimum value in the subtree rooted at the node), `minId` (the ID of the node with the minimum value in the subtree rooted at the node), and `lazy` (a lazy propagation value).
+
+3. The `node_t` struct has several member functions including `update` (to update the minimum value and minimum ID in the subtree), `apply` (to apply a lazy propagation value to the node and its children), `push` (to propagate lazy values to the children), `is_root` (to check if the node is the root of the splay tree), `rotr` (to perform a right rotation on the node in the splay tree), `rotl` (to perform a left rotation on the node in the splay tree), `splay` (to splay the node to the root of the splay tree), `expose` (to expose the node in the splay tree), `find_root` (to find the root of the splay tree containing the node), `cut` (to cut the edge between the node and its parent), `link` (to link the node to its parent with a given value and edge), and `add` (to add a value to the node and propagate it to the children).
+
+4. The code also defines a `vector<edge> g[max_n]` to represent the graph, where `g[u]` contains the edges going out from vertex `u`.
+
+5. The code defines several helper functions including `add_edge` (to add an edge to the graph), `bfs` (to perform a breadth-first search to find the shortest path from the source to the sink), `pour` (to pour the flow from a node to its parent), and `max_flow` (to find the maximum flow in the graph using the Edmonds-Karp algorithm).
+
+6. The code takes input for the number of vertices `n` and the number of edges `e`, and then adds edges to the graph using the `add_edge` function. Finally, it outputs the maximum flow in the graph using the `max_flow` function.
+
+## Optimization Strategy
+Based on the code analysis, we can identify several potential optimizations:
+
+1. Improve memory usage:
+   - The `vector<edge> g[max_n]` can be replaced with a more memory-efficient data structure, such as an adjacency list.
+   - The `struct node_t` can be optimized to use less memory.
+   - The `vector<int> lists[max_n]` can be replaced with a more memory-efficient data structure, such as a linked list.
+
+2. Reduce unnecessary computations:
+   - The `update` function in the `node_t` struct is called multiple times during the splay tree operations. We can optimize this function to reduce unnecessary computations.
+
+3. Optimize loops and recursive calls:
+   - The `pour` function is called multiple times in a loop. We can optimize this function to improve its performance.
+
+4. Use compiler optimizations:
+   - We can use compiler optimizations, such as loop unrolling and function inlining, to improve the performance of the code.
+
+Let's now proceed with the step-by-step explanation of each optimization.
+
+## Step-by-Step Explanation
+
+### Optimization 1: Improve memory usage
+
+1. Replace `vector<edge> g[max_n]` with an adjacency list:
+   - The current implementation uses a `vector` of `edge` structures to represent the graph. This can be memory inefficient, especially when the number of edges is large.
+   - We can replace it with an adjacency list representation, which is more memory-efficient.
+   - Instead of storing all the edges in a `vector`, we can store only the destination vertices and capacities in separate `vector`s.
+   - We can define two `vector<vector<int>>` variables: `graph` and `capacity`.
+   - `graph[u]` will contain the destination vertices of the edges going out from vertex `u`, and `capacity[u]` will contain the corresponding edge capacities.
+
+2. Optimize the `struct node_t` to use less memory:
+   - The `struct node_t` currently uses several pointers (`pp`, `lp`, `rp`) for parent, left child, and right child pointers.
+   - We can optimize the memory usage by replacing these pointers with indices.
+   - Instead of storing pointers to other nodes, we can store the indices of the nodes in a `vector<node_t>`.
+   - We can define a `vector<node_t> nodes` to store the nodes.
+
+3. Replace `vector<int> lists[max_n]` with a more memory-efficient data structure:
+   - The `vector<int> lists[max_n]` is used to store the indices of nodes in the `expose` and `pour` functions.
+   - We can replace it with a more memory-efficient data structure, such as a linked list.
+   - Instead of storing the indices of nodes in a `vector`, we can store them in a linked list.
+   - We can define a `vector<list<int>> lists` to store the linked lists.
+
+### Optimization 2: Reduce unnecessary computations
+
+1. Optimize the `update` function in the `struct node_t`:
+   - The `update` function is called multiple times during the splay tree operations.
+   - Currently, it updates the minimum value and minimum ID in the subtree by comparing the values in the left and right children.
+   - We can optimize this function by storing the minimum value and minimum ID in each node instead of computing them during the update.
+   - We can update the minimum value and minimum ID during the operations that modify the tree (such as rotations and propagations).
+
+### Optimization 3: Optimize loops and recursive calls
+
+1. Optimize the `pour` function:
+   - The `pour` function is called multiple times in a loop.
+   - Currently, it performs a splay operation on the node and updates the flow.
+   - We can optimize this function by avoiding unnecessary splay operations and flow updates.
+   - Instead of splaying the node and updating the flow, we can directly update the flow and mark the node as visited.
+   - We can use a `vector<bool> visited` to keep track of the visited nodes.
+
+### Optimization 4: Use compiler optimizations
+
+1. Use compiler optimizations, such as loop unrolling and function inlining, to improve the performance of the code.
+   - We can use compiler optimizations, such as loop unrolling and function inlining, to improve the performance of the code.
+   - We can enable compiler optimizations by providing appropriate pragma directives or compiler flags.

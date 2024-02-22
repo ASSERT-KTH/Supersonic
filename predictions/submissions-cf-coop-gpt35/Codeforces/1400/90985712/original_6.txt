@@ -1,0 +1,228 @@
+The given code calculates the number of valid sequences based on certain conditions. However, there are several areas where the code can be optimized for better performance:
+
+1. Avoid using the "bits/stdc++.h" header: This header includes a large number of standard library headers, which can significantly increase compilation time and memory usage. It is better to include only the necessary standard library headers.
+
+2. Unnecessary memory usage: The code uses several large arrays, such as `cnk[X][X]`, `fact[N]`, `defact[N]`, and `dp[1 << K][X]`, which can lead to excessive memory usage. We can optimize the memory usage by reducing the size of these arrays or finding alternative ways to store the required information.
+
+3. Redundant calculations: The code performs several redundant calculations, such as repeatedly calculating the same values in loops. These calculations can be avoided by storing the results in variables or arrays and reusing them when needed.
+
+4. Inefficient data structures: The code uses unordered_set and unordered_map in some places, which can have suboptimal performance for small sizes. Replacing these data structures with arrays or vectors can improve performance.
+
+5. Compiler optimizations: The code does not have any compiler optimizations enabled. Enabling compiler optimizations, such as loop unrolling or function inlining, can significantly improve performance.
+
+Now, let's optimize the code step by step:
+
+Step 1: Remove unnecessary header inclusion and replace with necessary standard library headers.
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <unordered_set>
+#include <cstring>
+```
+
+Step 2: Optimize memory usage by reducing the size of large arrays.
+
+```cpp
+const int N = 3e5 + 7, K = 20, X = 42, M = 998244353;
+int cnk[X][X];
+int fact[N], defact[N];
+int dp[1 << K][X];
+...
+```
+
+The size of the `cnk` array can be reduced to `cnk[N][X]` instead of `cnk[X][X]`. Similarly, reduce the size of the `fact` and `defact` arrays to `fact[X]` and `defact[X]`, respectively.
+
+Step 3: Remove redundant calculations by storing the results in variables or arrays.
+
+```cpp
+int bpow(int a, int n) {
+  if (n == 0)
+    return 1;
+  if (n == 1)
+    return a % M;
+  if (n % 2 == 0) {
+    int mem = bpow(a, n / 2);
+    return (mem * mem) % M;
+  }
+  return (a * bpow(a, n - 1)) % M;
+}
+```
+
+Replace the `bpow` function with a lookup table for precalculated powers of 2. This will avoid the recursive function calls and reduce redundant calculations.
+
+```cpp
+const int MAX_POWER = 64;
+int powers_of_2[MAX_POWER];
+
+void init_powers_of_2() {
+  powers_of_2[0] = 1;
+  for (int i = 1; i < MAX_POWER; i++) {
+    powers_of_2[i] = (powers_of_2[i - 1] * 2) % M;
+  }
+}
+
+int bpow(int a, int n) {
+  int result = 1;
+  for (int i = 0; i < MAX_POWER; i++) {
+    if (n & (1 << i)) {
+      result = (result * powers_of_2[i]) % M;
+    }
+  }
+  return result;
+}
+```
+
+Step 4: Replace unordered_set and unordered_map with arrays or vectors for better performance.
+
+```cpp
+unordered_set<signed> lol;
+...
+unordered_set<signed>::iterator it;
+for (it = lol.begin(); it != lol.end(); it++) {
+  int elem = *it;
+  ...
+}
+```
+
+Replace the unordered_set with a vector and use a range-based for loop for iterating over the elements.
+
+```cpp
+vector<int> lol;
+...
+for (int elem : lol) {
+  ...
+}
+```
+
+Step 5: Enable compiler optimizations by using compiler-specific pragmas or flags.
+
+For example, you can use the `-O3` optimization flag when compiling with GCC or Clang to enable aggressive compiler optimizations.
+
+Step 6: Add comments to the code to explain the changes made and improve code readability.
+
+Here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <cstring>
+
+using namespace std;
+
+const int N = 3e5 + 7, K = 20, X = 42, M = 998244353;
+int cnk[N][X];
+int fact[X], defact[X];
+int dp[1 << K][X];
+int sz[1 << K];
+vector<int> op[N], cl[N];
+pair<int, int> lr[N];
+pair<int, int> bad[K];
+bool has[N];
+bool f[N], f2[N];
+
+const int MAX_POWER = 64;
+int powers_of_2[MAX_POWER];
+
+void init_powers_of_2() {
+  powers_of_2[0] = 1;
+  for (int i = 1; i < MAX_POWER; i++) {
+    powers_of_2[i] = (powers_of_2[i - 1] * 2) % M;
+  }
+}
+
+int bpow(int a, int n) {
+  int result = 1;
+  for (int i = 0; i < MAX_POWER; i++) {
+    if (n & (1 << i)) {
+      result = (result * powers_of_2[i]) % M;
+    }
+  }
+  return result;
+}
+
+void init() {
+  memset(cnk, 0, sizeof(cnk));
+  for (int n = 0; n < X; n++) {
+    cnk[n][0] = 1;
+    for (int k = 1; k <= n; k++) {
+      cnk[n][k] = (cnk[n - 1][k] + cnk[n - 1][k - 1]) % M;
+    }
+  }
+  fact[0] = 1;
+  for (int i = 1; i < X; i++) {
+    fact[i] = (fact[i - 1] * i) % M;
+  }
+  defact[X - 1] = bpow(fact[X - 1], M - 2);
+  for (int i = X - 2; i >= 0; i--) {
+    defact[i] = (defact[i + 1] * (i + 1)) % M;
+  }
+}
+
+int get_cnk(int n, int k) {
+  if (k > n) {
+    return 0;
+  }
+  if (k < 0) {
+    return 0;
+  }
+  if (n < X) {
+    return cnk[n][k];
+  }
+  return (((fact[n] * defact[k]) % M) * defact[n - k]) % M;
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  cout.tie(NULL);
+
+  memset(has, 0, sizeof(has));
+  memset(dp, 0, sizeof(dp));
+  memset(f, 0, sizeof(f));
+  memset(f2, 0, sizeof(f2));
+  init();
+  init_powers_of_2();
+
+  int n, m;
+  cin >> n >> m;
+
+  for (int i = 0; i < n; i++) {
+    cin >> lr[i].first >> lr[i].second;
+    op[lr[i].first].push_back(i);
+    cl[lr[i].second].push_back(i);
+  }
+
+  for (int i = 0; i < m; i++) {
+    cin >> bad[i].first >> bad[i].second;
+    bad[i].first--;
+    bad[i].second--;
+  }
+
+  dp[0][0] = 1;
+  sz[0] = 0;
+
+  for (int mask = 1; mask < (1 << m); mask++) {
+    int pos = -1;
+    for (int i = 0; i < m; i++) {
+      if (mask & (1 << i)) {
+        pos = i;
+        break;
+      }
+    }
+    int nmask = 0, alone = 0, x = bad[pos].first, nmask2 = 0, alone2 = 0;
+    vector<int> lol;
+    vector<int> kek, kek2;
+
+    for (int i = 0; i < m; i++) {
+      if (mask & (1 << i)) {
+        if (bad[i].first != x && bad[i].second != x) {
+          nmask |= (1 << i);
+        }
+        lol.push_back(bad[i].first);
+        lol.push_back(bad[i].second);
+        if (bad[i].first == x && !f[bad[i].second]) {
+          f[bad[i].second] = 1;
+          kek.push_back(bad[i].second);
+        }
+        if (bad[i].second == x

@@ -1,0 +1,61 @@
+#include <cstdint>
+#include <iostream>
+#include <vector>
+using namespace std;
+
+void inputArray(uint32_t A[], int num) {
+  for (int i = 0; i < num; i++) {
+    cin >> A[i];
+  }
+}
+
+void printArray(uint32_t A[], int num) {
+  if (num > 0) {
+    cout << A[0];
+  }
+  for (int i = 1; i < num; i++) {
+    cout << " " << A[i];
+  }
+  cout << endl;
+}
+
+int merge(uint32_t A[], uint32_t left, uint32_t mid, uint32_t right) {
+  uint32_t n1 = mid - left;
+  uint32_t n2 = right - mid;
+  vector<uint32_t> L(A + left, A + mid);
+  vector<uint32_t> R(A + mid, A + right);
+  L.push_back(UINT32_MAX);
+  R.push_back(UINT32_MAX);
+  int compared = 0;
+  for (uint32_t i = 0, j = 0, k = left; k < right; k++) {
+    compared++;
+    if (L[i] <= R[j]) {
+      A[k] = L[i++];
+    } else {
+      A[k] = R[j++];
+    }
+  }
+  return compared;
+}
+
+int mergeSort(uint32_t A[], uint32_t left, uint32_t right) {
+  int compared = 0;
+  if (left + 1 < right) {
+    uint32_t mid = (left + right) / 2;
+    compared += mergeSort(A, left, mid);
+    compared += mergeSort(A, mid, right);
+    compared += merge(A, left, mid, right);
+  }
+  return compared;
+}
+
+int main() {
+  int n;
+  cin >> n;
+  vector<uint32_t> A(n);
+  inputArray(A.data(), n);
+  int compared = mergeSort(A.data(), 0, n);
+  printArray(A.data(), n);
+  cout << compared << endl;
+  return 0;
+}

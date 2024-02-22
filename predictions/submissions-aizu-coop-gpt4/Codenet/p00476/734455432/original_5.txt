@@ -1,0 +1,139 @@
+The given code is a C++ program that uses two Segment Trees (seg and rmq) to solve a specific problem, which seems to be a competitive programming problem. It reads input of certain parameters and tries to solve the problem with given constraints. The main computation happens in the 'solve' function. 
+
+Looking at the code, we can identify the following potential areas for optimization:
+
+1. Inefficient Data Structures: The current data structures used are arrays. Depending on the problem, it might be beneficial to use other data structures, but without more context, it's hard to recommend specific changes.
+
+2. Redundant Computations: Some computations are repeated several times in the code (for example the computation of seg_getMax(l, r) in the 'solve' function). We could store these results and re-use them instead of computing them again.
+
+3. Loop Optimization: There are nested loops within the 'solve' function, which can lead to high time complexity. We could try to optimize these.
+
+4. Compiler Optimizations: We can use compiler optimization flags to help improve the performance of the code.
+
+Now, let's discuss the optimization strategy in detail:
+
+1. Redundant Computations:
+
+In the 'solve' function, we see multiple calls to seg_getMax with the same parameters. This function goes through the whole segment tree to find the maximum value, which is quite costly. We can optimize this by storing the result of the function call in a variable and using this variable instead of calling the function again.
+
+2. Loop Optimization:
+
+The while loop inside the 'solve' function seems to be doing redundant work. We can try to reduce the number of iterations by modifying the conditions or by breaking the loop as soon as we meet the required condition.
+
+3. Compiler Optimizations:
+
+We can use compiler optimization flags like -O2 or -O3 when compiling the code. These flags tell the compiler to optimize the code for speed, and can result in significant performance improvements.
+
+Now, let's modify the code as per the optimization strategy:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+const int INF = 1 << 28;
+typedef pair<int, int> Pr;
+int N, H;
+int d[100000], h[100000];
+const int size = 1 << 20;
+int seg_v[size * 2 - 1];
+int seg_a[size * 2 - 1];
+Pr rmq[size * 2 - 1];
+
+void seg_add(int l, int r, int x, int k = 0, int a = 0, int b = size) {
+  if (b <= l || r <= a)
+    return;
+  if (l <= a && b <= r) {
+    seg_a[k] += x;
+    while (k) {
+      k = (k - 1) / 2;
+      seg_v[k] = max(seg_v[k * 2 + 1] + seg_a[k * 2 + 1],
+                     seg_v[k * 2 + 2] + seg_a[k * 2 + 2]);
+    }
+    return;
+  }
+  int m = (a + b) / 2;
+  seg_add(l, r, x, k * 2 + 1, a, m);
+  seg_add(l, r, x, k * 2 + 2, m, b);
+}
+
+int seg_getMax(int l, int r, int k = 0, int a = 0, int b = size) {
+  if (b <= l || r <= a)
+    return -INF;
+  if (l <= a && b <= r)
+    return seg_a[k] + seg_v[k];
+  int m = (a + b) / 2;
+  int vl = seg_getMax(l, r, k * 2 + 1, a, m);
+  int vr = seg_getMax(l, r, k * 2 + 2, m, b);
+  return seg_a[k] + max(vl, vr);
+}
+
+void rmq_update(int k, int x) {
+  int i = k;
+  k += size - 1;
+  rmq[k] = Pr(x, i);
+  while (k) {
+    k = (k - 1) / 2;
+    rmq[k] = max(rmq[k * 2 + 1], rmq[k * 2 + 2]);
+  }
+}
+
+Pr _rmq_getMax(int l, int r, int k = 0, int a = 0, int b = size) {
+  if (b <= l || r <= a)
+    return Pr(-INF, -1);
+  if (l <= a && b <= r)
+    return rmq[k];
+  int m = (a + b) / 2;
+  Pr vl = _rmq_getMax(l, r, k * 2 + 1, a, m);
+  Pr vr = _rmq_getMax(l, r, k * 2 + 2, m, b);
+  return max(vl, vr);
+}
+
+int rmq_getMax(int l, int r) { return _rmq_getMax(l, r).first; }
+int rmq_getMaxIdx(int l, int r) { return _rmq_getMax(l, r).second; }
+
+void solve() {
+  long long int res = 0;
+  for (int i = 0; i < N; i++) {
+    rmq_update(i, h[i]);
+  }
+  seg_add(0, N, H);
+
+  for (int fl = 0; fl < N; fl++) {
+    int seg_max = seg_getMax(fl, fl + 1);
+    if (seg_max > H) {
+      seg_add(fl, N, H - seg_max);
+    }
+    seg_add(fl, N, -d[fl]);
+    seg_max = seg_getMax(fl, fl + 1);
+    if (seg_max > 0)
+      continue;
+    while (true) {
+      int idx = rmq_getMaxIdx(0, fl);
+      int seg_max_idx = seg_getMax(idx, fl);
+      if (h[idx] > H - seg_max_idx) {
+        h[idx] = H - seg_max_idx;
+        rmq_update(idx, h[idx]);
+        continue;
+      }
+      int s = (H - seg_max_idx) / h[idx];
+      int hp = seg_max = seg_getMax(fl, fl + 1);
+      int need = -hp + 1;
+      int t = (need / h[idx]) + !!(need % h[idx]);
+      int num = min(s, t);
+      seg_add(idx, N, h[idx] * num);
+      res += num;
+      if (seg_max > 0)
+        break;
+    }
+  }
+  printf("%lld\n", res);
+}
+
+int main() {
+  scanf("%d %d", &N, &H);
+  for (int i = 0; i < N - 1; i++) {
+    scanf("%d %d", d + i + 1, h + i);
+  }
+  solve();
+}
+```
+The changes involve caching the results of `seg_getMax()` calls and reusing them, reducing the number of calls to this function. This can potentially reduce the time complexity of the program, especially when the input size is large.

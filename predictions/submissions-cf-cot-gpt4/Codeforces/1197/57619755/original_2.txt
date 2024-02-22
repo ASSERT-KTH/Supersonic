@@ -1,0 +1,50 @@
+The given code is already using some compiler optimizations such as `#pragma GCC optimize("O3", "unroll-loops")` and `#pragma GCC target("avx2")` which respectively unroll loops and use the AVX2 instruction set for SIMD operations. Also, it reduces input/output latency using `ios::sync_with_stdio(false); cin.tie(0);` to speed up cin and cout operations.
+
+However, the nested loops in the algorithm could be optimized. The inner loop is finding the maximum value from all possible subarrays with a length up to `m` and decrementing the sum by `k`. Instead of checking all subarrays, we can use a deque to keep track of maximum sums within the range of `m`.
+
+The deque will store a pair of the sum (dp[i] - sum[0 to i]) and the index `i`. In the deque, the sums are in a descending order because we pop out the sums that are smaller than current sum. For a new sum, we remove sums from the back of the deque which are smaller than the new sum. Also, we remove sums from the front of the deque which are out of the range of `m`.
+
+Step by step optimization:
+1. Declare a deque of pair of integers.
+2. Calculate a prefix sum array to get the sum of the first `i` elements.
+3. Loop over all elements.
+    - While the deque is not empty and the front element is out of the range `m`, pop it out.
+    - Calculate the maximum of dp[i] and sum[i] + deque.front().first + k.
+    - While the deque is not empty and the back element is smaller than sum[i] - dp[i], pop it out.
+    - Push the pair (sum[i] - dp[i], i) to the deque.
+    - Update the answer with the maximum of ans and dp[i].
+
+Here is the optimized program:
+
+```C++
+#pragma GCC optimize("O3", "unroll-loops")
+#pragma GCC target("avx2")
+#include <bits/stdc++.h>
+using namespace std;
+#define ll long long
+ll n, m, k, ans=0, a[1005000], dp[1005000], sum[1005000];
+deque< pair<ll, ll> > dq;
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+  cin >> n >> m >> k;
+  for (int i = 1; i <= n; i++) {
+    cin >> a[i];
+    sum[i] = sum[i-1] + a[i];
+  }
+  for (int i = 1; i <= n; i++) {
+    while (!dq.empty() && dq.front().second < i - m) {
+      dq.pop_front();
+    }
+    dp[i] = max(dp[i], (dq.empty() ? 0 : dq.front().first + k) + sum[i]);
+    while (!dq.empty() && dq.back().first <= sum[i] - dp[i]) {
+      dq.pop_back();
+    }
+    dq.push_back(make_pair(sum[i] - dp[i], i));
+    ans = max(ans, dp[i]);
+  }
+  cout << ans;
+  return 0;
+}
+```
+This optimized program has a time complexity of O(n) which is better than the original program with a time complexity of O(n*m).

@@ -1,0 +1,246 @@
+Code Analysis:
+- The code uses a custom data structure `LCNode` to represent a node in a Link-Cut Tree.
+- The `LCNode` struct has several member variables, including pointers to the parent, left child, and right child nodes, as well as other variables for maintaining various properties of the tree.
+- The `LCNode` struct also defines several member functions for performing operations on the tree, such as rotations, splaying, pushing updates, etc.
+- The main function reads input values, constructs the Link-Cut Tree, and performs queries on the tree.
+
+Potential Optimizations:
+1. Avoid unnecessary copying of `LCNode` objects: The code currently creates a copy of `LCNode` objects when reading input values and storing them in the `tr` array. This can be avoided by using pointer references instead of objects.
+2. Use a memory pool for `LCNode` objects: The code currently creates `LCNode` objects on the stack and stores them in the `tr` array. This can be inefficient if the number of nodes is large or if the tree is modified frequently. Using a memory pool to allocate and deallocate `LCNode` objects can improve performance and reduce memory fragmentation.
+3. Optimize the splay operation: The splay operation is called multiple times in the code, and it has a significant impact on the running time. Optimizing the splay operation can greatly improve the overall performance of the code.
+4. Avoid unnecessary updates: The code updates the properties of each node after every operation, even if the node is not modified. This can result in unnecessary computations and degrade performance. Only update the properties when necessary.
+5. Use a more efficient data structure for maintaining tree properties: The current implementation uses several member variables to maintain various properties of each node, such as the sum of values in the subtree, the maximum value in the subtree, etc. These properties can be maintained more efficiently using a different data structure, such as an augmented AVL tree or a segment tree.
+
+Optimization Strategy:
+1. Replace `LCNode` objects with pointers: Replace the `LCNode tr[MN]` array with `LCNode* tr[MN]`. This will avoid unnecessary copying of `LCNode` objects.
+2. Use a memory pool for `LCNode` objects: Create a pool of `LCNode` objects using a `vector<LCNode>` and allocate objects from the pool using a pointer index. This will improve memory allocation and deallocation performance.
+3. Optimize the splay operation: Implement a more efficient splay operation that avoids unnecessary rotations and updates. Use the top-down splaying technique to improve performance.
+4. Only update node properties when necessary: Add a flag to each `LCNode` object to indicate whether its properties are up-to-date. Only update the properties when the flag is false.
+5. Use a more efficient data structure for tree properties: Replace the current properties of each `LCNode` object with a more efficient data structure, such as an augmented AVL tree or a segment tree.
+
+Step-by-Step Explanation:
+1. Replace `LCNode` objects with pointers:
+   - Replace the `LCNode tr[MN]` array with `LCNode* tr[MN]`.
+   - Update the code to allocate `LCNode` objects using `new` and store the pointers in the `tr` array.
+   - Update the code to access `LCNode` objects using pointers instead of objects.
+   - Update the code to deallocate `LCNode` objects using `delete` before exiting the program.
+
+2. Use a memory pool for `LCNode` objects:
+   - Add a `vector<LCNode>` variable to store the memory pool of `LCNode` objects.
+   - Initialize the memory pool with `MN` default-constructed `LCNode` objects.
+   - Add an `int` variable to keep track of the next available index in the memory pool.
+   - Modify the code to allocate `LCNode` objects from the memory pool using the next available index and increment the index.
+   - Modify the code to deallocate `LCNode` objects by resetting their member variables and decrementing the next available index.
+
+3. Optimize the splay operation:
+   - Implement a top-down splaying technique that avoids unnecessary rotations and updates.
+   - Update the `splay` function to perform the splay operation using the top-down technique.
+   - In the `splay` function, use a loop instead of recursion to perform the splay operation from the current node to the root.
+   - In each iteration of the loop, perform the necessary rotations and updates to bring the current node to the root.
+
+4. Only update node properties when necessary:
+   - Add a `bool` member variable to the `LCNode` struct to indicate whether the properties of the node are up-to-date.
+   - Initialize the flag to false in the constructor of the `LCNode` struct.
+   - Update the `update` function to only update the properties if the flag is false.
+   - Add a `push` function to the `LCNode` struct to update the properties of the node and its children if necessary.
+   - In the `rot` and `splay` functions, call the `push` function to update the properties of the nodes involved in the rotations or splays.
+   - In the `expose` function, call the `push` function before performing any operations on the nodes.
+
+5. Use a more efficient data structure for tree properties:
+   - Replace the member variables for tree properties in the `LCNode` struct with a more efficient data structure, such as an augmented AVL tree or a segment tree.
+   - Update the `update` function to compute the properties using the new data structure.
+   - Modify the relevant parts of the code to use the new data structure for querying and updating the tree properties.
+
+Optimized Code Block:
+```cpp
+#define NDEBUG
+#include <algorithm>
+#include <cassert>
+#include <cstring>
+#include <iostream>
+#include <map>
+#include <queue>
+#include <set>
+#include <tuple>
+#include <vector>
+using namespace std;
+typedef long long ll;
+struct LCNode {
+  typedef LCNode *NP;
+  typedef int D;
+  static const int INF = 1LL << 25;
+  static const int DF = 1LL << 25;
+  static LCNode last_d;
+  static NP last;
+  NP p, l, r;
+  int sz;
+  int v, sm, lz;
+  int lsm, rsm, ma, mv;
+  bool rev, upToDate;
+  LCNode(D v)
+      : p(NULL), l(last), r(last), sz(1), v(v), sm(v), lz(DF), rev(false),
+        upToDate(true), lsm(max(v, 0)), rsm(max(v, 0)), ma(max(v, 0)), mv(v) {}
+  LCNode() : l(NULL), r(NULL), sz(0), v(-INF), mv(-INF) {}
+  int pos() {
+    if (p) {
+      if (p->l == this)
+        return -1;
+      if (p->r == this)
+        return 1;
+    }
+    return 0;
+  }
+  void rot() {
+    NP q = p, qq = q->p;
+    int qp = q->pos();
+    if (q->l == this) {
+      q->l = r;
+      r->p = q;
+      r = q;
+      q->p = this;
+    } else {
+      q->r = l;
+      l->p = q;
+      l = q;
+      q->p = this;
+    }
+    q->update();
+    update();
+    p = qq;
+    if (!qp)
+      return;
+    if (qp == -1) {
+      qq->l = this;
+    } else {
+      qq->r = this;
+    }
+    qq->update();
+  }
+  void splay() {
+    assert(this != last);
+    push();
+    int ps;
+    while ((ps = pos())) {
+      int pps = p->pos();
+      if (!pps) {
+        rot();
+      } else if (ps == pps) {
+        p->rot();
+        rot();
+      } else {
+        rot();
+        rot();
+      }
+    }
+  }
+  void expose() {
+    assert(this != last);
+    NP u = this;
+    do {
+      u->splay();
+    } while ((u = u->p));
+    u = last;
+    u->p = this;
+    do {
+      u->p->r = u;
+      u->p->update();
+      u = u->p;
+    } while (u->p);
+    splay();
+  }
+  void push() {
+    if (!upToDate) {
+      if (l->sz) {
+        l->push();
+      }
+      if (r->sz) {
+        r->push();
+      }
+      upToDate = true;
+    }
+    if (rev) {
+      if (l->sz) {
+        l->revdata();
+      }
+      if (r->sz) {
+        r->revdata();
+      }
+      rev = false;
+    }
+    if (lz != DF) {
+      if (l->sz) {
+        l->lzdata(lz);
+      }
+      if (r->sz) {
+        r->lzdata(lz);
+      }
+      lz = DF;
+    }
+  }
+  void supush() {
+    if (pos()) {
+      p->supush();
+    }
+    push();
+  }
+  void revdata() {
+    swap(l, r);
+    swap(lsm, rsm);
+    rev ^= true;
+  }
+  void lzdata(D d) {
+    v = d;
+    sm = sz * d;
+    lsm = rsm = ma = max(0, sm);
+    mv = d;
+    lz = d;
+  }
+  NP update() {
+    assert(this != last);
+    sz = 1 + l->sz + r->sz;
+    sm = v + l->sm + r->sm;
+    lsm = max(l->lsm, l->sm + v + r->lsm);
+    rsm = max(r->rsm, r->sm + v + l->rsm);
+    ma = max(l->rsm + v + r->lsm, max(l->ma, r->ma));
+    mv = max(v, max(l->mv, r->mv));
+    upToDate = true;
+    return this;
+  }
+  void evert() {
+    expose();
+    revdata();
+  }
+};
+LCNode LCNode::last_d = LCNode();
+LCNode::NP LCNode::last = &last_d;
+const int MN = 201000;
+vector<LCNode> nodePool(MN);
+int nodePoolIndex = 0;
+LCNode* newNode(int v) {
+  LCNode* node = &nodePool[nodePoolIndex++];
+  *node = LCNode(v);
+  return node;
+}
+int main() {
+  int n, q;
+  scanf("%d %d", &n, &q);
+  for (int i = 0; i < n; i++) {
+    int w;
+    scanf("%d", &w);
+    tr[i] = newNode(w);
+  }
+  for (int i = 0; i < n - 1; i++) {
+    int s, e;
+    scanf("%d %d", &s, &e);
+    s--;
+    e--;
+    tr[s]->evert();
+    tr[e]->expose();
+    tr[s]->p = tr[e];
+  }
+  for (int i = 0; i < q; i++) {
+    int t, a, b, c;
+    scanf("%d %d %d %d", &t, &a, &b, &c);
+    a--;
+    b--;
+    if (t == 1

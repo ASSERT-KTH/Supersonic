@@ -1,0 +1,374 @@
+Step 1: Optimize the `check` function
+The `check` function is called multiple times in the `solve` function. It checks if a move from one state to another is valid. Currently, it uses a loop to check 24 bits of the state, which can be optimized.
+
+Instead of checking 24 bits individually, we can use bit manipulation to check multiple bits at once. We can divide the 24 bits into three groups of 8 bits each and check them together. This will reduce the number of iterations in the loop and improve performance.
+
+Here's the modified `check` function:
+```cpp
+inline bool check(int u, int v) {
+  int p1, p2;
+  
+  p1 = v & 255;
+  if (p1) {
+    if (wall[p1]) {
+      return false;
+    }
+    p2 = (v >> 8) & 255;
+    if (p1 == p2) {
+      return false;
+    }
+    if (p1 == ((u >> 8) & 255) && p2 == ((u >> 16) & 255)) {
+      return false;
+    }
+    
+    p2 = (v >> 16) & 255;
+    if (p1 == p2) {
+      return false;
+    }
+    if (p1 == ((u >> 16) & 255) && p2 == ((u >> 24) & 255)) {
+      return false;
+    }
+    
+    p2 = (v >> 24) & 255;
+    if (p1 == p2) {
+      return false;
+    }
+    if (p1 == ((u >> 24) & 255) && p2 == (u >> 0) & 255) {
+      return false;
+    }
+  }
+  
+  p1 = (v >> 8) & 255;
+  if (p1) {
+    if (wall[p1]) {
+      return false;
+    }
+    p2 = (v >> 16) & 255;
+    if (p1 == p2) {
+      return false;
+    }
+    if (p1 == ((u >> 16) & 255) && p2 == ((u >> 24) & 255)) {
+      return false;
+    }
+    
+    p2 = (v >> 24) & 255;
+    if (p1 == p2) {
+      return false;
+    }
+    if (p1 == ((u >> 24) & 255) && p2 == (u >> 0) & 255) {
+      return false;
+    }
+    
+    p2 = (v >> 0) & 255;
+    if (p1 == p2) {
+      return false;
+    }
+    if (p1 == ((u >> 0) & 255) && p2 == ((u >> 8) & 255)) {
+      return false;
+    }
+  }
+  
+  p1 = (v >> 16) & 255;
+  if (p1) {
+    if (wall[p1]) {
+      return false;
+    }
+    p2 = (v >> 24) & 255;
+    if (p1 == p2) {
+      return false;
+    }
+    if (p1 == ((u >> 24) & 255) && p2 == (u >> 0) & 255) {
+      return false;
+    }
+    
+    p2 = (v >> 0) & 255;
+    if (p1 == p2) {
+      return false;
+    }
+    if (p1 == ((u >> 0) & 255) && p2 == ((u >> 8) & 255)) {
+      return false;
+    }
+    
+    p2 = (v >> 8) & 255;
+    if (p1 == p2) {
+      return false;
+    }
+    if (p1 == ((u >> 8) & 255) && p2 == ((u >> 16) & 255)) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+```
+
+Step 2: Optimize the `solve` function
+The `solve` function is the main function that performs the breadth-first search to find the shortest path. There are a few optimizations we can make to improve its performance.
+
+1. Use a `vector` instead of a `queue`
+   Currently, the `solve` function uses a `queue` to store the states to be processed. However, a `vector` can be used instead, which provides faster random access and removal of elements. We can use two indices to keep track of the start and end positions of the states in the vector.
+
+2. Use a `bitset` instead of an array for `vis`
+   The `vis` array is used to mark visited states. Instead of using an array of `unsigned short`, we can use a `bitset` to reduce memory usage. Since the maximum number of states is 2^24, we can use a `bitset` of size 2^24 to mark visited states.
+
+Here's the modified `solve` function:
+```cpp
+int solve(int start, int goal) {
+  const int dif[5] = {0, -1, 1, -16, 16};
+  vector<int> states;
+  states.push_back(start);
+  states.push_back(-1);
+  int tm = tm0 + 1;
+  bitset<1 << 24> vis;
+  vis[start] = true;
+  int startIdx = 0;
+  int endIdx = 1;
+  
+  while (1) {
+    int u = states[startIdx++];
+    if (u < 0) {
+      states.push_back(-1);
+      ++tm;
+      endIdx++;
+    } else {
+      for (int i1 = u & 255 ? 4 : 0; i1 >= 0; --i1)
+        for (int i2 = u >> 8 & 255 ? 4 : 0; i2 >= 0; --i2)
+          for (int i3 = u >> 16 ? 4 : 0; i3 >= 0; --i3) {
+            int v = u + dif[i1] + (dif[i2] << 8) + (dif[i3] << 16);
+            if (vis[v]) {
+              continue;
+            }
+            if (check(u, v)) {
+              if (v == goal) {
+                return tm;
+              }
+              vis[v] = true;
+              states.push_back(v);
+              endIdx++;
+            }
+          }
+    }
+    
+    if (startIdx >= endIdx) {
+      break;
+    }
+  }
+}
+```
+
+Step 3: Optimize the `main` function
+The `main` function reads input, initializes variables, and calls the `solve` function. We can optimize it by removing unnecessary memory allocations and improving the input reading process.
+
+1. Use a fixed-size array for `c`
+   The `c` array is used to store the input characters. Instead of using a 2D array with variable size, we can use a fixed-size array of `char` to improve memory usage.
+
+2. Use `scanf` with a fixed format string for input reading
+   The `scanf` function is used to read the input values. Instead of using `scanf` with a format string that includes `fgets`, we can use a fixed format string to read the values directly. This will simplify the code and improve performance.
+
+Here's the modified `main` function:
+```cpp
+int main() {
+  int w, h;
+  char c[16][20];
+  while (scanf("%d%d%*d ", &w, &h), w) {
+    for (int i = 0; i < h; ++i) {
+      scanf("%s", c[i]);
+    }
+    
+    int goal = 0;
+    int start = 0;
+    for (int i = 0; i < h; ++i) {
+      for (int j = 0; j < w; ++j) {
+        if (c[i][j] == '#') {
+          wall[i << 4 | j] = true;
+        } else {
+          wall[i << 4 | j] = false;
+          if (isupper(c[i][j])) {
+            goal |= (i << 4 | j) << (c[i][j] - 'A') * 8;
+          } else if (islower(c[i][j])) {
+            start |= (i << 4 | j) << (c[i][j] - 'a') * 8;
+          }
+        }
+      }
+    }
+    
+    int tm = solve(start, goal);
+    printf("%d\n", tm - tm0);
+    tm0 = tm + 1;
+    if (tm0 > 55000) {
+      vis.reset();
+      tm0 = 0;
+    }
+  }
+}
+```
+
+Here's the optimized C++ program:
+```cpp
+#include <cctype>
+#include <cstdio>
+#include <cstring>
+#include <bitset>
+#include <vector>
+
+using namespace std;
+
+bool wall[256];
+int tm0;
+
+inline bool check(int u, int v) {
+  int p1, p2;
+  
+  p1 = v & 255;
+  if (p1) {
+    if (wall[p1]) {
+      return false;
+    }
+    p2 = (v >> 8) & 255;
+    if (p1 == p2) {
+      return false;
+    }
+    if (p1 == ((u >> 8) & 255) && p2 == ((u >> 16) & 255)) {
+      return false;
+    }
+    
+    p2 = (v >> 16) & 255;
+    if (p1 == p2) {
+      return false;
+    }
+    if (p1 == ((u >> 16) & 255) && p2 == ((u >> 24) & 255)) {
+      return false;
+    }
+    
+    p2 = (v >> 24) & 255;
+    if (p1 == p2) {
+      return false;
+    }
+    if (p1 == ((u >> 24) & 255) && p2 == (u >> 0) & 255) {
+      return false;
+    }
+  }
+  
+  p1 = (v >> 8) & 255;
+  if (p1) {
+    if (wall[p1]) {
+      return false;
+    }
+    p2 = (v >> 16) & 255;
+    if (p1 == p2) {
+      return false;
+    }
+    if (p1 == ((u >> 16) & 255) && p2 == ((u >> 24) & 255)) {
+      return false;
+    }
+    
+    p2 = (v >> 24) & 255;
+    if (p1 == p2) {
+      return false;
+    }
+    if (p1 == ((u >> 24) & 255) && p2 == (u >> 0) & 255) {
+      return false;
+    }
+    
+    p2 = (v >> 0) & 255;
+    if (p1 == p2) {
+      return false;
+    }
+    if (p1 == ((u >> 0) & 255) && p2 == ((u >> 8) & 255)) {
+      return false;
+    }
+  }
+  
+  p1 = (v >> 16) & 255;
+  if (p1) {
+    if (wall[p1]) {
+      return false;
+    }
+    p2 = (v >> 24) & 255;
+    if (p1 == p2) {
+      return false;
+    }
+    if (p1 == ((u >> 24) & 255) && p2 == (u >> 0) & 255) {
+      return false;
+    }
+    
+    p2 = (v >> 0) & 255;
+    if (p1 == p2) {
+      return false;
+    }
+    if (p1 == ((u >> 0) & 255) && p2 == ((u >> 8) & 255)) {
+      return false;
+    }
+    
+    p2 = (v >> 8) & 255;
+    if (p1 == p2) {
+      return false;
+    }
+    if (p1 == ((u >> 8) & 255) && p2 == ((u >> 16) & 255)) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+int solve(int start, int goal) {
+  const int dif[5] = {0, -1, 1, -16, 16};
+  vector<int> states;
+  states.push_back(start);
+  states.push_back(-1);
+  int tm = tm0 + 1;
+  bitset<1 << 24> vis;
+  vis[start] = true;
+  int startIdx = 0;
+  int endIdx = 1;
+  
+  while (1) {
+    int u = states[startIdx++];
+    if (u < 0) {
+      states.push_back(-1);
+      ++tm;
+      endIdx++;
+    } else {
+      for (int i1 = u & 255 ? 4 : 0; i1 >= 0; --i1)
+        for (int i2 = u >> 8 & 255 ? 4 : 0; i2 >= 0; --i2)
+          for (int i3 = u >> 16 ? 4 : 0; i3 >= 0; --i3) {
+            int v = u + dif[i1] + (dif[i2] << 8) + (dif[i3] << 16);
+            if (vis[v]) {
+              continue;
+            }
+            if (check(u, v)) {
+              if (v == goal) {
+                return tm;
+              }
+              vis[v] = true;
+              states.push_back(v);
+              endIdx++;
+            }
+          }
+    }
+    
+    if (startIdx >= endIdx) {
+      break;
+    }
+  }
+}
+
+int main() {
+  int w, h;
+  char c[16][20];
+  while (scanf("%d%d%*d ", &w, &h), w) {
+    for (int i = 0; i < h; ++i) {
+      scanf("%s", c[i]);
+    }
+    
+    int goal = 0;
+    int start = 0;
+    for (int i = 0; i < h; ++i) {
+      for (int j = 0; j < w; ++j) {
+        if (c[i][j] == '#') {
+          wall[i << 4 | j] = true;
+        } else {
+          wall[i << 4 | j] = false;
+          if (isupper(c[i][j])) {
+            goal |= (i << 4 | j) << (c[i][j] - 'A') * 

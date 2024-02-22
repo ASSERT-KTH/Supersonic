@@ -1,0 +1,134 @@
+The given program calculates the answers to a set of queries on a tree structure. The program uses an LCA (Least Common Ancestor) data structure to efficiently compute the LCA of two nodes in the tree.
+
+To optimize the program, we can make the following modifications:
+
+1. Remove unnecessary includes: The program includes several unnecessary header files (`<algorithm>`, `<cassert>`, `<cmath>`, `<iostream>`, `<vector>`) that are not used in the code. We can remove these includes to improve compilation time and reduce memory usage.
+
+2. Replace `std::endl` with `'\n'`: The program uses `std::endl` to write newlines to the output stream. However, `std::endl` also flushes the output stream, which can be an expensive operation. We can replace `std::endl` with `'\n'` to avoid unnecessary flushing and improve performance.
+
+3. Optimize the calculation of `APPLY`: The program calculates the value of `APPLY` as `1.0 * sqrt(N) + 1`. Since `APPLY` is an integer value, we can use the `std::sqrt` function from `<cmath>` to calculate the square root and then cast the result to an integer.
+
+4. Optimize the calculation of `inv_N`: The program calculates the inverse of `N` as `mod_int(1) / N`. Instead of creating a temporary `mod_int` object, we can calculate the inverse directly using the `mod_int::mod_inv` function.
+
+5. Use a more efficient container for `pending_queries`: The program uses a vector (`pending_queries`) to store the pending queries. However, adding elements to a vector can be an expensive operation when the vector needs to resize. We can use a deque or a list instead, which have efficient insertion at both ends.
+
+6. Avoid unnecessary calculations in the main loop: The program calculates `base_probability` and `1 - base_probability` for each node in the tree, even if the corresponding query_d is zero. We can avoid these calculations by checking if `query_d[node] != 0` before performing the calculations.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <deque>
+#include <cmath>
+
+const int MOD = 998244353;
+
+struct mod_int {
+  int val;
+  mod_int(long long v = 0) {
+    if (v < 0)
+      v = v % MOD + MOD;
+    if (v >= MOD)
+      v %= MOD;
+    val = v;
+  }
+  static int mod_inv(int a, int m = MOD) {
+    int g = m, r = a, x = 0, y = 1;
+    while (r != 0) {
+      int q = g / r;
+      g %= r;
+      std::swap(g, r);
+      x -= q * y;
+      std::swap(x, y);
+    }
+    return x < 0 ? x + m : x;
+  }
+  explicit operator int() const { return val; }
+  mod_int &operator+=(const mod_int &other) {
+    val += other.val;
+    if (val >= MOD)
+      val -= MOD;
+    return *this;
+  }
+  mod_int &operator-=(const mod_int &other) {
+    val -= other.val;
+    if (val < 0)
+      val += MOD;
+    return *this;
+  }
+  static unsigned fast_mod(uint64_t x, unsigned m = MOD) {
+#if !defined(_WIN32) || defined(_WIN64)
+    return x % m;
+#endif
+    unsigned x_high = x >> 32, x_low = (unsigned)x;
+    unsigned quot, rem;
+    asm("divl %4\n" : "=a"(quot), "=d"(rem) : "d"(x_high), "a"(x_low), "r"(m));
+    return rem;
+  }
+  mod_int &operator*=(const mod_int &other) {
+    val = fast_mod((uint64_t)val * other.val);
+    return *this;
+  }
+  mod_int &operator/=(const mod_int &other) { return *this *= other.inv(); }
+  friend mod_int operator+(const mod_int &a, const mod_int &b) {
+    return mod_int(a) += b;
+  }
+  friend mod_int operator-(const mod_int &a, const mod_int &b) {
+    return mod_int(a) -= b;
+  }
+  friend mod_int operator*(const mod_int &a, const mod_int &b) {
+    return mod_int(a) *= b;
+  }
+  friend mod_int operator/(const mod_int &a, const mod_int &b) {
+    return mod_int(a) /= b;
+  }
+  mod_int &operator++() {
+    val = val == MOD - 1 ? 0 : val + 1;
+    return *this;
+  }
+  mod_int &operator--() {
+    val = val == 0 ? MOD - 1 : val - 1;
+    return *this;
+  }
+  mod_int operator++(int) {
+    mod_int before = *this;
+    ++*this;
+    return before;
+  }
+  mod_int operator--(int) {
+    mod_int before = *this;
+    --*this;
+    return before;
+  }
+  mod_int operator-() const { return val == 0 ? 0 : MOD - val; }
+  bool operator==(const mod_int &other) const { return val == other.val; }
+  bool operator!=(const mod_int &other) const { return val != other.val; }
+  mod_int inv() const { return mod_inv(val); }
+  mod_int pow(long long p) const {
+    assert(p >= 0);
+    mod_int a = *this, result = 1;
+    while (p > 0) {
+      if (p & 1)
+        result *= a;
+      a *= a;
+      p >>= 1;
+    }
+    return result;
+  }
+  friend std::ostream &operator<<(std::ostream &stream, const mod_int &m) {
+    return stream << m.val;
+  }
+};
+
+template <typename T, bool maximum_mode = false>
+struct RMQ {
+  int n = 0, levels = 0;
+  std::vector<T> values;
+  std::vector<std::vector<int>> range_low;
+  RMQ(const std::vector<T> &_values = {}) {
+    if (!_values.empty())
+      build(_values);
+  }
+  static int largest_bit(int x) { return 31 - __builtin_clz(x); }
+  int better_index(int a, int b) const

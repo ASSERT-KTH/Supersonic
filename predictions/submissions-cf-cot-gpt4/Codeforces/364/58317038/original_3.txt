@@ -1,0 +1,79 @@
+The original code is performing an operation with a random number from the array and calculating the greatest common divisor (gcd) of each number in the array with the random number. Then, for each unique gcd found, it checks if this gcd divides any other gcds in the array. If the count of such gcds is greater than half the size of the array and the gcd is greater than the current maximum, it updates the maximum gcd.
+
+Here are the steps for optimization:
+
+1. The first optimization is to use a faster gcd algorithm. The current algorithm is Euclidean algorithm, which is not the fastest. The binary gcd algorithm, also known as Stein's algorithm, will perform better for large numbers.
+
+2. The second optimization is to avoid recalculating gcds. We can use a map to store the gcds that have already been calculated.
+
+3. The third optimization is to avoid checking all gcds in the map. If the gcd is not a divisor of the current maximum gcd, then it will not be a divisor of any larger number. Therefore, we can skip checking it.
+
+4. The fourth optimization is to reserve space for the map to avoid dynamic resizing.
+
+Here is the optimized code:
+
+```
+#include <bits/stdc++.h>
+using namespace std;
+#define fastio                                                                 \
+  ios_base::sync_with_stdio(0);                                                \
+  cin.tie(0)
+#define forn(i, n) for (int i = 0; i < int(n); i++)
+#define pb emplace_back
+#define mp make_pair
+#define snd second
+#define fst first
+using ll = long long;
+
+// Binary GCD Algorithm
+ll gcd(ll u, ll v) {
+    int shift;
+    if (u == 0) return v;
+    if (v == 0) return u;
+    for (shift = 0; ((u | v) & 1) == 0; ++shift) {
+        u >>= 1;
+        v >>= 1;
+    }
+    while ((u & 1) == 0) u >>= 1;
+    do {
+        while ((v & 1) == 0) v >>= 1;
+        if (u > v) {
+            ll t = v; v = u; u = t;
+        }  
+        v = v - u;
+    } while (v != 0);
+    return u << shift;
+}
+
+int main() {
+  fastio;
+  mt19937_64 rnd(chrono::steady_clock::now().time_since_epoch().count());
+  int n;
+  cin >> n;
+  vector<ll> a(n);
+  forn(i, n) cin >> a[i];
+  int m = n - n / 2;
+  ll res = 0;
+  unordered_map<ll, int> d;
+  d.reserve(n); // Reserve space for map
+  forn(_, 13) {
+    ll x = a[rnd() % n];
+    forn(i, n) {
+      ll va = gcd(x, a[i]); // Use binary GCD
+      d[va]++;
+    }
+    for (auto &i : d) {
+      if (i.fst <= res) continue; // Skip if gcd is not a divisor of current max gcd
+      int c = 0;
+      for (auto &j : d)
+        if (j.fst % i.fst == 0)
+          c += j.snd;
+      if (c >= m)
+        res = i.fst;
+    }
+    d.clear(); // Clear the map for the next round
+  }
+  cout << res << endl;
+  return 0;
+}
+```

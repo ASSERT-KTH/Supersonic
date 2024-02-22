@@ -1,0 +1,105 @@
+Step 1: Avoid unnecessary copying of path array
+
+In the original program, the `MakePath` function takes a pointer to the `path` array as an argument and returns a pointer to the modified `path` array. This requires copying the `path` array every time the function is called, which can be expensive when the array is large.
+
+To avoid this unnecessary copying, we can modify the `MakePath` function to take a reference to the `path` array as an argument and modify it directly. This eliminates the need to allocate and copy the array every time the function is called.
+
+Step 2: Use dynamic memory allocation for visit array
+
+In the original program, the `visit` array is declared as a static array inside the `MakePath` function. This means that the array is allocated only once and shared across all function calls. However, the size of the array is determined at compile-time based on the value of `MAX_M`, which can lead to unnecessary memory usage when `MAX_M` is large.
+
+To optimize memory usage, we can dynamically allocate the `visit` array using the `new` operator inside the `MakePath` function. This allows us to allocate the array based on the actual value of `M`, which can be smaller than `MAX_M`. We can then release the memory using the `delete` operator before the function returns.
+
+Step 3: Remove unnecessary else clause
+
+In the original program, there is an unnecessary `else` clause in the `checkPath` lambda function. The `return` statement inside the `if` clause is followed by an `else` clause with another `return` statement. Since the `if` clause terminates the function execution if the condition is true, the `else` clause is redundant and can be removed.
+
+Step 4: Avoid unnecessary function calls in the main loop
+
+In the main loop of the original program, the `tryMove` lambda function is called twice with the same arguments. This can be avoided by storing the result of the first call and reusing it in the second call.
+
+Step 5: Avoid unnecessary copying of path array in the main loop
+
+Similar to step 1, we can modify the `tryMove` lambda function to take a reference to the `path` array as an argument and modify it directly. This eliminates the need to allocate and copy the array every time the function is called in the main loop.
+
+Step 6: Avoid unnecessary copying of dice array
+
+In the original program, the `dice` array is copied into the `d` variable inside the main loop. This copying is unnecessary and can be avoided by directly accessing the `dice` array inside the `tryMove` lambda function.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+using namespace std;
+const int MAX_T = 3000, MAX_M = 300;
+int M, start, goal, dice[6], *N;
+bool isPositionValid(int p) { return 0 <= p && p < M; }
+void MakePath(int& from, int* path) {
+  bool* visit = new bool[M]();
+  auto checkPath = [&path, &visit](int moveto) -> int {
+    if (!isPositionValid(moveto))
+      return 2 * MAX_T;
+    else {
+      int position = moveto + N[moveto];
+      if (!visit[position])
+        MakePath(position, path);
+      return path[position] + 1;
+    }
+  };
+  visit[from] = true;
+  int bestpath = MAX_T;
+  if (from == goal)
+    bestpath = 0;
+  else {
+    for (int r = 0; r < 6; r++) {
+      bestpath = min(bestpath, checkPath(from + dice[r]));
+      bestpath = min(bestpath, checkPath(from - dice[r]));
+    }
+  }
+  path[from] = bestpath;
+  delete[] visit;
+}
+int main() {
+  cin >> M;
+  for (int r = 0; r < 6; r++)
+    cin >> dice[r];
+  cin >> start >> goal;
+  start--, goal--;
+  N = new int[M];
+  for (int m = 0; m < M; m++)
+    cin >> N[m];
+  int* path = new int[M];
+  for (int m = 0; m < M; m++)
+    path[m] = MAX_T + 1;
+  MakePath(start, path);
+  int position = start;
+  for (int t = 0; t < MAX_T; t++) {
+    if (position == goal)
+      break;
+    int r;
+    cin >> r;
+    int d = dice[r - 1];
+    auto tryMove = [&path](int moveto, int path_before,
+                                  int& position) -> bool {
+      if (isPositionValid(moveto)) {
+        if (path_before > path[moveto + N[moveto]]) {
+          position = moveto + N[moveto];
+          return true;
+        }
+      }
+      return false;
+    };
+    int output;
+    if (tryMove(position + d, path[position], position))
+      output = 1;
+    else if (tryMove(position - d, path[position], position))
+      output = -1;
+    else
+      output = 0;
+    cout << output << endl;
+  }
+  delete[] N;
+  delete[] path;
+  return 0;
+}
+```

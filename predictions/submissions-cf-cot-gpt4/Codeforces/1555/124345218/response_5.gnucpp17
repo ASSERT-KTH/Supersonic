@@ -1,0 +1,82 @@
+#include <iostream>
+#include <vector>
+#include <array>
+#include <algorithm>
+using namespace std;
+const int mod = 1e9 + 7;
+const int MAX = 8000000;
+int sgtree[MAX];
+int slow[MAX];
+int n, m;
+vector<array<int, 3>> ve;
+
+void dfs(int st, int en, int node, int rngst, int rngen, int value) {
+  sgtree[node] += slow[node];
+  slow[2 * node] += slow[node];
+  slow[2 * node + 1] += slow[node];
+  slow[node] = 0;
+  if (st >= rngst && en <= rngen) {
+    slow[node] += value;
+    sgtree[node] += slow[node];
+    slow[2 * node] += slow[node];
+    slow[2 * node + 1] += slow[node];
+    slow[node] = 0;
+  } else if (en < rngst || st > rngen) {
+    slow[node] += 0;
+  } else {
+    dfs(st, (st + en) / 2, 2 * node, rngst, rngen, value);
+    dfs(((st + en) / 2) + 1, en, 2 * node + 1, rngst, rngen, value);
+    sgtree[node] = min(sgtree[2 * node] + slow[2 * node],
+                       sgtree[2 * node + 1] + slow[2 * node + 1]);
+  }
+}
+
+void del(int i) { dfs(1, m - 1, 1, ve[i][1], ve[i][2], -1); }
+void add(int i) { dfs(1, m - 1, 1, ve[i][1], ve[i][2], 1); }
+int check() { return sgtree[1] + slow[1]; }
+
+void solve() {
+  cin >> n >> m;
+  ve.reserve(n); // Preallocate space for vector
+  if (m == 2) {
+    cout << "0\n";
+    return;
+  }
+  for(int i = 0; i < n; i++) {
+    int l, r, w;
+    cin >> l >> r >> w;
+    if (l == 1 && r == m) {
+      cout << "0\n";
+      return;
+    }
+    ve.push_back({w, l, r - 1});
+  }
+  sort(ve.begin(), ve.end());
+  int i = 0, j = -1, ans = 1000000;
+  int checkResult = check();
+  while (j < ((int)ve.size() - 1)) {
+    if (checkResult > 0) {
+      del(i);
+      ans = min(ans, ve[j][0] - ve[i][0]);
+      i++;
+    } else {
+      j++;
+      add(j);
+    }
+    checkResult = check();
+  }
+  while (checkResult > 0) {
+    del(i);
+    ans = min(ans, ve[j][0] - ve[i][0]);
+    i++;
+    checkResult = check();
+  }
+  cout << ans << '\n';
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  solve();
+  return 0;
+}

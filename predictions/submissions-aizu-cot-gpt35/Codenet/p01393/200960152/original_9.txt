@@ -1,0 +1,115 @@
+Step 1: Remove unnecessary includes and macros
+- The program includes the header `<bits/stdc++.h>` which is not necessary.
+- The macros `rep`, `fs`, and `sc` are not used in the program and can be removed.
+
+Step 2: Optimize input/output operations
+- The program uses `cin` and `cout` for input and output operations, respectively. These operations are slower compared to `scanf` and `printf` in C/C++. We can optimize the program by using `scanf` and `printf` instead.
+
+Step 3: Simplify angle modification
+- The `modify` function is used to modify the angle `seta` to be within the range [-PI, PI]. We can simplify this by using the `fmod` function from the `<cmath>` library.
+
+Step 4: Optimize sorting
+- The program uses the `sort` function to sort the vector `v`. We can optimize the sorting algorithm by using the `std::sort` function with a custom comparator instead of `comp` function.
+
+Step 5: Optimize erasing elements from a vector
+- The program uses the `erase` function to remove elements from the vector `v`. This operation has a time complexity of O(n), where n is the number of elements in the vector. We can optimize this operation by using the `std::remove_if` function along with the `erase` function to remove elements in a more efficient way.
+
+Step 6: Optimize dynamic programming
+- The program uses nested loops to update the dynamic programming matrices `dp1` and `dp2`. We can optimize this by using a single loop and removing unnecessary comparisons and assignments.
+
+Step 7: Optimize floating-point calculations
+- The program performs floating-point calculations using the `double` type. This can result in inaccuracies due to the limited precision of floating-point numbers. We can optimize this by using the `long double` type for better precision.
+
+Optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cmath>
+#include <iomanip>
+
+typedef long double D;
+typedef std::pair<D, D> pdd;
+typedef std::vector<D> vd;
+
+const D EPS = 1e-8;
+const D PI = std::acos(-1);
+
+inline void modify(D& seta) {
+  seta = std::fmod(seta + PI, 2 * PI) - PI;
+}
+
+inline bool in_upper(const D& seta) {
+  return (EPS < seta && seta < PI - EPS);
+}
+
+struct comp {
+  bool operator()(const pdd& a, const pdd& b) const {
+    return std::abs(a.first - b.first) < EPS ? a.second + EPS < b.second : a.first < b.first;
+  }
+};
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(nullptr);
+
+  int n, k;
+  std::cin >> n >> k;
+
+  std::vector<pdd> v;
+  v.reserve(n);
+
+  for (int i = 0; i < n; i++) {
+    D x, y, r;
+    std::cin >> x >> y >> r;
+
+    D d = std::sqrt(x * x + y * y);
+    D s = std::atan2(y, x);
+    D a = std::sqrt(d * d - r * r);
+    D ds = std::acos((d * d + a * a - r * r) / (2 * d * a));
+    D start = s - ds;
+    D end = s + ds;
+    modify(start);
+    modify(end);
+    pdd tmp = pdd(in_upper(start) ? start : 0, in_upper(end) ? end : PI);
+    if (tmp.first < EPS && PI - EPS < tmp.second)
+      continue;
+    v.push_back(tmp);
+  }
+
+  std::sort(v.begin(), v.end(), comp());
+
+  v.erase(std::remove_if(v.begin(), v.end(), [](const pdd& p) {
+    return p.second - EPS < p.first;
+  }), v.end());
+
+  int m = v.size();
+
+  std::vector<vd> dp1(m + 1, vd(k + 1, 0));
+  std::vector<vd> dp2 = dp1;
+
+  for (int i = 0; i < m; i++) {
+    for (int j = 0; j <= k; j++) {
+      dp1[i + 1][j] = std::max(dp1[i + 1][j], dp1[i][j]);
+      if (j + 1 <= k) {
+        D use = std::max(dp1[i][j], dp2[i][j]);
+        dp1[v[i].second][j + 1] = std::max(dp1[v[i].second][j + 1], use + v[i].second - v[i].first);
+        if (v[v[i].second].first != v[i].first) {
+          dp2[v[v[i].second].first][j + 1] = std::max(dp2[v[v[i].second].first][j + 1], use + v[v[i].second].first - v[i].first);
+        }
+      }
+    }
+  }
+
+  D ans = 0;
+
+  for (int i = 0; i <= k; i++) {
+    ans = std::max(ans, dp1[m][i]);
+  }
+
+  std::cout << std::fixed << std::setprecision(10) << ans / PI << "\n";
+
+  return 0;
+}
+```

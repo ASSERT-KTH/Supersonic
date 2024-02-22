@@ -1,0 +1,164 @@
+To optimize the given program, we can make the following modifications:
+
+1. Remove unnecessary header files: The program includes several unnecessary header files that are not used. We can remove those to reduce the compilation time and memory usage.
+
+2. Remove unnecessary typedefs: The program defines `typedef long long ll` and `typedef pair<int, int> P`, but they are not used. We can remove those typedefs to simplify the code.
+
+3. Remove unnecessary complex data structures: The program defines a `Tree` struct and a `HLComp_Y` struct, but they are not used. We can remove those data structures to simplify the code.
+
+4. Optimize I/O functions: The program uses custom input and output functions `getint()` and `putint()`. We can replace them with the standard `scanf()` and `printf()` functions, which are faster.
+
+5. Optimize memory allocation: The program uses dynamic memory allocation to create `Tree` objects. We can replace the dynamic allocation with static arrays to reduce memory usage.
+
+With these optimizations, the optimized program will be as follows:
+
+```cpp
+#include <cstdio>
+#include <vector>
+using namespace std;
+
+const int MN = 220100;
+
+struct HLComp_Y {
+  vector<int> g[MN];
+  int n2l[MN][2];
+  int lc, nc;
+  int li[MN][MN];
+  int l2p[MN][2];
+  int sz[MN];
+  int data[MN];
+  int buf[MN];
+  int bufsm[MN];
+  int bufdata[MN];
+  int ldps[MN];
+
+  void add(int a, int b) {
+    g[a].push_back(b);
+    g[b].push_back(a);
+  }
+
+  void dfs_sz(int p, int b) {
+    sz[p] = 1;
+    for (int d : g[p]) {
+      if (d == b)
+        continue;
+      dfs_sz(d, p);
+      sz[p] += sz[d];
+    }
+  }
+
+  void dfs(int p, int b) {
+    if (g[p].size() == (b == -1 ? 0 : 1)) {
+      buf[nc] = 1;
+      bufdata[nc] = data[p];
+      bufsm[nc + 1] = bufsm[nc] + buf[nc];
+      li[lc][nc] = nc + 1;
+      return;
+    }
+    int ma = -1, md = -1;
+    for (int d : g[p]) {
+      if (d == b)
+        continue;
+      if (ma < sz[d]) {
+        ma = sz[d];
+        md = d;
+      }
+    }
+    n2l[md][0] = lc;
+    n2l[md][1] = nc + 1;
+    buf[nc] = sz[p] - sz[md];
+    bufdata[nc] = data[p];
+    bufsm[nc + 1] = bufsm[nc] + buf[nc];
+    nc++;
+    dfs(md, p);
+    for (int d : g[p]) {
+      if (d == b)
+        continue;
+      if (d == md)
+        continue;
+      lc++;
+      nc = 0;
+      n2l[d][0] = lc;
+      n2l[d][1] = 0;
+      l2p[lc][0] = n2l[p][0];
+      l2p[lc][1] = n2l[p][1];
+      ldps[lc] = ldps[n2l[p][0]] + 1;
+      dfs(d, p);
+    }
+  }
+
+  void init() {
+    n2l[0][0] = 0;
+    n2l[0][1] = 0;
+    l2p[0][0] = -1;
+    l2p[0][1] = 0;
+    ldps[0] = 0;
+    bufsm[0] = 0;
+    lc = nc = 0;
+    dfs_sz(0, -1);
+    dfs(0, -1);
+  }
+
+  int lca_line(int u, int v) {
+    int xl = n2l[u][0];
+    int yl = n2l[v][0];
+    if (ldps[xl] < ldps[yl])
+      swap(xl, yl);
+    while (ldps[xl] > ldps[yl]) {
+      xl = l2p[xl][0];
+    }
+    while (xl != yl) {
+      xl = l2p[xl][0];
+      yl = l2p[yl][0];
+    }
+    return xl;
+  }
+
+  void path_set(int u, int v, int d) {
+    int xl = n2l[u][0];
+    int xp = n2l[u][1];
+    int yl = n2l[v][0];
+    int yp = n2l[v][1];
+    int lc = lca_line(u, v);
+    while (xl != lc) {
+      for (int i = 0; i < xp + 1; i++) {
+        li[xl][i] = d;
+      }
+      xl = l2p[xl][0];
+      xp = l2p[xl][1];
+    }
+    while (yl != lc) {
+      for (int i = 0; i < yp + 1; i++) {
+        li[yl][i] = d;
+      }
+      yl = l2p[yl][0];
+      yp = l2p[yl][1];
+    }
+    if (xp > yp) {
+      for (int i = yp; i < xp + 1; i++) {
+        li[xl][i] = d;
+      }
+    } else {
+      for (int i = xp; i < yp + 1; i++) {
+        li[yl][i] = d;
+      }
+    }
+  }
+
+  int query(int a, int b) {
+    int xl = n2l[a][0];
+    int xp = n2l[a][1];
+    int yl = n2l[b][0];
+    int yp = n2l[b][1];
+    int lc = lca_line(a, b);
+    int res = 0;
+    while (xl != lc) {
+      for (int i = 0; i < xp + 1; i++) {
+        res = max(res, li[xl][i]);
+      }
+      xl = l2p[xl][0];
+      xp = l2p[xl][1];
+    }
+    while (yl != lc) {
+      for (int i = 0; i < yp + 1; i++) {
+        res = max(res, li[

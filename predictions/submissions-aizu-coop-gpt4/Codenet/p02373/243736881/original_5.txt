@@ -1,0 +1,116 @@
+The given code performs a hierarchical decomposition of a tree and then answers Lowest Common Ancestor (LCA) queries using this decomposition. Let's take a look at how we can optimize this code.
+
+1. **Code Analysis:**
+
+The major parts of the code can be divided into the following:
+
+    - Decomposition: The `decomp` function performs a BFS traversal over the tree and decomposes it hierarchically. The decomposition is based on a breadth-first search (BFS) traversal of the tree, where each node is colored based on the batch it belongs to in the BFS traversal.
+    
+    - Querying: The `solve` function answers LCA queries using the decomposition.
+
+This code has a time complexity of O(n) for the decomposition and O(B) for each query, where B is the batch size for decomposition, and n is the number of nodes in the tree. The space complexity is also O(n) for storing the tree and the additional arrays.
+
+2. **Optimization Strategy:**
+
+Here are the possible optimizations:
+
+    - Use of `std::list` instead of `std::queue` for BFS: `std::queue` uses `std::deque` by default, which can be expensive in terms of memory as it grows in chunks. `std::list` can be a better alternative for BFS as it grows more efficiently.
+    
+    - Avoid multiple BFS traversals: Currently, the code performs two BFS traversals - one for building a topological order and the other for coloring the nodes. These steps can be merged into a single BFS traversal.
+
+    - Use of `std::ios_base::sync_with_stdio(false)` and `cin.tie(NULL)`: These lines can make input/output operations faster by decoupling `cin` and `cout`.
+
+3. **Step-by-step Explanation:**
+
+    - Step 1: Replace `std::queue` with `std::list` in the BFS traversal. This step will minimize memory allocation overhead during BFS traversal.
+    
+    - Step 2: Combine the two BFS traversals into a single BFS traversal. This will eliminate the need for an extra traversal, thereby reducing the time complexity.
+    
+    - Step 3: Use `std::ios_base::sync_with_stdio(false)` and `cin.tie(NULL)` to improve the performance of input/output operations.
+
+4. **Optimized Code Block:**
+
+Here is the optimized code:
+
+```cpp
+#include <algorithm>
+#include <cassert>
+#include <iostream>
+#include <list>
+#include <vector>
+using namespace std;
+#define rep(i, n) for (int i = 0; i < (int)(n); i++)
+const int B = 200;
+int color[100010], par[100010], depth[100010];
+int top[100010];
+int goUp[100010];
+bool vis[100010];
+int n;
+vector<vector<int>> g;
+void decomp(int root) {
+  rep(i, n) vis[i] = false, par[i] = -1;
+  list<int> q;
+  q.push_back(root);
+  int c = 0;
+  while (!q.empty()) {
+    int batchSize = min((int)q.size(), B);
+    for (int i = 0; i < batchSize; i++) {
+      int v = q.front();
+      q.pop_front();
+      vis[v] = true;
+      color[v] = c;
+      goUp[v] = par[root];
+      top[v] = root;
+      for (int child : g[v]) {
+        if (!vis[child]) {
+          q.push_back(child);
+          par[child] = v;
+          depth[child] = depth[v] + 1;
+        }
+      }
+    }
+    c++;
+  }
+}
+int solve(int u, int v) {
+  while (color[u] != color[v]) {
+    assert(u != -1 && v != -1);
+    if (depth[top[u]] > depth[top[v]])
+      u = goUp[u];
+    else
+      v = goUp[v];
+  }
+  while (u != v) {
+    assert(u != -1 && v != -1);
+    if (depth[u] > depth[v])
+      u = par[u];
+    else
+      v = par[v];
+  }
+  return u;
+}
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  cin >> n;
+  g.assign(n, {});
+  rep(i, n) {
+    int k;
+    cin >> k;
+    rep(j, k) {
+      int c;
+      cin >> c;
+      g[i].push_back(c);
+      par[c] = i;
+    }
+  }
+  decomp(0);
+  int q;
+  cin >> q;
+  rep(i, q) {
+    int u, v;
+    cin >> u >> v;
+    cout << solve(u, v) << endl;
+  }
+}
+```

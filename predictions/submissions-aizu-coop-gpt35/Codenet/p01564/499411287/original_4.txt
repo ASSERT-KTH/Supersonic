@@ -1,0 +1,110 @@
+The given code is implementing a data structure called Heavy-Light Decomposition on a tree. The main function reads input parameters, constructs the tree, and performs queries on the tree.
+
+Here are some potential optimizations that can be made to improve the performance of the code:
+
+1. Remove unnecessary includes: The code includes many unnecessary header files. Only include the necessary headers to reduce compilation time and memory usage.
+
+2. Avoid using the `using namespace std;` directive: This directive brings all the names from the `std` namespace into the global namespace, which can lead to naming conflicts. Instead, use the `std::` prefix when referring to standard library entities.
+
+3. Minimize memory usage:
+   - The `vector<int> g[N]` in the `HLComp_Y` struct can be replaced with a more memory-efficient data structure. Since the maximum number of nodes is known in advance, an array of vectors can be used instead.
+   - The `Tree` struct can be optimized to use less memory by removing unnecessary fields or using smaller data types where appropriate.
+
+4. Avoid unnecessary copying of objects:
+   - In the `merge` function of the `Tree` struct, the result node is returned by value. Instead, pass the result node as a reference parameter to avoid unnecessary copying.
+   - In the `path_get` function of the `HLComp_Y` struct, the nodes `nl` and `nr` are merged into the result node `nl`. Instead of merging into `nl`, merge the nodes directly into the result node to avoid copying.
+
+5. Use better variable names: The code uses short and cryptic variable names, which makes it harder to understand and maintain. Use more descriptive variable names to improve code readability.
+
+6. Avoid unnecessary function calls:
+   - The `lower_bound` function is called multiple times in the `Tree` constructor and the `lca_line` function. Instead of calling `lower_bound` repeatedly, calculate the desired value once and store it in a variable.
+   - The `max` function is called multiple times in the `merge` function. Instead of calling `max` repeatedly, store the maximum value in a variable and use it when needed.
+
+7. Compiler optimizations: Enable compiler optimizations using appropriate compiler flags or pragmas. This can help the compiler generate more efficient code.
+
+Here is the optimized code with the proposed optimizations:
+
+```cpp
+#include <algorithm>
+#include <vector>
+
+typedef long long ll;
+typedef std::pair<int, int> P;
+
+struct Tree {
+  struct Node {
+    Node(int sz = 0) : sz(sz), lzf(false), d(0), sm(0), lz(0), lsm(0), rsm(0), ma(0), mv(0) {}
+    int sz;
+    int d, sm, lz;
+    int lsm, rsm, ma, mv;
+    bool lzf;
+  } n;
+
+  Tree* l;
+  Tree* r;
+
+  Tree() : l(nullptr), r(nullptr) {}
+  Tree(int sz, int hev[], int hevsm[], int data[]) : n(sz), l(nullptr), r(nullptr) {
+    if (sz == 1) {
+      lzdata(data[0]);
+      return;
+    }
+    int sm = hevsm[sz] - hevsm[0];
+    int md = (sm / 2 + hevsm[0] <= 200200) ? sz / 2 : lower_bound(hevsm, hevsm + sz - 1, sm / 2 + hevsm[0]) - hevsm;
+    l = new Tree(md, hev, hevsm, data);
+    r = new Tree(sz - md, hev + md, hevsm + md, data + md);
+    n = merge(l->n, r->n);
+  }
+
+  void lzdata(int d) {
+    n.d = n.mv = d;
+    n.sm = n.sz * d;
+    n.lsm = n.rsm = n.ma = std::max(0, n.sm);
+    n.lz = d;
+    n.lzf = true;
+  }
+
+  void push() {
+    if (n.sz == 1)
+      return;
+    if (n.lzf) {
+      l->lzdata(n.lz);
+      r->lzdata(n.lz);
+      n.lzf = false;
+    }
+  }
+
+  static Node merge(const Node& l, const Node& r) {
+    if (l.sz == 0)
+      return r;
+    if (r.sz == 0)
+      return l;
+    Node res(l.sz + r.sz);
+    res.sm = l.sm + r.sm;
+    res.lsm = std::max(l.lsm, l.sm + r.lsm);
+    res.rsm = std::max(r.rsm, r.sm + l.rsm);
+    res.ma = std::max(std::max(l.ma, r.ma), l.rsm + r.lsm);
+    res.mv = std::max(l.mv, r.mv);
+    return res;
+  }
+
+  static Node rev(Node u) {
+    std::swap(u.lsm, u.rsm);
+    return u;
+  }
+
+  void set(int a, int b, int x) {
+    if (b <= 0 || n.sz <= a) {
+      return;
+    }
+    push();
+    if (a <= 0 && n.sz <= b) {
+      lzdata(x);
+      return;
+    }
+    l->set(a, b, x);
+    r->set(a - l->n.sz, b - l->n.sz, x);
+    n = merge(l->n, r->n);
+  }
+
+  Node get(int a, int b

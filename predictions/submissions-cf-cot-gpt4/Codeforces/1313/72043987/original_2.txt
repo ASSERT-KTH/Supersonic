@@ -1,0 +1,90 @@
+This program seems to be already quite optimized in terms of algorithmic complexity. It's using bit manipulation which is a very efficient way to handle operations. However, there are still some possible improvements to reduce memory usage and possibly improve running time:
+
+1. Remove unused imports: This program includes a lot of libraries that are not used in the program. These unnecessary imports can be removed to save some memory.
+
+2. Avoid copying in range-based for loops: In the printvec, printtree, and printmap functions, the program copies each element in the container with `for (auto x : v)`. This could be optimized by using references `for (const auto& x : v)`.
+
+3. Avoid multiple calls to `vector::operator[]`: In the main loop, the program calls `t[i][2]` and `t[i][0]` multiple times. You can store these values in variables to avoid multiple calls to `vector::operator[]`, which has a cost.
+
+4. Use `emplace_back` instead of `push_back`: When adding elements to the vector `streams`, use `streams.emplace_back(ni)` instead of `streams.push_back(ni)` to construct the element in place and avoid a copy.
+
+5. Reserve memory for vectors: If the size of the vectors `states` and `newstates` is known in advance, you can reserve memory for them with `vector::reserve`, which can improve performance by avoiding reallocations.
+
+Here is the optimized version of the program:
+
+```cpp
+#include <algorithm>
+#include <iostream>
+#include <vector>
+using namespace std;
+#define COUT(x) cout << #x << " = " << (x) << " (L" << __LINE__ << ")" << endl
+template <class T> void printvec(const vector<T>& v) {
+  for (const auto& x : v) {
+    cout << x << " ";
+  }
+  cout << endl;
+}
+#define rep(i, n) for (ll i = 0; i < n; ++i)
+#define all(s) s.begin(), s.end()
+typedef long long ll;
+typedef pair<ll, ll> P;
+typedef tuple<ll, ll, ll> triple;
+const ll INF = 1e9;
+const ll MOD = 1000000007;
+void solve() {}
+int main(int argc, char **argv) {
+  cin.tie(NULL);
+  cout.tie(NULL);
+  ios_base::sync_with_stdio(false);
+  ll n, m, k;
+  cin >> n >> m >> k;
+  vector<vector<ll>> t(2 * n, vector<ll>(3));
+  rep(i, n) {
+    ll l, r;
+    cin >> l >> r;
+    t[2 * i] = {l, 1, i};
+    t[2 * i + 1] = {r + 1, -1, i};
+  }
+  sort(all(t));
+  vector<ll> states(1 << k, 0);
+  vector<ll> newstates(1 << k, 0);
+  ll sz = 0;
+  ll pi = t[0][2], ni;
+  ll pp = t[0][0], np;
+  vector<ll> streams;
+  streams.reserve(n);
+  rep(i, 2 * n) {
+    auto& current = t[i];
+    ni = current[2];
+    np = current[0];
+    if (current[1] == -1) {
+      --sz;
+      ll gi = 0;
+      while (streams[gi] != ni) {
+        ++gi;
+      }
+      rep(b, 1 << sz) {
+        ll exp1 = ((b >> gi) << (gi + 1)) + (b % (1 << gi));
+        ll exp2 = exp1 + (1 << gi);
+        newstates[b] =
+            max(states[exp1] + (__builtin_popcount(exp1) % 2) * (np - pp),
+                states[exp2] + (__builtin_popcount(exp2) % 2) * (np - pp));
+      }
+      states = newstates;
+      streams.erase(streams.begin() + gi);
+    } else {
+      streams.emplace_back(ni);
+      rep(b, 1 << sz) {
+        newstates[b] = states[b] + (__builtin_popcount(b) % 2) * (np - pp);
+        newstates[b + (1 << sz)] =
+            states[b] + (__builtin_popcount(b) % 2) * (np - pp);
+      }
+      states = newstates;
+      ++sz;
+    }
+    pi = ni;
+    pp = np;
+  }
+  cout << states[0] << " ";
+}
+```

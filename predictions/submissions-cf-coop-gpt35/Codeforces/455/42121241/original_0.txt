@@ -1,0 +1,247 @@
+Code Analysis:
+- The code defines a struct `dat` which represents a data structure that stores a sequence of integers.
+- The struct `dat` contains a deque `A` for storing the integers and a map `M` for counting the occurrences of each integer.
+- The struct `dat` also contains a pointer `next` to another `dat` object, allowing for the data structure to be split and merged.
+- The main function reads an integer `n` and sets `dat::n` to the square root of `n` multiplied by 2.
+- The main function then reads `n` integers and inserts them into the data structure.
+- The main function reads an integer `m` and performs `m` operations on the data structure.
+- The operations can be either inserting an integer at a specific position or counting the occurrences of an integer within a range.
+- The main function prints the result of each count operation.
+
+Potential Performance Bottlenecks:
+1. Counting: The `count` function iterates over the deque `A` to count the occurrences of an integer.
+2. Insertion and Deletion: The `insert` and `erase` functions may require splitting or merging the data structure, which involves creating new objects and copying elements.
+3. Memory Usage: The data structure stores integers in a deque and a map, which may consume unnecessary memory.
+
+Optimization Strategy:
+1. Replacing Deque with Vector: Since the data structure does not require constant-time insertions and deletions from both ends, replacing the deque with a vector can improve performance by reducing memory overhead and improving cache locality.
+2. Using Array instead of Map for Counting: Instead of using a map to count the occurrences of integers, using an array or vector can provide constant-time access and updates, resulting in improved performance.
+3. Loop Unrolling and Tail Recursion: Unrolling the loops and using tail recursion can reduce loop overhead and improve performance.
+4. Compiler Optimizations: Enabling compiler optimizations, such as loop unrolling and inlining, can further improve performance.
+
+Step-by-Step Explanation:
+1. Replace Deque with Vector:
+- Replace the declaration `deque<int> A;` with `vector<int> A;` in the `dat` struct.
+- Update the function signatures and definitions to use `vector<int>` instead of `deque<int>`.
+- Rationale: Vectors have better cache locality and lower memory overhead compared to deques. Since the data structure does not require constant-time insertions and deletions from both ends, using a vector can provide better performance.
+- Trade-offs: The code complexity may increase slightly due to the need to update function signatures and definitions.
+
+2. Use Array instead of Map for Counting:
+- Replace the declaration `map<int, int> M;` with `vector<int> countArray;` in the `dat` struct.
+- Update the function signatures and definitions to use `vector<int>` instead of `map<int, int>`.
+- In the `insert` and `erase` functions, replace `M[x]` with `countArray[x]`.
+- Replace `M.find(x) == M.end()` with `countArray[x] == 0` in the `count` function.
+- Rationale: Using an array for counting allows for constant-time access and updates, which can improve performance compared to using a map.
+- Trade-offs: The array assumes that the range of possible integer values is known and bounded. If the range is large or unknown, a map may still be a better choice.
+
+3. Loop Unrolling and Tail Recursion:
+- In the `count` function, unroll the loop by manually iterating over the deque and counting the occurrences of `x` in chunks of 4 elements at a time.
+- Replace the loop in the `count` function with the unrolled version:
+```C++
+int ans = 0;
+int i = 0;
+for (; i + 3 < p; i += 4) {
+  ans += (A[i] == x) + (A[i + 1] == x) + (A[i + 2] == x) + (A[i + 3] == x);
+}
+for (; i < p; i++) {
+  ans += A[i] == x;
+}
+```
+- In the `insert` and `erase` functions, use tail recursion instead of calling `next->insert()` and `next->erase()`.
+- Update the `insert` function to use tail recursion:
+```C++
+void insert(int p, int x) {
+  if (p > size()) {
+    next->insert(p - size(), x);
+    return;
+  }
+  A.insert(A.begin() + p, x);
+  countArray.resize(max(countArray.size(), x + 1), 0);
+  countArray[x]++;
+  split();
+}
+```
+- Update the `erase` function to use tail recursion:
+```C++
+int erase(int p) {
+  if (size() < p) {
+    return next->erase(p - size());
+  }
+  int x = A[p - 1];
+  A.erase(A.begin() + p - 1);
+  if (--countArray[x] == 0) {
+    countArray.resize(max(countArray.size(), x + 1), 0);
+  }
+  merge();
+  return x;
+}
+```
+- Rationale: Loop unrolling reduces loop overhead and can improve performance by allowing the compiler to optimize the loop. Tail recursion eliminates the need to create new stack frames for recursive calls, reducing memory usage and improving performance.
+- Trade-offs: Loop unrolling may increase code size and slightly reduce code readability. Tail recursion may increase code complexity and reduce readability.
+
+4. Compiler Optimizations:
+- Add compiler optimization flags to enable loop unrolling and inlining.
+- For example, in GCC, use the `-O3` flag to enable aggressive optimizations.
+- Rationale: Compiler optimizations can automatically apply various optimization techniques, such as loop unrolling and inlining, to improve performance without changing the code.
+- Trade-offs: Compiler optimizations may increase compilation time and may not always produce the most optimal code.
+
+Optimized Code Block:
+```C++
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <vector>
+using namespace std;
+
+struct dat {
+  static int n;
+  vector<int> A;
+  vector<int> countArray;
+  dat* next = NULL;
+
+  int count(int p, int x) const {
+    if (p > size()) {
+      if (countArray[x] == 0)
+        return next->count(p - size(), x);
+      else
+        return next->count(p - size(), x) + countArray[x];
+    }
+
+    int ans = 0;
+    int i = 0;
+    for (; i + 3 < p; i += 4) {
+      ans += (A[i] == x) + (A[i + 1] == x) + (A[i + 2] == x) + (A[i + 3] == x);
+    }
+    for (; i < p; i++) {
+      ans += A[i] == x;
+    }
+    return ans;
+  }
+
+  void insert(int p, int x) {
+    if (p > size()) {
+      next->insert(p - size(), x);
+      return;
+    }
+    A.insert(A.begin() + p, x);
+    countArray.resize(max(countArray.size(), x + 1), 0);
+    countArray[x]++;
+    split();
+  }
+
+  int erase(int p) {
+    if (size() < p) {
+      return next->erase(p - size());
+    }
+    int x = A[p - 1];
+    A.erase(A.begin() + p - 1);
+    if (--countArray[x] == 0) {
+      countArray.resize(max(countArray.size(), x + 1), 0);
+    }
+    merge();
+    return x;
+  }
+
+  void push_back(int x) {
+    A.push_back(x);
+    countArray.resize(max(countArray.size(), x + 1), 0);
+    countArray[x]++;
+  }
+
+  void push_front(int x) {
+    A.insert(A.begin(), x);
+    countArray.resize(max(countArray.size(), x + 1), 0);
+    countArray[x]++;
+    split();
+  }
+
+  int pop_back() {
+    int x = A.back();
+    A.pop_back();
+    if (--countArray[x] == 0) {
+      countArray.resize(max(countArray.size(), x + 1), 0);
+    }
+    merge();
+    return x;
+  }
+
+  int pop_front() {
+    int x = A.front();
+    A.erase(A.begin());
+    if (--countArray[x] == 0) {
+      countArray.resize(max(countArray.size(), x + 1), 0);
+    }
+    return x;
+  }
+
+  int size() const { return A.size(); }
+
+  void split() {
+    if (size() < n << 1)
+      return;
+    dat* tmp = new dat;
+    while (size() > n)
+      tmp->push_front(pop_back());
+    tmp->next = next;
+    next = tmp;
+  }
+
+  void merge() {
+    if (next == NULL || size() + next->size() > n)
+      return;
+    dat* tmp = next;
+    while (next->size() > 0)
+      push_back(tmp->pop_front());
+    next = tmp->next;
+    delete tmp;
+  }
+
+  void print() const {
+    for (int x : A)
+      fprintf(stderr, "%3d", x);
+    if (next == NULL)
+      fprintf(stderr, "\n");
+    else
+      next->print();
+  }
+};
+
+int dat::n;
+
+int main() {
+  int n, m, last = 0;
+  scanf("%d", &n);
+  dat::n = ceil(sqrt(n << 2));
+  dat* D = new dat;
+  dat* cur = D;
+  for (int i = 0; i < n; i++) {
+    if (cur->size() >= dat::n) {
+      cur->next = new dat;
+      cur = cur->next;
+    }
+    int x;
+    scanf("%d", &x);
+    cur->push_back(x);
+  }
+  for (scanf("%d", &m); m > 0; m--) {
+    int op, l, r, k;
+    scanf("%d", &op);
+    scanf(op == 1 ? "%d%d" : "%d%d%d", &l, &r, &k);
+    l = (l + last - 1) % n + 1;
+    r = (r + last - 1) % n + 1;
+    k = (k + last - 1) % n + 1;
+    if (l > r)
+      swap(l, r);
+    if (op == 1)
+      D->insert(l - 1, D->erase(r));
+    else {
+      l = D->count(l - 1, k);
+      r = D->count(r, k);
+      printf("%d\n", last = r - l);
+    }
+  }
+  return 0;
+}
+```
+
+Note: The optimized code may not provide a significant improvement in performance if the size of the input data is small.

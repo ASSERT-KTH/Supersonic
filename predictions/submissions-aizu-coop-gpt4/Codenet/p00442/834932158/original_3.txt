@@ -1,0 +1,93 @@
+This code block is a C++ program that performs topological sorting on a graph and checks if the resultant order forms a Hamiltonian path. It appears to be already optimized in terms of algorithmic complexity by using Kahn's algorithm for topological sorting, which is O(V+E), where V and E are the number of vertices and edges, respectively. However, there are still some areas where we can improve performance:
+
+1. **Avoiding Unnecessary Macros**: Macros like `ADD`, `SUB`, `MUL`, `ZIP`, `UNIQUE`, and others are defined but not used anywhere in the code. Removing these will clean up the code and slightly reduce the compilation time.
+
+2. **Avoiding `std::map`**: The code uses a `std::map` to track edges in the graph. However, `std::map` operations typically have a time complexity of O(logN), which might slow down performance. We can replace it with `std::unordered_map` which works in average O(1) time for insertion and access.
+
+3. **Avoiding `std::pair`**: The `std::pair` type is used as the key for the map. This usually involves more overhead than using a custom hash function for a pair of integers. So we can create a custom hash function.
+
+4. **Avoiding `std::vector::push_back`**: The `push_back` function can occasionally cause the vector to reallocate its internal storage, which can be a costly operation. Since we know the size of the vector `ans` in advance, we can call `reserve` at the start to allocate enough storage.
+
+Here's the optimized version of the code:
+
+```C++
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+#include <stack>
+#include <functional>
+
+struct pair_hash {
+    template<class T1, class T2>
+    std::size_t operator() (const std::pair<T1, T2> &pair) const {
+        return std::hash<T1>()(pair.first) ^ std::hash<T2>()(pair.second);
+    }
+};
+
+class t_sort {
+public:
+    int n;
+    std::vector<int> deg, ans;
+    std::vector<std::vector<int>> G;
+
+    void init(int N) {
+        n = N;
+        deg.resize(n);
+        G.resize(n);
+    }
+
+    void add_edge(int from, int to) {
+        G[from].push_back(to);
+        deg[to]++;
+    }
+
+    void tsort() {
+        std::stack<int> st;
+        for (int i = 0; i < n; i++) 
+            if (deg[i] == 0) 
+                st.push(i);
+        
+        ans.reserve(n);
+        while (!st.empty()) {
+            int v = st.top();
+            st.pop();
+            ans.push_back(v);
+            for (int i = 0; i < G[v].size(); i++) 
+                if (--deg[G[v][i]] == 0) 
+                    st.push(G[v][i]);
+        }
+    }
+};
+
+int main() {
+    int n, m;
+    std::cin >> n >> m;
+    t_sort t;
+    t.init(n);
+
+    std::unordered_map<std::pair<int, int>, int, pair_hash> mp;
+    for (int i = 0; i < m; i++) {
+        int x, y;
+        std::cin >> x >> y;
+        x--;
+        y--;
+        t.add_edge(x, y);
+        mp[std::make_pair(x, y)] = 1;
+    }
+    t.tsort();
+
+    for (int i = 0; i < n; i++) 
+        std::cout << t.ans[i] + 1 << "\n";
+    
+    int res = 1;
+    for (int i = 0; i < n - 1; i++) {
+        if (mp[std::make_pair(t.ans[i], t.ans[i + 1])] == 0)
+            res = 0;
+    }
+    std::cout << (res == 1 ? 0 : 1) << "\n";
+
+    return 0;
+}
+```
+
+In the optimized code, we've removed unused macros, replaced `std::map` with `std::unordered_map` with a custom hash function for pair of integers and reserved space for vector `ans` to avoid unnecessary reallocations.

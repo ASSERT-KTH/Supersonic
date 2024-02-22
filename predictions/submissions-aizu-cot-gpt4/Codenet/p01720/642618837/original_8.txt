@@ -1,0 +1,74 @@
+This program seems to be implementing a graph traversal or pathfinding algorithm. Here are some optimizations you can make:
+
+1. Use `ios_base::sync_with_stdio(false); cin.tie(NULL);` to make I/O operations faster. It essentially disconnects C++ standard streams from their C counterparts, and ties `cin` to `NULL`, thus speeding up I/O operations.
+   
+2. Use `emplace_back()` instead of `push_back()` when adding elements to the vectors. `emplace_back()` constructs the object in-place and does not require an extra copy, which can give a performance boost.
+   
+3. Instead of using `scanf()` and `printf()`, use `cin` and `cout`. They are more idiomatic in C++ and can be faster when `ios_base::sync_with_stdio(false); cin.tie(NULL);` is used.
+   
+4. Use `reserve()` before adding elements to vectors. This will preallocate memory for the vectors, reducing the number of reallocations (which can be expensive).
+
+5. Instead of checking `d1[G[node][i]] == INF` and `d2[G[node][i]] == INF` inside the loop, you can use `std::find()` to check if `INF` exists in the vectors. If it does not, you can skip the loop entirely.
+
+Here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <algorithm>
+#define INF (1 << 23)
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false); cin.tie(NULL);
+    int N, M, s, t, u, v;
+    cin >> N >> M >> s >> t;
+    s--; t--;
+    vector<vector<int>> G(N);
+    G.reserve(N);
+    for (int i = 0; i < M; i++) {
+        cin >> u >> v;
+        G[u - 1].emplace_back(v - 1);
+        G[v - 1].emplace_back(u - 1);
+    }
+    vector<int> d1(N, INF);
+    vector<int> d2(N, INF);
+    d1[s] = d2[t] = 0;
+    queue<int> que;
+    que.push(s);
+    while (!que.empty()) {
+        int node = que.front(); que.pop();
+        for (auto& i : G[node]) {
+            if (d1[i] == INF) {
+                d1[i] = d1[node] + 1;
+                que.push(i);
+            }
+        }
+    }
+    que.push(t);
+    while (!que.empty()) {
+        int node = que.front(); que.pop();
+        for (auto& i : G[node]) {
+            if (d2[i] == INF) {
+                d2[i] = d2[node] + 1;
+                que.push(i);
+            }
+        }
+    }
+    int shortest = d1[t];
+    vector<int> r1(shortest - 1, 0), r2(shortest - 1, 0);
+    for (int i = 0; i < N; i++) {
+        if (d1[i] < shortest - 1) r1[d1[i]]++;
+        if (d2[i] < shortest - 1) r2[d2[i]]++;
+    }
+    long long ret = 0;
+    for (int i = 0; i < shortest - 1; i++) {
+        ret += 1LL * r1[i] * r2[shortest - i - 2];
+    }
+    cout << ret << "\n";
+    return 0;
+}
+```
+
+Note: The usage of `std::find()` was not included in the optimized code because it might actually slow down the process. The original code checks if an element equals INF, not if it exists in the vector, so using `std::find()` might require traversing the entire vector, whereas the original code stops as soon as it finds the first INF.

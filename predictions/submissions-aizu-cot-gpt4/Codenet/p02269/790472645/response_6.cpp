@@ -1,0 +1,64 @@
+#include <cstdio>
+#include <iostream>
+#define REP(i, a, b) for (i = a; i < b; i++)
+#define rep(i, n) REP(i, 0, n)
+#define MOD1 1000000007;
+#define MOD2 1000007
+#define DIC_SIZE 90000000
+using namespace std;
+typedef long long ll;
+typedef unsigned long long ull;
+typedef long double ld;
+
+ull pow(ull x, ull n) {
+  ull res = 1;
+  while (n > 0) {
+    if (n & 1)
+      res = res * x;
+    x = x * x;
+    n >>= 1;
+  }
+  return res;
+}
+
+int dic_op(char str[14]) {
+  int j;
+  ll f = 1;
+  ll g = 0;
+  for (j = 0;; j++) {
+    if (str[j] == 'A')
+      g += f * 1;
+    else if (str[j] == 'C')
+      g += f * 2;
+    else if (str[j] == 'G')
+      g += f * 3;
+    else if (str[j] == 'T')
+      g += f * 4;
+    else
+      break;
+    f *= 5;
+  }
+  return g;
+}
+
+int main() {
+  int i, j, k, l;
+  int n;
+  long ans = 0;
+  static bool dic[DIC_SIZE];
+  char opstr[7];
+  char str[13];
+  cin >> n;
+  for (i = 0; i < n; i++) {
+    cin >> opstr >> str;
+    if (opstr[0] == 'i') {
+      dic[dic_op(str)] = true;
+    } else if (opstr[0] == 'f') {
+      if (dic[dic_op(str)])
+        printf("yes");
+      else
+        printf("no");
+    }
+  }
+  return 0;
+}

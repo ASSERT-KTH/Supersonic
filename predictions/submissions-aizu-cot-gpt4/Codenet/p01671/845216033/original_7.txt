@@ -1,0 +1,123 @@
+This program can be optimized in a number of ways. Here are some steps:
+
+1. Avoid using bits/stdc++.h header file: bits/stdc++.h is actually a header file used in GCC for competitive programming which includes all the standard library files. Using it in a large project may increase the compilation time.
+
+2. Avoid using 'using namespace std': This can potentially lead to name clashes, which can be difficult to debug. 
+
+3. Replace C-style I/O functions with C++ style I/O: The use of scanf and printf can be replaced with cin and cout, respectively, which are more in line with C++ style and offer type safety.
+
+4. Use 'const' keyword where possible: This can enable certain compiler optimizations and enforce read-only status of variables that should not be changed.
+
+5. Use 'auto' keyword for iterators: In C++11 and above, the 'auto' keyword can be used to automatically deduce the type of a variable at compile-time, which can make the code cleaner and less prone to type-related errors.
+
+6. Use range-based for loops where possible: These are more concise and less error-prone than traditional for loops.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <set>
+
+using int64 = long long;
+
+struct UnionFind {
+  std::vector<int> data;
+  UnionFind(int sz) : data(sz, -1) {}
+  bool unite(int x, int y) {
+    x = find(x), y = find(y);
+    if (x == y)
+      return (false);
+    if (data[x] > data[y])
+      std::swap(x, y);
+    data[x] += data[y];
+    data[y] = x;
+    return (true);
+  }
+  int find(int k) {
+    if (data[k] < 0)
+      return (k);
+    return (data[k] = find(data[k]));
+  }
+  int size(int k) { return (-data[find(k)]); }
+};
+
+struct edge1 {
+  int u, v, cost, idx;
+  bool operator<(const edge1 &e) const { return (cost < e.cost); }
+};
+
+struct edge2 {
+  int to, cost, idx;
+};
+
+int N, M, A[200000], B[200000], C[200000];
+std::vector<edge1> edges;
+bool killed[200000];
+std::vector<edge2> tree[100000], g[100000];
+int64 all, ans[200000];
+std::set<std::pair<int, int>> component[100000];
+
+void rec(int idx, int par = -1) {
+  for (const auto &e : g[idx]) {
+    component[idx].emplace(e.cost, e.idx);
+  }
+  for (const auto &e : tree[idx]) {
+    if (e.to == par) continue;
+    rec(e.to, idx);
+    auto &u = component[idx], &v = component[e.to];
+    if (!v.empty()) {
+      ans[e.idx] = all;
+      ans[e.idx] -= e.cost;
+      ans[e.idx] += v.begin()->first;
+    }
+    if (u.size() < v.size())
+      std::swap(u, v);
+    while (!v.empty()) {
+      auto p = v.begin();
+      if (u.count(*p)) u.erase(*p);
+      else u.emplace(*p);
+      v.erase(p);
+    }
+  }
+}
+
+int main() {
+  std::cin >> N >> M;
+  for (int i = 0; i < M; i++) {
+    std::cin >> A[i] >> B[i] >> C[i];
+    --A[i], --B[i];
+    edges.push_back({A[i], B[i], C[i], i});
+  }
+  UnionFind uf(N);
+  std::sort(edges.begin(), edges.end());
+  for (const auto &e : edges) {
+    if (uf.unite(e.v, e.u)) {
+      killed[e.idx] = true;
+      all += e.cost;
+    }
+  }
+  if (uf.size(0) != N) {
+    for (int i = 0; i < M; i++)
+      std::cout << "-1\n";
+    return 0;
+  }
+  for (int i = 0; i < M; i++) {
+    if (killed[i]) {
+      tree[A[i]].push_back({B[i], C[i], i});
+      tree[B[i]].push_back({A[i], C[i], i});
+      ans[i] = -1;
+    } else {
+      g[A[i]].push_back({B[i], C[i], i});
+      g[B[i]].push_back({A[i], C[i], i});
+      ans[i] = all;
+    }
+  }
+  rec(0);
+  for (int i = 0; i < M; i++) {
+    std::cout << ans[i] << "\n";
+  }
+  return 0;
+}
+```

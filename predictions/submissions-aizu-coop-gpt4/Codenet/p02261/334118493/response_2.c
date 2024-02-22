@@ -1,0 +1,25 @@
+Code Analysis:
+1. The code sorts an array of Cards using two different sorting algorithms, BubbleSort and SelectionSort.
+2. Both the sorting algorithms used here have a time complexity of O(N^2), where N is the number of elements to be sorted. For large N, these algorithms can be inefficient.
+3. The code is using struct Card which includes suit and value. The value is used for sorting while suit is used to check the stability of the sorting algorithm.
+4. The swap operation is done using a temporary variable, which requires additional memory.
+
+Optimization Strategy:
+1. Replace BubbleSort and SelectionSort with a more efficient sorting algorithm. QuickSort is a good alternative, with an average time complexity of O(N log(N)).
+2. Use a direct swap without a temporary variable to save memory.
+3. Utilize compiler optimization flags like -O2 for performance improvement.
+
+Optimization Steps:
+
+1. Replace BubbleSort and SelectionSort function with QuickSort:
+    - QuickSort is a divide-and-conquer algorithm. It works by selecting a 'pivot' element from the array and partitioning the other elements into two sub-arrays, according to whether they are less than or greater than the pivot. This can significantly reduce the time complexity of sorting, especially for larger arrays.
+
+2. Direct swap without temporary variable:
+    - Instead of using a temporary variable to swap two elements, we can use the XOR bitwise operation to perform the swap. This eliminates the need for a temporary variable, thus saving memory.
+    - However, be aware of the potential pitfall of using XOR for swapping: when the addresses of two variables are the same, it will turn the value to zero. In our case, it's safe to use because we are sure that the addresses of the two swapped variables are different.
+
+3. Compiler optimization:
+    - Compiler optimization flags like -O2 can be used while compiling the code. This flag tells the compiler to perform optimizations such as loop unrolling, function inlining and others to improve performance.
+
+4. Minimize redundant computations:
+    - In the main function, the same printf statement is written twice for printing sorted card array. This redundancy can be minimized by creating a separate function for printing arrays.

@@ -1,0 +1,166 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <list>
+#include <array>
+#include <algorithm>
+#include <cmath>
+
+std::ifstream in("sumsqr.in");
+std::ofstream out("sumsqr.out");
+
+void solve(int a) {
+  std::array<int, 400002> l;
+  std::array<int, 400002> skok, o, zam, GR, mxd, mxp, dp, sz, good;
+  std::vector<int> gd, bd;
+  std::vector<std::pair<int, int>> reb;
+  
+  std::fill(o.begin(), o.end(), -1);
+  std::fill(zam.begin(), zam.end(), -1);
+  
+  o[1] = a;
+  int ST = a - 1;
+  
+  for (int q = 1; q <= a; q++)
+    skok[a / q]++;
+  
+  for (int& i : skok)
+    i /= 2;
+  
+  for (int q = 0; q < a - 1; q++) {
+    int x, y;
+    std::cin >> x >> y;
+    x--, y--;
+    reb.push_back({x, y});
+    l[x].push_back(y);
+    l[y].push_back(x);
+  }
+  
+  int eba = 0;
+  auto rnm = [&](int v) {
+    zam[v] = eba++;
+    std::list<int> dq = {v};
+    for (; !dq.empty();) {
+      int x = dq.front();
+      dq.pop_front();
+      for (int h : l[x]) {
+        if (zam[h] != -1)
+          continue;
+        dq.push_back(h);
+        zam[h] = eba++;
+      }
+    }
+  };
+  
+  rnm(0);
+  
+  for (int q = 0; q < a; q++)
+    l[q].clear();
+  
+  for (auto p : reb) {
+    l[zam[p.first]].push_back(zam[p.second]);
+    l[zam[p.second]].push_back(zam[p.first]);
+  }
+  
+  auto RIP_PAPA = [&](int v, int p) {
+    for (auto it = l[v].begin(); it != l[v].end(); ) {
+      if (*it == p) {
+        it = l[v].erase(it);
+      } else {
+        RIP_PAPA(*it, v);
+        ++it;
+      }
+    }
+  };
+  
+  RIP_PAPA(0, -1);
+  reb.clear();
+  
+  for (int q = 0; q < a; q++) {
+    for (int h : l[q])
+      reb.push_back({q, h});
+  }
+  
+  auto CALC = [&](int v, int p, int D) {
+    mxd[v] = 1;
+    sz[v] = 1;
+    int c1 = 0, c2 = 0;
+    for (int h : l[v]) {
+      if (h == p)
+        continue;
+      int x = CALC(h, v, D + 1);
+      mxd[v] = std::max(mxd[v], x + 1);
+      sz[v] += sz[h];
+      if (x >= c1)
+        c2 = c1, c1 = x;
+      else if (x > c2)
+        c2 = x;
+    }
+    mxp[v] = c1 + c2 + 1;
+    return mxd[v];
+  };
+  
+  CALC(0, -1, 1);
+  
+  for (int q = 0; q < a; q++)
+    good[q] = sz[q] == mxd[q];
+  
+  int iba = 0;
+  auto rnm2 = [&](int v) {
+    zam[v] = iba++;
+    std::list<int> dq = {v};
+    for (; !dq.empty();) {
+      int x = dq.front();
+      dq.pop_front();
+      for (int h : l[x]) {
+        zam[h] = iba++;
+        if (good[h])
+          continue;
+        dq.push_back(h);
+      }
+    }
+  };
+  
+  zam[0] = 0;
+  
+  if (!good[0])
+    rnm2(0);
+  else
+    iba = 1;
+  
+  ST = iba - 1;
+  
+  for (int q = 0; q < a; q++) {
+    if (zam[q] == -1)
+      continue;
+    sz[zam[q]] = sz[q];
+    mxd[zam[q]] = mxd[q];
+    mxp[zam[q]] = mxp[q];
+  }
+  
+  for (int q = 0; q < a; q++)
+    l[q].clear();
+  
+  for (auto p : reb) {
+    if (std::min(zam[p.first], zam[p.second]) > -1) {
+      l[zam[p.first]].push_back(zam[p.second]);
+    }
+  }
+  
+  for (int q = 0; q < a; q++) {
+    GR = l[q].empty() ? l[q].back() : q;
+    assert(l[q].empty() || GR[1] - GR[0] + 1 == l[q].size());
+  }
+  
+  for (int q = 0; q < a; q++)
+    good[q] = sz[q] == mxd[q];
+  
+  int diam = 0;
+  for (int& i : mxp)
+    diam = std::max(i, diam);
+  
+  o[diam] = 1;
+  
+  for (int q = diam + 1; q <= a; q++)
+    o[q] = 0;
+  

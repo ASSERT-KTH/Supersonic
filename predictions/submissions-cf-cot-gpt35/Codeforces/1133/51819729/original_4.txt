@@ -1,0 +1,227 @@
+Step 1: Remove unnecessary includes
+
+The program includes a lot of unnecessary header files that are not used in the program. Removing these unnecessary includes can reduce compilation time and improve the overall performance of the program.
+
+Step 2: Remove unused macros
+
+The program defines many macros that are not used in the program. Removing these unused macros can improve the readability and maintainability of the code.
+
+Step 3: Optimize the DisjointSet data structure
+
+The DisjointSet data structure is used to keep track of the connected components in the graph. The program initializes the DisjointSet with all nodes and then merges the components together. However, this can be optimized by only initializing the DisjointSet with the nodes that are actually used in the graph. This can reduce the memory usage and improve the running time of the program.
+
+Step 4: Optimize the dfs function
+
+The dfs function is used to traverse the graph and find the minimum spanning tree. However, it can be optimized by using a depth-first search algorithm instead of a recursive function. This can reduce the memory usage and improve the running time of the program.
+
+Step 5: Optimize the build_tree function
+
+The build_tree function is used to build the tree structure from the minimum spanning tree. However, it can be optimized by using a depth-first search algorithm instead of a recursive function. This can reduce the memory usage and improve the running time of the program.
+
+Step 6: Optimize the Ares_KN function
+
+The Ares_KN function is the main function of the program. It can be optimized by removing unnecessary code and optimizing the algorithm used to find the minimum spanning tree. This can improve the running time and memory usage of the program.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <set>
+#include <cstring>
+using namespace std;
+
+const int MAXN = 2e5 + 100;
+
+struct DisjointSet {
+    int parent[MAXN];
+    int rank[MAXN];
+
+    DisjointSet() {
+        memset(parent, -1, sizeof(parent));
+        memset(rank, 0, sizeof(rank));
+    }
+
+    int find(int u) {
+        if (parent[u] == -1) {
+            return u;
+        }
+        return parent[u] = find(parent[u]);
+    }
+
+    void merge(int u, int v) {
+        u = find(u);
+        v = find(v);
+        if (u == v) {
+            return;
+        }
+        if (rank[u] < rank[v]) {
+            parent[u] = v;
+        } else if (rank[u] > rank[v]) {
+            parent[v] = u;
+        } else {
+            parent[v] = u;
+            rank[u]++;
+        }
+    }
+};
+
+int deg[MAXN];
+int chose[MAXN];
+int par[MAXN];
+vector<int> g[MAXN];
+vector<int> g_MST[MAXN];
+vector<pair<int, int>> edge;
+set<pair<int, int>> MST;
+
+bool cmp(int u, int v) {
+    return (deg[u] < deg[v]) || (deg[u] == deg[v] && u < v);
+}
+
+void dfs(int root, DisjointSet& dsu) {
+    vector<int> stack;
+    stack.push_back(root);
+
+    while (!stack.empty()) {
+        int u = stack.back();
+        stack.pop_back();
+
+        for (auto v : g[u]) {
+            if (dsu.find(1) == dsu.find(v)) {
+                continue;
+            } else {
+                dsu.merge(dsu.find(1), dsu.find(v));
+                if (u < v) {
+                    MST.insert({u, v});
+                } else {
+                    MST.insert({v, u});
+                }
+                g_MST[u].push_back(v);
+                g_MST[v].push_back(u);
+                stack.push_back(v);
+            }
+        }
+    }
+}
+
+void build_tree(int root) {
+    vector<int> stack;
+    stack.push_back(root);
+
+    while (!stack.empty()) {
+        int u = stack.back();
+        stack.pop_back();
+
+        for (auto v : g_MST[u]) {
+            if (par[v] == -1) {
+                par[v] = u;
+                stack.push_back(v);
+            }
+        }
+    }
+}
+
+int main() {
+    int n, m, k;
+    cin >> n >> m >> k;
+
+    DisjointSet dsu;
+    
+    while (m--) {
+        int u, v;
+        cin >> u >> v;
+        g[u].push_back(v);
+        g[v].push_back(u);
+        deg[u]++;
+        deg[v]++;
+        edge.emplace_back(u, v);
+    }
+    
+    if (deg[1] < k) {
+        cout << "NO" << endl;
+        return 0;
+    }
+    
+    sort(g[1].begin(), g[1].end(), cmp);
+    int cnt = 0;
+    
+    for (auto v : g[1]) {
+        if (deg[v] == 1) {
+            cnt++;
+            dsu.merge(1, v);
+            MST.insert({1, v});
+            g_MST[1].push_back(v);
+            g_MST[v].push_back(1);
+        }
+    }
+    
+    if (cnt > k) {
+        cout << "NO" << endl;
+        return 0;
+    }
+    
+    dfs(1, dsu);
+    
+    for (auto E : edge) {
+        int u = E.first, v = E.second;
+        if (u == 1 || v == 1) {
+            continue;
+        }
+        if (dsu.find(u) != dsu.find(v)) {
+            dsu.merge(u, v);
+            if (u < v) {
+                MST.insert({u, v});
+            } else {
+                MST.insert({v, u});
+            }
+            g_MST[u].push_back(v);
+            g_MST[v].push_back(u);
+        }
+    }
+    
+    if (cnt > k || MST.size() < n - 1) {
+        cout << "NO" << endl;
+        return 0;
+    }
+    
+    if (cnt == k) {
+        cout << "YES" << endl;
+        for (auto x : MST) {
+            cout << x.first << " " << x.second << endl;
+        }
+        return 0;
+    }
+    
+    int root = 1;
+    memset(par, -1, sizeof(par));
+    par[1] = 1;
+    build_tree(root);
+    
+    for (auto v : g[1]) {
+        if (!chose[v]) {
+            int p = par[v];
+            if (p == 1) {
+                continue;
+            }
+            if (v < p) {
+                MST.erase({v, p});
+            } else {
+                MST.erase({p, v});
+            }
+            MST.insert({1, v});
+            par[v] = 1;
+            cnt++;
+            if (cnt == k) {
+                break;
+            }
+        }
+    }
+    
+    cout << "YES" << endl;
+    for (auto x : MST) {
+        cout << x.first << " " << x.second << endl;
+    }
+    
+    return 0;
+}
+```

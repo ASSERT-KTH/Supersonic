@@ -1,0 +1,158 @@
+#include <iostream>
+#include <vector>
+#include <cassert>
+using namespace std;
+
+#define sz(a) int((a).size())
+
+const int INF = int(1e9);
+const long long INF64 = long long(1e18);
+const long double EPS = 1e-9;
+const int N = 250 * 1000 + 555;
+const int M = 30 * 1000 * 1000 + 555;
+
+struct node {
+  int sum, sval;
+  int l, r;
+  node() : sum(0), sval(-1), l(-1), r(-1) {}
+  node(int sum, int sval, int l, int r)
+      : sum(sum), sval(sval), l(l), r(r) {}
+};
+
+typedef vector<node> tree;
+
+int n;
+vector<pair<int, pair<int, int>>> qs;
+vector<int> dead;
+vector<pair<int, pair<int, int>>> ps;
+tree nodes;
+int szn = 0;
+
+int getsum(const tree& t, int len) {
+  if (t.empty())
+    return 0;
+  if (t[0].sval != -1)
+    return len * t[0].sval;
+  return t[0].sum;
+}
+
+int push(tree& t) {
+  int pushed = t[0].sval;
+  t[0].sval = -1;
+  return pushed;
+}
+
+void upd(tree& t, int l1, int l2) {
+  t[0].sum = getsum(t, l1) + getsum(t, l2);
+}
+
+int setVal(tree& t, int l, int r, int lf, int rg, int val, int pushed = -1) {
+  if (t.empty())
+    return -1;
+  if (pushed != -1)
+    t[0].sval = pushed;
+  if (l == lf && r == rg) {
+    t[0].sval = val;
+    return 0;
+  }
+  int mid = (l + r) >> 1;
+  pushed = push(t);
+  if (lf < mid)
+    t[0].l = setVal(nodes, l, mid, lf, min(mid, rg), val, pushed);
+  else if (pushed != -1)
+    t[0].l = t[0].r;
+  if (rg > mid)
+    t[0].r = setVal(nodes, mid, r, max(lf, mid), rg, val, pushed);
+  else if (pushed != -1)
+    t[0].r = t[0].l;
+  upd(t, mid - l, r - mid);
+  return 0;
+}
+
+int getPos(const tree& t, int l, int r, int lf, int rg) {
+  if (t.empty())
+    return -1;
+  if (l == lf && r == rg) {
+    if (l + 1 == r)
+      return getsum(t, 1) ? l : -1;
+    if (getsum(t, r - l) == 0)
+      return -1;
+  }
+  if (t[0].sval != -1)
+    return t[0].sval > 0 ? rg - 1 : -1;
+  int mid = (l + r) >> 1;
+  int ans = -1;
+  if (rg > mid && ans == -1)
+    ans = max(ans, getPos(nodes, mid, r, max(lf, mid), rg));
+  if (lf < mid && ans == -1)
+    ans = max(ans, getPos(nodes, l, mid, lf, min(mid, rg)));
+  return ans;
+}
+
+bool sub(pair<int, int> &p, int pw) {
+  if (pw >= p.first)
+    return true;
+  pw = p.first - pw - 1;
+  int pos = getPos(nodes, 0, sz(nodes), 0, pw + 1);
+  if (pos < 0)
+    return true;
+  setVal(nodes, 0, sz(nodes), pos, pos + 1, 0);
+  if (pos < pw)
+    setVal(nodes, 0, sz(nodes), pos + 1, pw + 1, 1);
+  p = {p.first, getsum(nodes, sz(nodes))};
+  return p.second == 0;
+}
+
+void solve() {
+  int cnt = 0;
+  int maxLen = n + 3;
+  for (int i = 0; i < n; i++) {
+    int tp = qs[i].first;
+    int a = qs[i].second.first, b = qs[i].second.second;
+    a--, b--;
+    if (tp == 1) {
+      int id = cnt++;
+      dead[id] = -2;
+      ps[id] = {0, {1, 0}};
+      setVal(ps[id].second.second, 0, maxLen, 0, 1, 1);
+    } else if (tp == 2) {
+      if (dead[a] < 0)
+        ps[a].first++;
+    } else if (tp == 3) {
+      if (dead[a] < 0) {
+        setVal(ps[a].second.second, 0, maxLen, ps[a].second.first, ps[a].second.first + 1, 0);
+        ps[a].second.first++;
+      }
+    } else if (tp == 4) {
+      int id = cnt++;
+      dead[id] = -2;
+      ps[id] = ps[a];
+      if (dead[a] >= 0)
+        dead[id] = i;
+    } else {
+      if (dead[a] < 0 && dead[b] < 0) {
+        if (sub(ps[a].second, ps[b].first))
+          dead[a] = i;
+        if (sub(ps[b].second, ps[a].first))
+          dead[b] = i;
+      }
+    }
+  }
+  cout << cnt << endl;
+  for (int i = 0; i < cnt; i++)
+    cout << dead[i] + 1 << " ";
+  cout << endl;
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(0), cout.tie(0);
+  cout << fixed << setprecision(15);
+  cin >> n;
+  qs.resize(n);
+  dead.resize(n);
+  ps.resize(n);
+  nodes.resize(M);
+  solve();
+  return 0;
+}

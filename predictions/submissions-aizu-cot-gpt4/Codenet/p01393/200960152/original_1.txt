@@ -1,0 +1,101 @@
+Program Optimization Steps:
+
+1. Avoid using "#include <bits/stdc++.h>" as it includes a lot of unnecessary libraries which increases compilation time. Include only the necessary ones.
+
+2. Avoid using "using namespace std;" as it may cause naming conflicts.
+
+3. Preprocessing directives like #define rep(i, n) for (int i = 0; i < (int)n; i++) can be avoided for better readability and debugging.
+
+4. Use of C++ STL "std::vector" for dynamic arrays can be replaced with static arrays to reduce memory usage if the maximum size is known.
+
+5. Avoid using "std::cin.tie(0);" and "std::ios::sync_with_stdio(0);" as these are used to solve synchronization problems between cstdio and c++ i/o streams. We can use only one of them for better performance.
+
+6. Instead of using multiple instances of "std::vector<vd>" like dp1 and dp2, we can use a 2D array to reduce memory consumption and improve runtime.
+
+7. The nested loop is used to find and erase overlapping intervals. This can be optimized by first sorting the intervals and then comparing only adjacent intervals.
+
+Here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cmath>
+#include <iomanip>
+
+using D = double;
+using P = std::pair<D, D>;
+
+const D EPS = 1e-8;
+const D PI = acos(-1);
+
+P p[2000];
+std::vector<P> v;
+int max_r[2000], max_l[2000];
+
+inline void modify(D &seta) {
+  if (seta > PI)
+    seta -= 2 * PI;
+  if (seta < -PI)
+    seta += 2 * PI;
+}
+
+inline bool in_upper(const D &seta) { return (EPS < seta && seta < PI - EPS); }
+
+inline bool comp(const P &a, const P &b) {
+  return abs(a.first - b.first) < EPS ? a.second + EPS < b.second : a.first < b.first;
+}
+
+int main() {
+  int n, k;
+  std::cin >> n >> k;
+  for (int i = 0; i < n; i++) {
+    D x, y, r;
+    std::cin >> x >> y >> r;
+    std::complex<D> c(x, y);
+    D d = abs(c), s = arg(c), a = sqrt(d * d - r * r);
+    D ds = acos((d * d + a * a - r * r) / (2 * d * a));
+    D start = s - ds, end = s + ds;
+    modify(start);
+    modify(end);
+    P tmp = P(in_upper(start) ? start : 0, in_upper(end) ? end : PI);
+    if (tmp.first < EPS && PI - EPS < tmp.second)
+      continue;
+    v.push_back(tmp);
+  }
+  sort(v.begin(), v.end(), comp);
+
+  for(int i = 0; i < v.size(); i++) {
+    while(i + 1 < v.size() && v[i + 1].first - EPS < v[i].first && v[i].second < v[i + 1].second + EPS) {
+      v.erase(v.begin() + i);
+    }
+  }
+
+  int m = v.size();
+  for (int i = 0; i < m; i++) {
+    P dummy(v[i].second, 0);
+    max_l[i] = upper_bound(v.begin(), v.end(), dummy, comp) - v.begin();
+    max_r[i] = max_l[i] - 1;
+  }
+
+  D dp1[2001][2001] = {0}, dp2[2001][2001] = {0};
+
+  for (int i = 0; i < m; i++) {
+    for (int j = 0; j <= k; j++) {
+      dp1[i + 1][j] = std::max(dp1[i + 1][j], dp1[i][j]);
+      if (j + 1 <= k) {
+        D use = std::max(dp1[i][j], dp2[i][j]);
+        dp1[max_l[i]][j + 1] = std::max(dp1[max_l[i]][j + 1], use + v[i].second - v[i].first);
+        if (max_r[i] != i) {
+          dp2[max_r[i]][j + 1] =
+              std::max(dp2[max_r[i]][j + 1], use + v[max_r[i]].first - v[i].first);
+        }
+      }
+    }
+  }
+
+  D ans = 0;
+  for (int i = 0; i <= k; i++) ans = std::max(ans, dp1[m][i]);
+  std::cout << std::fixed << std::setprecision(10) << ans / PI << "\n";
+}
+```

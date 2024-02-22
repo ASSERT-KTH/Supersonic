@@ -1,0 +1,91 @@
+The given C++ program is already optimized for time complexity with usage of Segment Tree and Binary Search. However, there are a few things that can be done to make the program more readable and potentially more efficient:
+
+1. Remove `#include <bits/stdc++.h>`: This is a non-standard header file and includes a lot of unnecessary stuff. It's better to include only the headers that are needed.
+
+2. Replace `#define` macros with inline functions or constants: Macros are generally not recommended in modern C++ as they do not respect scope and can cause issues with debugging. Furthermore, using const or enum instead of #define also provides type safety.
+
+3. Remove the usage of `using namespace std;`: This can cause name clashes if the program is extended or integrated with other code.
+
+4. Use more descriptive variable names: This makes the code more readable and maintainable.
+
+5. It's better to use `std::array` or `std::vector` instead of C-style arrays. They are safer and provide additional functionalities.
+
+6. The use of `ios::sync_with_stdio(0);` and `cin.tie(0);` can be removed if you're not mixing `cin/cout` with `scanf/printf`.
+
+Here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+typedef long long int lli;
+const lli mod = 1e9 + 7;
+const lli INF = 1e18;
+const lli N = 4e5 + 5;
+std::vector<lli> seg_tree(4 * N + 5, 0);
+std::vector<lli> a(N);
+
+void build_tree(lli tree_index, lli strt_i, lli end_i) {
+    if (strt_i == end_i) {
+        seg_tree[tree_index] = a[strt_i];
+        return;
+    }
+    lli mid = (strt_i + end_i) / 2;
+    build_tree(tree_index * 2, strt_i, mid);
+    build_tree(tree_index * 2 + 1, mid + 1, end_i);
+    seg_tree[tree_index] =
+        std::gcd(seg_tree[tree_index * 2], seg_tree[tree_index * 2 + 1]);
+}
+
+lli query(lli tree_index, lli strt_i, lli end_i, lli q_strt, lli q_end) {
+    if (strt_i > q_end || end_i < q_strt)
+        return 0;
+    if (q_strt <= strt_i && q_end >= end_i)
+        return seg_tree[tree_index];
+    lli mid = (strt_i + end_i) / 2;
+    lli l = query(2 * tree_index, strt_i, mid, q_strt, q_end);
+    lli r = query(2 * tree_index + 1, mid + 1, end_i, q_strt, q_end);
+    return std::gcd(l, r);
+}
+
+void solve() {
+    lli n;
+    std::cin >> n;
+    for(lli i = 1; i < n + 1; ++i) {
+        std::cin >> a[i];
+        a[i + n] = a[i];
+    }
+    build_tree(1, 1, 2 * n);
+    lli ans = 0, g = 0;
+    for(lli i = 1; i < n + 1; ++i) {
+        g = std::gcd(g, a[i]);
+    }
+    for(lli i = 1; i < n + 1; ++i) {
+        lli r = 2 * n, l = i + 1, temp = INF, cnt = 0;
+        if (a[i] == g)
+            continue;
+        while (l <= r) {
+            lli mid = (l + r) / 2;
+            lli x = query(1, 1, 2 * n, l, mid);
+            lli y = std::gcd(x, a[i]);
+            if (y == g)
+                temp = std::min(temp, mid - l + 1 + cnt), r = mid - 1;
+            else
+                a[i] = std::gcd(a[i], x), cnt += mid - l + 1, l = mid + 1;
+        }
+        ans = std::max(ans, temp);
+    }
+    std::cout << ans << std::endl;
+    return;
+}
+
+int main() {
+    lli t;
+    std::cin >> t;
+    for(lli i = 1; i < t + 1; ++i) {
+        solve();
+    }
+    return 0;
+}
+```

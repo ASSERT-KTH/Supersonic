@@ -1,0 +1,139 @@
+#include <iostream>
+#include <utility>
+#include <algorithm>
+using namespace std;
+
+using pii = pair<int, int>;
+
+const int maxLig = (1e5) + 5;
+const int maxCol = 12;
+const int maxReq = (1e5) + 5;
+const int sqr = 600;
+
+int main() {
+  int nbLig, nbCol, nbReq;
+  cin >> nbLig >> nbCol >> nbReq;
+
+  char grille[maxLig * maxCol];
+  fill_n(grille, nbLig * nbCol, '~');
+
+  int proc[maxLig * maxCol] = {0};
+  pii go[maxLig * maxCol];
+
+  int tps = 0;
+
+  int blocRef[maxLig] = {0};
+
+  for (int lig = 1; lig <= nbLig; ++lig) {
+    for (int col = 1; col <= nbCol; ++col) {
+      cin >> grille[(lig - 1) * nbCol + col];
+    }
+  }
+
+  ++tps;
+
+  for (int bloc = 0;; ++bloc) {
+    int deb = bloc * sqr, fin = min(nbLig, (bloc + 1) * sqr);
+    if (deb > nbLig)
+      break;
+
+    for (int lig = deb + 1; lig <= fin; ++lig) {
+      blocRef[lig] = bloc;
+      for (int col = 1; col <= nbCol; ++col) {
+        int idx = (lig - 1) * nbCol + col;
+        if (proc[idx] == tps)
+          continue;
+
+        proc[idx] = tps;
+
+        int nextLig = lig, nextCol = col;
+
+        if (grille[idx] == '<')
+          --nextCol;
+        else if (grille[idx] == '>')
+          ++nextCol;
+        else if (grille[idx] == '^')
+          --nextLig;
+
+        int nextIdx = (nextLig - 1) * nbCol + nextCol;
+
+        if (nextLig == deb || grille[nextIdx] == '~') {
+          go[idx] = {nextLig, nextCol};
+        } else if (grille[idx] != '^' && grille[nextIdx] != '^' &&
+                   grille[idx] != grille[nextIdx]) {
+          go[idx] = {0, 0};
+        } else {
+          while (grille[nextIdx] != '~') {
+            nextLig = go[nextIdx].first;
+            nextCol = go[nextIdx].second;
+            nextIdx = (nextLig - 1) * nbCol + nextCol;
+          }
+          go[idx] = {nextLig, nextCol};
+        }
+      }
+    }
+  }
+
+  for (int req = 0; req < nbReq; ++req) {
+    char mode;
+    cin >> mode;
+    int lig, col;
+    cin >> lig >> col;
+
+    int idx = (lig - 1) * nbCol + col;
+
+    if (mode == 'A') {
+      while (grille[idx] != '~') {
+        idx = (go[idx].first - 1) * nbCol + go[idx].second;
+      }
+      pii res = {(idx / nbCol) + 1, (idx % nbCol)};
+      if (res == pii{0, 0})
+        res = {-1, -1};
+      cout << res.first << " " << res.second << "\n";
+    } else {
+      ++tps;
+      char nv;
+      cin >> nv;
+      grille[idx] = nv;
+      int bloc = blocRef[lig];
+
+      int deb = bloc * sqr, fin = min(nbLig, (bloc + 1) * sqr);
+
+      for (int lig = deb + 1; lig <= fin; ++lig) {
+        for (int col = 1; col <= nbCol; ++col) {
+          int idx = (lig - 1) * nbCol + col;
+          if (proc[idx] != tps) {
+            proc[idx] = tps;
+            int nextLig = go[idx].first;
+            int nextCol = go[idx].second;
+            int nextIdx = (nextLig - 1) * nbCol + nextCol;
+            while (grille[nextIdx] != '~') {
+              nextLig = go[nextIdx].first;
+              nextCol = go[nextIdx].second;
+              nextIdx = (nextLig - 1) * nbCol + nextCol;
+            }
+            go[idx] = {nextLig, nextCol};
+          }
+        }
+      }
+
+      if (bloc)
+        for (int lig = (bloc - 1) * sqr + 1; lig <= bloc * sqr; ++lig)
+          for (int col = 1; col <= nbCol; ++col) {
+            int idx = (lig - 1) * nbCol + col;
+            if (proc[idx] != tps) {
+              proc[idx] = tps;
+              int nextLig = go[idx].first;
+              int nextCol = go[idx].second;
+              int nextIdx = (nextLig - 1) * nbCol + nextCol;
+              while (grille[nextIdx] != '~') {
+                nextLig = go[nextIdx].first;
+                nextCol = go[nextIdx].second;
+                nextIdx = (nextLig - 1) * nbCol + nextCol;
+              }
+              go[idx] = {nextLig, nextCol};
+            }
+          }
+    }
+  }
+}

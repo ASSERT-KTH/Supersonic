@@ -1,0 +1,202 @@
+Code Analysis:
+
+1. The code is implementing the primal-dual algorithm to solve a minimum cost flow problem.
+2. The code uses a vector of edges to represent the graph, with each edge having a capacity, cost, and flow.
+3. The code uses a priority queue to find the shortest path from the source to the sink, using the Bellman-Ford algorithm.
+4. The code updates the flow and cost of each edge based on the shortest path found.
+5. The code repeats the process until no more augmenting paths are found.
+
+Potential optimizations:
+
+1. Memory allocation: The code uses dynamic memory allocation for the vector of edges and the priority queue. This can be optimized by pre-allocating memory for these data structures.
+
+2. Unnecessary computations: The code calculates the cost of each edge multiple times in the augment function. This can be optimized by calculating the cost once and storing it in a variable.
+
+3. Loop optimizations: The code uses nested loops to iterate over the graph and the edges. These loops can be optimized by reducing the number of iterations and improving cache locality.
+
+4. Compiler optimizations: The code can benefit from compiler optimizations such as loop unrolling and function inlining. Using compiler optimization flags (-O2 or -O3) can improve the performance of the code.
+
+Optimization Strategy:
+
+1. Memory allocation: Pre-allocate memory for the vector of edges and the priority queue to avoid dynamic memory allocation during runtime. This can be done by using the reserve() function for the vector and setting the priority queue size to a fixed value.
+
+2. Unnecessary computations: Calculate the cost of each edge once in the augment function and store it in a variable. This can be done by moving the calculation outside the loop.
+
+3. Loop optimizations: Reduce the number of iterations in the nested loops by iterating directly over the edges instead of using the size() function. This can improve cache locality and reduce memory access times.
+
+4. Compiler optimizations: Enable compiler optimizations by adding compiler flags (-O2 or -O3) to the compilation command. This will allow the compiler to perform optimizations such as loop unrolling and function inlining.
+
+Step-by-Step Explanation:
+
+1. Memory allocation:
+   - Use the reserve() function to pre-allocate memory for the vector of edges. This can be done by adding the following line before the loop that creates the edges:
+     ```
+     G.reserve(V_MAX);
+     ```
+   - Set the size of the priority queue to a fixed value. This can be done by changing the declaration of the priority queue to:
+     ```
+     priority_queue<pair<U, int>, vector<pair<U, int>>, greater<pair<U, int>>> Q;
+     ```
+
+2. Unnecessary computations:
+   - Move the calculation of the cost2 variable outside the inner loop in the augment function. This can be done by storing the value of `cost + pot[u] - pot[e.v]` in a variable before the loop and using that variable inside the loop.
+
+3. Loop optimizations:
+   - Change the loop in the augment function that iterates over the edges to directly iterate over the edges instead of using the size() function. This can be done by changing the loop from:
+     ```
+     rep(i, G[u].size()) {
+       edge<T, U> &e = G[u][i];
+       // ...
+     }
+     ```
+     to:
+     ```
+     for (edge<T, U> &e : G[u]) {
+       // ...
+     }
+     ```
+
+4. Compiler optimizations:
+   - Add compiler optimization flags (-O2 or -O3) to the compilation command. This can be done by adding the following line to the compilation command:
+     ```
+     -O2
+     ```
+
+Optimized Code Block:
+
+```cpp
+#include <cstdio>
+#include <map>
+#include <queue>
+#define rep(i, n) for (int i = 0; i < (n); i++)
+using namespace std;
+const int V_MAX = 6000;
+const int CAPA_INF = 1 << 29;
+const int COST_INF = 1 << 29;
+template <class T, class U> struct edge {
+  int v, rev;
+  T capa;
+  U cost;
+  T flow;
+};
+template <class T, class U>
+void add_directed_edge(vector<edge<T, U>> *G, int u, int v, T capa, U cost) {
+  G[u].push_back((edge<T, U>){v, G[v].size(), capa, cost, 0});
+  G[v].push_back((edge<T, U>){u, G[u].size() - 1, 0, -cost, 0});
+}
+template <class T, class U>
+pair<T, U> augment(int n, vector<edge<T, U>> *G, int s, int t, U *pot) {
+  static int pre[V_MAX];
+  static U d[V_MAX];
+  rep(u, n) d[u] = (u == s ? 0 : COST_INF);
+  bool ok = false;
+  priority_queue<pair<U, int>, vector<pair<U, int>>, greater<pair<U, int>>> Q;
+  Q.push(make_pair(0, s));
+  while (!Q.empty()) {
+    int u = Q.top().second;
+    U cost = -Q.top().first;
+    Q.pop();
+    if (cost < d[u])
+      continue;
+    if (u == t)
+      ok = true;
+    U cost2 = cost + pot[u] - pot[e.v];
+    for (edge<T, U> &e : G[u]) {
+      if (e.capa - e.flow > 0 && cost2 < d[e.v]) {
+        d[e.v] = cost2;
+        pre[e.v] = e.rev;
+        Q.push(make_pair(-cost2, e.v));
+      }
+    }
+  }
+  if (!ok)
+    return make_pair(0, 0);
+  T water = CAPA_INF;
+  for (int v = t; v != s;) {
+    edge<T, U> &e1 = G[v][pre[v]];
+    edge<T, U> &e2 = G[e1.v][e1.rev];
+    water = min(water, e2.capa - e2.flow);
+    v = e1.v;
+  }
+  U cost = 0;
+  for (int v = t; v != s;) {
+    edge<T, U> &e1 = G[v][pre[v]];
+    edge<T, U> &e2 = G[e1.v][e1.rev];
+    e1.flow -= water;
+    e2.flow += water;
+    cost += water * e2.cost;
+    v = e1.v;
+  }
+  rep(u, n) pot[u] += d[u];
+  return make_pair(water, cost);
+}
+template <class T, class U>
+pair<T, U> primal_dual(int n, vector<edge<T, U>> *G, int s, int t) {
+  T ans1 = 0;
+  U ans2 = 0;
+  static U pot[V_MAX];
+  while (1) {
+    pair<T, U> tmp = augment(n, G, s, t, pot);
+    if (tmp.first == 0)
+      break;
+    ans1 += tmp.first;
+    ans2 += tmp.second;
+  }
+  return make_pair(ans1, ans2);
+}
+struct train {
+  int t1, t2, cost;
+};
+int main() {
+  for (int n; scanf("%d", &n), n;) {
+    vector<train> T[99];
+    rep(i, n - 1) {
+      int m;
+      scanf("%d", &m);
+      T[i].resize(m);
+      rep(j, m) scanf("%d%d%d", &T[i][j].t1, &T[i][j].t2, &T[i][j].cost);
+    }
+    int n_class;
+    scanf("%d", &n_class);
+    int V = 0;
+    map<int, int> f[100][2];
+    map<int, int>::iterator it, jt;
+    rep(i, n - 1) rep(j, T[i].size()) {
+      int t1 = T[i][j].t1, t2 = T[i][j].t2;
+      if (f[i][0].count(t1) == 0)
+        f[i][0][t1] = V++;
+      if (f[i + 1][0].count(t2) == 0)
+        f[i + 1][0][t2] = V++;
+      if (f[i + 1][1].count(t2) == 0)
+        f[i + 1][1][t2] = V++;
+    }
+    int s = V++;
+    int t = V++;
+    static vector<edge<int, int>> G[V_MAX];
+    G.reserve(V_MAX);
+    rep(u, V) G[u].clear();
+    add_directed_edge(G, s, f[0][0].begin()->second, n_class, 0);
+    add_directed_edge(G, f[n - 1][0].rbegin()->second, t, n_class, 0);
+    rep(i, n) {
+      for (it = f[i][0].begin(); it != f[i][0].end(); ++it) {
+        jt = it;
+        ++jt;
+        if (jt != f[i][0].end()) {
+          add_directed_edge(G, it->second, jt->second, n_class, 0);
+        }
+      }
+      for (it = f[i][1].begin(); it != f[i][1].end(); ++it) {
+        int t = it->first;
+        add_directed_edge(G, it->second, f[i][0][t], 1, 0);
+      }
+    }
+    rep(i, n - 1) rep(j, T[i].size()) {
+      add_directed_edge(G, f[i][0][T[i][j].t1], f[i + 1][1][T[i][j].t2], 1,
+                        T[i][j].cost);
+    }
+    pair<int, int> ans = primal_dual(V, G, s, t);
+    printf("%d %d\n", ans.first, ans.second);
+  }
+  return 0;
+}
+```

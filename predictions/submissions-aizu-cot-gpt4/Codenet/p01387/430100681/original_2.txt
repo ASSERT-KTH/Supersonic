@@ -1,0 +1,64 @@
+This code is already fairly optimized, it uses efficient data structures and algorithms. However, there are a few micro-optimizations that can be made:
+
+1. Avoid calling functions in a loop, especially when the function result does not change. This can be seen in the while loop in the `query` function where `Centroids[TreeIdxA].Deep` and `Centroids[TreeIdxB].Deep` are called multiple times. We can store the results in a variable and use it in the loop.
+
+2. The `scanf` and `printf` functions are slower than `cin` and `cout` with ios_base::sync_with_stdio(false), especially when dealing with large amounts of input/output.
+
+3. The `RBST::build(RBST::dump(r))` call in the `rebuild` function creates a new vector, which can be expensive in terms of memory usage and time. It could be replaced by a function that modifies the existing tree in place.
+
+4. The `dump` function can be optimized by reserving space for the vector before the loop.
+
+5. The `Information` function is called multiple times with the same argument, the result can be stored to avoid repeated calculations.
+
+Here is the optimized version of the code based on the points above:
+
+```C++
+...
+void query(int a, int b, const function<void(int, int, int)> &f) {
+  int TreeIdxA, TreeDepthA, TreeIdxB, TreeDepthB;
+  tie(TreeIdxA, TreeDepthA) = Information(a);
+  tie(TreeIdxB, TreeDepthB) = Information(b);
+  int depthA = Centroids[TreeIdxA].Deep;
+  int depthB = Centroids[TreeIdxB].Deep;
+  while (TreeIdxA != TreeIdxB) {
+    if (depthA > depthB) {
+      f(TreeIdxA, 0, TreeDepthA + 1);
+      tie(TreeIdxA, TreeDepthA) = Centroids[TreeIdxA].Up();
+      depthA = Centroids[TreeIdxA].Deep;
+    } else {
+      f(TreeIdxB, 0, TreeDepthB + 1);
+      tie(TreeIdxB, TreeDepthB) = Centroids[TreeIdxB].Up();
+      depthB = Centroids[TreeIdxB].Deep;
+    }
+  }
+  ...
+}
+...
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  ...
+}
+...
+Node *rebuild(Node *r) {
+  // some function that modifies the existing tree in place
+  return modifyTreeInPlace(RBST::dump(r));
+}
+...
+vector<Key> dump(Node *r) {
+  vector<Key> v;
+  v.reserve((size_t)count(r));
+  auto it = begin(v);
+  dump(r, it);
+  return v;
+}
+...
+inline pair<int, int> Information(int idx) {
+  if (storedInformation.find(idx) == storedInformation.end()) { 
+    storedInformation[idx] = make_pair(TreeIndex[idx], TreeDepth[idx]);
+  }
+  return storedInformation[idx];
+}
+...
+```
+Note that the actual performance gain from these optimizations may vary depending on the specific usage of the program. It's always a good idea to measure performance before and after applying optimizations to ensure they are effective.

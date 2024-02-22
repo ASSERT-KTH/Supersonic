@@ -1,0 +1,100 @@
+The provided code is quite complex and already highly optimized, but there are still a few modifications that can potentially improve its efficiency.
+
+1. Avoid using `#include <bits/stdc++.h>`. This header file includes almost all standard libraries which can significantly increase the compile time. Instead, only include the necessary header files. However, this won't affect the run-time performance.
+
+2. Avoid using `#define`. Instead, use `const` or `inline` functions. Macros are processed by the preprocessor and can lead to hard-to-find errors. They also don't respect the scoping rules, potentially causing naming conflicts.
+
+3. Avoid using `using namespace std;`. This can lead to name clashes, which can be hard to debug, if you're using libraries that have a function with the same name.
+
+4. Avoid using `ios_base::sync_with_stdio(false);`, `cin.tie(0);`, and `cout.tie(0);` unless dealing with interactive problems or large inputs/outputs. These lines disable synchronization between C and C++ standard streams which may cause unexpected behavior.
+
+5. The `dfs` function can be optimized to reduce its complexity. The `assign` function is called twice in the `dfs` function. The first call can be removed, and the second call can be placed inside the if conditional to prevent unnecessary calls.
+
+6. Use prefix increment (++i) in loops instead of postfix (i++) for performance gain. But in C++, the difference is negligible.
+
+Below is the optimized program with the changes mentioned above.
+
+```C++
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <ext/pb_ds/assoc_container.hpp>
+#include <ext/pb_ds/tree_policy.hpp>
+using namespace __gnu_pbds;
+
+typedef long long ll;
+typedef pair<ll, ll> pp;
+typedef tree<pp, null_type, less<pp>, rb_tree_tag,
+             tree_order_statistics_node_update> ordered_set;
+
+const ll MAXN = 1e6 + 5, N = 1e6, NAX = 26, INF = 1e9+7;
+ll segtree[4 * MAXN], lazy[4 * MAXN], value[MAXN], adj[NAX][MAXN];
+vector<ll> good(MAXN, 0), seta, tmp, dp(MAXN, INF);
+
+ll combine(ll x, ll y) { return min(x, y); }
+
+void build(ll node, ll l, ll r) {
+  if (l == r) {
+    segtree[node] = value[l];
+    return;
+  }
+  ll mid = (l + r) / 2;
+  build(node << 1, l, mid);
+  build(node << 1 | 1, mid + 1, r);
+  segtree[node] = combine(segtree[node << 1], segtree[node << 1 | 1]);
+}
+
+void lazify(ll node, ll l, ll r) {
+  if (lazy[node] != 0) {
+    segtree[node] += lazy[node];
+    if (l < r) {
+      lazy[node << 1] += lazy[node];
+      lazy[node << 1 | 1] += lazy[node];
+    }
+    lazy[node] = 0;
+  }
+}
+
+void assign(ll node, ll l, ll r, ll idx, ll val) {
+  lazify(node, l, r);
+  if (l == r) {
+    segtree[node] = val;
+    return;
+  }
+  ll mid = (l + r) / 2;
+  if (l <= idx and idx <= mid)
+    assign(node << 1, l, mid, idx, val);
+  else
+    assign(node << 1 | 1, mid + 1, r, idx, val);
+  segtree[node] = combine(segtree[node << 1], segtree[node << 1 | 1]);
+}
+
+void dfs(ll node, ll par) {
+  if (par != -1)
+    dp[node] = min(dp[node], dp[par] + 1);
+  if (good[node]) {
+    updateRange(1, 1, N, 1, tmp.size(), 1);
+    dp[node] = min(dp[node], query(1, 1, N, 1, tmp.size()));
+  }
+  tmp.push_back(dp[node]);
+  if (good[node]) {
+    assign(1, 1, N, tmp.size(), dp[node] + good[node]);
+  }
+  for (ll i = 0; i < NAX; ++i) {
+    if (adj[i][node] != -1) {
+      dfs(adj[i][node], node);
+    }
+  }
+  if (good[node]) {
+    assign(1, 1, N, tmp.size(), INF);
+  }
+  tmp.pop_back();
+}
+
+int main() {
+  solve();
+  return 0;
+}
+```
+
+Please note, these optimizations may not significantly improve the running time and memory usage as the code was already highly optimized. The real bottleneck of this code is the depth-first search (DFS) algorithm, which is already quite optimal.

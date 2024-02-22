@@ -1,0 +1,63 @@
+**Code Analysis**
+The above code reads two integers `n` and `k` from the standard input. If `n/2 < k`, it simply prints `-1` and continues to the next pair of integers. Otherwise, it creates an array `p` of size `n+2` and initializes it with some values. It then runs a nested loop `k` times, manipulating and printing the values in this array. The code seems to be doing a lot of redundant computations inside the nested loop.
+
+**Optimization Strategy**
+1. Inefficient Data Structures: The code uses an array to store integers. This is already an efficient data structure for this purpose. However, we should make sure to allocate it on the heap rather than on the stack to avoid stack overflow for large sizes of `n`.
+
+2. Redundant Computations: The computations `(p[j] + i) % n + 1` and `(p[j + 1] + i) % n + 1` are being repeated for each value of `i` and `j`. We can optimize this by precomputing these values once and storing them in an additional 2D array.
+
+3. Loops: The inner loop iterates `n-1` times for each value of `i`. With the precomputation mentioned above, we can reduce the nested loop to a single loop.
+
+4. Compiler Optimizations: We can use the `-O3` flag to let the compiler perform automatic code optimizations.
+
+**Step-by-Step Explanation**
+1. Change `int p[n + 2];` to `int* p = new int[n+2];` to allocate the array on the heap.
+
+2. Define a 2D array `int** precomputedValues = new int*[n-1][2];`. Compute and store the values `(p[j] + i) % n + 1` and `(p[j + 1] + i) % n + 1` in `precomputedValues[j][0]` and `precomputedValues[j][1]` respectively for all `j` in the range `0` to `n-2` inclusive. This can be done in an additional loop before the loop over `i`.
+
+3. Replace the nested loop over `j` with a single loop that prints the precomputed values `precomputedValues[j][0]` and `precomputedValues[j][1]`.
+
+4. Delete the array `p` and `precomputedValues` to free the memory.
+
+**Optimized Code Block**
+
+```C++
+#include <cstdio>
+#include <iostream>
+using namespace std;
+int main() {
+  int n, k;
+  while (cin >> n >> k) {
+    if (n / 2 < k) {
+      printf("-1\n");
+      continue;
+    }
+    int* p = new int[n + 2]; // heap allocation
+    p[0] = 0;
+    for (int i = 1; i < n; i += 2) {
+      p[i] = i / 2 + 1;
+      p[i + 1] = n - p[i];
+    }
+    int** precomputedValues = new int*[n-1]; // precomputing
+    for (int j = 0; j < n - 1; j++) {
+      precomputedValues[j] = new int[2];
+      precomputedValues[j][0] = (p[j] + 1) % n + 1;
+      precomputedValues[j][1] = (p[j + 1] + 1) % n + 1;
+    }
+    for (int i = 0; i < k; i++) {
+      if (i != 0)
+        printf("\n");
+      for (int j = 0; j < n - 1; j++) {
+        printf("%d %d\n", precomputedValues[j][0], precomputedValues[j][1]);
+      }
+    }
+    delete[] p; // free memory
+    for(int i = 0; i < n-1; i++){
+      delete[] precomputedValues[i];
+    }
+    delete[] precomputedValues;
+  }
+}
+```
+
+This approach has a trade-off. It uses more memory to store the precomputed values but reduces the number of computations, which can significantly speed up the program if `k` is large. In many cases, it's a good trade-off since memory is usually cheaper than CPU time.

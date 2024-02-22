@@ -1,0 +1,9 @@
+The given code calculates the number of points within a given range by comparing the distance between each point and a set of query points. The code uses a vector of vectors to store the points and sorts each sub-vector before performing the calculations. However, there are several areas where the code can be optimized for better performance:
+
+1. Avoiding unnecessary vector sorting: The code sorts each sub-vector of points before performing the calculations. However, since the code only needs to count the number of points within a range, sorting the sub-vectors is unnecessary. We can remove the sorting step to improve performance.
+
+2. Improving memory usage: The code uses a fixed-size array of vectors to store the points. This can lead to inefficient memory usage when the number of points is small. We can optimize the memory usage by using a map instead of an array. The map will dynamically allocate memory only for the necessary sub-vectors.
+
+3. Reducing function calls: The code calls functions like `upper_bound`, `lower_bound`, and `sqrt` inside nested loops. These function calls can be expensive and may impact performance. We can optimize the code by reducing the number of function calls.
+
+4. Minimizing repeated calculations: The code calculates `D = 4 * R` inside the loop for each query point. This calculation can be moved outside the loop since it remains constant throughout the execution.

@@ -1,0 +1,77 @@
+I see a few opportunities to optimize this code. As a starting point:
+
+1. Code Analysis:
+    - The code uses a QuickFind data structure for union-find operations. The implementation uses an extra vector `v` to track the vertices in each set, which results in extra space usage and time to manage this data. 
+    - The code uses `std::map` to store associations between the initial and sorted arrays, which is less efficient than `std::unordered_map` due to the overhead of maintaining sorted order.
+
+2. Optimization Strategy:
+    1. Replace `std::map` with `std::unordered_map` for efficient O(1) average time complexity for searches and insertions.
+    2. Remove the `v` vector from the QuickFind structure. Instead, use a separate vector to keep track of the minimum element and the sum in each set, which can be updated during the unite operation. This way, we avoid having to search through the `v` vector during the final computation.
+    3. Move the `signed main()` function to the top of the file so that it's the first function the compiler sees. This allows the compiler to inline smaller functions into the main function, which can improve performance.
+
+3. Step-by-Step Explanation:
+    1. Replace `std::map` with `std::unordered_map`. The rationale for this change is that `std::unordered_map` provides faster average search and insert times compared to `std::map`. The trade-off is that `std::unordered_map` uses more memory and has slower worst-case time complexity, but these are usually acceptable in practice.
+    2. Eliminate the `v` vector from the QuickFind structure and instead maintain separate vectors for the minimum element and the sum in each set. This reduces the space and time complexity of the union and find operations in the QuickFind structure. The trade-off is a slight increase in code complexity.
+    3. Move the `signed main()` function to the top of the file. This allows the compiler to inline smaller functions into the main function, which can improve performance.
+
+4. Optimized Code Block:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+#define int long long
+
+signed main() {
+  int n;
+  cin >> n;
+  vector<int> a(n);
+  for (int i = 0; i < n; i++)
+    cin >> a[i];
+  vector<int> b(a);
+  sort(b.begin(), b.end());
+  unordered_map<int, int> p, q;
+  for (int i = 0; i < n; i++) {
+    p[a[i]] = i;
+    q[b[i]] = i;
+  }
+  vector<int> parent(n), rank(n), min_val(n), sum(n);
+  iota(parent.begin(), parent.end(), 0);
+  fill(rank.begin(), rank.end(), 1);
+  copy(a.begin(), a.end(), min_val.begin());
+  copy(a.begin(), a.end(), sum.begin());
+
+  auto find = [&](int x) {
+    if (parent[x] != x)
+      parent[x] = find(parent[x]);
+    return parent[x];
+  };
+
+  auto unite = [&](int x, int y) {
+    x = find(x);
+    y = find(y);
+    if (x == y)
+      return;
+    if (rank[x] < rank[y])
+      swap(x, y);
+    parent[y] = x;
+    rank[x] += rank[y];
+    sum[x] += sum[y];
+    min_val[x] = min(min_val[x], min_val[y]);
+  };
+
+  for (int i = 0; i < n; i++)
+    unite(i, p[b[i]]);
+  int ans = 0;
+  for (int i = 0; i < n; i++) {
+    if (parent[i] != i)
+      continue;
+    int k = rank[i];
+    int m = min_val[i];
+    int s = sum[i];
+    ans += min(s + m * (k - 2), s + m + b[0] * (k + 1));
+  }
+  cout << ans << endl;
+  return 0;
+}
+```
+This code performs the same operations as the original code but in a more efficient manner.

@@ -1,0 +1,149 @@
+The given code appears to be solving a problem using a segment tree data structure. The main bottleneck in the code is the segment tree updates and queries, which are not optimized. Additionally, there are some unnecessary computations and redundant code that can be optimized.
+
+Here is the step-by-step optimization strategy for the given code:
+
+1. Avoid including the entire `bits/stdc++.h` header file:
+   - Instead of including the entire `bits/stdc++.h` header file, include only the necessary standard library headers such as `<iostream>`, `<vector>`, `<algorithm>`, etc. This will reduce the compilation time and improve the overall efficiency of the code.
+
+2. Remove unnecessary macros and definitions:
+   - Remove the `#define int long long int` macro. It is unnecessary and can cause confusion.
+   - Remove the `#define fast` macro. It is unnecessary and does not provide any significant performance improvement.
+
+3. Optimize the `to_string` functions:
+   - Remove unnecessary overloads of the `to_string` function. These overloads are not used in the code and can be safely removed.
+   - Instead of converting a `bool` to a string by using `char('0' + b[i])`, simply use the `boolalpha` stream manipulator to convert the boolean value to a string.
+   - Remove the `template <size_t S> string to_string(bitset<S> b)` overload. It is not used in the code and can be removed.
+
+4. Remove unnecessary `write` and `print` functions:
+   - The `write` and `print` functions are not used in the code and can be safely removed.
+
+5. Optimize the `push` function:
+   - Move the `push` function inside the `apply` function to avoid unnecessary function calls.
+   - Replace the condition `if (st[i].lz == -MOD)` with `if (st[i].lz != -MOD)` to eliminate the unnecessary branch.
+
+6. Optimize the `build` function:
+   - Remove the unused parameter `x` from the `build` function. It is not used in the code and can be safely removed.
+
+7. Optimize the `upd` function:
+   - Move the `push` function inside the `apply` function to avoid unnecessary function calls.
+
+8. Optimize the `qry1` and `qry2` functions:
+   - Move the `push` function inside the `qry1` and `qry2` functions to avoid unnecessary function calls.
+
+9. Optimize the `solve` function:
+   - Replace the declaration of the array `arr` with a `vector<int>` to avoid stack overflow issues for large values of `n1`.
+   - Replace the declaration of the `ans` array with a `vector<int>` to avoid stack overflow issues for large values of `n1`.
+
+10. Use `reserve` to allocate memory for `vector`:
+    - Use the `reserve` function to preallocate memory for the `vector` `b` to avoid frequent reallocation as elements are added to the vector.
+
+11. Optimize the segment tree updates and queries:
+    - Instead of performing multiple updates or queries on the segment tree for each element in `b`, group the updates and queries together to reduce the number of function calls and improve efficiency.
+
+12. Remove the unnecessary second pass over `b`:
+    - Combine the two passes over `b` into a single loop to avoid unnecessary duplication of code.
+
+13. Remove the unnecessary clock:
+    - Remove the clock-related code as it is not necessary for the optimization task.
+
+Here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+const int INF = 1e18;
+
+struct node {
+  int mx, mi, lz;
+};
+
+vector<node> st;
+int n;
+
+void apply(int i, int x, int l2, int r2) {
+  st[i].mx -= x;
+  st[i].mi -= x;
+  if (st[i].lz != -INF)
+    st[i].lz += x;
+}
+
+void push(int i, int l2, int mid, int r2) {
+  if (st[i].lz != -INF) {
+    apply(2 * i, st[i].lz, l2, mid);
+    apply(2 * i + 1, st[i].lz, mid + 1, r2);
+    st[i].lz = -INF;
+  }
+}
+
+void build(int l1, int i = 1, int l2 = 0, int r2 = n - 1) {
+  if (l2 == r2) {
+    st[i].mx = l2;
+    st[i].mi = l2;
+    st[i].lz = -INF;
+    return;
+  }
+  int mid = (l2 + r2) / 2;
+  if (l1 <= mid)
+    build(l1, 2 * i, l2, mid);
+  else
+    build(l1, 2 * i + 1, mid + 1, r2);
+  st[i].mx = max(st[2 * i].mx, st[2 * i + 1].mx);
+  st[i].mi = min(st[2 * i].mi, st[2 * i + 1].mi);
+  st[i].lz = -INF;
+}
+
+void upd(int l1, int r1, int x, int i = 1, int l2 = 0, int r2 = n - 1) {
+  if (l1 <= l2 && r2 <= r1) {
+    apply(i, x, l2, r2);
+    return;
+  }
+  int mid = (l2 + r2) / 2;
+  push(i, l2, mid, r2);
+  if (l1 <= mid)
+    upd(l1, r1, x, 2 * i, l2, mid);
+  if (mid < r1)
+    upd(l1, r1, x, 2 * i + 1, mid + 1, r2);
+  st[i].mx = max(st[2 * i].mx, st[2 * i + 1].mx);
+  st[i].mi = min(st[2 * i].mi, st[2 * i + 1].mi);
+}
+
+int qry1(int l1, int r1, int i = 1, int l2 = 0, int r2 = n - 1) {
+  if (l1 <= l2 && r2 <= r1) {
+    return st[i].mx;
+  }
+  int mid = (l2 + r2) / 2;
+  push(i, l2, mid, r2);
+  return max((l1 <= mid ? qry1(l1, r1, 2 * i, l2, mid) : -INF),
+             (mid < r1 ? qry1(l1, r1, 2 * i + 1, mid + 1, r2) : -INF));
+}
+
+int qry2(int l1, int r1, int i = 1, int l2 = 0, int r2 = n - 1) {
+  if (l1 <= l2 && r2 <= r1) {
+    return st[i].mi;
+  }
+  int mid = (l2 + r2) / 2;
+  push(i, l2, mid, r2);
+  return min((l1 <= mid ? qry2(l1, r1, 2 * i, l2, mid) : INF),
+             (mid < r1 ? qry2(l1, r1, 2 * i + 1, mid + 1, r2) : INF));
+}
+
+void solve() {
+  int n1;
+  cin >> n1;
+  vector<int> arr(n1);
+  vector<pair<int, int>> b;
+  for (int i = 0; i < n1; i++) {
+    cin >> arr[i];
+    b.push_back({arr[i], i});
+  }
+  n = n1 + 1;
+  st.resize(4 * n);
+  for (int i = 0; i < n; i++)
+    build(i);
+  sort(b.begin(), b.end());
+  vector<int> ans(n1);
+  for (int i = n1 - 1; i >= 0; i--) {
+    vector<int> del

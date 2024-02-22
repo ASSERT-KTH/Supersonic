@@ -1,0 +1,93 @@
+This program seems to be a kind of flood-fill algorithm, often used in games or image processing. The main optimizations I can see are:
+
+1. Reducing the number of global variables: Global variables increase memory usage and risk of error. We can move the global variables into the functions where they are used, and pass them as arguments if necessary. This will also make the code easier to understand and debug.
+
+2. Avoiding unnecessary memory allocations: The 'temp' vector is a copy of 'N' that is only used in the 'calc' function. Instead, we can pass 'N' as a non-const reference to 'calc' and modify it directly.
+
+3. Reducing the number of calls to 'make_pair': 'make_pair' is called each time a pair is pushed to the queue. Instead, we can use list initialization to create the pair.
+
+4. Avoiding unnecessary memory operations: 'memset' is used to initialize the 'used' array to false. Instead, we can use the 'fill' function, which is safer and more expressive. Moreover, we don't actually need to reset 'used' to false every time 'on' is called, because 'used' only needs to be reset to false when 'solve' is called.
+
+Here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <queue>
+#include <string.h>
+#include <string>
+#include <vector>
+using namespace std;
+int w, h, Col;
+typedef pair<int, int> C;
+typedef vector<vector<int>> P;
+int dx[4] = {0, 1, 0, -1};
+int dy[4] = {1, 0, -1, 0};
+
+void calc(P& N, int y, int x, int& tres) {
+  if (y < 0 || x < 0 || x >= w || y >= h)
+    return;
+  if (N[y][x] == Col) {
+    tres++;
+    N[y][x] = 0;
+    for (int r = 0; r < 4; r++)
+      calc(N, y + dy[r], x + dx[r], tres);
+  }
+}
+void on(P N, int count, int c, int& res) {
+  if (count == 5) {
+    int tres = 0;
+    calc(N, 0, 0, tres);
+    res = max(res, tres);
+    return;
+  }
+  int nc = N[0][0];
+  queue<C> Q;
+  Q.push({0, 0});
+  bool used[8][8] = {false};
+  while (!Q.empty()) {
+    C now = Q.front();
+    Q.pop();
+    if (used[now.first][now.second])
+      continue;
+    used[now.first][now.second] = true;
+    N[now.first][now.second] = c;
+    for (int r = 0; r < 4; r++) {
+      int ny = now.first + dy[r], nx = now.second + dx[r];
+      if (ny < 0 || nx < 0 || ny >= h || nx >= w)
+        continue;
+      if (N[ny][nx] == nc)
+        Q.push({ny, nx});
+    }
+  }
+  if (count != 4)
+    for (int i = 1; i <= 6; i++)
+      on(N, count + 1, i, res);
+  else
+    on(N, count + 1, Col, res);
+}
+void solve() {
+  int res = 0;
+  P V(h);
+  for (int y = 0; y < h; y++)
+    for (int x = 0; x < w; x++) {
+      int t;
+      cin >> t;
+      V[y].push_back(t);
+    }
+  for (int i = 1; i <= 6; i++) {
+    if (V[0][0] != i)
+      on(V, 0, i, res);
+  }
+  cout << res << endl;
+}
+int main() {
+  while (cin >> h >> w >> Col) {
+    if (w == 0)
+      break;
+    solve();
+  }
+  return 0;
+}
+```
+
+Note: This code assumes that the height and width 'h' and 'w' are always less than or equal to 8. If this is not the case, the 'used' array and the 8 in the 'memset' call should be replaced with a larger value or a dynamic data structure.

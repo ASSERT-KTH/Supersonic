@@ -1,0 +1,111 @@
+## Code Analysis
+The given code includes a main function that reads a sequence of values (W, H, sa, sb, sc) and performs calculations based on these values. If the conditions in the 'solve' function are met, it continues to the next set of values. If none of the conditions are met, it outputs "impossible". 
+
+The 'solve' function does some preliminary checks and calculations, then goes through two loops to check different conditions. If any of these conditions are met, it prints the results and returns true. If none are met, it returns false.
+
+The 'calc' function performs a specific calculation and returns a value. This function includes a loop that iterates 80 times regardless of the input values. 
+
+## Optimization Strategy
+1. **Avoiding Recalculations**: There are several calculations that are done multiple times. These can be calculated once and stored in variables for future use.
+2. **Data Structures**: There are no complex data structures used in the code, hence no optimization needed in this aspect.
+3. **Loops**: The 'calc' function includes a loop that always iterates 80 times. This number seems arbitrary and may not be necessary for all inputs. A condition-based termination for the loop might improve performance.
+4. **Compiler Optimizations**: Using the -O3 flag during compilation can help the compiler to make a number of automatic optimizations. 
+
+## Step-by-Step Explanation
+1. **Avoiding Recalculations**: The 'solve' function includes multiple calls to the 'judge' function and the 'sqrt' function with the same arguments. These calculations can be done once and stored in variables.
+
+2. **Loops**: The loop in the 'calc' function can be adjusted to terminate when the change in 'd' is less than a certain threshold, instead of always iterating 80 times. This will allow the loop to terminate early when the value of 'd' has converged.
+
+3. **Compiler Optimizations**: The -O3 flag can be used during compilation to enable a number of automatic optimizations, such as inlining small functions, loop unrolling, and vectorization.
+
+## Trade-offs
+The primary trade-off in these optimizations is the increased complexity of the code. Storing intermediate values in variables increases the number of variables in the code, making it more difficult to understand. Similarly, changing the loop condition in the 'calc' function also increases complexity. However, these changes can significantly improve the performance of the code.
+
+## Optimized Code Block
+```cpp
+#include <bits/stdc++.h>
+#define REP(i, n) for (int i = 0; i < (int)(n); ++i)
+using namespace std;
+const double EPS = 1e-4;
+double calc(double ra, double rb, double s) {
+  double lb = abs(ra - rb);
+  double ub = ra + rb;
+  double d, tha, thb, sum, old_d;
+  do {
+    old_d = d;
+    d = (lb + ub) / 2;
+    tha = acos((ra * ra + d * d - rb * rb) / (2.0 * d * ra));
+    thb = acos((rb * rb + d * d - ra * ra) / (2.0 * d * rb));
+    sum = ra * ra * tha + rb * rb * thb - ra * d * sin(tha);
+    if (sum > s) {
+      lb = d;
+    } else {
+      ub = d;
+    }
+  } while (abs(d - old_d) > EPS);
+  return ub;
+}
+double sq(double x) { return x * x; }
+bool judge(double x, double y, double r, double W, double H) {
+  return x - r > -EPS && x + r < W + EPS && y - r > -EPS && y + r < H + EPS;
+}
+bool solve(double W, double H, double sa, double sb, double sc, bool reversed) {
+  double ra = sqrt(sa / M_PI);
+  double rb = sqrt(sb / M_PI);
+  if (2.0 * ra > min(W, H) + EPS)
+    return false;
+  if (2.0 * rb > min(W, H) + EPS)
+    return false;
+  double D = calc(ra, rb, sc);
+  double xa = ra;
+  double ya = ra;
+  for (double xb : {ra, rb, W - rb}) {
+    double dy = sqrt(sq(D) - sq(xa - xb));
+    for (int sign = -1; sign <= 1; sign += 2) {
+      double yb = ya + sign * dy;
+      bool judgeXbYb = judge(xb, yb, rb, W, H);
+      if (judgeXbYb) {
+        bool judgeXaYa = judge(xa, ya, ra, W, H);
+        assert(judgeXaYa);
+        assert(abs(hypot(xa - xb, ya - yb) - D) < EPS);
+        if (!reversed) {
+          printf("%.9f %.9f %.9f %.9f %.9f %.9f\n", xa, ya, ra, xb, yb, rb);
+        } else {
+          printf("%.9f %.9f %.9f %.9f %.9f %.9f\n", xb, yb, rb, xa, ya, ra);
+        }
+        return true;
+      }
+    }
+  }
+  for (double yb : {ra, rb, H - rb}) {
+    double dx = sqrt(sq(D) - sq(ya - yb));
+    for (int sign = -1; sign <= 1; sign += 2) {
+      double xb = xa + sign * dx;
+      bool judgeXbYb = judge(xb, yb, rb, W, H);
+      if (judgeXbYb) {
+        bool judgeXaYa = judge(xa, ya, ra, W, H);
+        assert(judgeXaYa);
+        assert(abs(hypot(xa - xb, ya - yb) - D) < EPS);
+        if (!reversed) {
+          printf("%.9f %.9f %.9f %.9f %.9f %.9f\n", xa, ya, ra, xb, yb, rb);
+        } else {
+          printf("%.9f %.9f %.9f %.9f %.9f %.9f\n", xb, yb, rb, xa, ya, ra);
+        }
+        return true;
+      }
+    }
+  }
+  return false;
+}
+int main() {
+  double W, H, sa, sb, sc;
+  while (cin >> W >> H >> sa >> sb >> sc && W > 0) {
+    if (solve(W, H, sa, sb, sc, false))
+      continue;
+    if (solve(W, H, sb, sa, sc, true))
+      continue;
+    cout << "impossible" << endl;
+  }
+  return 0;
+}
+```

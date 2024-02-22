@@ -1,0 +1,163 @@
+The provided code is a C++ program that calculates a specific value based on some input. To optimize this code, we will analyze it step by step and propose a series of optimizations.
+
+1. **Memory Usage Optimization**
+   - The `cnk` array is used to store combinations. However, it is initialized to 0 and then calculated based on the formula `cnk[n][k] = (cnk[n - 1][k] + cnk[n - 1][k - 1]) % M`. Instead of using a 2D array, we can use a 1D array of size `X` and update it in a bottom-up manner. This will reduce the memory usage and improve cache efficiency.
+   - The `op` and `cl` vectors are used to store indices based on the `lr` array. Instead of using vectors, we can use arrays of size `N`. This will eliminate the overhead of dynamic memory allocation and improve cache efficiency.
+   - The `bad` array is used to store pairs of integers. Instead of using a pair, we can use two separate arrays (`bad1` and `bad2`) to store the first and second integers. This will improve cache efficiency by ensuring that both arrays are stored contiguously in memory.
+   - The `has` array is used to keep track of whether a specific index is present or not. Instead of using a boolean array, we can use a bitset. This will reduce the memory usage by packing the boolean values into bits.
+   - The `f` and `f2` arrays are used to track certain conditions. Instead of using boolean arrays, we can use a bitset for each array. This will reduce the memory usage and improve cache efficiency.
+
+2. **Loop Optimization**
+   - The initialization of the `cnk` array can be optimized by using a bottom-up approach instead of the current top-down approach. This will eliminate redundant computations and improve the overall efficiency.
+   - The calculation of factorials and their inverses can be optimized by using memoization. Instead of calculating them every time, we can pre-calculate them once and store them in arrays. This will significantly reduce the number of computations.
+   - The loop that iterates over the bits of `mask` can be optimized by using the `__builtin_ctz` function. This function returns the number of trailing zeros in an integer, which can be used to iterate over the bits more efficiently.
+   - The loop that iterates over the elements of `kek` and `kek2` can be optimized by using a range-based for loop instead of the current loop with index variables.
+   - The loop that calculates the result can be optimized by using a prefix sum approach. Instead of recalculating the combination values for each `len`, we can calculate the prefix sum of the combination values and use it to compute the result.
+
+3. **Compiler Optimization**
+   - We can use compiler optimizations, such as loop unrolling and auto-vectorization, to improve the performance of the code. These optimizations can be enabled by using appropriate compiler flags or pragma directives.
+
+Now, let's apply these optimizations step by step:
+
+```cpp
+#include <bits/stdc++.h>
+#define int long long
+using namespace std;
+const int N = 3e5 + 7, K = 20, X = 42, M = 998244353;
+int cnk[X];
+int fact[N], defact[N];
+int dp[1 << K][X];
+int sz[1 << K];
+int op[N][N], cl[N][N];
+int bad1[K], bad2[K];
+bitset<N> has;
+bitset<N> f, f2;
+int bpow(int a, int n) {
+  if (n == 0)
+    return 1;
+  if (n == 1)
+    return a % M;
+  if (n % 2 == 0) {
+    int mem = bpow(a, n / 2);
+    return (mem * mem) % M;
+  }
+  return (a * bpow(a, n - 1)) % M;
+}
+int obr(int x) { return bpow(x, M - 2); }
+void init() {
+  cnk[0] = 1;
+  for (int n = 1; n < X; n++) {
+    cnk[n] = 1;
+    for (int k = n - 1; k >= 1; k--) {
+      cnk[k] = (cnk[k] + cnk[k - 1]) % M;
+    }
+  }
+  fact[0] = 1;
+  for (int i = 1; i < N; i++)
+    fact[i] = (fact[i - 1] * i) % M;
+  defact[N - 1] = obr(fact[N - 1]);
+  for (int i = N - 2; i >= 0; i--) {
+    defact[i] = (defact[i + 1] * (i + 1)) % M;
+  }
+}
+int get_cnk(int n, int k) {
+  if (k > n)
+    return 0;
+  if (k < 0)
+    return 0;
+  if (n < X)
+    return cnk[k];
+  return (((fact[n] * defact[k]) % M) * defact[n - k]) % M;
+}
+signed main() {
+  ios_base ::sync_with_stdio(0);
+  cin.tie(0);
+  cout.tie(0);
+  has.reset();
+  memset(dp, 0, sizeof(dp));
+  f.reset();
+  f2.reset();
+  init();
+  int n, m;
+  cin >> n >> m;
+  for (int i = 0; i < n; i++) {
+    cin >> lr[i].first >> lr[i].second;
+    op[lr[i].first][i] = 1;
+    cl[lr[i].second][i] = 1;
+  }
+  for (int i = 0; i < m; i++) {
+    cin >> bad1[i] >> bad2[i];
+    bad1[i]--;
+    bad2[i]--;
+  }
+  dp[0][0] = 1;
+  sz[0] = 0;
+  for (int mask = 1; mask < (1 << m); mask++) {
+    int pos = __builtin_ctz(mask);
+    int nmask = 0, alone = 0, x = bad1[pos], nmask2 = 0, alone2 = 0;
+    unordered_set<int> lol;
+    vector<int> kek, kek2;
+    for (int i = pos; i < m; i++) {
+      if (mask & (1 << i)) {
+        if (bad1[i] != x && bad2[i] != x) {
+          nmask |= (1 << i);
+        }
+        lol.insert(bad1[i]);
+        lol.insert(bad2[i]);
+        if (bad1[i] == x && !f[bad2[i]]) {
+          f[bad2[i]] = 1;
+          kek.push_back(bad2[i]);
+        }
+        if (bad2[i] == x && !f[bad1[i]]) {
+          f[bad1[i]] = 1;
+          kek.push_back(bad1[i]);
+        }
+      }
+    }
+    for (int i = pos; i < m; i++) {
+      if (mask & (1 << i)) {
+        if (nmask & (1 << i)) {
+          if (!f[bad1[i]] && !f[bad2[i]])
+            nmask2 |= (1 << i);
+        }
+        if (f[bad1[i]] && bad2[i] != x && !f[bad2[i]] &&
+            !f2[bad2[i]]) {
+          f2[bad2[i]] = 1;
+          kek2.push_back(bad2[i]);
+        }
+        if (f[bad2[i]] && bad1[i] != x && !f[bad1[i]] &&
+            !f2[bad1[i]]) {
+          f2[bad1[i]] = 1;
+          kek2.push_back(bad1[i]);
+        }
+      }
+    }
+    for (int elem : kek) {
+      bool flag = 0;
+      for (int i = pos; i < m; i++) {
+        if (nmask & (1 << i)) {
+          if (bad1[i] == elem || bad2[i] == elem) {
+            flag = 1;
+            break;
+          }
+        }
+      }
+      if (!flag)
+        alone++;
+    }
+    for (auto elem : kek2) {
+      bool flag = 0;
+      for (int i = pos; i < m; i++) {
+        if (nmask2 & (1 << i)) {
+          if (bad1[i] == elem || bad2[i] == elem) {
+            flag = 1;
+            break;
+          }
+        }
+      }
+      if (!flag)
+        alone2++;
+    }
+    dp[mask][0] = 1;
+    sz[mask] = lol.size();
+    for (int i = 1; i < X;

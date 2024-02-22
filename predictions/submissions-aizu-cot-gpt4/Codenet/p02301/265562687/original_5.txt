@@ -1,0 +1,85 @@
+This C++ program calculates the diameter of a convex hull given a set of points. The optimization for this code can be done by avoiding unnecessary calculations by precomputing and reusing the results. However, note that the original code is already quite optimized and doesn't have much room for improvement. Furthermore, any potential optimizations would trade readability and maintainability for a very slight increase in performance, which is usually not a good trade-off.
+
+Here are some specific areas that could be optimized:
+
+1. **Optimize the use of constants**: The program uses PI and EPS constants which are defined at the beginning of the program. However, to improve memory usage, it would be better to avoid unnecessary memory allocation by declaring them inside the main function since the scope of these constants is limited to this function. 
+
+2. **Optimize the Polygon construction**: The function convex_hull constructs a new Polygon object qs with a size of n*2. This might result in unnecessary memory allocation if the size of the convex hull is significantly smaller than n*2. A possible optimization would be to use a dynamic data structure like std::vector instead of a fixed-size array.
+
+3. **Optimize the use of printf and scanf functions**: Using printf and scanf functions instead of std::cout and std::cin can also speed up the program as they are faster in terms of I/O operations.
+
+Here's the optimized version of your program with these changes:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+struct Point {
+    double x, y;
+    Point() {}
+    Point(double x, double y) : x(x), y(y) {}
+    Point operator+(Point p) { return Point(x + p.x, y + p.y); }
+    Point operator-(Point p) { return Point(x - p.x, y - p.y); }
+    Point operator*(double k) { return Point(x * k, y * k); }
+    Point operator/(double k) { return Point(x / k, y / k); }
+    double norm() { return x * x + y * y; }
+    double abs() { return sqrt(norm()); }
+    bool operator<(const Point &p) const { return x != p.x ? x < p.x : y < p.y; }
+};
+
+double cross(Point a, Point b) { return a.x * b.y - a.y * b.x; }
+
+vector<Point> convex_hull(vector<Point> ps) {
+    int n = ps.size(), k = 0;
+    sort(ps.begin(), ps.end());
+    vector<Point> qs(n * 2);
+    for (int i = 0; i < n; i++) {
+        while (k > 1 && cross(qs[k - 1] - qs[k - 2], ps[i] - qs[k - 1]) <= 0)
+            k--;
+        qs[k++] = ps[i];
+    }
+    for (int i = n - 2, t = k; i >= 0; i--) {
+        while (k > t && cross(qs[k - 1] - qs[k - 2], ps[i] - qs[k - 1]) <= 0)
+            k--;
+        qs[k++] = ps[i];
+    }
+    qs.resize(k - 1);
+    return qs;
+}
+
+double diameter(vector<Point> s) {
+    vector<Point> p = convex_hull(s);
+    int n = p.size();
+    if (n == 2)
+        return (p[0] - p[1]).abs();
+    int i = 0, j = 0;
+    for (int k = 0; k < n; k++) {
+        if (p[i] < p[k])
+            i = k;
+        if (!(p[j] < p[k]))
+            j = k;
+    }
+    double res = 0;
+    int si = i, sj = j;
+    while (i != sj || j != si) {
+        res = max(res, (p[i] - p[j]).abs());
+        if (cross(p[(i + 1) % n] - p[i], p[(j + 1) % n] - p[j]) < 0.0) {
+            i = (i + 1) % n;
+        } else {
+            j = (j + 1) % n;
+        }
+    }
+    return res;
+}
+
+int main() {
+    int n;
+    scanf("%d", &n);
+    vector<Point> p(n);
+    for (int i = 0; i < n; i++)
+        scanf("%lf %lf", &p[i].x, &p[i].y);
+    printf("%.12f\n", diameter(p));
+    return 0;
+}
+```
+Please note that the code optimization highly depends on the specific requirements and constraints of your program and system. The changes made here may not significantly improve the performance of your program.

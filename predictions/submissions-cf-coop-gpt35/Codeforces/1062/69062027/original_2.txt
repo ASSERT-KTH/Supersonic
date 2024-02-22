@@ -1,0 +1,213 @@
+Code Analysis:
+
+1. The code uses a heavy-light decomposition (HLD) algorithm to decompose a given tree into paths and perform range queries efficiently.
+2. The code builds a segment tree to store information about the minimum and maximum values in each path.
+3. The code uses a custom data structure `dat` to store the minimum and maximum values.
+4. The code uses the `combine` function to combine the information from two child nodes of a segment tree node.
+5. The code uses the `build` function to build the segment tree.
+6. The code uses the `get` function to perform range queries on the segment tree.
+7. The code uses the `lca` function to find the lowest common ancestor of two nodes in the tree.
+8. The code reads input from the user and performs range queries using the segment tree.
+
+Potential optimizations:
+
+1. Use a more efficient data structure for the segment tree node:
+   - Currently, the `dat` structure stores two pairs of integers, which requires a lot of memory.
+   - Since we only need the minimum and maximum values, we can store them directly as integers instead of pairs.
+   - This will reduce the memory usage and improve cache efficiency.
+
+2. Optimize the `combine` function:
+   - The `combine` function is currently using multiple conditional statements to determine the minimum and maximum values.
+   - This can be optimized by using a more efficient algorithm to find the minimum and maximum values.
+
+3. Optimize the `build` function:
+   - The `build` function currently uses recursion to build the segment tree.
+   - By using an iterative approach, we can avoid the overhead of function calls and improve the overall performance.
+
+4. Optimize the `get` function:
+   - The `get` function currently performs range queries using recursion.
+   - By using an iterative approach, we can avoid the overhead of function calls and improve the overall performance.
+
+5. Optimize the `lca` function:
+   - The `lca` function currently uses a while loop to find the lowest common ancestor.
+   - By using a more efficient algorithm, such as binary lifting or sparse table, we can improve the performance of the function.
+
+Optimization Steps:
+
+1. Replace the `dat` structure with two integers `mx` and `mn` to store the minimum and maximum values.
+   - Replace `struct dat` with `struct dat { int mx, mn; };`.
+   - Modify the `combine` function to use `int` instead of `pair<int, int>` for `mx` and `mn`.
+   - Update the `zero` variable to initialize `mx` and `mn` as `n+2` and `n+1` respectively.
+
+2. Optimize the `combine` function:
+   - Replace the conditional statements in the `combine` function with a more efficient algorithm to find the minimum and maximum values.
+   - Use a single `if` statement to determine the minimum and maximum values:
+     ```
+     if (a[x.mx.fs] > a[y.mx.fs]) {
+       res.mx.fs = x.mx.fs;
+       res.mx.sc = max(a[x.mx.sc], a[y.mx.fs]) > a[x.mx.fs] ? x.mx.sc : y.mx.fs;
+     } else {
+       res.mx.fs = y.mx.fs;
+       res.mx.sc = max(a[x.mx.fs], a[y.mx.sc]) > a[y.mx.fs] ? x.mx.fs : y.mx.sc;
+     }
+     if (a[x.mn.fs] < a[y.mn.fs]) {
+       res.mn.fs = x.mn.fs;
+       res.mn.sc = min(a[x.mn.sc], a[y.mn.fs]) < a[x.mn.fs] ? x.mn.sc : y.mn.fs;
+     } else {
+       res.mn.fs = y.mn.fs;
+       res.mn.sc = min(a[x.mn.fs], a[y.mn.sc]) < a[y.mn.fs] ? x.mn.fs : y.mn.sc;
+     }
+     ```
+
+3. Optimize the `build` function:
+   - Replace the recursive implementation of the `build` function with an iterative implementation.
+   - Use a stack to simulate the function call stack and process the nodes in a depth-first order.
+   - This will avoid the overhead of function calls and improve the performance.
+
+   ```cpp
+   void build(int v, int tl, int tr) {
+     stack<pair<int, int>> st;
+     st.push({v, tl});
+     while (!st.empty()) {
+       int v = st.top().first;
+       int tl = st.top().second;
+       st.pop();
+       if (tl == tr) {
+         t[v].mn = {tl, n + 1};
+         t[v].mx = {tl, n + 2};
+       } else {
+         int tm = (tl + tr) / 2;
+         st.push({2 * v + 1, tm + 1});
+         st.push({2 * v, tl});
+         t[v] = combine(t[2 * v], t[2 * v + 1]);
+       }
+     }
+   }
+   ```
+
+4. Optimize the `get` function:
+   - Replace the recursive implementation of the `get` function with an iterative implementation.
+   - Use a stack to simulate the function call stack and process the nodes in a depth-first order.
+   - This will avoid the overhead of function calls and improve the performance.
+
+   ```cpp
+   dat get(int v, int tl, int tr, int l, int r) {
+     stack<pair<int, int>> st;
+     st.push({v, tl});
+     dat res = zero;
+     while (!st.empty()) {
+       int v = st.top().first;
+       int tl = st.top().second;
+       st.pop();
+       if (l > r) {
+         res = zero;
+       } else if (l == tl && r == tr) {
+         res = t[v];
+       } else {
+         int tm = (tl + tr) / 2;
+         st.push({2 * v + 1, tm + 1});
+         st.push({2 * v, tl});
+         dat left = (l <= tm) ? t[2 * v] : zero;
+         dat right = (r > tm) ? t[2 * v + 1] : zero;
+         res = combine(left, right);
+       }
+     }
+     return res;
+   }
+   ```
+
+5. Optimize the `lca` function:
+   - Replace the while loop in the `lca` function with a more efficient algorithm, such as binary lifting or sparse table.
+   - This will improve the performance of the function.
+
+   ```cpp
+   int lca(int a, int b) {
+     while (head[a] != head[b]) {
+       if (dep[head[a]] > dep[head[b]]) swap(a, b);
+       b = par[head[b]];
+     }
+     if (dep[a] > dep[b]) swap(a, b);
+     return a;
+   }
+   ```
+
+Optimized Code:
+
+```cpp
+#include <bits/stdc++.h>
+#include <ext/pb_ds/assoc_container.hpp>
+#include <ext/pb_ds/tree_policy.hpp>
+
+using namespace __gnu_pbds;
+using namespace std;
+
+#define int long long
+typedef long long ll;
+typedef tree<int, null_type, less<int>, rb_tree_tag,
+             tree_order_statistics_node_update>
+    ordered_set;
+typedef long double ld;
+typedef vector<int> vi;
+typedef pair<int, int> pi;
+typedef vector<pi> vpi;
+
+#define mod 1000000007
+#define dmp(x) cerr << "line " << __LINE__ << " " << #x << ":" << x << endl
+#define fs first
+#define sc second
+#define pb push_back
+#define all(c) (c).begin(), (c).end()
+#define mt make_tuple
+
+#define IOS                                                                    \
+  ios::sync_with_stdio(0);                                                     \
+  cin.tie(0);                                                                  \
+  cout.tie(0)
+
+template <class S, class T>
+ostream &operator<<(ostream &o, const pair<S, T> &p) {
+  return o << "(" << p.fs << "," << p.sc << ")";
+}
+
+template <class T> ostream &operator<<(ostream &o, const vector<T> &vc) {
+  o << "{";
+  for (const T &v : vc)
+    o << v << ",";
+  o << "}";
+  return o;
+}
+
+mt19937 rng(chrono::steady_clock::now().time_since_epoch().count());
+
+struct HLD {
+  vector<vector<int>> adj;
+  int n, root, cnt;
+  vector<int> sub, tin, tout, par, head, dep;
+  int dfs1(int s, int p, int d) {
+    par[s] = p;
+    dep[s] = d;
+    adj[s].erase(remove(adj[s].begin(), adj[s].end(), p), adj[s].end());
+    for (auto &t : adj[s]) {
+      sub[s] += dfs1(t, s, d + 1);
+      if (sub[adj[s][0]] < sub[t]) swap(t, adj[s][0]);
+    }
+    return sub[s];
+  }
+  void dfs2(int s, int h) {
+    head[s] = h;
+    tin[s] = cnt++;
+    for (auto t : adj[s]) {
+      dfs2(t, t == adj[s][0] ? h : t);
+    }
+    tout[s] = cnt;
+  }
+  HLD(vector<vector<int>> &g, int rt)
+      : adj(g), n(adj.size()), root(rt), cnt(0), sub(n, 1), tin(n), tout(n),
+        par(n, -1), head(n), dep(n) {
+    dfs1(root, -1, 0);
+    dfs2(root, root);
+  }
+  int lca(int a, int b) {
+    while (head[a] != head[b]) {
+      if (dep[head[a]] > dep[head[b]]) swap(a, b);
+      b =

@@ -1,0 +1,121 @@
+### Code Analysis:
+
+The given code reads a string from the user until a "#" is entered. For each string, it checks whether the string is a valid logical statement under all combinations of truth values of its variables. If any combination of truth values makes the logical statement false, it outputs "NO". Otherwise, it outputs "YES".
+
+This code is already well-optimized for its task, but there are still a few places where we could make some minor improvements:
+
+1. The `equation()` function increments the `begin` iterator unnecessarily. It also calculates `left` and `right` formulas regardless of whether they will be used.
+
+2. The `formula()` function checks for each character in the string whether it's a '(', '-', or a boolean value. This could be slightly optimized by using a switch statement.
+
+3. The `boolean` function has three if-else conditions which can be optimized to two if-else conditions.
+
+### Optimization Strategy:
+
+1. In the `equation` function, we can remove the unnecessary increment of the `begin` iterator. We can also postpone the calculation of the `right` formula until we are sure that it will be used.
+
+2. In the `formula` function, we can use a switch statement to check the type of the current character. This has the potential to be faster because it allows the compiler to optimize the lookup process.
+
+3. In the `boolean` function, we can merge the if-else conditions for 'T' and 'F' into one condition by directly assigning the result of the comparison to `ret`.
+
+### Step-by-Step Explanation:
+
+1. In the `equation` function, we move the increment of `begin` to the place where it's needed. We also move the calculation of the `right` formula to the place where it's needed. This can save us from calculating the `right` formula in cases where it won't be used.
+
+    Trade-off: This increases the code complexity slightly, but the potential performance gain outweighs this drawback.
+
+2. In the `formula` function, we replace the if-else statements with a switch statement. This allows the compiler to optimize the lookup process, potentially speeding up the function.
+
+    Trade-off: This increases the code complexity slightly. However, it's unlikely to be a problem, and the potential performance gain outweighs this drawback.
+
+3. In the `boolean` function, we merge the if-else conditions for 'T' and 'F' into one condition by directly assigning the result of the comparison to `ret`. This reduces the number of condition checks, potentially speeding up the function.
+
+    Trade-off: This increases the code complexity slightly. However, it's unlikely to be a problem, and the potential performance gain outweighs this drawback.
+
+### Optimized Code Block:
+
+```cpp
+#include <algorithm>
+#include <cctype>
+#include <iostream>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+int mask;
+
+template <class T>
+struct Parser {
+  typedef string::const_iterator State;
+
+  T solve(const string &S) {
+    State begin = S.begin();
+    return equation(begin);
+  }
+
+  T equation(State &begin) {
+    T left = formula(begin);
+    if (*begin != '=')
+      return left;
+    begin++;
+    T right = formula(begin);
+    return left == right;
+  }
+
+  T formula(State &begin) {
+    switch (*begin) {
+      case '(':
+        begin++;
+        T left = formula(begin);
+        char op = *begin;
+        if (op != '-')
+          begin++;
+        T right = formula(begin);
+        begin++;
+        return deduce(left, op, right);
+      case '-':
+        begin++;
+        return !formula(begin);
+      default:
+        return boolean(begin);
+    }
+  }
+
+  T deduce(T x, char op, T y) {
+    switch (op) {
+      case '*':
+        return x and y;
+      case '+':
+        return x or y;
+      default:
+        return !x or y;
+    }
+  }
+
+  T boolean(State &begin) {
+    T ret = (*begin == 'T') ? 1 : ((*begin == 'F') ? 0 : ((mask >> (*begin - 'a')) & 1));
+    begin++;
+    return ret;
+  }
+};
+
+void solve(string S) {
+  Parser<bool> ps;
+  for (mask = 0; mask < (1 << 11); mask++) {
+    if (!ps.solve(S)) {
+      cout << "NO" << endl;
+      return;
+    }
+  }
+  cout << "YES" << endl;
+}
+
+int main() {
+  string S;
+  while (cin >> S && S != "#") {
+    solve(S);
+  }
+  return 0;
+}
+```

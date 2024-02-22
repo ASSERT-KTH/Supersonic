@@ -1,0 +1,156 @@
+The given code seems to implement a graph algorithm that finds the number of valid colorings for a given graph. The code uses a breadth-first search (BFS) algorithm to traverse the graph and assign colors to the vertices. The main bottleneck in the code appears to be the BFS function, which has a time complexity of O(V + E), where V is the number of vertices and E is the number of edges.
+
+To optimize the code, we can focus on the following areas:
+
+1. Avoid using the `std::vector<bool>` data structure:
+   The code currently uses `std::vector<bool>` to keep track of visited vertices. However, this data structure is not efficient in terms of memory usage and can result in slower performance due to its implementation as a bit-packed container. Instead, we can use a regular `std::vector<int>` or `std::vector<bool>` with integer values (0 for unvisited, 1 for visited) to achieve better performance.
+
+2. Remove unnecessary memory allocations:
+   The code currently creates a new `std::vector<string>` for every call to the `split` function. This can result in unnecessary memory allocations and deallocations. We can optimize this by passing a reference to the `split` function and modifying it directly instead of creating a new vector.
+
+3. Avoid unnecessary function calls:
+   The code uses the `bfs` function to perform the BFS traversal. However, this function is only called within the `findans` function and can be transformed into a private member function of the `graph` class. This avoids unnecessary function calls and improves code readability.
+
+4. Remove redundant code:
+   The code initializes the `grcol` vector to [0, 1] before the BFS traversal loop in the `findans` function. However, this initialization is redundant because the vector is already initialized to [0, 0] when it is declared.
+
+5. Use `reserve` for vector resizing:
+   The code currently resizes the `powr` vector inside the loop, resulting in multiple reallocations. We can improve efficiency by using the `reserve` function to preallocate the required memory for the vector.
+
+6. Avoid unnecessary variable shadowing:
+   The code uses the variable `k` as both a global variable and a local variable inside the `bfs` function. This can cause confusion and lead to bugs. It is recommended to use different variable names to avoid shadowing.
+
+7. Remove unnecessary type aliases:
+   The code defines several type aliases using the `typedef` keyword. However, these aliases are not used in the code and can be safely removed.
+
+8. Avoid unnecessary C++ includes:
+   The code includes the `<bits/stdc++.h>` header, which is not standard and can lead to portability issues. It is recommended to include only the necessary standard C++ headers.
+
+Taking these optimizations into consideration, here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <queue>
+
+using namespace std;
+
+class graphNode {
+public:
+  vector<int> adj;
+  int a;
+  graphNode() { a = 0; }
+};
+
+class graph {
+public:
+  int n;
+  vector<graphNode> nodes;
+  vector<int> powr;
+
+  graph(int nodeNumber) {
+    n = nodeNumber;
+    nodes.resize(n + 1);
+  }
+
+  void addEdge(int a, int b, bool weighted = false, int weight = 0) {
+    nodes[a].adj.push_back(b);
+    nodes[b].adj.push_back(a);
+    if (weighted) {
+      nodes[a].wt.push_back(weight);
+      nodes[b].wt.push_back(weight);
+    }
+  }
+
+  long long findans() {
+    vector<int> visited(n + 1, 0);
+    vector<int> col(n + 1);
+    vector<int> grcol(3);
+    grcol[1] = 1;
+    long long res = 1;
+
+    for (int c = 1; c < n + 1; c++) {
+      if (!visited[c]) {
+        col[c] = 1;
+        if (!bfs(c, col, visited, grcol)) {
+          return 0;
+        } else {
+          res = (res * (powr[grcol[1]] + powr[grcol[2]])) % 998244353;
+        }
+        grcol[2] = 0;
+        grcol[1] = 1;
+      }
+    }
+
+    return res;
+  }
+
+private:
+  bool bfs(int p, vector<int>& col, vector<int>& visited, vector<int>& grcol) {
+    queue<int> q;
+    visited[p] = 1;
+    q.push(p);
+
+    while (!q.empty()) {
+      int itr = q.front();
+      q.pop();
+      int chcol = (col[itr] == 2) ? 1 : 2;
+
+      for (int i = 0; i < nodes[itr].adj.size(); i++) {
+        int k = nodes[itr].adj[i];
+
+        if (col[k] == 0 || col[k] == chcol) {
+          if (col[k] == 0) {
+            col[k] = chcol;
+            grcol[chcol]++;
+          }
+        } else {
+          return false;
+        }
+
+        if (!visited[k]) {
+          visited[k] = 1;
+          q.push(k);
+        }
+      }
+    }
+
+    return true;
+  }
+};
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  cout.tie(NULL);
+
+  vector<int> powr(3 * 100000);
+  long long k = 1;
+
+  for (int c = 0; c < 3 * 100000; c++) {
+    powr[c] = k;
+    k = (k * 2) % 998244353;
+  }
+
+  int t;
+  cin >> t;
+
+  while (t--) {
+    int n, m;
+    cin >> n >> m;
+    graph mygraph(n);
+
+    for (int c = 0; c < m; c++) {
+      int a, b;
+      cin >> a >> b;
+      mygraph.addEdge(a, b);
+    }
+
+    cout << mygraph.findans() << endl;
+  }
+
+  return 0;
+}
+```
+
+These changes should improve the efficiency of the code by reducing memory usage and eliminating unnecessary function calls and redundant code.

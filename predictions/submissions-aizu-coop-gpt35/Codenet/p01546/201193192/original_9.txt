@@ -1,0 +1,293 @@
+The given code is a C++ program that solves a graph problem. It tries to find the shortest path in a graph with some constraints. The program uses dynamic programming to solve the problem.
+
+Upon analyzing the code, the following potential optimizations can be identified:
+
+1. Avoid using the `bits/stdc++.h` header: This header includes all the standard library headers, which can lead to increased compilation time and unnecessary code bloat. It's better to include only the necessary headers explicitly.
+
+2. Avoid using macros: The code uses macros `for_` and `for_rev` for loop iteration. Macros can be error-prone and make the code harder to read. It's better to use regular `for` loops instead.
+
+3. Optimize the matrix multiplication: The code uses a naive method for matrix multiplication, resulting in O(N^3) complexity. It can be optimized by using more efficient algorithms such as Strassen's algorithm or Coppersmith-Winograd algorithm.
+
+4. Avoid unnecessary memory allocations: The code uses a vector of vectors for the adjacency list representation of the graph. This can lead to unnecessary memory allocations and deallocations. It's better to use a flat vector and store the edges consecutively.
+
+5. Use more efficient data structures: The code uses a 2D array `dp` and `prv` for dynamic programming. These arrays can be replaced with a flat 1D array to improve cache locality and reduce memory usage.
+
+6. Use compiler optimizations: The code can benefit from enabling compiler optimizations. Compiler flags like `-O2` or `-O3` can enable various optimizations like loop unrolling, function inlining, and constant propagation.
+
+Now, let's optimize the code step by step.
+
+Step 1: Remove unnecessary headers and macros, and replace them with explicit includes and regular for loops.
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cstring>
+
+using namespace std;
+
+struct Edge {
+  int to, c;
+};
+
+void maxUpdate(int &a, int b) { a = max(a, b); }
+
+void mul(vector<vector<int>> &res, vector<vector<int>> &a, vector<vector<int>> &b) {
+  int N = a.size();
+  res = a;
+  for (int i = 0; i < N; ++i) {
+    for (int j = 0; j < N; ++j) {
+      for (int k = 0; k < N; ++k) {
+        if (a[i][k] >= 0 && b[k][j] >= 0) {
+          maxUpdate(res[i][j], a[i][k] + b[k][j]);
+        }
+      }
+    }
+  }
+}
+
+int V, K, E;
+int dp[155][155];
+int prv[155][155];
+vector<Edge> adj[155];
+
+void restore(int step, int v) {
+  int c = step;
+  vector<int> path;
+  while (v != -1) {
+    path.push_back(v);
+    v = prv[c--][v];
+  }
+  reverse(path.begin(), path.end());
+  for (int i = 0; i < step + 1; ++i) {
+    cout << path[i] << (i < step ? " " : "\n");
+  }
+}
+
+bool shortPhase() {
+  memset(dp, -1, sizeof(dp));
+  memset(prv, -1, sizeof(prv));
+  for (int v = 0; v < V; ++v) {
+    dp[0][v] = 0;
+  }
+  int max_score = -1, step = -1, terminal = -1;
+  for (int i = 0; i < 150; ++i) {
+    for (int v = 0; v < V; ++v) {
+      if (dp[i][v] == -1) {
+        continue;
+      }
+      for (Edge e : adj[v]) {
+        if (dp[i + 1][e.to] < dp[i][v] + e.c) {
+          dp[i + 1][e.to] = dp[i][v] + e.c;
+          prv[i + 1][e.to] = v;
+          if (max_score < dp[i + 1][e.to]) {
+            max_score = dp[i + 1][e.to];
+            terminal = e.to;
+          }
+        }
+      }
+    }
+    if (max_score >= K) {
+      step = i + 1;
+      break;
+    }
+  }
+  if (max_score >= K) {
+    cout << step << endl;
+    restore(step, terminal);
+    return true;
+  }
+  if (max_score == -1) {
+    cout << -1 << endl;
+    return true;
+  }
+  return false;
+}
+
+int calcMinStep() {
+  vector<vector<int>> mat[21];
+  vector<vector<int>> ini(V, vector<int>(V, -1));
+  for (int v = 0; v < V; ++v) {
+    for (Edge e : adj[v]) {
+      maxUpdate(ini[v][e.to], e.c);
+    }
+  }
+  mat[0] = ini;
+  for (int i = 0; i < 20; ++i) {
+    mul(mat[i + 1], mat[i], mat[i]);
+  }
+  int res = 0;
+  vector<vector<int>> x(V, vector<int>(V, -1)), nx;
+  for (int v = 0; v < V; ++v) {
+    x[v][v] = 0;
+  }
+  for (int h = 19; h >= 0; --h) {
+    mul(nx, x, mat[h]);
+    int max_score = 0;
+    for (int u = 0; u < V; ++u) {
+      for (int v = 0; v < V; ++v) {
+        maxUpdate(max_score, nx[u][v]);
+      }
+    }
+    if (max_score < K) {
+      x = nx;
+      res += 1 << h;
+    }
+  }
+  return res + 1;
+}
+
+void solve() {
+  if (!shortPhase()) {
+    int ans = calcMinStep();
+    cout << (ans > (int)1e6 ? -1 : ans) << endl;
+  }
+}
+
+int main() {
+  cin >> V >> E >> K;
+  for (int i = 0; i < E; ++i) {
+    int u, v, c;
+    cin >> u >> v >> c;
+    adj[u].push_back(Edge{v, c});
+  }
+  solve();
+  return 0;
+}
+```
+
+Step 2: Optimize matrix multiplication by implementing a more efficient algorithm. In this case, we can use the Strassen's algorithm for matrix multiplication, which has a lower time complexity of O(N^log2(7)).
+
+```cpp
+vector<vector<int>> strassenMultiply(vector<vector<int>>& a, vector<vector<int>>& b) {
+  int n = a.size();
+  vector<vector<int>> c(n, vector<int>(n));
+  if (n == 1) {
+    c[0][0] = a[0][0] * b[0][0];
+    return c;
+  }
+  int half_size = n / 2;
+  vector<vector<int>> a11(half_size, vector<int>(half_size));
+  vector<vector<int>> a12(half_size, vector<int>(half_size));
+  vector<vector<int>> a21(half_size, vector<int>(half_size));
+  vector<vector<int>> a22(half_size, vector<int>(half_size));
+  vector<vector<int>> b11(half_size, vector<int>(half_size));
+  vector<vector<int>> b12(half_size, vector<int>(half_size));
+  vector<vector<int>> b21(half_size, vector<int>(half_size));
+  vector<vector<int>> b22(half_size, vector<int>(half_size));
+  vector<vector<int>> c11(half_size, vector<int>(half_size));
+  vector<vector<int>> c12(half_size, vector<int>(half_size));
+  vector<vector<int>> c21(half_size, vector<int>(half_size));
+  vector<vector<int>> c22(half_size, vector<int>(half_size));
+
+  for (int i = 0; i < half_size; ++i) {
+    for (int j = 0; j < half_size; ++j) {
+      a11[i][j] = a[i][j];
+      a12[i][j] = a[i][j + half_size];
+      a21[i][j] = a[i + half_size][j];
+      a22[i][j] = a[i + half_size][j + half_size];
+
+      b11[i][j] = b[i][j];
+      b12[i][j] = b[i][j + half_size];
+      b21[i][j] = b[i + half_size][j];
+      b22[i][j] = b[i + half_size][j + half_size];
+    }
+  }
+
+  vector<vector<int>> p1 = strassenMultiply(a11, b12 - b22);
+  vector<vector<int>> p2 = strassenMultiply(a11 + a12, b22);
+  vector<vector<int>> p3 = strassenMultiply(a21 + a22, b11);
+  vector<vector<int>> p4 = strassenMultiply(a22, b21 - b11);
+  vector<vector<int>> p5 = strassenMultiply(a11 + a22, b11 + b22);
+  vector<vector<int>> p6 = strassenMultiply(a12 - a22, b21 + b22);
+  vector<vector<int>> p7 = strassenMultiply(a11 - a21, b11 + b12);
+
+  c11 = p5 + p4 - p2 + p6;
+  c12 = p1 + p2;
+  c21 = p3 + p4;
+  c22 = p5 + p1 - p3 - p7;
+
+  for (int i = 0; i < half_size; ++i) {
+    for (int j = 0; j < half_size; ++j) {
+      c[i][j] = c11[i][j];
+      c[i][j + half_size] = c12[i][j];
+      c[i + half_size][j] = c21[i][j];
+      c[i + half_size][j + half_size] = c22[i][j];
+    }
+  }
+  return c;
+}
+
+void mul(vector<vector<int>>& res, vector<vector<int>>& a, vector<vector<int>>& b) {
+  int n = a.size();
+  res.resize(n, vector<int>(n));
+  res = strassenMultiply(a, b);
+}
+```
+
+Step 3: Optimize memory usage by using a flat vector for the adjacency list representation of the graph.
+
+```cpp
+vector<Edge> adj[155 * 155];
+
+// ...
+
+void solve() {
+  if (!shortPhase()) {
+    int ans = calcMinStep();
+    cout << (ans > (int)1e6 ? -1 : ans) << endl;
+  }
+}
+
+int main() {
+  cin >> V >> E >> K;
+  for (int i = 0; i < E; ++i) {
+    int u, v, c;
+    cin >> u >> v >> c;
+    adj[u * 155 + v].push_back(Edge{v, c});
+  }
+  solve();
+  return 0;
+}
+```
+
+Step 4: Enable compiler optimizations by using the `-O2` flag.
+
+The final optimized code is as follows:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cstring>
+
+using namespace std;
+
+struct Edge {
+  int to, c;
+};
+
+void maxUpdate(int &a, int b) { a = max(a, b); }
+
+vector<vector<int>> strassenMultiply(vector<vector<int>>& a, vector<vector<int>>& b) {
+  int n = a.size();
+  vector<vector<int>> c(n, vector<int>(n));
+  if (n == 1) {
+    c[0][0] = a[0][0] * b[0][0];
+    return c;
+  }
+  int half_size = n / 2;
+  vector<vector<int>> a11(half_size, vector<int>(half_size));
+  vector<vector<int>> a12(half_size, vector<int>(half_size));
+  vector<vector<int>> a21(half_size, vector<int>(half_size));
+  vector<vector<int>> a22(half_size, vector<int>(half_size));
+  vector<vector<int>> b11(half_size, vector<int>(half_size));
+  vector<vector<int>> b12(half_size, vector<int>(half_size));
+  vector<vector<int>> b21(half_size, vector<int>(half_size));
+  vector<vector<int>> b22(half_size, vector<int>(half_size));
+  vector<vector<int>> c11(half_size, vector<int>(half_size));
+  vector<vector<int>> c12(half_size, vector<int>(half_size));
+  vector<vector<int>> c21(half_size, vector<int>(half_size));
+  vector<vector<int>> c22(half_size, vector<int>(half_size));
+
+  for (int i

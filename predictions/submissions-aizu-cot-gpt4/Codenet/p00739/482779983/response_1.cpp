@@ -1,0 +1,79 @@
+#include <iostream>
+#include <vector>
+using namespace std;
+#define REP(i, a, n) for (i = a; i < n; i++)
+#define rep(i, n) REP(i, 0, n)
+#define all(x) x.begin(), x.end()
+#define rall(x) x.rbegin(), x.rend()
+typedef long long ll;
+const int dx[] = {0, 1, 0, -1};
+const int dy[] = {-1, 0, 1, 0};
+int w, h, tatu_x[20], tatu_y[20], kazu_x[20], kazu_y[20];
+int field[12][12], cx[36], cy[36], csize;
+int idx[12][12];
+vector<vector<vector<bool>>> visited(20, vector<vector<bool>>(4, vector<bool>(2)));
+bool inside(int x, int y) { return !(x < 0 || x >= w || y >= h || y < 0); }
+bool backtrack(int cnt, ll kS, int init_dir, int f) {
+  int i, j, k;
+  if (visited[cnt][init_dir][f])
+    return false;
+  if (csize / 2 == cnt)
+    return true;
+  rep(i, cnt) {
+    rep(k, 4) {
+      if (!inside(tatu_x[i] + dx[k], tatu_y[i] + dy[k]) || field[tatu_y[i] + dy[k]][tatu_x[i] + dx[k]] == 0)
+        continue;
+      if ((tatu_x[i] + dx[k] == kazu_x[i] + dx[(k + init_dir + (f ? 2 : 0)) & 3] && tatu_y[i] + dy[k] == kazu_y[i] + dy[(k + init_dir) & 3]) || !inside(kazu_x[i] + dx[(k + init_dir + (f ? 2 : 0)) & 3], kazu_y[i] + dy[(k + init_dir) & 3]) || field[kazu_y[i] + dy[(k + init_dir) & 3]][kazu_x[i] + dx[(k + init_dir + (f ? 2 : 0)) & 3]] == 0)
+        continue;
+      field[tatu_y[i] + dy[k]][tatu_x[i] + dx[k]] = 0;
+      tatu_x[cnt] = tatu_x[i] + dx[k], tatu_y[cnt] = tatu_y[i] + dy[k];
+      field[kazu_y[i] + dy[(k + init_dir) & 3]][kazu_x[i] + dx[(k + init_dir + (f ? 2 : 0)) & 3]] = 0;
+      kazu_x[cnt] = kazu_x[i] + dx[(k + init_dir + (f ? 2 : 0)) & 3], kazu_y[cnt] = kazu_y[i] + dy[(k + init_dir) & 3];
+      if (backtrack(cnt + 1, kS | (1LL << idx[kazu_y[cnt]][kazu_x[cnt]]), init_dir,
+                    f))
+        return true;
+      field[kazu_y[cnt]][kazu_x[cnt]] = 1;
+      field[tatu_y[cnt]][tatu_x[cnt]] = 1;
+    }
+  }
+  visited[cnt][init_dir][f] = true;
+  return false;
+}
+bool solve() {
+  int i, j, k;
+  if (csize % 2)
+    return false;
+  tatu_x[0] = cx[0], tatu_y[0] = cy[0];
+  field[cy[0]][cx[0]] = 0;
+  REP(j, 1, csize) {
+    kazu_x[0] = cx[j], kazu_y[0] = cy[j];
+    field[cy[j]][cx[j]] = 0;
+    rep(k, 4) {
+      if (backtrack(1, 1LL << j, k, 0))
+        return true;
+      if (backtrack(1, 1LL << j, k, 1))
+        return true;
+    }
+    field[cy[j]][cx[j]] = 1;
+  }
+  field[cy[0]][cx[0]] = 1;
+  return false;
+}
+int main() {
+  int i, j, k, u;
+  while (cin >> w >> h, w | h) {
+    rep(i, 12) rep(j, 12) idx[i][j] = -1;
+    rep(i, 20) rep(j, 4) rep(k, 2) visited[i][j][k] = false;
+    csize = 0;
+    rep(i, h) rep(j, w) {
+      cin >> field[i][j];
+      if (field[i][j] == 1) {
+        cx[csize] = j, cy[csize] = i;
+        idx[i][j] = csize;
+        csize++;
+      }
+    }
+    puts(solve() ? "YES" : "NO");
+  }
+  return 0;
+}

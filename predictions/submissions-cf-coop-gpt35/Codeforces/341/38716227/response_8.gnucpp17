@@ -1,0 +1,91 @@
+#include <iostream>
+#include <cstdio>
+#include <cmath>
+#include <vector>
+#include <array>
+#include <algorithm>
+#include <map>
+#include <set>
+
+using namespace std;
+
+#define ll long long
+
+const int mxn = 1010;
+
+array<array<array<ll, 2>, mxn>, mxn> multree, addtree;
+
+ll query2(const array<array<array<ll, 2>, mxn>, mxn>& tree, ll x, ll y) {
+  ll mul = 0, add = 0;
+  for (ll i = y; i > 0; i -= i & -i) {
+    mul ^= tree[x][i][0];
+    add ^= tree[x][i][1];
+  }
+  return (mul * (y & 1)) ^ add;
+}
+
+ll query(const array<array<array<ll, 2>, mxn>, mxn>& multree,
+          const array<array<array<ll, 2>, mxn>, mxn>& addtree,
+          ll x1, ll y1, ll x2, ll y2) {
+  ll mul = 0, add = 0;
+  for (ll i = x2; i > 0; i -= i & -i) {
+    mul ^= query2(multree, i, y2);
+    add ^= query2(addtree, i, y2);
+  }
+  for (ll i = x1 - 1; i > 0; i -= i & -i) {
+    mul ^= query2(multree, i, y2);
+    add ^= query2(addtree, i, y2);
+  }
+  for (ll i = y1 - 1; i > 0; i -= i & -i) {
+    mul ^= query2(multree, x2, i);
+    add ^= query2(addtree, x2, i);
+  }
+  for (ll i = x1 - 1; i > 0; i -= i & -i) {
+    mul ^= query2(multree, i, y1 - 1);
+    add ^= query2(addtree, i, y1 - 1);
+  }
+  return (mul * ((x1 - 1) & 1)) ^ add;
+}
+
+void upd(array<array<array<ll, 2>, mxn>, mxn>& multree,
+          array<array<array<ll, 2>, mxn>, mxn>& addtree,
+          ll x, ll y1, ll y2, ll mul, ll add) {
+  for (ll i = x; i < mxn; i += i & -i) {
+    for (ll j = y1; j < mxn; j += j & -j) {
+      multree[i][j][0] ^= mul;
+      addtree[i][j][0] ^= add;
+    }
+    for (ll j = y2 + 1; j < mxn; j += j & -j) {
+      multree[i][j][0] ^= mul;
+      addtree[i][j][0] ^= add;
+    }
+    for (ll j = y1; j < mxn; j += j & -j) {
+      addtree[i][j][1] ^= (mul * (j - 1));
+    }
+    for (ll j = y2 + 1; j < mxn; j += j & -j) {
+      addtree[i][j][1] ^= (mul * j);
+    }
+  }
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+
+  ll n, q, tt, x1, y1, x2, y2, val;
+  cin >> n >> q;
+
+  while (q--) {
+    cin >> tt;
+    if (tt == 2) {
+      cin >> x1 >> y1 >> x2 >> y2 >> val;
+      upd(multree, addtree, x1, y1, y2, val, val * (y1 - 1));
+      upd(multree, addtree, x2 + 1, y1, y2, val, val * y2);
+    } else {
+      cin >> x1 >> y1 >> x2 >> y2;
+      cout << query(multree, addtree, x1, y1, x2, y2) << '\n';
+    }
+  }
+
+  return 0;
+}

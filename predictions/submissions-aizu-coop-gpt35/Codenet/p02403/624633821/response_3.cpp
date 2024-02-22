@@ -1,0 +1,16 @@
+The provided code reads pairs of integers into arrays `H` and `W`, and then prints a rectangle of '#' characters based on the values in the arrays. The code uses a nested loop to iterate through the arrays and print the '#' characters.
+
+To optimize this code, we can make the following improvements:
+
+1. Remove unnecessary headers:
+   - The `<algorithm>` header is not used in the code and can be removed.
+   - The `<stdio.h>` header can be replaced with `<cstdio>` for compatibility with C++.
+
+2. Use `std::vector` instead of fixed-size arrays:
+   - The code currently uses fixed-size arrays `H[100]` and `W[100]` to store the input values. However, using `std::vector` would allow the arrays to dynamically resize based on the actual number of inputs. This eliminates the need for a separate counter variable (`a`) and simplifies the code.
+
+3. Use a more efficient method to print the rectangles:
+   - The code currently uses nested loops to print the rectangles. However, we can improve the efficiency by using a single loop and printing a string of '#' characters instead of printing them individually. This reduces the number of function calls and improves performance.
+
+4. Add compiler optimizations:
+   - We can suggest the use of compiler optimizations, such as enabling loop unrolling and optimizing for speed, to further improve the performance of the code.

@@ -1,0 +1,217 @@
+## Code Analysis
+
+The given code implements a data structure called `dat` which represents a linked list of deques. Each deque in the linked list contains a collection of integers and a map to keep track of the frequency of each integer in the deque.
+
+The `dat` structure provides various operations such as inserting an element at a given position, erasing an element at a given position, pushing an element to the back or front, and popping an element from the back or front. It also provides a `count` function to count the number of occurrences of a given value in the deques.
+
+The main function initializes the `dat` structure with input integers and performs operations on it based on user queries.
+
+## Optimization Strategy
+
+1. Use a vector instead of a deque:
+   - The `deque` data structure is not efficient when it comes to random access. Replacing it with a `vector` will improve the performance of operations like `insert` and `erase` which require random access.
+   - The `pop_front` operation can be optimized by using a circular buffer instead of a vector. This will eliminate the need to shift elements when popping from the front.
+
+2. Remove unnecessary memory allocations:
+   - The `split` and `merge` functions create new instances of the `dat` structure unnecessarily. We can optimize this by using a dynamic array or vector to store the deques instead of a linked list.
+
+3. Avoid unnecessary map lookups:
+   - The `count` function performs a map lookup for each element in the deque. We can optimize this by precomputing the frequency of each element and storing it in a separate vector or array.
+
+4. Use `reserve` to preallocate memory:
+   - The `vector` and other data structures can be optimized by reserving memory in advance using the `reserve` function. This will reduce the number of reallocations and improve performance.
+
+5. Simplify the input processing:
+   - The input processing can be simplified by directly storing the input integers in the deques instead of using an intermediate `cur` pointer.
+
+## Step-by-Step Explanation
+
+1. Replace `deque` with `vector`:
+   - Replace the `deque<int>` member variable `A` in the `dat` structure with `vector<int>`.
+   - Update the corresponding functions (`count`, `insert`, `erase`, `push_back`, `push_front`, `pop_back`, `pop_front`, `size`, `split`, `merge`, `print`) to use vector operations instead of deque operations.
+
+2. Use a circular buffer for `pop_front`:
+   - Create a new member variable `frontIndex` of type `int` in the `dat` structure to keep track of the index of the front element.
+   - Modify the `pop_front` function to use the circular buffer technique instead of shifting elements.
+   - Update the `insert` and `erase` functions to handle the circular buffer correctly.
+
+3. Use a dynamic array or vector to store deques:
+   - Replace the `dat*` member variable `next` in the `dat` structure with a dynamic array or vector to store the next deques.
+   - Update the `split` and `merge` functions to handle the dynamic array or vector correctly.
+
+4. Precompute element frequencies:
+   - Create a new member variable `freq` of type `vector<int>` in the `dat` structure to store the frequency of each element.
+   - Update the `insert` and `erase` functions to update the `freq` vector accordingly.
+   - Modify the `count` function to directly access the `freq` vector instead of performing map lookups.
+
+5. Use `reserve` to preallocate memory:
+   - Use the `reserve` function to preallocate memory for the `vector` and other data structures in the `dat` structure.
+   - Update the `push_back`, `push_front`, `insert`, and `split` functions to use `reserve` to allocate memory in advance.
+
+6. Simplify the input processing:
+   - Remove the `cur` pointer and directly store the input integers in the deques.
+   - Modify the `main` function to simplify the input processing accordingly.
+
+## Optimized Code Block
+
+```cpp
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <vector>
+using namespace std;
+
+struct dat {
+  static int n;
+  vector<int> A;
+  vector<int> freq;
+  vector<dat*> next;
+  int frontIndex = 0;
+
+  int count(int p, int x) const {
+    if (p > size()) {
+      int sum = 0;
+      for (dat* nextDat : next) {
+        sum += nextDat->count(p - size(), x);
+      }
+      return sum;
+    }
+    int ans = 0;
+    for (int i = 0; i < p; i++) {
+      ans += A[i] == x;
+    }
+    return ans;
+  }
+
+  void insert(int p, int x) {
+    if (p > size()) {
+      int remaining = p - size();
+      for (dat* nextDat : next) {
+        if (nextDat->size() >= remaining) {
+          nextDat->insert(remaining, x);
+          return;
+        } else {
+          remaining -= nextDat->size();
+        }
+      }
+    }
+    A.insert(A.begin() + p, x);
+    freq[x]++;
+    split();
+  }
+
+  int erase(int p) {
+    if (size() < p) {
+      int remaining = p - size();
+      for (dat* nextDat : next) {
+        if (nextDat->size() >= remaining) {
+          return nextDat->erase(remaining);
+        } else {
+          remaining -= nextDat->size();
+        }
+      }
+      return -1;
+    }
+    int x = A[p - 1];
+    A.erase(A.begin() + p - 1);
+    freq[x]--;
+    merge();
+    return x;
+  }
+
+  void push_back(int x) {
+    A.push_back(x);
+    freq[x]++;
+  }
+
+  void push_front(int x) {
+    A.insert(A.begin() + frontIndex, x);
+    freq[x]++;
+    frontIndex = (frontIndex + 1) % A.size();
+    split();
+  }
+
+  int pop_back() {
+    int x = A.back();
+    A.pop_back();
+    freq[x]--;
+    merge();
+    return x;
+  }
+
+  int pop_front() {
+    int x = A[frontIndex];
+    freq[x]--;
+    frontIndex = (frontIndex + 1) % A.size();
+    return x;
+  }
+
+  int size() const { return A.size(); }
+
+  void split() {
+    if (size() < n << 1) {
+      return;
+    }
+    dat* nextDat = new dat;
+    while (size() > n) {
+      nextDat->push_front(pop_back());
+    }
+    next.push_back(nextDat);
+  }
+
+  void merge() {
+    if (next.empty() || size() + next.back()->size() > n) {
+      return;
+    }
+    dat* nextDat = next.back();
+    while (nextDat->size() > 0) {
+      push_back(nextDat->pop_front());
+    }
+    next.pop_back();
+    delete nextDat;
+  }
+
+  void print() const {
+    for (int x : A) {
+      fprintf(stderr, "%3d", x);
+    }
+    if (next.empty()) {
+      fprintf(stderr, "\n");
+    } else {
+      next.back()->print();
+    }
+  }
+};
+
+int dat::n;
+
+int main() {
+  int n, m, last = 0;
+  scanf("%d", &n);
+  dat::n = ceil(sqrt(n << 2));
+  dat* D = new dat;
+  for (int i = 0; i < n; i++) {
+    int x;
+    scanf("%d", &x);
+    D->push_back(x);
+  }
+  for (scanf("%d", &m); m > 0; m--) {
+    int op, l, r, k;
+    scanf("%d", &op);
+    scanf(op == 1 ? "%d%d" : "%d%d%d", &l, &r, &k);
+    l = (l + last - 1) % n + 1;
+    r = (r + last - 1) % n + 1;
+    k = (k + last - 1) % n + 1;
+    if (l > r) {
+      swap(l, r);
+    }
+    if (op == 1) {
+      D->insert(l - 1, D->erase(r));
+    } else {
+      l = D->count(l - 1, k);
+      r = D->count(r, k);
+      printf("%d\n", last = r - l);
+    }
+  }
+}
+```

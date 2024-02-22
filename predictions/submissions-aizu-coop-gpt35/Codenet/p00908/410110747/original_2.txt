@@ -1,0 +1,158 @@
+Code Analysis:
+1. The code uses a priority queue to implement Dijkstra's algorithm to find the shortest path in a grid.
+2. The code uses a lot of unnecessary memory by storing the entire field as a 2D vector of integers.
+3. The code uses a struct to represent a point in the grid, but it can be replaced with a pair of integers.
+4. The code uses a struct to represent a state in the priority queue, but it can be replaced with a tuple or a custom class.
+
+Optimization Strategy:
+1. Replace the 2D vector with a 1D vector to reduce memory usage and improve cache efficiency.
+2. Replace the struct with a pair of integers to simplify the code and reduce memory usage.
+3. Use a custom class instead of a struct to represent a state in the priority queue, to provide better encapsulation and improve code readability.
+4. Use a better data structure than a priority queue, such as a binary heap, to improve the efficiency of the Dijkstra's algorithm.
+5. Use memoization to avoid unnecessary computations and reduce the number of times the getdis function is called.
+6. Use loop unrolling to reduce the number of iterations in the inner loops.
+
+Step-by-Step Explanation:
+1. Replace the 2D vector with a 1D vector:
+   - Replace the declaration of "vector<vector<int>> field" with "vector<int> field((H + 2) * (W + 2), true)".
+   - Replace field[y][x] with field[y * (W + 2) + x] throughout the code.
+   - This reduces memory usage by avoiding the overhead of storing each row as a separate vector.
+
+2. Replace the struct with a pair of integers:
+   - Replace "struct aa" with "typedef pair<int, int> aa".
+   - Replace "struct bb" with "class State" and define member variables kx, ky, opway, turn.
+   - Replace "bool operator()(const bb &l, const bb &r)" with a member function "bool operator<(const State& other) const".
+   - Replace aa{x, y, turn} with make_pair(x, y).
+   - This simplifies the code and reduces memory usage by avoiding the overhead of a struct.
+
+3. Use a custom class instead of a struct:
+   - Define a class "State" with member variables kx, ky, opway, turn.
+   - Define a constructor for the State class.
+   - Replace "priority_queue<bb, vector<bb>, Compare> que" with "priority_queue<State> que".
+   - Replace "bb atop(que.front())" with "State atop = que.top()".
+   - This provides better encapsulation and improves code readability.
+
+4. Use a binary heap instead of a priority queue:
+   - Replace "priority_queue<State> que" with "vector<State> que" and use make_heap, push_heap, and pop_heap to maintain the heap property.
+   - Replace "atop = que.top()" with "atop = que.front()" and use pop_back to remove the top element from the heap.
+   - This avoids the overhead of maintaining the sorted order of the elements in the priority queue.
+
+5. Use memoization to avoid unnecessary computations:
+   - Replace "int memo2[60][60][4]" with "vector<vector<vector<int>>> memo2(60, vector<vector<int>>(60, vector<int>(4, 999999)))".
+   - Use memo2[kx][ky][way] instead of computing the minimum time for each state.
+   - This avoids recomputing the same values multiple times and reduces the number of times the getdis function is called.
+
+6. Use loop unrolling:
+   - Replace "for (int i = 0; i < H; ++i)" with "for (int i = 0; i < H; i += 2)" to process two rows at a time.
+   - Replace "for (int j = 0; j < W; ++j)" with "for (int j = 0; j < W; j += 2)" to process two columns at a time.
+   - This reduces the number of iterations in the inner loops and improves cache efficiency.
+
+Optimized Code Block:
+```cpp
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <algorithm>
+using namespace std;
+
+const int dx[4] = {-1, 0, 1, 0};
+const int dy[4] = {0, 1, 0, -1};
+const int dx2[4] = {-1, 0, 2, 1};
+const int dy2[4] = {0, 2, 1, -1};
+
+int getdis(const vector<int>& field, int W, int fx, int fy, int gx, int gy) {
+    int ans = 999999;
+    queue<pair<int, int>> que;
+    vector<int> memo(field.size(), 999999);
+    que.push(make_pair(fx, fy));
+    memo[fy * (W + 2) + fx] = 0;
+    while (!que.empty()) {
+        pair<int, int> atop = que.front();
+        que.pop();
+        int x = atop.first;
+        int y = atop.second;
+        if (x == gx && y == gy) {
+            ans = memo[y * (W + 2) + x];
+            break;
+        }
+        for (int i = 0; i < 4; ++i) {
+            int nextx = x + dx[i];
+            int nexty = y + dy[i];
+            if (!field[nexty * (W + 2) + nextx]) {
+                if (memo[nexty * (W + 2) + nextx] > memo[y * (W + 2) + x] + 1) {
+                    memo[nexty * (W + 2) + nextx] = memo[y * (W + 2) + x] + 1;
+                    que.push(make_pair(nextx, nexty));
+                }
+            }
+        }
+    }
+    return ans;
+}
+
+class State {
+public:
+    int kx;
+    int ky;
+    int opway;
+    int turn;
+
+    State(int kx, int ky, int opway, int turn) : kx(kx), ky(ky), opway(opway), turn(turn) {}
+
+    bool operator<(const State& other) const {
+        return turn > other.turn;
+    }
+};
+
+int main() {
+    while (1) {
+        int H, W;
+        cin >> H >> W;
+        if (!H)
+            break;
+        vector<int> field((H + 2) * (W + 2), true);
+        vector<vector<vector<int>>> memo2(60, vector<vector<int>>(60, vector<int>(4, 999999)));
+        vector<State> que;
+        
+        int kx = 99, ky = 99;
+        int ox[2];
+        int oy[2];
+        int num = 0;
+        for (int i = 0; i < H; i += 2) {
+            string st1, st2;
+            cin >> st1 >> st2;
+            for (int j = 0; j < W; j += 2) {
+                if (st1[j] == 'X' || st2[j] == 'X') {
+                    kx = min(kx, j + 1);
+                    ky = min(ky, i + 1);
+                    field[(i + 1) * (W + 2) + j + 1] = false;
+                } else if (st1[j] == 'o' || st2[j] == 'o') {
+                    field[(i + 1) * (W + 2) + j + 1] = false;
+                } else if (st1[j] == '.' || st2[j] == '.') {
+                    field[(i + 1) * (W + 2) + j + 1] = false;
+                    ox[num] = j + 1;
+                    oy[num] = i + 1;
+                    num++;
+                }
+            }
+        }
+        
+        if (kx == 1 && ky == 1) {
+            cout << 0 << endl;
+            continue;
+        }
+        
+        for (int way = 0; way < 4; ++way) {
+            int amin = 999999;
+            bool ok = true;
+            for (int op = 0; op < 2; ++op) {
+                int atime = 0;
+                for (int lu = 0; lu < 2; ++lu) {
+                    const int fx = ox[op ^ lu];
+                    const int fy = oy[op ^ lu];
+                    int gx = kx + dx2[way];
+                    int gy = ky + dy2[way];
+                    if (lu == 1) {
+                        gx += dx[(way + 1) % 4];
+                        gy += dy[(way + 1) % 4];
+                    }
+                    if (field[gy * (W +

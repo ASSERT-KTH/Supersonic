@@ -1,0 +1,84 @@
+This program is already quite efficient, but there are a few small modifications that can be made to improve it further.
+
+1. **Avoid unnecessary dynamic memory allocation in `insert` function:** In your `insert` function, you're allocating a new `Node` on the heap every time the function is called. This is a relatively slow operation. If your program makes a lot of insertions, this can slow it down significantly. Also, dynamic memory allocation increases the memory footprint of your program. Instead, we can allocate memory once and reuse it.
+
+2. **Avoid unnecessary string comparisons in `main` function:** In your main function, you're comparing strings to determine which operation to perform. String comparisons are slower than integer comparisons. We can get around this by mapping the commands to integers and then switching on the integers.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <unordered_map>
+using namespace std;
+
+struct Node {
+  int key;
+  Node *parent, *left, *right;
+};
+
+Node *root, *NIL;
+Node nodePool[5000000];  // assuming max number of nodes to be inserted
+int nodeCnt = 0;
+
+void insert(int k) {
+  Node *y = NIL;
+  Node *x = root;
+  Node *z = &nodePool[nodeCnt++];
+  z->key = k;
+  z->left = NIL;
+  z->right = NIL;
+  
+  while (x != NIL) {
+    y = x;
+    if (z->key < x->key) {
+      x = x->left;
+    } else {
+      x = x->right;
+    }
+  }
+  
+  z->parent = y;
+  
+  if (y == NIL) {
+    root = z;
+  } else {
+    if (z->key < y->key)
+      y->left = z;
+    else
+      y->right = z;
+  }
+}
+
+// Other functions remain the same...
+
+int main() {
+  unordered_map<string, int> command_mapping = {{"insert", 1}, {"print", 2}, {"find", 3}};
+  int n, x;
+  string com;
+  cin >> n;
+  for (int i = 0; i < n; i++) {
+    cin >> com;
+    switch (command_mapping[com]) {
+      case 1:
+        cin >> x;
+        insert(x);
+        break;
+      case 2:
+        inorder(root);
+        cout << endl;
+        preorder(root);
+        cout << endl;
+        break;
+      case 3:
+        cin >> x;
+        if (find(x))
+          cout << "yes" << endl;
+        else
+          cout << "no" << endl;
+        break;
+    }
+  }
+  return 0;
+}
+```
+Please note that the nodePool size is hardcoded here for 5000000 nodes. In a real-world case, you may need to estimate the maximum nodes your program might have based on the problem constraints.

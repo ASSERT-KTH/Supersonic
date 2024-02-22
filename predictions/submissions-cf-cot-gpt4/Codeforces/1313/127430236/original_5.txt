@@ -1,0 +1,95 @@
+The given C++ program seems to be an implementation of a segment tree data structure for efficient range queries. From the perspective of running time and memory usage, the program is already quite optimized. However, there are a few small changes that can be made to further optimize the program.
+
+1. Use bitwise shift operators for multiplication or division by powers of 2: In the update and find functions, the program performs multiplication and division by 2 (id * 2 and (l + r) / 2). As multiplication and division are resource-consuming operations, bitwise shift operators can be used instead to improve the speed of the program.
+
+2. Minimize the use of "int" as data type: The program uses "int" as data type for several variables. However, "int" is 4 bytes and therefore, takes more memory. Whenever possible, "short" (2 bytes) or even "char" (1 byte) can be used instead to save memory. However, in this case, changing the data type might lead to an overflow, so it's not recommended.
+
+3. Reduce the number of global variables: The program uses several global variables, which consume memory for the entire duration of the program. It's better to declare variables in the smallest possible scope to save memory.
+
+4. Avoid unnecessary calculations: In the main function, the program calculates l[i] + r[n - i + 1] - a[i] for each i. However, the value a[i] is subtracted immediately after being added, which is unnecessary. This operation can be removed to optimize the program.
+
+Here is the optimized program:
+
+```cpp
+#include <algorithm>
+#include <cstring>
+#include <iostream>
+#include <stdio.h>
+using namespace std;
+#define int long long
+const int N = 5e5 + 9;
+int a[N], node[4 * N], l[N], r[N], res[N];
+void update(int id, int l, int r, int pos, int x) {
+  if (l > pos || r < pos)
+    return;
+  if (l == r) {
+    node[id] = x;
+    return;
+  }
+  int mid = (l + r) >> 1;
+  update(id << 1, l, mid, pos, x);
+  update((id << 1) + 1, mid + 1, r, pos, x);
+  node[id] = min(node[id << 1], node[(id << 1) + 1]);
+}
+int find(int id, int l, int r, int tr, int ph, int x) {
+  if (tr > ph || l > ph || r < tr || node[id] > x)
+    return 0;
+  if (l == r)
+    return r;
+  int mid = (l + r) >> 1;
+  if (l >= tr && r <= ph) {
+    if (node[id] > x)
+      return 0;
+    if (node[(id << 1) + 1] <= x)
+      return find((id << 1) + 1, mid + 1, r, tr, ph, x);
+    else
+      return find(id << 1, l, mid, tr, ph, x);
+  }
+  return max(find(id << 1, l, mid, tr, ph, x),
+             find((id << 1) + 1, mid + 1, r, tr, ph, x));
+}
+signed main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+  int n;
+  cin >> n;
+  for (int i = 1; i <= n; i++)
+    cin >> a[i];
+  int id;
+  id = 0;
+  for (int i = 1; i <= n; i++) {
+    id = find(1, 1, n, 1, i - 1, a[i]);
+    update(1, 1, n, i, a[i]);
+    l[i] = l[id] + a[i] * (i - id);
+  }
+  memset(node, 0, sizeof(node));
+  reverse(a + 1, a + 1 + n);
+  for (int i = 1; i <= n; i++) {
+    id = find(1, 1, n, 1, i - 1, a[i]);
+    update(1, 1, n, i, a[i]);
+    r[i] = r[id] + a[i] * (i - id);
+  }
+  reverse(a + 1, a + 1 + n);
+  int sum = 0, pos;
+  for (int i = 1; i <= n; i++)
+    if (sum < l[i] + r[n - i + 1]) {
+      sum = l[i] + r[n - i + 1];
+      pos = i;
+    }
+  int minn = a[pos];
+  res[pos] = a[pos];
+  for (int i = pos - 1; i >= 1; i--) {
+    minn = min(minn, a[i]);
+    res[i] = minn;
+  }
+  minn = a[pos];
+  for (int i = pos + 1; i <= n; i++) {
+    minn = min(minn, a[i]);
+    res[i] = minn;
+  }
+  for (int i = 1; i <= n; i++)
+    cout << res[i] << " ";
+  return 0;
+}
+```
+Please note that the above improvements are quite small and might not lead to a noticeable improvement in performance. The original code is already quite efficient.

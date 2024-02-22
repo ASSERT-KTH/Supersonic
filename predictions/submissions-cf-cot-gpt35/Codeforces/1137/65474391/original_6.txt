@@ -1,0 +1,211 @@
+The main optimization that can be applied to this program is to reduce the number of map and set operations. These operations have a higher time complexity compared to other operations.
+
+1. **Optimization Step**: Reduce the number of map and set operations in the `HLD` function.
+
+Explanation: In the `HLD` function, there are several map and set operations being performed for each node. These operations involve inserting and erasing elements from the map and set. Instead of performing these operations individually, we can perform them collectively by using a vector or an array to store the elements and then sort them. This would reduce the number of map and set operations and improve the performance of the program.
+
+2. **Optimization Step**: Reduce the number of map and set operations in the `up` function.
+
+Explanation: Similar to the `HLD` function, the `up` function also performs map and set operations for each node. We can apply the same optimization technique as mentioned in the previous step to reduce the number of map and set operations.
+
+3. **Optimization Step**: Reduce the number of map and set operations in the `count` function.
+
+Explanation: The `count` function also involves map and set operations for each node. We can again apply the same optimization technique as mentioned earlier to reduce the number of map and set operations.
+
+4. **Optimization Step**: Remove unnecessary map operations in the `Simulate` function.
+
+Explanation: In the `Simulate` function, there is a map operation being performed to check if a key exists in the map. This operation is not necessary and can be removed to improve the performance of the program.
+
+Here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <map>
+#include <queue>
+#include <set>
+#define fi first
+#define se second
+using namespace std;
+const int MAXN = 200005;
+struct node {
+  int cnt, par, lev, inp;
+  int chn, idx, col, adj;
+};
+int n, q;
+vector<int> g[MAXN];
+node a[MAXN];
+int bit[2 * MAXN];
+int chains = 0, timer = 0, colour = 0;
+vector<int> chain[MAXN];
+int col[MAXN][MAXN];
+set<int> pos[MAXN][MAXN];
+int root[MAXN];
+void Init() {
+  ios ::sync_with_stdio(false);
+  cin.tie(NULL);
+  cout.tie(NULL);
+  cin >> n >> q;
+  for (int i = 1; i < n; ++i) {
+    int u, v;
+    cin >> u >> v;
+    g[u].push_back(v);
+    g[v].push_back(u);
+  }
+  a[n].par = -1;
+  a[n].lev = 1;
+  a[n].chn = 0;
+  a[n].idx = 0;
+  root[0] = n;
+  colour = n;
+}
+int query(int x) {
+  int res = 0;
+  for (int i = x; i >= 1; i -= i & (-i)) {
+    res += bit[i];
+  }
+  return res;
+}
+void update(int x, int d) {
+  for (int i = x; i < 2 * MAXN; i += i & (-i)) {
+    bit[i] += d;
+  }
+}
+void DFS(int u) {
+  a[u].inp = ++timer;
+  a[u].cnt = 1;
+  for (int v : g[u]) {
+    if (a[v].par == 0) {
+      a[v].par = u;
+      a[v].lev = a[u].lev + 1;
+      DFS(v);
+      a[u].cnt += a[v].cnt;
+    }
+  }
+}
+void HLD(int u) {
+  chain[a[u].chn].push_back(u);
+  col[a[u].chn][a[u].idx] = a[u].col;
+  pos[a[u].chn][a[u].col].insert(a[u].idx);
+  int heavy = 0, which = 0;
+  for (int v : g[u]) {
+    if (v != a[u].par and a[v].cnt > heavy) {
+      heavy = a[v].cnt;
+      which = v;
+    }
+  }
+  if (heavy == 0 or which == 0)
+    return;
+  a[which].chn = a[u].chn;
+  a[which].idx = a[u].idx + 1;
+  for (int v : g[u]) {
+    if (v == a[u].par)
+      continue;
+    if (v != which) {
+      a[v].chn = ++chains;
+      a[v].idx = 0;
+    }
+    HLD(v);
+  }
+}
+void Simulate() {
+  priority_queue<int> pq;
+  for (int i = 1; i <= n; ++i) {
+    a[i].adj = g[i].size();
+    if (a[i].adj == 1)
+      pq.push(-i);
+  }
+  int row = 0;
+  while (!pq.empty()) {
+    int u = -pq.top();
+    pq.pop();
+    a[u].col = ++row;
+    for (int v : g[u]) {
+      a[v].adj--;
+      if (a[v].adj == 1)
+        pq.push(-v);
+    }
+  }
+  for (int i = 1; i <= row; ++i) {
+    update(i, 1);
+  }
+}
+inline bool is_predecessor(int u, int v) {
+  return (a[u].inp <= a[v].inp and a[v].inp < a[u].inp + a[u].cnt);
+}
+int LCA(int u, int v) {
+  if (is_predecessor(u, v))
+    return u;
+  if (is_predecessor(v, u))
+    return v;
+  int t = a[u].chn;
+  while (!is_predecessor(chain[t][0], v)) {
+    t = a[a[chain[t][0]].par].chn;
+  }
+  int l = 0, r = chain[t].size() - 1, res = 0;
+  while (l <= r) {
+    int mid = (l + r) / 2;
+    if (is_predecessor(chain[t][mid], u) and is_predecessor(chain[t][mid], v)) {
+      res = mid;
+      l = mid + 1;
+    } else
+      r = mid - 1;
+  }
+  return chain[t][res];
+}
+inline int get_colour(int u) {
+  int c = a[u].chn, i = a[u].idx;
+  return col[c][i];
+}
+void up(int u, int t) {
+  while (true) {
+    int c = a[u].chn;
+    int i = a[u].idx;
+    int iter = 0, jter = 0;
+    if (c == a[t].chn and a[t].idx != 0) {
+      jter = a[t].idx;
+      if (col[c][a[t].idx - 1] == 0) {
+        col[c][a[t].idx - 1] = jter;
+        pos[c][jter].insert(a[t].idx - 1);
+      }
+    }
+    auto jcpy = jter;
+    while (iter != jter) {
+      int del = jter + 1;
+      if (jter != 0) {
+        jter--;
+        del -= jter + 1;
+        jter++;
+      }
+      update(pos[c][jter], -del);
+      pos[c][jter].erase(pos[c][jter].find(iter));
+      if (pos[c][jter].size() == 0)
+        pos[c].erase(pos[c].find(jter));
+      jter++;
+    }
+    if (iter == 0) {
+      update(col[c][iter], -i - 1);
+    } else {
+      iter--;
+      int p = iter;
+      iter++;
+      update(col[c][iter], p - i);
+      if (i == iter)
+        update(col[c][iter], 1);
+    }
+    if (c == a[t].chn)
+      break;
+    else
+      u = a[chain[c][0]].par;
+  }
+}
+int count(int u, int t, int clr) {
+  int cnt = 0;
+  while (true) {
+    int c = a[u].chn;
+    int i = a[u].idx;
+    for (int p : pos[c][clr]) {
+      auto it = col[c].lower_bound(p);
+      int l, r = min(p, a[u].idx);
+      if (it == col[c].begin())
+        l = 0;
+      else

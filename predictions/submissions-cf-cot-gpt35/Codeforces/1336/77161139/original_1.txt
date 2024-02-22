@@ -1,0 +1,123 @@
+Step 1: Avoid unnecessary includes
+
+The program includes several unnecessary header files, such as <algorithm>, <ios>, and <numeric>. These should be removed to reduce compilation time and improve memory usage.
+
+Step 2: Optimize input/output operations
+
+The program currently uses the "cin" and "cout" objects from the iostream library for input and output operations. These objects are synchronized with the standard C streams, which can cause a performance overhead. By disabling the synchronization and tying the cin and cout objects, we can improve the program's speed. We can achieve this by adding the following lines of code before the main function:
+
+```
+ios_base::sync_with_stdio(false);
+cin.tie(nullptr);
+```
+
+Step 3: Optimize the compute_depth function
+
+The compute_depth function uses a depth-first search (DFS) algorithm to compute the depth of each node in the tree. However, the function is currently implemented recursively, which can lead to stack overflow errors for large input sizes. To optimize this, we can convert the function to an iterative version using a stack data structure.
+
+Step 4: Optimize the compute_below function
+
+Similar to the compute_depth function, the compute_below function also uses a depth-first search algorithm. We can optimize this function by converting it to an iterative version using a stack data structure.
+
+Step 5: Optimize the score calculation
+
+The current score calculation loops through all the nodes and calculates the score for each node individually. However, we can optimize this by combining the depth and below calculations into a single loop. This way, we can calculate the score for each node in a single pass.
+
+Here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <stack>
+#include <numeric>
+#include <algorithm>
+
+using namespace std;
+
+void compute_depth_iterative(vector<vector<int>> &adj, vector<int> &depth) {
+  int n = adj.size();
+  vector<bool> visited(n, false);
+  stack<int> stk;
+
+  stk.push(0);
+  depth[0] = 0;
+  visited[0] = true;
+
+  while (!stk.empty()) {
+    int u = stk.top();
+    stk.pop();
+
+    for (int v : adj[u]) {
+      if (!visited[v]) {
+        depth[v] = depth[u] + 1;
+        stk.push(v);
+        visited[v] = true;
+      }
+    }
+  }
+}
+
+void compute_below_iterative(vector<vector<int>> &adj, vector<int> &below) {
+  int n = adj.size();
+  vector<bool> visited(n, false);
+  stack<pair<int, int>> stk;
+
+  stk.push({0, -1});
+
+  while (!stk.empty()) {
+    int u = stk.top().first;
+    int p = stk.top().second;
+    stk.pop();
+
+    for (int v : adj[u]) {
+      if (v != p) {
+        stk.push({v, u});
+      }
+    }
+
+    for (int v : adj[u]) {
+      if (v != p && !visited[v]) {
+        below[u] += below[v] + 1;
+      }
+    }
+
+    visited[u] = true;
+  }
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  int n, k;
+  cin >> n >> k;
+
+  vector<vector<int>> adj(n);
+
+  for (int i = 0; i < n - 1; ++i) {
+    int u, v;
+    cin >> u >> v;
+    --u;
+    --v;
+    adj[u].push_back(v);
+    adj[v].push_back(u);
+  }
+
+  vector<int> depth(n);
+  compute_depth_iterative(adj, depth);
+
+  vector<int> below(n);
+  compute_below_iterative(adj, below);
+
+  vector<int> score(n);
+  for (int i = 0; i < n; ++i) {
+    score[i] = depth[i] - below[i];
+  }
+
+  sort(score.begin(), score.end(), greater<int>());
+
+  cout << accumulate(score.begin(), score.begin() + k, 0ll) << '\n';
+
+  return 0;
+}
+```

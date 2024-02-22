@@ -1,0 +1,102 @@
+Code Analysis:
+1. The provided code reads in a graph and performs a dynamic programming (DP) operation to pre-calculate all reachable nodes within a certain number of steps.
+2. It then iteratively selects nodes where a certain condition is met and marks them as used. If the start node is ever marked as used, it outputs the current iteration number and terminates. If no new nodes can be marked as used, it outputs "IMPOSSIBLE" and terminates.
+3. The main performance bottlenecks are the three nested loops in the DP calculation, and the two nested loops in the used nodes calculation.
+
+Optimization Strategy:
+1. The dynamic programming (DP) operation can be optimized by reducing the number of iterations in the inner loop. Instead of iterating through all the nodes, we could only iterate through the nodes that are reachable from the current node.
+2. The selection and marking of used nodes can be optimized by maintaining a list of unused nodes, instead of iterating through all nodes and skipping the used nodes.
+3. If we sort the array A at the beginning of the program, we can break the loop for checking `dp[a][i][k] && used[k]` as soon as we find a `used[k]` that is not reachable within `a` steps.
+
+Step-by-Step Explanation:
+1. Optimize DP operation:
+   1. Change the innermost loop to iterate only through the nodes that are reachable from the current node. This can be achieved by replacing `for (int to : G[k])` with `for (int to = 0; to < G[k].size(); to++)`.
+   2. This optimization reduces the number of iterations in the inner loop, which in turn reduces the overall running time of the DP operation.
+2. Optimize selection and marking of used nodes:
+   1. Maintain a list of unused nodes and update it after each iteration.
+   2. This optimization reduces the number of iterations in the outer loop, which reduces the overall running time of the selection and marking operation.
+3. Sort array A and optimize the checking loop:
+   1. Sort the array A at the beginning of the program. This can be achieved by adding `sort(A, A+3)` after reading the array A.
+   2. Change the checking loop to break as soon as we find a `used[k]` that is not reachable within `a` steps. This can be achieved by adding `if (!dp[a][i][k]) break;` before checking `used[k]`.
+   3. This optimization reduces the number of iterations in the checking loop, which reduces the overall running time of the checking operation.
+
+Optimized Code Block:
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+int N, M;
+int A[3];
+vector<int> G[51];
+bool used[51];
+bool dp[101][51][51];
+int main() {
+  cin >> N >> M;
+  for (int i = 0; i < 3; i++)
+    cin >> A[i];
+  sort(A, A+3); // Sort array A
+  for (int i = 0; i < M; i++) {
+    int f, t;
+    cin >> f >> t;
+    f--;
+    t--;
+    G[f].push_back(t);
+  }
+  for (int i = 0; i < N; i++)
+    dp[0][i][i] = true;
+  for (int i = 1; i < 101; i++) {
+    for (int j = 0; j < N; j++) {
+      for (int k = 0; k < N; k++) {
+        if (dp[i - 1][j][k]) {
+          for (int l = 0; l < G[k].size(); l++) { // Iterate only through reachable nodes
+            int to = G[k][l];
+            dp[i][j][to] = true;
+          }
+        }
+      }
+    }
+  }
+  vector<int> unused;
+  for (int i = 0; i < N; i++)
+    unused.push_back(i);
+  used[N - 1] = true;
+  for (int ite = 1;; ite++) {
+    bool ok = false;
+    vector<int> idx;
+    for (int i = 0; i < unused.size(); i++) {
+      int u = unused[i];
+      int cnt = 0;
+      for (int j = 0; j < 3; j++) {
+        int a = A[j];
+        for (int k = 0; k < N; k++) {
+          if (!dp[a][u][k]) break; // Break as soon as we find a used[k] that is not reachable
+          if (dp[a][u][k] && used[k]) {
+            cnt++;
+            break;
+          }
+        }
+      }
+      if (cnt == 3) {
+        ok = true;
+        idx.push_back(u);
+      }
+    }
+    if (ok) {
+      for (int i : idx) {
+        used[i] = true;
+      }
+      unused.clear();
+      for (int i = 0; i < N; i++)
+        if (!used[i])
+          unused.push_back(i);
+      if (used[0]) {
+        cout << ite << endl;
+        return 0;
+      }
+    } else {
+      break;
+    }
+  }
+  cout << "IMPOSSIBLE" << endl;
+  return 0;
+}
+```

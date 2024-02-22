@@ -1,0 +1,20 @@
+#include <iostream>
+#include <math.h>
+using namespace std;
+
+int main() {
+  int d, e;
+  while (1) {
+    cin >> d >> e;
+    if (d == 0 && e == 0) break;
+
+    double min = 1e6;
+    for (int i = 0; i <= d; i++) {
+      int j = d - i;
+      double cost = sqrt(i * i + j * j);
+      min = std::min(min, std::abs(cost - e));
+    }
+    cout << min << endl;
+  }
+  return 0;
+}

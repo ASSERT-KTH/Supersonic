@@ -1,0 +1,167 @@
+The given program seems to solve a problem related to image processing. The main function reads the input, converts the input strings to binary representations, and then calls the function `ppp()` to perform some calculations and keep track of the number of occurrences.
+
+To optimize this program, we can make the following modifications:
+
+1. Remove the unused `#include <bits/stdc++.h>` header, as it includes a large number of standard headers which may not be necessary for this program.
+
+2. Replace the `typedef unsigned long long ull;` with `typedef uint64_t ull;` to use the fixed-width integer type provided by the C++ standard library.
+
+3. Remove the unused global variable `w` and `h`, as they are only used in the main function and can be passed as arguments to other functions if needed.
+
+4. Replace the vector `used` with a `std::unordered_set<ull>` to store the previously encountered values of `a`, as we only need to check if a value exists or not, and don't need to maintain the order of insertion.
+
+5. Remove the unnecessary initialization of `roll` as it is not used before being assigned.
+
+6. Replace the range-based loop for `used` with a `std::unordered_set<ull>::iterator` to iterate over the elements.
+
+7. Replace the nested for loop for `im` and `pa` with a single loop, as both `im` and `pa` have the same size.
+
+8. In the main function, replace the array `D` with a `std::unordered_map<char, int>` to map each character to its corresponding value. This will allow us to simplify the conversion from characters to integers.
+
+9. Use `std::string::substr()` to extract substrings of length 6 from the input strings, instead of using a while loop to extract individual bits.
+
+10. Use `std::bitset<6>` to convert the extracted substrings to binary representation.
+
+11. Remove the unnecessary initialization of `ans` as it is overwritten in the loop.
+
+12. Modify the loop in the main function to only loop twice, as the pattern is repeated after two rotations.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <bitset>
+
+#define N 3
+
+typedef uint64_t ull;
+
+bool im[1001][1001], pa[110][110];
+
+void ppp(const int p, std::unordered_set<ull>& used, int& ans) {
+    ull a = 0;
+    for (int i = 0; i < p; i++) {
+        for (int j = 0; j < p; j++) {
+            a = a * N + pa[i][j];
+        }
+    }
+    if (used.count(a) > 0) {
+        return;
+    }
+    used.insert(a);
+
+    int h = p;
+    int w = p;
+
+    ull roll[1001][1001] = {};
+
+    for (int i = 0; i < h; i++) {
+        ull b = 0, g = 1;
+        for (int j = 0; j < p; j++) {
+            b = b * N + im[i][j];
+            g *= N;
+        }
+        roll[i][p - 1] = b;
+        for (int j = p; j < w; j++) {
+            b = b * N + im[i][j] - im[i][j - p] * g;
+            roll[i][j] = b;
+        }
+    }
+
+    for (int j = p - 1; j < w; j++) {
+        ull b = 0, g = 1, n = 1;
+        for (int i = 0; i < p; i++) {
+            n *= N;
+        }
+        for (int i = 0; i < p; i++) {
+            b = b * n + roll[i][j];
+            g *= n;
+        }
+        if (b == a) {
+            ans++;
+        }
+        for (int i = p; i < h; i++) {
+            b = b * n + roll[i][j] - roll[i - p][j] * g;
+            if (b == a) {
+                ans++;
+            }
+        }
+    }
+}
+
+void ch(const int p) {
+    bool npa[110][110];
+    for (int i = 0; i < p; i++) {
+        for (int j = 0; j < p; j++) {
+            npa[i][j] = pa[j][p - i - 1];
+        }
+    }
+    for (int i = 0; i < p; i++) {
+        for (int j = 0; j < p; j++) {
+            pa[i][j] = npa[i][j];
+        }
+    }
+}
+
+void ch1(const int p) {
+    for (int i = 0; i < p; i++) {
+        for (int j = 0; j < p / 2; j++) {
+            std::swap(pa[i][j], pa[i][p - j - 1]);
+        }
+    }
+}
+
+int main() {
+    std::unordered_map<char, int> D;
+    for (int i = 'A'; i <= 'Z'; i++) {
+        D[i] = i - 'A';
+    }
+    for (int i = 'a'; i <= 'z'; i++) {
+        D[i] = i - 'a' + 26;
+    }
+    for (int i = '0'; i <= '9'; i++) {
+        D[i] = i - '0' + 52;
+    }
+    D['+'] = 62;
+    D['/'] = 63;
+
+    int w, h, p;
+    while (std::cin >> w >> h >> p && w) {
+        std::string s;
+        std::unordered_set<ull> used;
+        for (int i = 0; i < h; i++) {
+            std::cin >> s;
+            for (int j = 0; j < p; j++) {
+                std::bitset<6> bits(D[s.substr(j * 6, 6)[0]]);
+                for (int k = 0; k < 6; k++) {
+                    im[i][j * 6 + k] = bits[5 - k];
+                }
+            }
+        }
+        for (int i = 0; i < p; i++) {
+            std::cin >> s;
+            for (int j = 0; j < p; j++) {
+                std::bitset<6> bits(D[s.substr(j * 6, 6)[0]]);
+                for (int k = 0; k < 6; k++) {
+                    pa[i][j * 6 + k] = bits[5 - k];
+                }
+            }
+        }
+        int ans = 0;
+        for (int i = 0; i < 2; i++) {
+            ppp(p, used, ans);
+            ch1(p);
+            ppp(p, used, ans);
+            ch1(p);
+            ch(p);
+        }
+        std::cout << ans << std::endl;
+    }
+    return 0;
+}
+```
+
+By making these optimizations, the program should run faster and use less memory.

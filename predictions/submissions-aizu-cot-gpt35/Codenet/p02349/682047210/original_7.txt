@@ -1,0 +1,135 @@
+Step 1: Remove unnecessary includes
+
+The `#include <bits/stdc++.h>` includes a large number of standard library headers, which can significantly increase compilation time and memory usage. Since the program only uses a few headers, we can remove this line and include only the necessary headers.
+
+```
+#include <iostream>
+#include <vector>
+```
+
+Step 2: Remove unnecessary typedef
+
+The `typedef long long ll;` is not used in the program and can be removed.
+
+Step 3: Remove unnecessary template parameter
+
+The `template <typename Monoid> struct LazySegmentTree` defines a template parameter `Monoid`, but it is not used in the code. We can remove this parameter to simplify the code.
+
+Step 4: Use `std::vector::reserve` instead of `resize`
+
+In the `build` function, the `node` and `lazy` vectors are resized to the required size before initializing them. However, since the size is known in advance, we can use `std::vector::reserve` instead of `resize` to avoid unnecessary memory allocations and deallocations.
+
+Step 5: Replace `int` with `std::size_t` for vector sizes
+
+In the `build` function, the loop variable `i` is compared with the size of the vector `v`, which is an unsigned value. To avoid signed/unsigned comparison warnings, we can change the loop variable `i` from `int` to `std::size_t`.
+
+Step 6: Use prefix increment instead of postfix increment
+
+In the `build` function, the loop variable `i` is only used as an index to access the vector elements. Using prefix increment (`++i`) instead of postfix increment (`i++`) can be slightly more efficient.
+
+Step 7: Use `std::cout` instead of `std::endl`
+
+The `std::endl` manipulator flushes the output stream, which can be unnecessary and slow. We can use `'\n'` instead of `std::endl` to print a newline character without flushing the stream.
+
+Step 8: Optimize the `add` function
+
+In the `add` function, the line `lazy[k] += x * (r - l);` can be optimized by using a temporary variable to store `x * (r - l)` and then adding it to `lazy[k]`. This can reduce the number of multiplications and improve performance.
+
+Step 9: Optimize the `getSum` function
+
+In the `getSum` function, the lines `vl = getSum(a, b, 2 * k + 1, l, (l + r) / 2);` and `vr = getSum(a, b, 2 * k + 2, (l + r) / 2, r);` can be optimized by using a temporary variable to store the return values of the recursive calls to `getSum`. This can reduce the number of function calls and improve performance.
+
+Here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <vector>
+
+struct LazySegmentTree {
+private:
+  std::size_t N;
+  std::vector<long long> node, lazy;
+
+public:
+  LazySegmentTree(std::size_t sz = 0) { init(sz); }
+  void init(std::size_t sz) {
+    N = 1;
+    while (N < sz)
+      N <<= 1;
+    node.reserve(2 * N - 1);
+    lazy.reserve(2 * N - 1);
+    node.assign(2 * N - 1, 0);
+    lazy.assign(2 * N - 1, 0);
+  }
+  void build(std::vector<long long> &v) {
+    std::size_t sz = v.size();
+    init(sz);
+    for (std::size_t i = 0; i < sz; ++i) {
+      node[i + N - 1] = v[i];
+    }
+    for (std::size_t i = N - 2; i >= 0; --i) {
+      node[i] = node[i * 2 + 1] + node[i * 2 + 2];
+    }
+  }
+  void eval(std::size_t k) {
+    if (lazy[k] != 0) {
+      node[k] += lazy[k];
+      if (k < N - 1) {
+        lazy[2 * k + 1] += lazy[k] / 2;
+        lazy[2 * k + 2] += lazy[k] / 2;
+      }
+      lazy[k] = 0;
+    }
+  }
+  void add(std::size_t a, std::size_t b, long long x) { add(a, b, x, 0, 0, N); }
+  void add(std::size_t a, std::size_t b, long long x, std::size_t k,
+           std::size_t l, std::size_t r) {
+    eval(k);
+    if (b <= l || r <= a)
+      return;
+    if (a <= l && r <= b) {
+      long long delta = x * (r - l);
+      lazy[k] += delta;
+    } else {
+      add(a, b, x, 2 * k + 1, l, (l + r) / 2);
+      add(a, b, x, 2 * k + 2, (l + r) / 2, r);
+      node[k] = node[2 * k + 1] + node[2 * k + 2];
+    }
+  }
+  long long getSum(std::size_t a, std::size_t b) {
+    return getSum(a, b, 0, 0, N);
+  }
+  long long getSum(std::size_t a, std::size_t b, std::size_t k, std::size_t l,
+                   std::size_t r) {
+    if (b <= l || r <= a)
+      return 0;
+    eval(k);
+    if (a <= l && r <= b)
+      return node[k];
+    long long vl = getSum(a, b, 2 * k + 1, l, (l + r) / 2);
+    long long vr = getSum(a, b, 2 * k + 2, (l + r) / 2, r);
+    return vl + vr;
+  }
+};
+
+int main() {
+  std::size_t n, q;
+  std::cin >> n >> q;
+  LazySegmentTree seg(n);
+  for (std::size_t i = 0; i < q; ++i) {
+    int c;
+    std::cin >> c;
+    if (c == 0) {
+      std::size_t s, t;
+      long long x;
+      std::cin >> s >> t >> x;
+      seg.add(s - 1, t, x);
+    } else {
+      std::size_t s;
+      std::cin >> s;
+      std::cout << seg.getSum(s - 1, s) << '\n';
+    }
+  }
+  return 0;
+}
+```

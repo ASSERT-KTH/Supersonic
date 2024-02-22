@@ -1,0 +1,96 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+const int N = 200200;
+const int mod = 1e9 + 7;
+
+int n, m, k;
+int ban[10][10][10], slf[10][10];
+int used[10], cnt[10][10];
+int res, all;
+std::vector<std::pair<int, int>> v[N], g[N];
+int sv[10][10];
+
+void rec(int i) {
+  if (i == k + 1) {
+    res += 1;
+    return;
+  }
+  for (int j = 0; j < i; j++) {
+    if (used[i] & (1 << j) || slf[i][j])
+      continue;
+    for (int h = i + 1; h <= k; h++) {
+      sv[i][h] = used[h];
+      used[h] |= ban[i][j][h];
+    }
+    all += cnt[i][j];
+    rec(i + 1);
+    all -= cnt[i][j];
+    for (int h = i + 1; h <= k; h++) {
+      used[h] = sv[i][h];
+    }
+  }
+}
+
+int main() {
+  std::cin >> n >> m >> k;
+  
+  std::vector<int> vSize(n + 1, 0);
+  std::vector<int> gSize(n + 1, 0);
+  
+  for (int i = 0; i < m; i++) {
+    int x, y, z;
+    std::cin >> x >> y >> z;
+    v[x].push_back({z, y});
+    vSize[x]++;
+  }
+
+  for (int i = 1; i <= n; i++) {
+    std::sort(v[i].begin(), v[i].end());
+    g[i].resize(vSize[i]);
+
+    for (int j = 0; j < vSize[i]; j++) {
+      g[i][j] = {v[i][j].second, vSize[i]};
+    }
+    gSize[i] = vSize[i];
+  }
+  
+  std::vector<std::pair<int, int>> ng;
+  
+  for (int i = 1; i <= n; i++) {
+    if (g[i].empty()) {
+      std::cout << 0 << "\n";
+      return 0;
+    }
+    std::sort(g[i].begin(), g[i].end());
+    int newSize = 1;
+    int prevSize = g[i][0].first;
+    
+    for (int j = 1; j < gSize[i]; j++) {
+      if (g[i][j].first == prevSize) {
+        slf[g[i][j].first][g[i][j].second] = true;
+      } else {
+        g[i][newSize] = g[i][j];
+        newSize++;
+      }
+      prevSize = g[i][j].first;
+    }
+    gSize[i] = newSize;
+    
+    for (int j = 0; j < gSize[i]; j++) {
+      cnt[g[i][j].first][g[i][j].second] += 1;
+      for (int h = 0; h < gSize[i]; h++) {
+        if (h != j) {
+          ban[g[i][j].first][g[i][j].second][g[i][h].first] = true;
+        }
+      }
+    }
+  }
+  
+  rec(1);
+  
+  std::cout << res << "\n";
+  
+  return 0;
+}

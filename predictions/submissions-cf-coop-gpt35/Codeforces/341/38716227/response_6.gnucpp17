@@ -1,0 +1,87 @@
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+const int mxn = 1010;
+
+class FenwickTree {
+private:
+    vector<vector<vector<int>>> tree;
+
+public:
+    FenwickTree(int n) {
+        tree.resize(n + 1, vector<vector<int>>(n + 1, vector<int>(2, 0)));
+    }
+
+    int query2(int x, int y) {
+        int mul = 0, add = 0;
+        for (int i = y; i > 0; i -= i & -i) {
+            mul ^= tree[x][i][0];
+            add ^= tree[x][i][1];
+        }
+        return (mul * yo(y)) ^ add;
+    }
+
+    int query1(int x, int y) {
+        int mul = 0, add = 0;
+        for (int i = x; i > 0; i -= i & -i) {
+            mul ^= query2(i, y);
+            add ^= query2(i, y);
+        }
+        return (mul * yo(x)) ^ add;
+    }
+
+    int query(int x1, int y1, int x2, int y2) {
+        return (query1(x2, y2) ^ query1(x1 - 1, y2) ^ query1(x2, y1 - 1) ^ query1(x1 - 1, y1 - 1));
+    }
+
+    void update2(int x, int y, int mul, int add) {
+        for (int i = x; i < tree.size(); i += i & -i) {
+            for (int j = y; j < tree[0].size(); j += j & -j) {
+                tree[i][j][0] ^= mul;
+                tree[i][j][1] ^= add;
+            }
+        }
+    }
+
+    void update1(int x, int y1, int y2, int mul, int add) {
+        update2(x, y1, mul, mul * yo(y1 - 1));
+        update2(x, y2, mul, mul * yo(y2));
+        update2(x, y1, add, add * yo(y1 - 1));
+        update2(x, y2, add, add * yo(y2));
+    }
+
+    void update(int x1, int y1, int x2, int y2, int val) {
+        update1(x1, y1, y2, val, val * yo(x1 - 1));
+        update1(x2, y1, y2, val, val * yo(x2));
+    }
+
+private:
+    int yo(int x) {
+        return (x % 2);
+    }
+};
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int n, q, tt, x1, y1, x2, y2, val;
+    cin >> n >> q;
+
+    FenwickTree fenwickTree(n);
+
+    while (q--) {
+        cin >> tt;
+        if (tt == 2) {
+            cin >> x1 >> y1 >> x2 >> y2 >> val;
+            fenwickTree.update(x1, y1, x2, y2, val);
+        } else {
+            cin >> x1 >> y1 >> x2 >> y2;
+            cout << fenwickTree.query(x1, y1, x2, y2) << "\n";
+        }
+    }
+    
+    return 0;
+}

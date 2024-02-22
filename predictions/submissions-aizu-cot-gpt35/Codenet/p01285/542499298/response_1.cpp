@@ -1,0 +1,75 @@
+#include <iostream>
+#include <cmath>
+#include <vector>
+#include <algorithm>
+#include <cassert>
+using namespace std;
+
+const string MANY = "Many";
+const string NONE = "None";
+
+class Point {
+public:
+  double x, y;
+  Point(double x = 0, double y = 0) : x(x), y(y) {}
+  Point operator+(Point p) { return Point(x + p.x, y + p.y); }
+  Point operator-(Point p) { return Point(x - p.x, y - p.y); }
+  Point operator*(double a) { return Point(a * x, a * y); }
+  Point operator/(double a) { return Point(x / a, y / a); }
+  bool operator<(const Point &p) const {
+    return x < p.x || (x == p.x && y < p.y);
+  }
+  bool operator==(const Point &p) const {
+    return fabs(x - p.x) < 1e-9 && fabs(y - p.y) < 1e-9;
+  }
+};
+
+struct Line {
+  Point p1, p2;
+  int index;
+  Line(Point p1 = Point(), Point p2 = Point(), int index = -1)
+      : p1(p1), p2(p2), index(index) {}
+};
+
+double cross(Point a, Point b) { return a.x * b.y - a.y * b.x; }
+
+Point crosspoint(Line l, Line m) {
+  double A = cross(l.p2 - l.p1, m.p2 - m.p1);
+  double B = cross(l.p2 - l.p1, l.p2 - m.p1);
+  assert(fabs(A) > 1e-9);
+  return m.p1 + (m.p2 - m.p1) * (B / A);
+}
+
+double distanceLP(Line l, Point p) {
+  double t = (p - l.p1).x * (l.p1 - l.p2).x + (p - l.p1).y * (l.p1 - l.p2).y;
+  t /= (l.p1 - l.p2).x * (l.p1 - l.p2).x + (l.p1 - l.p2).y * (l.p1 - l.p2).y;
+  Point projection = l.p1 + (l.p1 - l.p2) * t;
+  return sqrt((p - projection).x * (p - projection).x + (p - projection).y * (p - projection).y);
+}
+
+void compute(vector<Line> &vec) {
+  if (vec.size() <= 2) {
+    cout << MANY << endl;
+    return;
+  }
+  vector<Line> candidateLines;
+  int n = vec.size();
+  for (int i = 0; i < n; i++) {
+    for (int j = i + 1; j < n; j++) {
+      if (fabs(cross(vec[i].p1 - vec[i].p2, vec[j].p1 - vec[j].p2)) < 1e-9) {
+        Point cp1 = crosspoint(vec[i], Line(vec[i].p1, vec[i].p1 + Point(1, 0)));
+        Point cp2 = crosspoint(vec[i], Line(vec[i].p1, vec[i].p1 + Point(0, 1)));
+        Point mp = (cp1 + cp2) / 2.0;
+        Line line(mp, mp + (vec[i].p2 - vec[i].p1));
+        line.index = candidateLines.size();
+        candidateLines.push_back(line);
+      } else {
+        Point cp = crosspoint(vec[i], vec[j]);
+        Point I = (vec[i].p1 == cp) ? vec[i].p2 : vec[i].p1;
+        Point J = (vec[j].p1 == cp) ? vec[j].p2 : vec[j].p1;
+        Point e1 = (I - cp) / sqrt((I - cp).x * (I - cp).x + (I - cp).y * (I - cp).y);
+        Point e2 = (J - cp) / sqrt((J - cp).x * (J - cp).x + (J - cp).y * (J - cp).y);
+        Point p1 = cp + e1 * 100;
+        Point p2 = cp + e2 * 100;
+        Point base = p1;
+        Point not_base = p2;

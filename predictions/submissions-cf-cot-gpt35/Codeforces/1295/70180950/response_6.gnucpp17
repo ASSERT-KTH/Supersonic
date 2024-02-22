@@ -1,0 +1,113 @@
+#include <cstdio>
+#include <vector>
+
+const long long maxn = 2e5 + 11;
+const long long inf = 1e15 + 12;
+
+struct node {
+  long long l, mid, r, val, add;
+  node(long long l, long long r) : l(l), r(r) {
+    add = 0;
+    mid = (l + r) / 2;
+    val = 0;
+  }
+};
+
+long long f(long long x, long long y) { 
+  return x < y ? x : y; 
+}
+
+void build(std::vector<node>& tree, long long root) {
+  if (tree[root].r - tree[root].l == 1) {
+    tree[root].val = tree[root].l == n - 1 ? inf : pref[tree[root].l];
+  } else {
+    long long left = 2 * root + 1;
+    long long right = 2 * root + 2;
+    tree[root].val = f(tree[left].val, tree[right].val);
+  }
+}
+
+void push(std::vector<node>& tree, long long root) {
+  if (tree[root].l + 1 < tree[root].r) {
+    long long left = 2 * root + 1;
+    long long right = 2 * root + 2;
+    tree[left].add += tree[root].add;
+    tree[right].add += tree[root].add;
+  }
+  tree[root].val += tree[root].add;
+  tree[root].add = 0;
+}
+
+void add_val(std::vector<node>& tree, long long root, long long ql, long long qr, long long val) {
+  push(tree, root);
+  if (tree[root].r <= ql || tree[root].l >= qr) {
+    return;
+  }
+  if (ql == tree[root].l && tree[root].r == qr) {
+    tree[root].add += val;
+    push(tree, root);
+    return;
+  }
+  long long left = 2 * root + 1;
+  long long right = 2 * root + 2;
+  add_val(tree, left, ql, std::min(tree[root].mid, qr), val);
+  add_val(tree, right, std::max(tree[root].mid, ql), qr, val);
+  tree[root].val = f(tree[left].val, tree[right].val);
+}
+
+long long get_min(std::vector<node>& tree, long long root, long long ql, long long qr) {
+  push(tree, root);
+  if (tree[root].r <= ql || tree[root].l >= qr) {
+    return inf;
+  }
+  if (ql == tree[root].l && tree[root].r == qr) {
+    return tree[root].val;
+  }
+  long long left = 2 * root + 1;
+  long long right = 2 * root + 2;
+  return f(get_min(tree, left, ql, std::min(tree[root].mid, qr)), 
+           get_min(tree, right, std::max(tree[root].mid, ql), qr));
+}
+
+void solve() {
+  long long n;
+  scanf("%lld", &n);
+  
+  std::vector<long long> a(n);
+  std::vector<long long> p(n);
+  std::vector<long long> ps(n);
+  std::vector<long long> pref(n);
+  
+  for (size_t i = 0; i < n; i++) {
+    long long cur;
+    scanf("%lld", &cur);
+    p[i] = cur;
+    ps[cur - 1] = i;
+  }
+  
+  for (size_t i = 0; i < n; i++) {
+    long long cur;
+    scanf("%lld", &cur);
+    a[i] = cur;
+    pref[i] = i == 0 ? cur : pref[i - 1] + cur;
+  }
+  
+  std::vector<node> tree(4 * n);
+  build(tree, 0);
+  
+  long long ans = a[0] < a[n - 1] ? a[0] : a[n - 1];
+  long long mus = 0;
+  for (size_t i = 0; i < n; i++) {
+    add_val(tree, 0, ps[i], n, -2 * a[ps[i]]);
+    mus += a[ps[i]];
+    long long cur = get_min(tree, 0, 0, n) + mus;
+    ans = cur < ans ? cur : ans;
+  }
+  
+  printf("%lld\n", ans);
+}
+
+int main() {
+  solve();
+  return 0;
+}

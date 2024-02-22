@@ -1,0 +1,232 @@
+Optimization Strategy:
+1. Replace the use of the `strcmp` function with a custom string comparison function that stops as soon as a difference is found.
+2. Store the length of each string in the hash table to avoid repeated calls to `strlen`.
+3. Use a more efficient hash table size that is a power of 2, to simplify the modulo operation.
+4. Initialize the hash table with a sentinel value to indicate empty slots.
+5. Unroll the loop in the `find` function to reduce the number of iterations.
+6. Use a more efficient method for calculating the power of 5 in the `getkey` function.
+7. Move the repeated calculation of `h1(key)` and `h2(key)` outside the loop in the `insert` and `find` functions.
+8. Use a more efficient way to convert characters to their corresponding numbers.
+9. Use `std::array` instead of a raw character array for the hash table.
+
+Step-by-Step Explanation:
+1. Replace the use of `strcmp` with a custom string comparison function called `compareStrings`. This function will compare two strings and return true if they are equal, and false otherwise. The function will stop as soon as a difference is found, which can save unnecessary iterations over the entire strings.
+
+```cpp
+bool compareStrings(const char* str1, const char* str2) {
+  for (int i = 0; str1[i] != '\0' && str2[i] != '\0'; i++) {
+    if (str1[i] != str2[i]) {
+      return false;
+    }
+  }
+  return str1[i] == str2[i];
+}
+```
+
+2. Modify the `insert` and `find` functions to store the length of each string in the hash table. This way, we can avoid repeated calls to `strlen` when checking the length of strings.
+
+```cpp
+struct HashEntry {
+  char word[L];
+  int length;
+};
+
+HashEntry H[M];
+
+// ...
+
+int insert(const char* str) {
+  int key, h, i;
+  key = getkey(str);
+  for (i = 0;; i++) {
+    h = (h1(key) + i * h2(key)) & (M - 1);
+    if (compareStrings(H[h].word, str)) {
+      if (H[h].length == 0) {
+        strcpy(H[h].word, str);
+        H[h].length = strlen(str);
+        return 1;
+      }
+    } else {
+      return 0;
+    }
+  }
+  return 0;
+}
+
+int find(const char* str) {
+  int key, h, i;
+  key = getkey(str);
+  for (i = 0;; i++) {
+    h = (h1(key) + i * h2(key)) & (M - 1);
+    if (compareStrings(H[h].word, str)) {
+      if (H[h].length == 0) {
+        return 0;
+      }
+      continue;
+    } else {
+      return 1;
+    }
+  }
+  return 0;
+}
+```
+
+3. Change the hash table size `M` to a power of 2 (e.g., 1048576) to simplify the modulo operation. This can be done by changing the `M` macro to `#define M 1048576`.
+
+4. Initialize the hash table with a sentinel value, such as an empty string, to indicate empty slots. This can be done by modifying the `main` function as follows:
+
+```cpp
+int main() {
+  // ...
+
+  for (int i = 0; i < M; i++) {
+    H[i].word[0] = '\0';
+    H[i].length = 0;
+  }
+  
+  // ...
+}
+```
+
+5. Unroll the loop in the `find` function to reduce the number of iterations. Instead of using a loop, we can manually check the first few slots in the hash table to see if the word is present.
+
+```cpp
+int find(const char* str) {
+  int key, h;
+  key = getkey(str);
+  
+  h = h1(key) & (M - 1);
+  if (compareStrings(H[h].word, str)) {
+    if (H[h].length == 0) {
+      return 0;
+    } else {
+      return 1;
+    }
+  }
+  
+  h = (h1(key) + h2(key)) & (M - 1);
+  if (compareStrings(H[h].word, str)) {
+    if (H[h].length == 0) {
+      return 0;
+    } else {
+      return 1;
+    }
+  }
+  
+  h = (h1(key) + 2 * h2(key)) & (M - 1);
+  if (compareStrings(H[h].word, str)) {
+    if (H[h].length == 0) {
+      return 0;
+    } else {
+      return 1;
+    }
+  }
+  
+  return 0;
+}
+```
+
+6. Optimize the `getkey` function by using a more efficient method for calculating the powers of 5. Instead of calculating `p * 5` in each iteration, we can use a variable `p5` to store the power of 5 at each iteration.
+
+```cpp
+long long getkey(const char* word) {
+  int sum = 0;
+  long long p = 1;
+  long long p5 = 5;
+
+  for (int i = 0; word[i] != '\0'; i++) {
+    sum += p * getnum(word[i]);
+    p *= p5;
+    p5 *= 5;
+  }
+
+  return sum;
+}
+```
+
+7. Move the repeated calculation of `h1(key)` and `h2(key)` outside the loop in the `insert` and `find` functions. This can be done by calculating them once before the loop and storing them in variables.
+
+```cpp
+int insert(const char* str) {
+  int key, h, i;
+  key = getkey(str);
+  int h1_val = h1(key);
+  int h2_val = h2(key);
+  
+  for (i = 0;; i++) {
+    h = (h1_val + i * h2_val) & (M - 1);
+    // ...
+  }
+  // ...
+}
+
+int find(const char* str) {
+  int key, h, i;
+  key = getkey(str);
+  int h1_val = h1(key);
+  int h2_val = h2(key);
+  
+  for (i = 0;; i++) {
+    h = (h1_val + i * h2_val) & (M - 1);
+    // ...
+  }
+  // ...
+}
+```
+
+8. Replace the `getnum` function with a more efficient method for converting characters to their corresponding numbers. We can use a simple lookup table to achieve this.
+
+```cpp
+int getnum(char ch) {
+  static const int lookup[256] = {
+      // A   B   C   D   E   F   G   H   I   J   K   L   M   N   O   P   Q   R   S   T   U   V   W   X   Y   Z
+         1,  0,  2,  0,  0,  0,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+      // a   b   c   d   e   f   g   h   i   j   k   l   m   n   o   p   q   r   s   t   u   v   w   x   y   z
+         1,  0,  2,  0,  0,  0,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+  };
+  
+  return lookup[(unsigned char)ch];
+}
+```
+
+9. Replace the raw character array `H` with `std::array` for the hash table. This provides a safer and more efficient way to manage the array.
+
+```cpp
+#include <array>
+// ...
+
+std::array<HashEntry, M> H;
+```
+
+Optimized Code Block:
+
+```cpp
+#include <iostream>
+#include <array>
+#include <cstring>
+
+constexpr int M = 1048576;
+constexpr int L = 14;
+
+struct HashEntry {
+  char word[L];
+  int length;
+};
+
+std::array<HashEntry, M> H;
+
+bool compareStrings(const char* str1, const char* str2) {
+  for (int i = 0; str1[i] != '\0' && str2[i] != '\0'; i++) {
+    if (str1[i] != str2[i]) {
+      return false;
+    }
+  }
+  return str1[i] == str2[i];
+}
+
+int getnum(char ch) {
+  static const int lookup[256] = {
+      // A   B   C   D   E   F   G   H   I   J   K   L   M   N   O   P   Q   R   S   T   U   V   W   X   Y   Z
+         1,  0,  2,  0,  0,  0,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+      // a   b   c   d   e   f   g   h   i   j   k   l   m   n   o   p   q   r   s   t   u   v   w   x   y   z
+         1,  0,  2,  0,  0,  0,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  

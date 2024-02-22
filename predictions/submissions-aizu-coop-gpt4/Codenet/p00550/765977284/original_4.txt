@@ -1,0 +1,125 @@
+The provided C++ program is a complex piece of code that seems to solve a problem involving graph traversal and queries. The main optimization opportunities in this program can be found in the following areas:
+
+1. **I/O operations**: As I/O operations are one of the costliest operations in terms of time, reducing the number of these can significantly speed up the program.
+
+2. **Data structures**: The program uses several arrays and vectors for storing different types of data, some of which may not be efficient for the operations being performed.
+
+3. **Loops and function calls**: The code contains several loops and function calls that may be optimized to improve performance.
+
+4. **Memory usage**: The code uses a lot of global variables, which can lead to inefficient memory usage.
+
+Here's a detailed optimization strategy:
+
+1. **I/O operations**: Instead of using `getchar_unlocked()`, which is not a standard function and can cause undefined behavior, use `scanf()` for reading input. Also, rather than using `printf()` for each output, collect all outputs in a string or stringstream and print it once at the end.
+
+2. **Data structures**: Use `std::array` instead of C-style arrays for fixed-size arrays. This will give you the benefits of a standard container (like bounds checking in debug mode) without any overhead. Also, consider using `std::deque` instead of `std::queue` for the queue, as `std::deque` has generally better performance.
+
+3. **Loops and function calls**: The `bfs()` function is called multiple times with different parameters. Consider splitting it into two functions, each optimized for a specific set of parameters.
+
+4. **Memory usage**: Reduce the scope of variables as much as possible to improve memory usage. Also, consider initializing variables at the time of declaration.
+
+Here's the optimized code. The changes made are explained in the comments:
+
+```cpp
+#include <bits/stdc++.h>
+#define rep(i, n) for (int i = 0; i < n; i++)
+using namespace std;
+
+// Use std::array instead of C-style arrays
+array<int, 200000> u, v, r, ans;
+array<int, 100000> d;
+array<bool, 200000> b;
+array<bool, 100000> ok;
+vector<vector<int>> E(100000);
+int cnt = 1;
+
+// Use std::deque instead of std::queue for better performance
+deque<int> que;
+
+void bfs1(int u) {
+  que.push_back(u);
+  while (!que.empty()) {
+    int p = que.front();
+    que.pop_front();
+    for (int v : E[p]) {
+      if (d[v] == -1) {
+        d[v] = d[p] + 1;
+        que.push_back(v);
+      }
+    }
+  }
+}
+
+void bfs2(int u) {
+  que.push_back(u);
+  while (!que.empty()) {
+    int p = que.front();
+    que.pop_front();
+    for (int v : E[p]) {
+      if (d[v] > d[p] && !ok[v]) {
+        ok[v] = true;
+        cnt++;
+        que.push_back(v);
+      }
+    }
+  }
+}
+
+int main() {
+  int n, m, q;
+  scanf("%d %d %d", &n, &m, &q);
+  rep(i, m) {
+    scanf("%d %d", &u[i], &v[i]);
+    u[i]--;
+    v[i]--;
+    E[u[i]].push_back(v[i]);
+    E[v[i]].push_back(u[i]);
+  }
+  
+  fill(d.begin(), d.end(), -1);
+  d[0] = 0;
+  bfs1(0);
+  
+  rep(i, m) {
+    if (d[u[i]] > d[v[i]])
+      swap(u[i], v[i]);
+  }
+  
+  rep(i, n) E[i].clear();
+  
+  rep(i, q) {
+    scanf("%d", &r[i]);
+    r[i]--;
+    b[r[i]] = true;
+  }
+  
+  ok[0] = true;
+  
+  rep(i, m) {
+    if (!b[i]) {
+      if (d[v[i]] - d[u[i]] == 1) {
+        E[u[i]].push_back(v[i]);
+      }
+    }
+  }
+  
+  bfs2(0);
+  
+  stringstream output;
+  
+  for (int i = q - 1; i >= 0; i--) {
+    ans[i] = n - cnt;
+    if (d[v[r[i]]] - d[u[r[i]]] == 1 && !ok[v[r[i]]]) {
+      E[u[r[i]]].push_back(v[r[i]]);
+      if (ok[u[r[i]]]) {
+        cnt++;
+        ok[v[r[i]]] = true;
+        bfs2(v[r[i]]);
+      }
+    }
+    output << ans[i] << '\n';
+  }
+  
+  cout << output.str();
+}
+```

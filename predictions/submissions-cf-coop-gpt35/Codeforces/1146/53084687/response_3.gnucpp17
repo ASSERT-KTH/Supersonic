@@ -1,0 +1,65 @@
+#include <algorithm>
+#include <cstdio>
+using namespace std;
+const int X = 1e5;
+struct node {
+  int l : 31;
+  int r : 31;
+  int lz : 2;
+  int sgn : 2;
+};
+void pushup(node sgt[], int x) {
+  sgt[x].sgn = (sgt[x << 1].sgn == sgt[x << 1 | 1].sgn) ? sgt[x << 1].sgn : 0;
+}
+void pushdown(node sgt[], int x) {
+  if (sgt[x].lz == 2) {
+    sgt[x << 1].sgn = -sgt[x << 1].sgn;
+    sgt[x << 1 | 1].sgn = -sgt[x << 1 | 1].sgn;
+    sgt[x << 1].lz = (sgt[x << 1].lz % 2 == 0) ? 2 - sgt[x << 1].lz : -sgt[x << 1].lz;
+    sgt[x << 1 | 1].lz = (sgt[x << 1 | 1].lz % 2 == 0) ? 2 - sgt[x << 1 | 1].lz : -sgt[x << 1 | 1].lz;
+    sgt[x].lz = 0;
+  } else if (sgt[x].lz) {
+    sgt[x << 1].sgn = sgt[x].lz;
+    sgt[x << 1 | 1].sgn = sgt[x].lz;
+    sgt[x << 1].lz = sgt[x].lz;
+    sgt[x << 1 | 1].lz = sgt[x].lz;
+    sgt[x].lz = 0;
+  }
+}
+void build(node sgt[], int l, int r, int x) {
+  sgt[x].l = l;
+  sgt[x].r = r;
+  sgt[x].lz = 0;
+  if (l == r) {
+    sgt[x].sgn = 1;
+    return;
+  }
+  int mid = (l + r) >> 1;
+  build(sgt, l, mid, x << 1);
+  build(sgt, mid + 1, r, x << 1 | 1);
+  pushup(sgt, x);
+}
+void update(node sgt[], int l, int r, int x, int val) {
+  if (l <= sgt[x].l && r >= sgt[x].r) {
+    if (val == 2) {
+      sgt[x].sgn = -sgt[x].sgn;
+      sgt[x].lz = (sgt[x].lz % 2 == 0) ? 2 - sgt[x].lz : -sgt[x].lz;
+    } else {
+      sgt[x].sgn = val;
+      sgt[x].lz = val;
+    }
+    return;
+  }
+  pushdown(sgt, x);
+  int mid = (sgt[x].l + sgt[x].r) >> 1;
+  if (l <= mid) {
+    update(sgt, l, r, x << 1, val);
+  }
+  if (r > mid) {
+    update(sgt, l, r, x << 1 | 1, val);
+  }
+  pushup(sgt, x);
+}
+int query(node sgt[], int a, int x) {
+  while (sgt[x].l != sgt[x].r) {
+    pushdown(sgt, x);

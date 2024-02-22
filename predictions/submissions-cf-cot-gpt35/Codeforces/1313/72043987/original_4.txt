@@ -1,0 +1,92 @@
+To optimize the given C++ program, we can make the following modifications:
+
+1. Remove unnecessary include statements: 
+   - The program includes many unnecessary header files that are not used in the code. We can remove these include statements to improve compilation time and reduce memory usage.
+
+2. Remove unused template functions: 
+   - The program defines template functions `printvec`, `printtree`, and `printmap`, but these functions are not used in the code. We can safely remove these functions to improve overall performance.
+
+3. Avoid using `using namespace std`: 
+   - The program uses `using namespace std` which brings all the names from the `std` namespace into the global namespace. This can lead to potential naming conflicts and can make the code harder to read and understand. Instead, we can use the `std::` prefix when accessing names from the `std` namespace.
+
+4. Avoid unnecessary copying of vectors: 
+   - The program creates temporary vectors `states` and `newstates` in each iteration of the loop. This can be avoided by reusing the same vectors and clearing them when necessary. This can save memory and improve performance.
+
+5. Use iterators instead of index-based loops: 
+   - The program uses index-based loops to iterate over vectors. Using iterators can be more efficient and can improve performance, especially when dealing with large vectors.
+
+6. Use `emplace_back` instead of `push_back`: 
+   - The program uses `push_back` to add elements to the `streams` vector. Using `emplace_back` can be more efficient as it avoids unnecessary copying or moving of elements.
+
+Based on these optimizations, the optimized C++ program is as follows:
+
+```cpp
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+typedef long long ll;
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(NULL);
+  std::cout.tie(NULL);
+
+  ll n, m, k;
+  std::cin >> n >> m >> k;
+
+  std::vector<std::vector<ll>> t(2 * n, std::vector<ll>(3));
+  for (ll i = 0; i < n; ++i) {
+    ll l, r;
+    std::cin >> l >> r;
+    t[2 * i] = {l, 1, i};
+    t[2 * i + 1] = {r + 1, -1, i};
+  }
+  std::sort(t.begin(), t.end());
+
+  std::vector<ll> states(1 << k, 0);
+  std::vector<ll> newstates(1 << k, 0);
+  ll sz = 0;
+  ll pi = t[0][2], ni;
+  ll pp = t[0][0], np;
+  std::vector<ll> streams;
+  
+  for (const auto& ti : t) {
+    ni = ti[2];
+    np = ti[0];
+    if (ti[1] == -1) {
+      --sz;
+      ll gi = 0;
+      while (streams[gi] != ni) {
+        ++gi;
+      }
+      for (ll b = 0; b < (1 << sz); ++b) {
+        ll exp1 = ((b >> gi) << (gi + 1)) + (b % (1 << gi));
+        ll exp2 = exp1 + (1 << gi);
+        newstates[b] =
+            std::max(states[exp1] + (__builtin_popcount(exp1) % 2) * (np - pp),
+                     states[exp2] + (__builtin_popcount(exp2) % 2) * (np - pp));
+      }
+      states.swap(newstates);
+      streams.erase(streams.begin() + gi);
+    } else {
+      streams.emplace_back(ni);
+      for (ll b = 0; b < (1 << sz); ++b) {
+        newstates[b] = states[b] + (__builtin_popcount(b) % 2) * (np - pp);
+        newstates[b + (1 << sz)] =
+            states[b] + (__builtin_popcount(b) % 2) * (np - pp);
+      }
+      states.swap(newstates);
+      ++sz;
+    }
+    pi = ni;
+    pp = np;
+  }
+
+  std::cout << states[0] << " ";
+
+  return 0;
+}
+```
+
+This optimized program removes unnecessary includes, unused template functions, and avoids unnecessary copying of vectors. It also uses iterators instead of index-based loops and `emplace_back` instead of `push_back`. These optimizations improve the program's running time and memory usage.

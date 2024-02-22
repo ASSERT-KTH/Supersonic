@@ -1,0 +1,107 @@
+#include <iostream>
+#pragma GCC optimize("Ofast")
+
+const int maxn = 2e5 + 11;
+const long long inf = 1e15 + 12;
+
+struct node {
+  int l, mid, r;
+  long long val, add;
+};
+
+int n;
+int a[maxn], ps[maxn], p[maxn], pref[maxn];
+node nodes[maxn*4];
+
+long long f(long long x, long long y) {
+  return std::min(x, y);
+}
+
+void build_tree() {
+  for (int i = n-1; i >= 0; i--) {
+    nodes[i].val = pref[i];
+    if (i == n - 1) {
+      nodes[i].val = inf;
+    }
+    int l = i*2+1;
+    int r = i*2+2;
+    if (l < n) {
+      nodes[i].val = f(nodes[l].val, nodes[i].val);
+    }
+    if (r < n) {
+      nodes[i].val = f(nodes[i].val, nodes[r].val);
+    }
+  }
+}
+
+void update(int i, int ql, int qr, int val) {
+  if (nodes[i].r <= ql || nodes[i].l >= qr) {
+    return;
+  }
+  if (ql <= nodes[i].l && nodes[i].r <= qr) {
+    nodes[i].add += val;
+    return;
+  }
+  int l = i*2+1;
+  int r = i*2+2;
+  update(l, ql, std::min(nodes[l].r, qr), val);
+  update(r, std::max(nodes[r].l, ql), qr, val);
+  nodes[i].val = f(nodes[l].val + nodes[l].add, nodes[r].val + nodes[r].add);
+}
+
+long long query(int i, int ql, int qr) {
+  if (nodes[i].r <= ql || nodes[i].l >= qr) {
+    return inf;
+  }
+  if (ql <= nodes[i].l && nodes[i].r <= qr) {
+    return nodes[i].val + nodes[i].add;
+  }
+  int l = i*2+1;
+  int r = i*2+2;
+  return f(query(l, ql, std::min(nodes[l].r, qr)),
+           query(r, std::max(nodes[r].l, ql), qr)) + nodes[i].add;
+}
+
+void solve() {
+  std::cin >> n;
+  for (int i = 0; i < n; i++) {
+    int cur;
+    std::cin >> cur;
+    p[i] = cur;
+    ps[cur - 1] = i;
+  }
+  for (int i = 0; i < n; i++) {
+    int cur;
+    std::cin >> cur;
+    a[i] = cur;
+    if (i == 0) {
+      pref[i] = cur;
+    } else
+      pref[i] = pref[i - 1] + cur;
+  }
+  
+  for (int i = 0; i < n*4; i++) {
+    nodes[i].l = i*2+1;
+    nodes[i].r = i*2+2;
+    nodes[i].val = 0;
+    nodes[i].add = 0;
+  }
+  
+  build_tree();
+  
+  long long ans = std::min(a[0], a[n - 1]);
+  long long mus = 0;
+  for (int i = 0; i < n; i++) {
+    update(0, ps[i], n, -2 * a[ps[i]]);
+    mus += a[ps[i]];
+    long long cur = query(0, 0, n) + mus;
+    ans = std::min(ans, cur);
+  }
+  std::cout << ans << std::endl;
+}
+
+int main() {
+  std::ios::sync_with_stdio(false);
+  solve();
+  return 0;
+}

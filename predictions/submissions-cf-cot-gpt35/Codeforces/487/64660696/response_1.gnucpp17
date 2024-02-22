@@ -1,0 +1,97 @@
+#include <iostream>
+#include <utility>
+
+using namespace std;
+
+using pii = pair<int, int>;
+
+const int maxLig = 100005;
+const int maxCol = 12;
+const int maxReq = 100005;
+
+char grille[maxLig][maxCol];
+pii go[maxLig][maxCol];
+int blocRef[maxLig];
+
+void comp(int lig, int col, int safeLig) {
+  if (go[lig][col] != pii(-1, -1))
+    return;
+  int nextLig = lig, nextCol = col;
+  if (grille[lig][col] == '<')
+    --nextCol;
+  else if (grille[lig][col] == '>')
+    ++nextCol;
+  else if (grille[lig][col] == '^')
+    --nextLig;
+  if (nextLig == safeLig || grille[nextLig][nextCol] == '~') {
+    go[lig][col] = {nextLig, nextCol};
+  } else if (grille[lig][col] != '^' && grille[lig][nextCol] != '^' &&
+             grille[lig][col] != grille[lig][nextCol]) {
+    go[lig][col] = {0, 0};
+  } else {
+    comp(nextLig, nextCol, safeLig);
+    go[lig][col] = go[nextLig][nextCol];
+  }
+}
+
+pii getFin(int lig, int col) {
+  while (grille[lig][col] != '~') {
+    pii e = go[lig][col];
+    lig = e.first;
+    col = e.second;
+  }
+  return {lig, col};
+}
+
+bool compBloc(int bloc, int nbLig, int nbCol) {
+  int deb = bloc * 600, fin = min(nbLig, (bloc + 1) * 600);
+  if (deb >= nbLig)
+    return false;
+  for (int col = 1; col <= nbCol; ++col) {
+    for (int lig = deb + 1; lig <= fin; ++lig) {
+      comp(lig, col, deb);
+    }
+    blocRef[deb + 1] = bloc;
+  }
+  return true;
+}
+
+int main() {
+  int nbLig, nbCol, nbReq;
+  cin >> nbLig >> nbCol >> nbReq;
+
+  for (int lig = 1; lig <= nbLig; ++lig) {
+    for (int col = 1; col <= nbCol; ++col) {
+      cin >> grille[lig][col];
+      go[lig][col] = {-1, -1};
+    }
+  }
+
+  for (int bloc = 0;; ++bloc) {
+    if (!compBloc(bloc, nbLig, nbCol))
+      break;
+  }
+
+  for (int req = 0; req < nbReq; ++req) {
+    char mode;
+    cin >> mode;
+    int lig, col;
+    cin >> lig >> col;
+    if (mode == 'A') {
+      pii res = getFin(lig, col);
+      if (res == pii(0, 0))
+        res = {-1, -1};
+      cout << res.first << " " << res.second << "\n";
+    } else {
+      char nv;
+      cin >> nv;
+      grille[lig][col] = nv;
+      int bloc = blocRef[lig];
+      compBloc(bloc, nbLig, nbCol);
+      if (bloc)
+        compBloc(bloc - 1, nbLig, nbCol);
+    }
+  }
+
+  return 0;
+}

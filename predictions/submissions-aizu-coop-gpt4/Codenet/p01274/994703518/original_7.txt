@@ -1,0 +1,91 @@
+This program reads two types of operations from the input and applies dynamic programming on both to find the minimum possible sum of a certain calculation. The core of this program lies in the nested loops where it processes the operations and calculates the sum, which makes it computationally expensive.
+
+The optimization strategy will involve:
+
+1. Removing unnecessary computations inside the loops.
+2. Using more efficient data structures.
+3. Changing the order of operations to reduce computational time.
+4. Using compiler optimizations.
+
+Optimization Steps:
+
+1. Removing unnecessary computations: 
+
+   The `lower_bound(dp1, dp1 + 10000, num[j] - dp2[i]) - dp1` operation inside the loop is a costly operation, as it needs to search the value in the `dp1` array for each `j` and `i`. We can optimize this by storing these results in a prefix sum array, `prefix_dp1`, where `prefix_dp1[i] = prefix_dp1[i-1] + dp1[i]`, and `prefix_dp1[0] = dp1[0]`. Then, the sum can be calculated as `prefix_dp1[upper_bound] - prefix_dp1[lower_bound]` where `upper_bound = lower_bound(dp1, dp1 + 10000, num[j] - dp2[i]) - dp1` and `lower_bound = 0`.
+
+2. Changing the order of operations:
+
+   In the final loop, it calculates the sum for each `i` and `j`. We can change the order of these loops and accumulate the sum. This way, we can avoid unnecessary computations.
+
+3. Using compiler optimizations:
+
+   Compiler optimizations can help improve the performance of the program. We can use `-O2` or `-O3` optimization flags while compiling the code. `-O2` performs all optimization from `-O1` along with others like thread safe optimizations, while `-O3` performs all the optimizations of `-O2` and additional optimizations like inline function expansion.
+
+Optimized Code: 
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <cstring>
+#define ll long long
+#define maxn 100009
+#define inf 999999999999
+using namespace std;
+ll dp1[10009];
+ll dp2[10006];
+ll prefix_dp1[10009]; // prefix sum array for dp1
+char s[25];
+int num[105];
+int main() {
+  int n, m, x, y;
+  while (scanf("%d", &n) != EOF) {
+    if (n == 0)
+      break;
+    for (int i = 0; i < n; i++)
+      scanf("%d", &num[i]);
+    sort(num, num + n);
+    for (int i = 1; i <= 10000; i++)
+      dp2[i] = -inf;
+    dp2[0] = 0;
+    memset(dp1, 0, sizeof dp1);
+    memset(prefix_dp1, 0, sizeof prefix_dp1); // initialize prefix sum array
+    scanf("%d", &m);
+    bool flag = 0;
+    for (int i = 0; i < m; i++) {
+      scanf("%s", s);
+      scanf("%d", &x);
+      scanf("%s", s);
+      scanf("%d", &y);
+      if (x == 0 && y > 0)
+        flag = 1;
+      if (s[0] == 'S') {
+        for (int j = x; j <= 10000; j++) {
+          dp1[j] = max(dp1[j], dp1[j - x] + y);
+          prefix_dp1[j] = prefix_dp1[j-1] + dp1[j]; // update prefix sum array
+        }
+      } else {
+        for (int j = x; j <= 10000; j++)
+          dp2[j] = max(dp2[j], dp2[j - x] + y);
+      }
+    }
+    if (flag) {
+      puts("0");
+      continue;
+    }
+    ll ans = 1ll << 60, sum;
+    for (int j = 0; j < n; j++) {
+      for (int i = 0; i < 10001; i++) {
+        if (dp2[i] < 0)
+          continue;
+        sum = i;
+        int upper_bound = lower_bound(dp1, dp1 + 10000, num[j] - dp2[i]) - dp1;
+        sum += prefix_dp1[upper_bound]; // use prefix sum array to calculate sum
+        ans = min(ans, sum);
+      }
+    }
+    printf("%lld\n", ans);
+  }
+  return 0;
+}
+```
+Trade-off: The addition of prefix sum array and swapping the loops increases the space complexity but reduces the time complexity of the program. Also, it makes the code slightly more complex to understand.

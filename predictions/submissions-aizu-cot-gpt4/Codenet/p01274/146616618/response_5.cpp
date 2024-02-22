@@ -1,0 +1,1 @@
+dp[k][min(N, j)] = min(dp[k][min(N, j)], dp[k][j - mg[k][i].f] + mg[k][i].s);

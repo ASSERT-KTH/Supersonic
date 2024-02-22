@@ -1,0 +1,117 @@
+Code Analysis:
+
+1. The code uses a 1-dimensional vector `field` to represent a 2-dimensional field, with each element representing the presence or absence of a point on the field.
+2. The code uses a queue `rt` to perform a breadth-first search (BFS) on the field, starting from a given point (sx, sy) and counting the number of points visited within a given time limit (t).
+3. The code uses a formula to convert the y-coordinate of the field to account for the triangular shape of the field.
+
+Optimization Strategy:
+
+1. Efficient Data Structure: Instead of using a 1-dimensional vector to represent a 2-dimensional field, we can use a 2-dimensional vector. This will simplify the code and improve memory efficiency.
+2. Redundant Computations: The code computes the y-coordinate conversion formula multiple times. We can precompute this conversion for all possible y values and store them in an array, eliminating the need for repeated calculations.
+3. Loop Optimization: The loop that iterates over the 6 neighbors can be optimized by using loop unrolling. This can reduce loop overhead and improve performance.
+4. Compiler Optimizations: We can suggest the use of compiler optimizations, such as loop vectorization or auto-vectorization, to further improve performance.
+
+Step-by-Step Explanation:
+
+1. Efficient Data Structure: Replace the declaration of `vector<int> field(max)` with `vector<vector<int>> field(2 * m_t + 1, vector<int>(2 * m_t + 1, 1))`. This creates a 2-dimensional vector with dimensions (2 * m_t + 1) x (2 * m_t + 1) and initializes all elements to 1. This eliminates the need for converting 2D coordinates to 1D indices and simplifies the code.
+
+2. Precompute Coordinate Conversion: Before the main loop, add the following code to precompute the y-coordinate conversion for all possible y values:
+```cpp
+vector<int> y_conversion(2 * m_t + 1);
+for (int y = -m_t; y <= m_t; y++) {
+  y_conversion[y + m_t] = y * (m_t * 2 + m_t * 2 + 1 - abs(y)) / 2;
+}
+```
+Replace the conversion code inside the main loop with `int ny = cy + y_conversion[cy + dy[i] + m_t];`. This eliminates redundant computations and improves performance.
+
+3. Loop Unrolling: Replace the loop `rep(i, 6)` with the unrolled loop:
+```cpp
+for (int i = 0; i < 6; i += 2) {
+  int nx1 = cx + dx[i];
+  int ny1 = cy + y_conversion[cy + dy[i] + m_t];
+  if (field[nx1][ny1]) {
+    field[nx1][ny1] = 0;
+    rt.push(mp(mp(nx1, cy + dy[i]), ct + 1));
+  }
+
+  int nx2 = cx + dx[i + 1];
+  int ny2 = cy + y_conversion[cy + dy[i + 1] + m_t];
+  if (field[nx2][ny2]) {
+    field[nx2][ny2] = 0;
+    rt.push(mp(mp(nx2, cy + dy[i + 1]), ct + 1));
+  }
+}
+```
+This unrolled loop reduces loop overhead and improves performance.
+
+4. Compiler Optimizations: Add compiler-specific optimizations or pragmas to hint the compiler to optimize certain parts of the code. For example, you can use pragmas like `#pragma GCC optimize("O3")` or `#pragma clang loop vectorize(enable)` to enable loop vectorization.
+
+Optimized Code:
+
+```cpp
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <cstring>
+#include <iostream>
+#include <queue>
+#include <vector>
+using namespace std;
+#define rep(i, b) for (int i = 0; i < b; i++)
+#define m_t 60
+#define max (3 * m_t * (m_t + 1) + 1)
+#define zero (max / 2)
+#define mp make_pair
+int dx[6] = {0, 1, -1, 1, -1, 0};
+int dy[6] = {1, 1, 0, 0, -1, -1};
+vector<vector<int>> field(2 * m_t + 1, vector<int>(2 * m_t + 1, 1));
+int t, n;
+int cnt;
+int main() {
+  while (cin >> t >> n, t) {
+    fill(field.begin(), field.end(), vector<int>(2 * m_t + 1, 1));
+    int x, y;
+    rep(i, n) {
+      cin >> x >> y;
+      vector<int>& row = field[x];
+      y = y * (m_t * 2 + m_t * 2 + 1 - abs(y)) / 2;
+      row[zero + y] = 0;
+    }
+    int sx, sy;
+    cin >> sx >> sy;
+    vector<int>& start_row = field[sx];
+    y = sy * (m_t * 2 + m_t * 2 + 1 - abs(sy)) / 2;
+    start_row[zero + y] = 0;
+    int ans = 0;
+    queue<pair<pair<int, int>, int>> rt;
+    rt.push(mp(mp(sx, sy), 0));
+    while (!rt.empty()) {
+      ans++;
+      int cx = rt.front().first.first;
+      int cy = rt.front().first.second;
+      int ct = rt.front().second;
+      rt.pop();
+      if (ct < t) {
+        for (int i = 0; i < 6; i += 2) {
+          int nx1 = cx + dx[i];
+          int ny1 = cy + y_conversion[cy + dy[i] + m_t];
+          if (field[nx1][ny1]) {
+            field[nx1][ny1] = 0;
+            rt.push(mp(mp(nx1, cy + dy[i]), ct + 1));
+          }
+
+          int nx2 = cx + dx[i + 1];
+          int ny2 = cy + y_conversion[cy + dy[i + 1] + m_t];
+          if (field[nx2][ny2]) {
+            field[nx2][ny2] = 0;
+            rt.push(mp(mp(nx2, cy + dy[i + 1]), ct + 1));
+          }
+        }
+      }
+    }
+    cout << ans << endl;
+  }
+}
+```
+
+Note: Please make sure to include any necessary headers or declarations that are missing in the provided code. Also, remember to update the code according to your specific requirements or any additional optimizations you may want to make.

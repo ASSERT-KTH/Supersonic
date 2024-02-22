@@ -1,0 +1,99 @@
+The given program is using a lot of unnecessary memory by declaring a fixed size array `dp[2][N+10]` where `N` is a constant. Also, the program is using a vector of pairs `vector<P> mg[2]` to store the list of attacks. This vector can be replaced with two separate vectors `vector<P> mg0` and `vector<P> mg1` to improve memory usage.
+
+To optimize the program, we can follow these steps:
+
+1. Remove unnecessary header files: The program includes `<bits/stdc++.h>` which includes all the standard header files. We can remove this and include only the required header files.
+
+2. Replace `vector<P> mg[2]` with `vector<P> mg0` and `vector<P> mg1`: Instead of using a vector array, we can use two separate vectors `mg0` and `mg1` to store the list of attacks.
+
+3. Replace the fixed size array `int dp[2][N+10]` with `vector<vector<int>> dp(2, vector<int>(N+10))`: Instead of using a fixed size array, we can use a 2D vector `dp` to store the dynamic programming values.
+
+4. Remove unnecessary initialization of `dp`: The program initializes the entire `dp` array to `INF` values using nested loops. But we can remove this initialization as we will be updating only specific values of `dp` in the following loop.
+
+5. Optimize the nested loop for calculating `dp` values: The nested loop for calculating `dp` values can be optimized by calculating the range of values of `j` in a single loop instead of using a separate loop for each `mg[k][i].f`. This can be done by calculating the minimum and maximum values of `j` based on the minimum and maximum damage values in `mg[k]`.
+
+6. Optimize the loop for calculating `cost`: The loop for calculating `cost` can be optimized by calculating the minimum and maximum values of `hp[j] - i` outside the loop and then iterating only for those `j` values.
+
+7. Use `ios_base::sync_with_stdio(false)` and `cin.tie(NULL)`: Adding these lines of code before the `main()` function will improve the input/output speed.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+#define INF 1e9
+#define N 100000
+using namespace std;
+typedef pair<int, int> P;
+typedef long long ll;
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+
+  int n, m, hp[101];
+  while (cin >> n, n) {
+    for (int i = 0; i < n; i++)
+      cin >> hp[i];
+    
+    vector<P> mg0, mg1;
+    cin >> m;
+    for (int i = 0, cost, dam; i < m; i++) {
+      string name, type;
+      cin >> name >> cost >> type >> dam;
+      if (dam)
+        (type == "All" ? mg1 : mg0).push_back(P(dam, cost));
+    }
+    
+    vector<vector<int>> dp(2, vector<int>(N + 10));
+    
+    for (int k = 0; k < 2; k++) {
+      int minDamage = INF, maxDamage = 0;
+      for (int i = 0; i < mg[k].size(); i++) {
+        minDamage = min(minDamage, mg[k][i].f);
+        maxDamage = max(maxDamage, mg[k][i].f);
+      }
+      for (int j = minDamage; j <= (N / maxDamage + 1) * maxDamage; j++) {
+        dp[k][min(N, j)] = INF;
+      }
+    }
+    
+    for (int k = 0; k < 2; k++) {
+      for (int i = 0; i < mg[k].size(); i++) {
+        for (int j = mg[k][i].f; j <= (N / mg[k][i].f + 1) * mg[k][i].f; j++) {
+          dp[k][min(N, j)] = min(dp[k][min(N, j)], dp[k][j - mg[k][i].f] + mg[k][i].s);
+        }
+      }
+    }
+    
+    for (int i = 0; i < 2; i++) {
+      for (int j = N; j >= 0; j--) {
+        dp[i][j] = min(dp[i][j], dp[i][j + 1]);
+      }
+    }
+    
+    ll ans = INF;
+    for (int i = 0; i <= N; i++) {
+      ll cost = dp[1][i];
+      int minHp = INF, maxHp = 0;
+      for (int j = 0; j < n; j++) {
+        int diff = hp[j] - i;
+        if (diff >= 0) {
+          minHp = min(minHp, diff);
+          maxHp = max(maxHp, diff);
+        }
+      }
+      for (int j = minHp; j <= maxHp; j++) {
+        cost += dp[0][j];
+      }
+      ans = min(ans, cost);
+    }
+    
+    cout << ans << endl;
+  }
+  
+  return 0;
+}
+```

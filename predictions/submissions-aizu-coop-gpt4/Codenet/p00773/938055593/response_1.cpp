@@ -1,0 +1,52 @@
+1. **Code Analysis:**
+
+    The given code block takes three inputs: `x`, `y`, and `s`. It uses these inputs to perform a series of calculations, storing intermediate results in a 2D vector named `tax`. The outer loop runs until the EOF or until all inputs are 0. The inner loop iterates through each possible value of `a` until it is less than `s`. For each value of `a`, it calculates `b` and checks whether the sum of the tax of `a` and `b` equals `s`. If so, it saves `a` and `b` in the `tax` vector, and updates the maximum value. The maximum value is printed at the end of each outer loop iteration. The calculation of `b` and the comparison with `s` in the if statement are quite complex and repeated multiple times, which could be a performance bottleneck.
+
+2. **Optimization Strategy:**
+
+    A. **Data Structures:** The `tax` vector is of a fixed size and stores pairs (`a`, `b`). We don't use most of the space since we only fill it when `a` and `b` meet a certain condition. We also only care about the maximum result, so we don't need to store all pairs. We can replace this vector with two variables to store the current pair.
+
+    B. **Redundant Computations:** The expression `(int)((a * (100 + x)) / 100.0)` is calculated twice, and `(int)((b * (100 + x)) / 100.0)` is calculated three times. We can calculate these expressions once and store their results in variables. 
+
+    C. **Loops:** The inner loop seems fine, but we can avoid checking `b != 0` in the if-statement by starting `a` from `0` instead of `1`.
+
+    D. **Compiler Optimizations:** Compiler optimizations are specific to the compiler used. However, you can generally enable them using certain flags during compilation (like `-O3` for GCC). It's important to note that these optimizations may not always lead to better performance, and it's best to profile your code to see the actual impact.
+
+3. **Step-by-Step Explanation:**
+    
+    A. **Data Structures:**
+        - Replace the `tax` vector with two integer variables, `tax_a` and `tax_b`.
+        - Calculate the `maxi` value directly from `tax_a` and `tax_b` instead of storing them first in a vector.
+
+    B. **Redundant Computations:**
+        - Store the result of `(int)((a * (100 + x)) / 100.0)` in a variable `tax_a`.
+        - Store the result of `(int)((b * (100 + x)) / 100.0)` in a variable `tax_b`.
+        - Use these stored values in the if-statement and when calculating `maxi`.
+
+    C. **Loops:**
+        - Start `a` from `0` instead of `1` to avoid checking `b != 0` in the if-statement.
+
+4. **Optimized Code Block:**
+    
+    ```cpp
+    #include <algorithm>
+    #include <iostream>
+    #include <vector>
+    using namespace std;
+    int main() {
+      int x, y, s;
+      while (cin >> x >> y >> s && (x || y || s)) {
+        int maxi = 0, a = 0, b, tax_a, tax_b;
+        while (a < s) {
+          b = (s - (int)((a * (100 + x)) / 100.0) + 1) / ((100 + x) / 100.0);
+          tax_a = (int)((a * (100 + x)) / 100.0);
+          tax_b = (int)((b * (100 + x)) / 100.0);
+          if (tax_a + tax_b == s) {
+            maxi = max(maxi, (int)((a * (100 + y)) / 100.0) + (int)((b * (100 + y)) / 100.0));
+          }
+          a++;
+        }
+        cout << maxi << endl;
+      }
+      return 0;
+    }

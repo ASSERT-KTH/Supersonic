@@ -1,0 +1,88 @@
+The original code is pretty optimal. However, there are a few minor improvements you could make:
+
+1. Remove unnecessary use of `#define`: `#define` is a preprocessor directive, which means it substitutes defined values before your code is compiled. This can sometimes make code harder to understand, and it also makes it harder to debug the code if something goes wrong. In this case, `#define` is used to create several type aliases and constants, but you can achieve the same result with `typedef` and `const`, which are usually better options because they respect scope and are type safe. 
+
+2. Use `std::ios::sync_with_stdio(false)` judiciously: This is used to unsync the C++ standard streams with their C counterparts, which can make the code run faster. However, it should be used judiciously because it can cause problems if you need to use both C and C++ style I/O in the same program.
+
+3.  Avoid using `std::shuffle`: This is used to randomize the order of elements in a range, but it can be slow and unnecessary if the order of elements doesn't matter. 
+
+Here's your optimized version of the code:
+
+```C++
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+#include <queue>
+#include <chrono>
+#include <random>
+
+using namespace std;
+using ll = long long;
+using vi = vector<int>;
+using vll = vector<ll>;
+const int INF = 0x3f3f3f3f;
+const int mod = 1e9 + 7;
+
+struct custom_hash {
+    static uint64_t splitmix64(uint64_t x) {
+        x += 0x9e3779b97f4a7c15;
+        x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
+        x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
+        return x ^ (x >> 31);
+    }
+    size_t operator()(uint64_t x) const {
+        static const uint64_t FIXED_RANDOM =
+            chrono::steady_clock::now().time_since_epoch().count();
+        return splitmix64(x + FIXED_RANDOM);
+    }
+};
+
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vi v(n);
+    for (auto &x : v)
+        cin >> x;
+    unordered_map<ll, ll, custom_hash> d;
+    queue<ll> q;
+    for (int i = 0; i < n; i++) {
+        d[v[i]] = 0LL;
+        q.push(v[i]);
+    }
+    vll res;
+    ll mini_sum = 0LL;
+    while (!q.empty()) {
+        if ((int)res.size() == m)
+            break;
+        ll cur = q.front();
+        q.pop();
+        if (d[cur] != 0) {
+            res.push_back(cur);
+            mini_sum += d[cur];
+        }
+        if (!d.count(cur - 1)) {
+            d[cur - 1] = d[cur] + 1;
+            q.push(cur - 1);
+        }
+        if (!d.count(cur + 1)) {
+            d[cur + 1] = d[cur] + 1;
+            q.push(cur + 1);
+        }
+    }
+    cout << mini_sum << "\n";
+    for (auto x : res)
+        cout << x << " ";
+    cout << "\n";
+}
+
+int main() {
+    ios_base::sync_with_stdio(false), cin.tie(nullptr), cout.tie(nullptr);
+    int t = 1;
+    while (t--) {
+        solve();
+    }
+    return 0;
+}
+```
+
+This code should work in the same way as the original, but it's a bit cleaner and easier to understand.

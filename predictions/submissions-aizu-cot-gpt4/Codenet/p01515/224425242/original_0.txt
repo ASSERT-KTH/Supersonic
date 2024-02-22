@@ -1,0 +1,89 @@
+Step 1: The code uses post-increment in several places. Although the difference is negligible for built-in types, it's good practice to use pre-increment when the result of the operation isn't used because it can avoid unnecessary copies in some cases.
+
+Step 2: The code creates multiple temporary objects when parsing the input string. To reduce memory usage, we can pass the Parser objects by reference instead of by value.
+
+Step 3: The function `solve` is called with the same string for every possible mask. This could be optimized by storing the results of the function call for each string and reusing them if the same string is encountered again.
+
+Step 4: The function `boolean` has a branch for each possible character in the input string. This could be optimized by using a lookup table, which would reduce the number of branches and potentially speed up the function.
+
+Here's the optimized version of the program:
+
+```cpp
+#include <algorithm>
+#include <cctype>
+#include <iostream>
+#include <string>
+#include <vector>
+#include <unordered_map>
+using namespace std;
+int mask;
+unordered_map<string, bool> memo;
+template <class T> struct Parser {
+  typedef string::const_iterator State;
+  T &solve(const string &S) {
+    if (memo.find(S) != memo.end())
+      return memo[S];
+    State begin = S.begin();
+    return memo[S] = equation(begin);
+  }
+  T &equation(State &begin) {
+    T &left = formula(begin);
+    ++begin;
+    T &right = formula(begin);
+    return left == right;
+  }
+  T &formula(State &begin) {
+    if (*begin == '(') {
+      ++begin;
+      T &left = formula(begin);
+      char op = *begin;
+      ++begin;
+      if (op == '-')
+        ++begin;
+      T &right = formula(begin);
+      ++begin;
+      T &ret = deduce(left, op, right);
+      return ret;
+    } else if (*begin == '-') {
+      ++begin;
+      return !formula(begin);
+    } else {
+      return boolean(begin);
+    }
+  }
+  T &deduce(T &x, char op, T &y) {
+    if (op == '*') {
+      return x and y;
+    } else if (op == '+') {
+      return x or y;
+    } else {
+      return !x or y;
+    }
+  }
+  T &boolean(State &begin) {
+    static const T lookup[] = {0, 1, (mask >> (*begin - 'a')) & 1};
+    T &ret = lookup[*begin == 'T' ? 1 : (*begin == 'F' ? 0 : 2)];
+    ++begin;
+    return ret;
+  }
+};
+void solve(string S) {
+  Parser<bool> ps;
+  for (mask = 0; mask < (1 << 11); mask++) {
+    if (!ps.solve(S)) {
+      cout << "NO" << endl;
+      return;
+    }
+  }
+  cout << "YES" << endl;
+}
+int main() {
+  string S;
+  while (cin >> S && S != "#") {
+    solve(S);
+  }
+  return 0;
+}
+```
+
+Please note that the optimization may not yield significant performance improvement as the original code is already highly optimized. It's always a good idea to profile the code to find out where the bottlenecks are before attempting to optimize.

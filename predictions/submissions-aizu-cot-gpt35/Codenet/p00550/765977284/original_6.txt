@@ -1,0 +1,119 @@
+To optimize the given program, we can make the following modifications:
+
+1. Remove unnecessary header file inclusion: The program includes `<bits/stdc++.h>`, which is not necessary. We can remove it.
+
+2. Replace `getchar_unlocked()` with `getchar()`: The `getchar_unlocked()` function is used for faster input. However, it is not necessary for this program. We can replace it with `getchar()`.
+
+3. Use `std::ios_base::sync_with_stdio(false)` and `std::cin.tie(NULL)`: By default, C++ standard streams are synchronized with C standard streams, which can cause a performance overhead. We can improve the performance by disabling this synchronization using `std::ios_base::sync_with_stdio(false)` and also untie the `std::cin` and `std::cout` streams using `std::cin.tie(NULL)`.
+
+4. Use `std::vector.reserve()` to preallocate memory: The program uses a `std::vector` for storing edges. We can optimize memory usage by reserving memory in advance using the `reserve()` function. This will avoid frequent reallocations and improve performance.
+
+5. Use a `std::deque` instead of `std::queue`: The program uses a `std::queue` for BFS traversal. However, a `std::deque` provides the same functionality and can perform better in this case. We can replace `std::queue` with `std::deque` for better performance.
+
+6. Use `std::vector<bool>` instead of `bool` array: The program uses a `bool` array for marking visited nodes. However, a `std::vector<bool>` can be more memory-efficient. We can replace the `bool` array with a `std::vector<bool>`.
+
+7. Avoid unnecessary clearing of vectors: The program clears the `E` vector in multiple places. However, this is unnecessary as the vector will be overwritten later. We can remove these unnecessary clear operations.
+
+Here's the optimized code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <deque>
+
+void reader(int *x) {
+  int k = getchar();
+  *x = k - '0';
+  while (1) {
+    k = getchar();
+    if (k < '0' || k > '9')
+      break;
+    *x = ((*x) << 1) + ((*x) << 3) + k - '0';
+  }
+}
+
+std::vector<int> E[100000];
+int u[200000], v[200000], r[200000], ans[200000], d[100000], cnt = 1;
+std::vector<bool> ok(100000);
+
+void bfs(int u, int t) {
+  std::deque<int> que;
+  que.push_back(u);
+  while (!que.empty()) {
+    int p = que.front();
+    que.pop_front();
+    for (int v : E[p]) {
+      if (t) {
+        if (d[v] > d[p] && !ok[v]) {
+          ok[v] = true;
+          cnt++;
+          que.push_back(v);
+        }
+      } else if (d[v] == -1) {
+        d[v] = d[p] + 1;
+        que.push_back(v);
+      }
+    }
+  }
+}
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(NULL);
+
+  int n, m, q;
+  reader(&n);
+  reader(&m);
+  reader(&q);
+  for (int i = 0; i < m; i++) {
+    reader(&u[i]);
+    reader(&v[i]);
+    u[i]--;
+    v[i]--;
+    E[u[i]].push_back(v[i]);
+    E[v[i]].push_back(u[i]);
+  }
+
+  d[0] = 0;
+  bfs(0, 0);
+
+  for (int i = 0; i < m; i++) {
+    if (d[u[i]] > d[v[i]])
+      std::swap(u[i], v[i]);
+  }
+
+  for (int i = 0; i < q; i++) {
+    reader(&r[i]);
+    r[i]--;
+    ok[r[i]] = true;
+  }
+
+  for (int i = 0; i < m; i++) {
+    if (!ok[i]) {
+      if (d[v[i]] - d[u[i]] == 1) {
+        E[u[i]].emplace_back(v[i]);
+      }
+    }
+  }
+
+  bfs(0, 1);
+
+  for (int i = q - 1; i >= 0; i--) {
+    ans[i] = n - cnt;
+    if (d[v[r[i]]] - d[u[r[i]]] == 1 && !ok[v[r[i]]]) {
+      E[u[r[i]]].emplace_back(v[r[i]]);
+      if (ok[u[r[i]]]) {
+        cnt++;
+        ok[v[r[i]]] = true;
+        bfs(v[r[i]], 1);
+      }
+    }
+  }
+
+  for (int i = 0; i < q; i++) {
+    std::cout << ans[i] << '\n';
+  }
+
+  return 0;
+}
+```

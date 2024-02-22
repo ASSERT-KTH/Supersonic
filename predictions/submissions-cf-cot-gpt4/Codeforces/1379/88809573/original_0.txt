@@ -1,0 +1,75 @@
+Let's optimize the program step by step:
+
+1. Avoid using `#define`: The `#define` preprocessor directive is not recommended because it does not respect scopes (which can lead to name collision) and it doesn't report type errors. We will replace `#define` with inline functions which are better as they respect scopes and are type-safe.
+
+2. Avoid using excessive `#include`: Unused libraries increase the compilation time, so removing unused libraries will help in reducing the compilation time.
+
+3. Make use of the `std::array` for fixed size arrays: The `std::array` is a container that encapsulates fixed size arrays, and its size is known at compile time. It wraps around fixed size arrays and also doesn't degrade to a pointer when passed to a function.
+
+4. `std::memset` for POD types only: `std::memset` should only be used with plain-old-data (POD) types. Because suf is an array of non-POD type (long long), memset should not be used. Instead, we can use `std::fill` or `std::fill_n` to fill the array with a given value.
+
+5. Use `std::cin` and `std::cout`: Use `std::cin` and `std::cout` instead of `scanf` and `printf` for input and output operations. `std::cin` and `std::cout` are more type safe.
+
+Here is the optimized code:
+
+```cpp
+#include <algorithm>
+#include <iostream>
+#include <array>
+
+using namespace std;
+
+using ll = long long;
+constexpr int maxn = 2e5 + 10;
+constexpr int maxm = 5e5 + 10;
+
+struct node {
+  ll a, b;
+};
+
+inline ll mul_mod(ll a, ll b, ll c) {
+  return (a * b) % c;
+}
+
+inline ll add_mod(ll a, ll b, ll c) {
+  return (a + b) % c;
+}
+
+array<node, maxn> f;
+array<ll, maxn> A;
+array<ll, maxn> suf;
+
+int main() {
+  int q;
+  cin >> q;
+  while (q--) {
+    int n, m;
+    cin >> n >> m;
+    for (int i = 1; i <= m; i++) {
+      cin >> f[i].a >> f[i].b;
+      A[i] = f[i].a;
+    }
+    sort(A.begin() + 1, A.begin() + 1 + m);
+    fill(suf.begin(), suf.end(), 0);
+    for (int i = m; i >= 1; i--)
+      suf[i] = suf[i + 1] + A[i];
+    ll ans = 0;
+    if (n <= m)
+      ans = suf[m - n + 1];
+    for (int i = 1; i <= m; i++) {
+      ll temp = 0;
+      int pos = lower_bound(A.begin() + 1, A.begin() + 1 + m, f[i].b) - A.begin();
+      if (pos <= m - n + 1)
+        continue;
+      temp += suf[pos];
+      int num = n - (m - pos + 1);
+      if (f[i].a < f[i].b)
+        temp += f[i].a, num--;
+      temp += num * f[i].b;
+      ans = max(ans, temp);
+    }
+    cout << ans << endl;
+  }
+  return 0;
+}
+```

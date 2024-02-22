@@ -1,0 +1,25 @@
+This code appears to be a BFS search algorithm to solve a sliding puzzle problem. It reads puzzle configurations from the input, solves them, and prints out the minimum number of steps required to reach the target configuration. It uses bit manipulations for storing and processing the puzzle states to optimize memory usage, but there are still areas where it can be improved.
+
+The optimization strategy includes:
+
+1. Use `std::unordered_set` instead of a bit array for storing visited states. While bit arrays are memory efficient, they are not as efficient in terms of time complexity. Accessing, setting, or clearing bits in a bit array involves multiple operations which can slow down the program. `std::unordered_set` provides constant time complexity for insertion and lookup, making it a better choice for this task.
+
+2. The `strchr` function is used to find the position of '0' in the puzzle configuration. This function searches the entire string each time it's called, resulting in unnecessary computations. Instead, we can keep track of the position of '0' as we make each move.
+
+3. The input reading and processing can be simplified and optimized. Right now, the program reads one character at a time and discards the newline characters. It would be more efficient to read the entire line at once and process it as needed.
+
+4. The `while (getchar() != '\n');` loop at the end of the main function is used to consume the rest of the line after reading the puzzle configuration. This is not necessary if we read the entire line at once.
+
+5. The current implementation uses a BFS queue that is implemented using an array. We can use `std::queue` which is more efficient and easier to understand.
+
+Let's make these optimizations one by one and explain each step:
+
+1. Replace the bit array `vis` with `std::unordered_set<int> visited`. Also, replace the macros `ck`, `sb`, and `cb` with `visited.find` and `visited.insert`. This reduces the number of operations needed to check if a state is visited and to mark a state as visited.
+
+2. Keep track of the position of '0' as we make each move instead of finding it using `strchr`. This removes the need for calling `strchr` for each move.
+
+3. Use `std::getline` and `std::istringstream` to read and process the input. This avoids reading one character at a time and discarding newline characters.
+
+4. Remove the `while (getchar() != '\n');` loop at the end of the main function. This is not necessary as we're reading the entire line at once.
+
+5. Replace the array `dl` with `std::queue<pt> bfsQueue`. This makes the code cleaner and easier to understand. Also, the `front` and `back` variables are no longer needed.

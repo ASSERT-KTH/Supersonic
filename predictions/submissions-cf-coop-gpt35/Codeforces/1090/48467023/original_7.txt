@@ -1,0 +1,179 @@
+Code Analysis:
+1. The code uses a custom `node` struct to implement a binary tree.
+2. The `setVal()` function is used to set the value of a node in the tree.
+3. The `getPos()` function is used to find the position of a node in the tree.
+4. The `sub()` function is used to subtract a value from a node in the tree.
+5. The `solve()` function implements the main logic of the program.
+
+Optimization Strategy:
+1. Replace the custom `node` struct with a `vector<int>` to represent the binary tree. This will reduce memory usage and improve cache locality.
+2. Replace the recursive `setVal()` and `getPos()` functions with iterative versions. This will reduce function call overhead and improve performance.
+3. Remove unnecessary code and variables.
+4. Use compiler optimizations, such as loop unrolling and pragma directives, to further improve performance.
+
+Step-by-Step Explanation:
+1. Replace the `node` struct with a `vector<int>` to represent the binary tree. Modify the `getNode()` function to return a `vector<int>` instead of a `node*`. Replace all occurrences of `node` with `vector<int>` in the code.
+
+```cpp
+const int M = 30 * 1000 * 1000 + 555;
+typedef vector<int> tree;
+vector<int> nodes[M];
+int szn = 0;
+tree getNode(int sum, int sval, tree l, tree r) {
+  assert(szn < M);
+  nodes[szn] = {sum, sval, l, r};
+  return nodes[szn++];
+}
+```
+
+2. Replace the recursive `setVal()` function with an iterative version. This will reduce function call overhead and improve performance. We can use a loop to traverse the tree and update the values.
+
+```cpp
+tree setVal(tree t, int l, int r, int lf, int rg, int val, int pushed = -1) {
+  tree nt =
+      t.empty() ? getNode(0, -1, {}, {}) : getNode(t[0], t[1], t[2], t[3]);
+  if (pushed != -1)
+    nt[1] = pushed;
+  while (true) {
+    if (l == lf && r == rg) {
+      nt[1] = val;
+      break;
+    }
+    int mid = (l + r) >> 1;
+    pushed = nt[1];
+    if (lf < mid)
+      nt[2] = nt[2].empty()
+                  ? getNode(nt[3][0], pushed, nt[3][2], nt[3][3])
+                  : getNode(nt[2][0], pushed, nt[2][2], nt[2][3]);
+    else if (pushed != -1)
+      nt[2] = nt[2].empty() ? getNode(0, pushed, {}, {}) : getNode(0, pushed, nt[2][2], nt[2][3]);
+    if (rg > mid)
+      nt[3] = nt[3].empty()
+                  ? getNode(nt[2][0], pushed, nt[2][2], nt[2][3])
+                  : getNode(nt[3][0], pushed, nt[3][2], nt[3][3]);
+    else if (pushed != -1)
+      nt[3] = nt[3].empty() ? getNode(0, pushed, {}, {}) : getNode(nt[3][0], pushed, nt[3][2], nt[3][3]);
+    nt[0] = nt[2][0] + nt[3][0];
+    l = mid;
+  }
+  return nt;
+}
+```
+
+3. Replace the recursive `getPos()` function with an iterative version. This will reduce function call overhead and improve performance. We can use a loop to traverse the tree and find the position.
+
+```cpp
+int getPos(tree t, int l, int r, int lf, int rg) {
+  if (t.empty())
+    return -1;
+  while (true) {
+    if (l == lf && r == rg) {
+      if (l + 1 == r)
+        return t[0] ? l : -1;
+      if (t[0] == 0)
+        return -1;
+    }
+    if (t[1] != -1)
+      return t[1] > 0 ? rg - 1 : -1;
+    int mid = (l + r) >> 1;
+    int ans = -1;
+    if (rg > mid && ans == -1)
+      ans = max(ans, getPos(t[3], mid, r, max(lf, mid), rg));
+    if (lf < mid && ans == -1)
+      ans = max(ans, getPos(t[2], l, mid, lf, min(mid, rg)));
+    return ans;
+  }
+}
+```
+
+4. Remove unnecessary code and variables. The `dead` array and the `pair<int, pair<int, tree>>` structure are not used. Remove them from the code.
+
+5. Use compiler optimizations, such as loop unrolling and pragma directives, to further improve performance. Add the following pragma directives to hint the compiler to optimize certain parts of the code:
+
+```cpp
+#pragma GCC optimize("Ofast")
+#pragma GCC target("avx,avx2,fma")
+```
+
+Optimized Code Block:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+#define fore(i, l, r) for (int i = int(l); i < int(r); i++)
+#define forn(i, n) fore(i, 0, n)
+#define sz(a) int((a).size())
+#define all(a) (a).begin(), (a).end()
+#define mp make_pair
+#define pb push_back
+#define x first
+#define y second
+typedef long long li;
+typedef long double ld;
+typedef pair<int, int> pt;
+template <class A, class B>
+ostream &operator<<(ostream &out, const pair<A, B> &p) {
+  return out << "(" << p.x << ", " << p.y << ")";
+}
+template <class A> ostream &operator<<(ostream &out, const vector<A> &v) {
+  out << "[";
+  forn(i, sz(v)) {
+    if (i)
+      out << ", ";
+    out << v[i];
+  }
+  return out << "]";
+}
+const int INF = int(1e9);
+const li INF64 = li(1e18);
+const ld EPS = 1e-9;
+const int N = 250 * 1000 + 555;
+int n;
+pair<int, pt> qs[N];
+inline bool read() {
+  if (!(cin >> n))
+    return false;
+  forn(i, n) {
+    cin >> qs[i].x;
+    if (qs[i].x > 1)
+      cin >> qs[i].y.x;
+    if (qs[i].x == 5)
+      cin >> qs[i].y.y;
+  }
+  return true;
+}
+
+const int M = 30 * 1000 * 1000 + 555;
+typedef vector<int> tree;
+vector<int> nodes[M];
+int szn = 0;
+tree getNode(int sum, int sval, tree l, tree r) {
+  assert(szn < M);
+  nodes[szn] = {sum, sval, l, r};
+  return nodes[szn++];
+}
+
+tree setVal(tree t, int l, int r, int lf, int rg, int val, int pushed = -1) {
+  tree nt =
+      t.empty() ? getNode(0, -1, {}, {}) : getNode(t[0], t[1], t[2], t[3]);
+  if (pushed != -1)
+    nt[1] = pushed;
+  while (true) {
+    if (l == lf && r == rg) {
+      nt[1] = val;
+      break;
+    }
+    int mid = (l + r) >> 1;
+    pushed = nt[1];
+    if (lf < mid)
+      nt[2] = nt[2].empty()
+                  ? getNode(nt[3][0], pushed, nt[3][2], nt[3][3])
+                  : getNode(nt[2][0], pushed, nt[2][2], nt[2][3]);
+    else if (pushed != -1)
+      nt[2] = nt[2].empty() ? getNode(0, pushed, {}, {}) : getNode(0, pushed, nt[2][2], nt[2][3]);
+    if (rg > mid)
+      nt[3] = nt[3].empty()
+                  ? getNode(nt[2][0], pushed, nt[2][2], nt[2][3])
+                  : getNode(nt[3][0], pushed, nt[3][2], nt[3][3]);
+    else if (pushed != -1)
+      nt[3] = nt[3].empty() ? getNode(0, pushed, {}, {}) : getNode(nt[3][0], pushed,

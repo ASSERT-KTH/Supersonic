@@ -1,0 +1,83 @@
+This program seems to be implementing a variant of the Knapsack problem. It reads from the input two numbers n and K, and then n pairs of numbers. It uses these numbers to fill in a couple of vectors and arrays and then output a calculated result.
+
+Here's the step by step optimization:
+
+1. `vector<int> id, v[2005];` There is no need to declare `v` as a vector of size 2005, you can declare it as a vector of vectors. This way, we don't need to reserve a fixed size of memory for each element in the array. The memory footprint will decrease as the vector will dynamically allocate memory based on its size.
+
+2. Avoid multiple calls to `id.size()` and `v[id[i]].size()` in the loop condition by storing the size in a variable before the loop starts.
+
+3. `memset(dp, 0, sizeof(dp));` There is no need to fill the dp array with zeros if we are going to fill it with calculated values later in the program.
+
+4. `memset(d, 0, sizeof(d));` This one can be kept because we are incrementing some of the elements of d, so it's important to start from zero.
+
+5. `ll res = dp[i][j];` This line is not necessary if we directly assign the max value to `dp[i + 1][j]`.
+
+6. `res = max(res, dp[i][j - k] + d[id[i]][k]);` Instead of finding the max in each iteration, we can use `std::max_element` to find the max in the range.
+
+Here's the optimized program:
+
+```C++
+#include <algorithm>
+#include <cstring>
+#include <iostream>
+#include <map>
+#include <set>
+#include <sstream>
+#include <string>
+#include <vector>
+#define REP(i, k, n) for (int i = k; i < n; i++)
+#define rep(i, n) for (int i = 0; i < n; i++)
+#define INF 1 << 30
+#define pb push_back
+#define mp make_pair
+using namespace std;
+typedef long long ll;
+typedef pair<int, int> P;
+ll d[15][2005], dp[2005][2005];
+
+int main() {
+  int n, K;
+  cin >> n >> K;
+  vector<int> id;
+  vector<vector<int>> v(2005);
+  rep(i, n) {
+    int a, b;
+    cin >> a >> b;
+    id.push_back(b - 1);
+    v[b - 1].push_back(a);
+  }
+  sort(id.begin(), id.end());
+  id.erase(unique(id.begin(), id.end()), id.end());
+  int id_size = id.size();
+  rep(i, id_size) {
+    int j = id[i];
+    sort(v[j].begin(), v[j].end(), greater<int>());
+  }
+  memset(d, 0, sizeof(d));
+  vector<P> p;
+  rep(i, id_size) {
+    int j = id[i];
+    int v_size = v[j].size();
+    REP(k, 1, v_size + 1) {
+      d[j][k] += d[j][k - 1] + v[j][k - 1] + (k - 1) * 2;
+      p.push_back(mp(k, d[j][k]));
+    }
+  }
+  rep(i, id_size) {
+    rep(j, K + 1) {
+      vector<ll> resarr;
+      int v_size = v[id[i]].size();
+      rep(k, v_size + 1) {
+        if (j >= k) {
+          resarr.push_back(dp[i][j - k] + d[id[i]][k]);
+        }
+      }
+      dp[i + 1][j] = *max_element(resarr.begin(), resarr.end());
+    }
+  }
+  cout << dp[id_size][K] << endl;
+  return 0;
+}
+```
+
+This optimized program reduces the memory footprint by using a dynamic vector size, and also reduces the number of repetitive function calls, which can improve the speed of the program.

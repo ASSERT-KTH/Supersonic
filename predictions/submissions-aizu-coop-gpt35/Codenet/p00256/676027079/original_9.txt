@@ -1,0 +1,106 @@
+The given code has two main functions: `M2S` (which converts a date from the Ma calendar to the standard Gregorian calendar) and `S2M` (which converts a date from the Gregorian calendar to the Ma calendar). The code reads input from the user in the form of dates and performs the corresponding conversion.
+
+Here are some potential optimizations for the code:
+
+1. Remove unnecessary includes: The code includes the entire `bits/stdc++.h` header, which is not necessary for this program. Instead, include only the necessary headers like `<iostream>` and `<vector>`.
+
+2. Replace the `vector<int>` with a fixed-size array: The code currently uses a `vector<int>` to store the individual numbers of the input date. Since the input date will always have a fixed number of elements (either 5 or 3), it is more efficient to use a fixed-size array instead of a dynamic vector.
+
+3. Avoid unnecessary calculations: The code performs unnecessary calculations in the `M2S` and `S2M` functions. For example, in the `M2S` function, the calculations `ka += b * 20`, `t += ka * 20`, `w += t * 18`, and `ki += w * 20` can be simplified and combined into a single calculation. Similarly, in the `S2M` function, the calculations `y -= 2012` and `d = (d - 21)` can be combined into a single calculation.
+
+4. Optimize date conversion loops: The loops used in the `M2S` and `S2M` functions can be optimized. For example, instead of using a `while` loop to calculate the year in the `M2S` function, a `for` loop can be used with a fixed number of iterations. Similarly, in the `S2M` function, the loop can be converted into a `for` loop that iterates from the highest year to the input year.
+
+5. Use bitwise operations for modulus: The modulus operation `%` can be replaced with bitwise operations for better performance. For example, instead of `d %= 13 * 20 * 20 * 18 * 20`, we can use `d &= (13 * 20 * 20 * 18 * 20 - 1)`.
+
+6. Add compiler optimizations: Add compiler optimizations such as `-O2` to enable the compiler to perform additional optimizations during compilation.
+
+Here is the optimized code with the above improvements:
+
+```cpp
+#include <iostream>
+#include <vector>
+using namespace std;
+
+struct S {
+  int y, m, d;
+};
+
+struct Ma {
+  int b, ka, t, w, ki;
+};
+
+int M[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+
+bool check(int y) {
+  return (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0));
+}
+
+S M2S(int b, int ka, int t, int w, int ki) {
+  ki += w * 20 * 18 * 20 + t * 20 * 18 + ka * 20 + b;
+  S res;
+  res.y = 2012;
+  res.m = 12;
+  res.d = 21 + ki;
+  if (res.d <= 31)
+    return res;
+  for (res.y = 2013; res.d > (365 + check(res.y)); res.y++)
+    res.d -= (365 + check(res.y));
+  if (res.d == 0)
+    res.m--, res.d = M[res.m - 1] + (check(res.y) && res.m == 2);
+  if (res.d <= 31)
+    return res;
+  res.y++, res.m = 1, res.d -= 31;
+  for (; res.d > (M[res.m - 1] + (check(res.y) && res.m == 2)); res.m++)
+    res.d -= (M[res.m - 1] + (check(res.y) && res.m == 2));
+  if (res.d == 0)
+    res.m--, res.d = M[res.m - 1] + (check(res.y) && res.m == 2);
+  return res;
+}
+
+Ma S2M(int y, int m, int d) {
+  d += (y - 2012) * 365 + (y - 2012) / 4 - (y - 2012) / 100 + (y - 2008) / 400 + 10;
+  for (int i = 0; i < m - 1; i++)
+    d += M[i] + (i == 1 && check(y));
+  Ma res;
+  res.ki = d & (13 * 20 * 20 * 18 * 20 - 1);
+  res.w = res.ki / (20 * 18 * 20);
+  res.ki %= (20 * 18 * 20);
+  res.t = res.w / 20;
+  res.w %= 20;
+  res.ka = res.t / 20;
+  res.t %= 20;
+  res.b = res.ka / 20;
+  res.ka %= 20;
+  return res;
+}
+
+int main() {
+  while (true) {
+    string str;
+    cin >> str;
+    if (str == "#")
+      break;
+    int a[5];
+    int i = 0, num = 0;
+    for (char c : str) {
+      if (c == '.') {
+        a[i++] = num;
+        num = 0;
+      } else {
+        num = num * 10 + c - '0';
+      }
+    }
+    a[i] = num;
+    if (i == 4) {
+      S ans = M2S(a[0], a[1], a[2], a[3], a[4]);
+      cout << ans.y << "." << ans.m << "." << ans.d << endl;
+    } else {
+      Ma ans = S2M(a[0], a[1], a[2]);
+      cout << ans.b << "." << ans.ka << "." << ans.t << "." << ans.w << "." << ans.ki << endl;
+    }
+  }
+  return 0;
+}
+```
+
+By making these optimizations, the code should run faster and use less memory compared to the original version.

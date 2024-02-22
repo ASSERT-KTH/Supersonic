@@ -1,0 +1,146 @@
+#include <algorithm>
+#include <cstdio>
+#include <vector>
+using namespace std;
+
+const int X = 1e5;
+
+struct node {
+  int l, r;
+  int lz;
+  int sgn_pos;
+  int sgn_neg;
+};
+
+void pushup(node sgt[], int x) {
+  if (sgt[x << 1].sgn_pos == sgt[x << 1 | 1].sgn_pos) {
+    sgt[x].sgn_pos = sgt[x << 1].sgn_pos;
+  } else {
+    sgt[x].sgn_pos = 0;
+  }
+  if (sgt[x << 1].sgn_neg == sgt[x << 1 | 1].sgn_neg) {
+    sgt[x].sgn_neg = sgt[x << 1].sgn_neg;
+  } else {
+    sgt[x].sgn_neg = 0;
+  }
+}
+
+void pushdown(node sgt[], int x) {
+  if (sgt[x].lz == 2) {
+    sgt[x << 1].sgn_pos = -sgt[x << 1].sgn_pos;
+    sgt[x << 1 | 1].sgn_pos = -sgt[x << 1 | 1].sgn_pos;
+    sgt[x << 1].sgn_neg = -sgt[x << 1].sgn_neg;
+    sgt[x << 1 | 1].sgn_neg = -sgt[x << 1 | 1].sgn_neg;
+    sgt[x << 1].lz = (sgt[x << 1].lz + 1) % 2;
+    sgt[x << 1 | 1].lz = (sgt[x << 1 | 1].lz + 1) % 2;
+    sgt[x].lz = 0;
+  }
+  if (sgt[x].lz) {
+    sgt[x << 1].sgn_pos = sgt[x].lz;
+    sgt[x << 1 | 1].sgn_pos = sgt[x].lz;
+    sgt[x << 1].sgn_neg = sgt[x].lz;
+    sgt[x << 1 | 1].sgn_neg = sgt[x].lz;
+    sgt[x << 1].lz = sgt[x].lz;
+    sgt[x << 1 | 1].lz = sgt[x].lz;
+    sgt[x].lz = 0;
+  }
+}
+
+void build(node sgt[], int l, int r, int x) {
+  sgt[x].l = l;
+  sgt[x].r = r;
+  sgt[x].lz = 0;
+  if (l == r) {
+    sgt[x].sgn_pos = 1;
+    sgt[x].sgn_neg = 1;
+    return;
+  }
+  int mid = (l + r) >> 1;
+  build(sgt, l, mid, x << 1);
+  build(sgt, mid + 1, r, x << 1 | 1);
+  pushup(sgt, x);
+}
+
+void update(node sgt[], int l, int r, int x, int val) {
+  if (l <= sgt[x].l && r >= sgt[x].r) {
+    sgt[x].sgn_pos = (val > 0) ? val : 0;
+    sgt[x].sgn_neg = (val < 0) ? -val : 0;
+    sgt[x].lz = val;
+    return;
+  }
+  pushdown(sgt, x);
+  int mid = (sgt[x].l + sgt[x].r) >> 1;
+  if (l <= mid) {
+    update(sgt, l, r, x << 1, val);
+  }
+  if (r > mid) {
+    update(sgt, l, r, x << 1 | 1, val);
+  }
+  pushup(sgt, x);
+}
+
+int main() {
+  int n, q;
+  scanf("%d %d", &n, &q);
+  int a[n];
+  for (int i = 0; i < n; i++) {
+    scanf("%d", &a[i]);
+  }
+  getchar();
+
+  node sgt[X * 4 + 1];
+  build(sgt, 1, X, 1);
+
+  vector<pair<char, int>> queries;
+  while (q--) {
+    char s;
+    int x;
+    scanf("%c %d\n", &s, &x);
+    queries.push_back(make_pair(s, x));
+  }
+
+  for (auto query : queries) {
+    char s = query.first;
+    int x = query.second;
+    if (s == '>') {
+      x++;
+      if (x == 0) {
+        x++;
+      }
+      if (x > 0) {
+        update(sgt, x, X, 1, 1);
+      } else {
+        update(sgt, 1, -x, 1, 2);
+        update(sgt, -x + 1, X, 1, 1);
+      }
+    } else {
+      x--;
+      if (x == 0) {
+        x--;
+      }
+      if (x < 0) {
+        update(sgt, -x, X, 1, -1);
+      } else {
+        update(sgt, 1, x, 1, 2);
+        update(sgt, x + 1, X, 1, -1);
+      }
+    }
+  }
+
+  int result[n];
+  for (int i = 0; i < n; i++) {
+    int r = 0;
+    if (a[i] < 0) {
+      r = query(sgt, -a[i], 1).sgn_pos;
+    } else if (a[i] > 0) {
+      r = query(sgt, a[i], 1).sgn_neg;
+    }
+    result[i] = a[i] * r;
+  }
+
+  for (int i = 0; i < n; i++) {
+    printf("%d%c", result[i], i == n - 1 ? '\n' : ' ');
+  }
+
+  return 0;
+}

@@ -1,0 +1,154 @@
+The given code is a C++ program that solves a problem involving a binary matrix and queries on the matrix. The program uses a segment tree to efficiently answer the queries. 
+
+Upon analyzing the code, here are a few potential areas for optimization:
+
+1. Optimizing I/O: The program uses `std::cin` and `std::cout` for input/output operations. These operations can be slow, especially when dealing with large inputs or outputs. Consider using a faster I/O method, such as reading/writing directly from/to a character buffer.
+
+2. Unnecessary Data copies: The program copies the entire input matrix `a` into the segment tree data structure `trees`. This can be avoided by using a 2D vector of pairs directly as the segment tree data structure and updating/querying it in-place.
+
+3. Redundant calculations: The program calculates the value of `val` for each element of the matrix `a` for each mask. This can be optimized by pre-calculating the values of `val` for each element of `a` for all possible masks and storing them in a 3D array. This way, the calculation is done only once and can be directly accessed during updates and queries.
+
+4. Memory optimization: The program uses a lot of dynamic memory allocations, such as vectors and segment trees. Consider using fixed-size arrays or pre-allocated memory pools to reduce dynamic memory allocation overhead.
+
+Now, let's go through each optimization step in detail:
+
+1. Optimizing I/O:
+
+   - To optimize the I/O, we can use a faster I/O method, such as reading/writing directly from/to a character buffer. This can be done using the `scanf` and `printf` functions instead of `std::cin` and `std::cout`. By using the `%d` format specifier for integers and the `%s` format specifier for strings, we can read and write the input/output more efficiently.
+
+2. Unnecessary Data copies:
+
+   - Rather than copying the entire input matrix `a` into the segment tree data structure `trees`, we can use a 2D vector of pairs directly as the segment tree data structure. This way, we can update/query the values in-place without the need for additional memory copies.
+
+3. Redundant calculations:
+
+   - Instead of calculating the value of `val` for each element of the matrix `a` for each mask, we can pre-calculate the values of `val` for each element of `a` for all possible masks and store them in a 3D array. This way, the calculation is done only once and can be directly accessed during updates and queries.
+
+4. Memory optimization:
+
+   - To optimize memory usage, we can replace dynamic memory allocations, such as vectors and segment trees, with fixed-size arrays or pre-allocated memory pools. By using fixed-size arrays, we can avoid the overhead of dynamic memory allocation and deallocation.
+
+Now, let's optimize the code by applying these steps:
+
+```cpp
+#include <algorithm>
+#include <array>
+#include <bitset>
+#include <cassert>
+#include <cctype>
+#include <chrono>
+#include <cmath>
+#include <cstdlib>
+#include <deque>
+#include <functional>
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <numeric>
+#include <optional>
+#include <queue>
+#include <random>
+#include <set>
+#include <stack>
+#include <string>
+#include <string_view>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+#include <vector>
+using namespace std;
+
+// Fast I/O functions
+inline void fastScan(int &x) {
+  int c;
+  bool neg = false;
+  x = 0;
+  c = getchar();
+  if (c == '-')
+    neg = true, c = getchar();
+  while ((c < '0' || c > '9') && c != EOF)
+    c = getchar();
+  while (c >= '0' && c <= '9') {
+    x = x * 10 + c - '0';
+    c = getchar();
+  }
+  if (neg) x = -x;
+}
+
+inline void fastPrint(int x) {
+  if (x < 0) {
+    putchar('-');
+    x = -x;
+  }
+  char buf[10];
+  int i = 0;
+  do {
+    buf[i++] = x % 10 + '0';
+    x /= 10;
+  } while (x);
+  while (i) putchar(buf[--i]);
+}
+
+// Optimized seg_tree class
+template <typename T, typename JoinFn>
+class seg_tree {
+ public:
+  seg_tree(int n, const T &zero = T(), const JoinFn &join_fn = JoinFn())
+      : join_fn_(join_fn), n_(n), data_(2 * next_power_of_two(n_) - 1, zero) {}
+  int size() const { return n_; }
+
+  template <typename UpdateFn>
+  void update(int pos, const T &val, UpdateFn update_fn) {
+    return update(0, 0, n_ - 1, pos, val, update_fn);
+  }
+
+  T query(int pos) const { return query(pos, pos); }
+
+  T query(int first, int last) const {
+    return query(0, 0, n_ - 1, first, last);
+  }
+
+  template <typename ContainsFn>
+  int find(T val, ContainsFn contains_fn) const {
+    if (!contains_fn(data_[0], val)) {
+      return n_;
+    }
+    return find(0, 0, n_ - 1, val, contains_fn);
+  }
+
+ private:
+  const JoinFn join_fn_;
+  const int n_;
+  vector<T> data_;
+
+  static constexpr int next_power_of_two(int x) {
+    --x;
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+    return ++x;
+  }
+
+  template <typename UpdateFn>
+  void update(int node, int t_first, int t_last, int pos, const T &val,
+              UpdateFn update_fn) {
+    if (t_first == t_last) {
+      update_fn(data_[node], val);
+      return;
+    }
+    int t_mid = (t_first + t_last) >> 1;
+    if (pos <= t_mid) {
+      update(2 * node + 1, t_first, t_mid, pos, val, update_fn);
+    } else {
+      update(2 * node + 2, t_mid + 1, t_last, pos, val, update_fn);
+    }
+    data_[node] = join_fn_(data_[2 * node + 1], data_[2 * node + 2]);
+  }
+
+  T query(int node, int t_first, int t_last, int first, int last) const {
+    if (first <= t_first && t_last <= last) {
+      return data_[node];
+    }
+    int t_mid = (t_first + t

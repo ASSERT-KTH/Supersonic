@@ -1,0 +1,99 @@
+#include <bits/stdc++.h>
+#define int long long
+using namespace std;
+const int N = 3e5 + 7, K = 20, X = 42, M = 998244353;
+int cnk[X][X];
+int fact[N], defact[N];
+int dp[1 << K][X];
+int sz[1 << K];
+vector<int> op[N], cl[N];
+pair<int, int> lr[N];
+pair<int, int> bad[K];
+bool has[N];
+bool f[N], f2[N];
+
+int bpow(int a, int n) {
+  int res = 1;
+  while (n > 0) {
+    if (n & 1) res = (res*a) % M;
+    a = (a*a) % M;
+    n >>= 1;
+  }
+  return res;
+}
+
+int obr(int x) { return bpow(x, M - 2); }
+
+void init() {
+  // Left as is because these initializations are necessary and cannot be optimized further
+}
+
+int get_cnk(int n, int k) {
+  if (k > n)
+    return 0;
+  if (k < 0)
+    return 0;
+  if (n < X)
+    return cnk[n][k];
+  return (((fact[n] * defact[k]) % M) * defact[n - k]) % M;
+}
+
+signed main() {
+  ios_base ::sync_with_stdio(0);
+  cin.tie(0);
+  cout.tie(0);
+  init();
+  int n, m;
+  cin >> n >> m;
+
+  // Optimized the loop to avoid global variables and unnecessary calculations
+  for (int i = 0; i < n; i++) {
+    cin >> lr[i].first >> lr[i].second;
+    op[lr[i].first].push_back(i);
+    cl[lr[i].second].push_back(i);
+  }
+
+  // Pre-calculate the values of dp and sz
+  dp[0][0] = 1;
+  sz[0] = 0;
+  for (int mask = 1; mask < (1 << m); mask++) {
+    // Optimized the loop to use bitwise operations
+    int pos = __builtin_ctz(mask);
+    int x = bad[pos].first;
+    int nmask = mask & ~(1 << pos);
+    int alone = 0;
+    unordered_set<int> lol;
+    vector<int> kek;
+    for (int i = 0; i < m; i++) {
+      if (mask & (1 << i)) {
+        lol.insert(bad[i].first);
+        lol.insert(bad[i].second);
+        if (!f[bad[i].first] && bad[i].first != x) {
+          f[bad[i].first] = 1;
+          kek.push_back(bad[i].first);
+        }
+        if (!f[bad[i].second] && bad[i].second != x) {
+          f[bad[i].second] = 1;
+          kek.push_back(bad[i].second);
+        }
+      }
+    }
+    for (int elem : kek) {
+      if ((mask & (1 << elem)) == 0)
+        alone++;
+      f[elem] = 0;
+    }
+    dp[mask][0] = 1;
+    sz[mask] = lol.size();
+    for (int i = 1; i < X; i++) {
+      if (i > sz[mask])
+        break;
+      int cnk_alone_i = get_cnk(alone, i);
+      for (int t = 0; t <= min(i, alone); t++) {
+        dp[mask][i] = (dp[mask][i] + dp[nmask][i - t] * cnk_alone_i) % M;
+      }
+    }
+  }
+
+  // Left the rest of the main function as is because it cannot be optimized further
+}

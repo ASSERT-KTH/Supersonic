@@ -1,0 +1,27 @@
+Code Analysis:
+- The code includes a lot of unnecessary header files.
+- The code includes many unnecessary macros and functions that are not used in the program.
+- The code includes a lot of unnecessary typedefs and overloaded operators for printing and reading various data structures.
+- The code includes many unnecessary utility functions for geometric calculations.
+- The code uses a lot of unnecessary STL containers like vectors and pairs.
+
+Optimization Strategy:
+1. Remove unnecessary header files: The code includes a lot of unnecessary header files that are not used in the program. These can be removed to reduce compile time and improve performance.
+
+2. Remove unnecessary macros, functions, and typedefs: The code includes many unnecessary macros, functions, and typedefs that are not used in the program. These can be removed to simplify the code and improve readability.
+
+3. Remove unnecessary utility functions: The code includes many unnecessary utility functions for geometric calculations. These functions are not used in the program and can be removed.
+
+4. Simplify data structures: The code uses many unnecessary STL containers like vectors and pairs. These can be replaced with simpler data structures to improve performance and reduce memory usage.
+
+Step-by-Step Explanation:
+1. Remove unnecessary header files: The following header files are not used in the program and can be removed: <algorithm>, <bitset>, <cassert>, <cfloat>, <climits>, <cmath>, <complex>, <cstdio>, <cstdlib>, <cstring>, <ctime>, <fstream>, <functional>, <iomanip>, <list>, <map>, <memory>, <numeric>, <queue>, <set>, <sstream>, <stack>, <string>, <utility>.
+   - This optimization step reduces unnecessary code and improves compile time.
+
+2. Remove unnecessary macros, functions, and typedefs: The following macros, functions, and typedefs are not used in the program and can be removed: rep, foreach, rforeach, all, rall, CL, COPY, ten, bin, erep, revrep, pb, chmax, chmin, uniq, to_s, to_T, print_container, operator<< for vector, set, multiset, deque, map, pair, print, print2d, input, fix_pre, fast_io, trace, in_rect, in_seg.
+   - This optimization step simplifies the code and improves readability.
+
+3. Remove unnecessary utility functions: The following utility functions for geometric calculations are not used in the program and can be removed: side_G, dot, cross, ccw, is_orthogonal, is_parallel, intersect_LP, intersect_SP, intersect_LL, intersect_LS, intersect_SL, intersect_SS, dist_LP, dist_PL, dist_LL, dist_LS, dist_SL, dist_SP, dist_PS, dist_SS, ip_SS, ip_LL.
+   - This optimization step reduces unnecessary code and improves compile time.
+
+4. Simplify data structures: The code uses many unnecessary STL containers like vectors and pairs. These can be replaced with simpler data structures to improve performance and reduce memory usage.

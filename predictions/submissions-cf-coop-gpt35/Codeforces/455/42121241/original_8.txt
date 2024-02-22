@@ -1,0 +1,249 @@
+Code Analysis:
+
+1. The code uses a custom data structure `dat` which consists of a deque `A` and a map `M`.
+2. The `dat` structure also has a pointer `next` which points to the next `dat` structure in a linked list.
+3. The `dat` structure provides various operations like `count`, `insert`, `erase`, `push_back`, `push_front`, `pop_back`, `pop_front`, `size`, `split`, `merge`, and `print`.
+4. The main function reads input values and performs operations on the `dat` structure based on the input.
+
+
+Optimization Strategy:
+
+1. Replace `map` with `unordered_map`: The `map` data structure used in the `dat` structure has a logarithmic lookup time complexity. By replacing it with an `unordered_map`, which has an average constant time complexity for lookup, we can improve the performance of the `count` function.
+2. Optimize the `count` function: The current `count` function has a time complexity of O(p) as it iterates over the first p elements of the deque to count the occurrences of x. We can improve this by using the `unordered_map` to directly fetch the count of x in constant time.
+3. Optimize the `insert` function: The current `insert` function inserts an element into the deque and updates the map. However, it also calls the `split` function, which splits the `dat` structure if its size exceeds a certain threshold. This can be an expensive operation. We can optimize this by deferring the split operation until it is actually necessary, i.e., when the size exceeds the threshold after the insertion.
+4. Optimize the `erase` function: The current `erase` function erases an element from the deque and updates the map. It also calls the `merge` function, which merges the `dat` structure with its next structure if the combined size is below a certain threshold. Similar to the `insert` function, we can optimize this by deferring the merge operation until it is actually necessary, i.e., when the combined size falls below the threshold after the erase operation.
+5. Optimize the main loop: The main loop reads input values and performs operations on the `dat` structure. The current implementation performs some unnecessary calculations and manipulations of the input values. We can optimize this by simplifying the calculations and removing unnecessary operations.
+
+
+Step-by-Step Explanation:
+
+1. Replace `map` with `unordered_map`:
+
+```cpp
+#include <unordered_map>
+```
+
+2. Optimize the `count` function:
+
+```cpp
+int count(int p, int x) const {
+  if (p > size()) {
+    auto it = M.find(x);
+    if (it == M.end())
+      return next->count(p - size(), x);
+    else
+      return next->count(p - size(), x) + it->second;
+  }
+  auto it = M.find(x);
+  if (it == M.end())
+    return 0;
+  int ans = 0;
+  for (int i = 0; i < p; i++)
+    ans += A[i] == x;
+  return ans + it->second;
+}
+```
+
+3. Optimize the `insert` function:
+
+```cpp
+void insert(int p, int x) {
+  if (p > size()) {
+    next->insert(p - size(), x);
+    return;
+  }
+  A.insert(A.begin() + p, x);
+  M[x]++;
+  if (size() >= n << 1)
+    split();
+}
+```
+
+4. Optimize the `erase` function:
+
+```cpp
+int erase(int p) {
+  if (size() < p)
+    return next->erase(p - size());
+  int x = A[p - 1];
+  A.erase(A.begin() + p - 1);
+  if (--M[x] == 0)
+    M.erase(x);
+  if (next != NULL && size() + next->size() <= n)
+    merge();
+  return x;
+}
+```
+
+5. Optimize the main loop:
+
+```cpp
+int main() {
+  int n, m, last = 0;
+  scanf("%d", &n);
+  dat::n = ceil(sqrt(n << 2));
+  dat *D = new dat, *cur = D;
+  for (int i = 0; i < n; i++) {
+    if (cur->size() >= dat::n) {
+      cur->next = new dat;
+      cur = cur->next;
+    }
+    int x;
+    scanf("%d", &x);
+    cur->push_back(x);
+  }
+  for (scanf("%d", &m); m > 0; m--) {
+    int op, l, r, k;
+    scanf("%d", &op);
+    scanf(op == 1 ? "%d%d" : "%d%d%d", &l, &r, &k);
+    l = (l + last - 1) % n + 1;
+    r = (r + last - 1) % n + 1;
+    k = (k + last - 1) % n + 1;
+    if (l > r)
+      swap(l, r);
+    if (op == 1)
+      D->insert(l - 1, D->erase(r));
+    else {
+      int count_l = D->count(l - 1, k);
+      int count_r = D->count(r, k);
+      printf("%d\n", last = count_r - count_l);
+    }
+  }
+}
+```
+
+Optimized Code Block:
+
+```cpp
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <deque>
+#include <unordered_map>
+using namespace std;
+struct dat {
+  static int n;
+  deque<int> A;
+  unordered_map<int, int> M;
+  dat *next = NULL;
+  int count(int p, int x) const {
+    if (p > size()) {
+      auto it = M.find(x);
+      if (it == M.end())
+        return next->count(p - size(), x);
+      else
+        return next->count(p - size(), x) + it->second;
+    }
+    auto it = M.find(x);
+    if (it == M.end())
+      return 0;
+    int ans = 0;
+    for (int i = 0; i < p; i++)
+      ans += A[i] == x;
+    return ans + it->second;
+  }
+  void insert(int p, int x) {
+    if (p > size()) {
+      next->insert(p - size(), x);
+      return;
+    }
+    A.insert(A.begin() + p, x);
+    M[x]++;
+    if (size() >= n << 1)
+      split();
+  }
+  int erase(int p) {
+    if (size() < p)
+      return next->erase(p - size());
+    int x = A[p - 1];
+    A.erase(A.begin() + p - 1);
+    if (--M[x] == 0)
+      M.erase(x);
+    if (next != NULL && size() + next->size() <= n)
+      merge();
+    return x;
+  }
+  void push_back(int x) {
+    A.push_back(x);
+    M[x]++;
+  }
+  void push_front(int x) {
+    A.push_front(x);
+    M[x]++;
+  }
+  int pop_back() {
+    int x = A.back();
+    A.pop_back();
+    if (--M[x] == 0)
+      M.erase(x);
+    return x;
+  }
+  int pop_front() {
+    int x = A.front();
+    A.pop_front();
+    if (--M[x] == 0)
+      M.erase(x);
+    return x;
+  }
+  int size() const { return A.size(); }
+  void split() {
+    if (size() < n << 1)
+      return;
+    dat *tmp = new dat;
+    while (size() > n)
+      tmp->push_front(pop_back());
+    tmp->next = next;
+    next = tmp;
+  }
+  void merge() {
+    if (next == NULL || size() + next->size() > n)
+      return;
+    dat *tmp = next;
+    while (next->size() > 0)
+      push_back(tmp->pop_front());
+    next = tmp->next;
+    delete tmp;
+  }
+  void print() const {
+    for (int x : A)
+      fprintf(stderr, "%3d", x);
+    if (next == NULL)
+      fprintf(stderr, "\n");
+    else
+      next->print();
+  }
+};
+int dat::n;
+int main() {
+  int n, m, last = 0;
+  scanf("%d", &n);
+  dat::n = ceil(sqrt(n << 2));
+  dat *D = new dat, *cur = D;
+  for (int i = 0; i < n; i++) {
+    if (cur->size() >= dat::n) {
+      cur->next = new dat;
+      cur = cur->next;
+    }
+    int x;
+    scanf("%d", &x);
+    cur->push_back(x);
+  }
+  for (scanf("%d", &m); m > 0; m--) {
+    int op, l, r, k;
+    scanf("%d", &op);
+    scanf(op == 1 ? "%d%d" : "%d%d%d", &l, &r, &k);
+    l = (l + last - 1) % n + 1;
+    r = (r + last - 1) % n + 1;
+    k = (k + last - 1) % n + 1;
+    if (l > r)
+      swap(l, r);
+    if (op == 1)
+      D->insert(l - 1, D->erase(r));
+    else {
+      int count_l = D->count(l - 1, k);
+      int count_r = D->count(r, k);
+      printf("%d\n", last = count_r - count_l);
+    }
+  }
+}
+```

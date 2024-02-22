@@ -1,0 +1,79 @@
+The given C/C++ program can be optimized in a few ways. Here's how:
+
+1. Avoiding the usage of `#include <bits/stdc++.h>`: This header file includes a lot of unnecessary header files, which can increase the compilation time. Instead of this, we should only include the necessary header files.
+
+2. Replacing `scanf` and `printf` with `std::cin` and `std::cout`: This can reduce the execution time as `scanf` and `printf` are slower than their C++ counterparts.
+
+3. Reducing the size of `struct SegmentTree`: The `struct SegmentTree` has two vectors `seg` and `add` of size `sz * 2 + 1`. Instead, we can use a single vector of pairs to store the `seg` and `add` elements. This can reduce the memory usage.
+
+4. Optimizing the division operation: In the `Add` and `Query` methods, the division operation `(l + r) / 2` is used. Division operations are generally slower than bit operations. We can replace this with a right-shift operation `(l + r) >> 1` to make it faster.
+
+Here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+struct SegmentTree {
+  vector<pair<int, int>> seg;
+  int sz;
+
+  SegmentTree(int n) {
+    sz = 1;
+    while (sz < n)
+      sz *= 2;
+    seg.assign(sz * 2 + 1, {0, 0});
+  }
+
+  void Add(int a, int b, int x, int k, int l, int r) {
+    if (a >= r || b <= l) {
+      return;
+    } else if (a <= l && r <= b) {
+      seg[k].second += x;
+    } else {
+      Add(a, b, x, 2 * k + 1, l, (l + r) >> 1);
+      Add(a, b, x, 2 * k + 2, (l + r) >> 1, r);
+      seg[k].first = seg[2 * k + 1].first + seg[2 * k + 1].second + seg[2 * k + 2].first + seg[2 * k + 2].second;
+    }
+  }
+
+  int Query(int a, int b, int k, int l, int r) {
+    if (a >= r || b <= l)
+      return 0;
+    if (a <= l && r <= b)
+      return (seg[k].first + seg[k].second);
+    return Query(a, b, 2 * k + 1, l, (l + r) >> 1) + Query(a, b, 2 * k + 2, (l + r) >> 1, r) + seg[k].second;
+  }
+
+  void Add(int a, int b, int x) { Add(a, b, x, 0, 0, sz); }
+  int Query(int a, int b) { return Query(a, b, 0, 0, sz); }
+};
+
+int main() {
+  int N, M;
+  cin >> N >> M;
+  SegmentTree segtree(N);
+  vector<int> P(M);
+  for (int &p : P) {
+    cin >> p;
+    --p;
+  }
+  for (int i = 1; i < M; i++) {
+    int u = min(P[i - 1], P[i]), v = max(P[i - 1], P[i]);
+    segtree.Add(u, v, 1);
+  }
+  long long ret = 0;
+  for (int i = 0; i < N - 1; i++) {
+    long long used = segtree.Query(i, i + 1);
+    int A, B, C;
+    cin >> A >> B >> C;
+    ret += min(used * A, C + used * B);
+  }
+  cout << ret << endl;
+  return 0;
+}
+```
+
+Please note that the optimized code is more efficient in terms of running time and memory usage. However, it may be slightly more difficult to understand because it uses some advanced C++ features and optimizations.

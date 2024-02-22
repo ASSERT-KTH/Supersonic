@@ -1,0 +1,167 @@
+Before we start optimizing the code, let's analyze the performance bottlenecks and inefficient memory usage in the given code:
+
+1. Inefficient data structures:
+   - The `Plane` type is defined as `vector<Point>`, which is used to represent a collection of points forming a plane. However, there is no need to store the points in a vector, as there is no requirement to access them in a random order. Instead, we can use a `std::array` or a simple struct with three `Point` variables to represent the plane.
+
+2. Redundant computations:
+   - The `cross_prod` and `dot_prod` functions use the `conj` function to compute the complex conjugate of a point. However, since the points are represented using `complex<double>`, the complex conjugate of a point is the same as its conjugate. Therefore, we can eliminate the calls to `conj` and directly compute the cross product and dot product.
+
+3. Inefficient input handling:
+   - The `testcase_ends` function reads the input using `scanf`. This can be inefficient for large inputs, as it requires parsing the input character by character. Instead, we can use `std::cin` to read the input, which provides a more efficient way of parsing input.
+
+4. Redundant checks:
+   - The `ccwise` function computes the orientation of three points using cross products and dot products. However, it performs redundant checks by computing the cross product multiple times. We can optimize this by computing the cross product once and reusing the result.
+
+Now, let's formulate an optimization strategy to address these issues:
+
+1. Replace the `Plane` type with a more efficient data structure, such as `std::array` or a struct with three `Point` variables.
+
+2. Eliminate the calls to `conj` in the `cross_prod` and `dot_prod` functions, and directly compute the cross product and dot product.
+
+3. Replace the `scanf` calls in the `testcase_ends` function with `std::cin` for more efficient input handling.
+
+4. Optimize the `ccwise` function by computing the cross product once and reusing the result.
+
+5. Consider using compiler optimizations or pragma directives to hint the compiler to optimize certain parts of the code, such as loop unrolling or vectorization.
+
+Let's now proceed with the step-by-step explanation of each optimization:
+
+1. Replace the `Plane` type with a more efficient data structure:
+   - Replace the line `using Plane = vector<Point>;` with `using Plane = array<Point, 3>;` or define a custom struct with three `Point` variables to represent the plane.
+
+2. Eliminate the calls to `conj` in the `cross_prod` and `dot_prod` functions:
+   - Replace the lines `return imag(conj(a) * b);` and `return real(conj(a) * b);` with `return imag(a * b);` and `return real(a * b);`, respectively.
+
+3. Replace the `scanf` calls in the `testcase_ends` function with `std::cin`:
+   - Replace the lines `if (scanf("%lf %lf", &x, &y) == EOF)` and `scanf("%lf %lf", &x, &y);` with `if (!(std::cin >> x >> y))` and `std::cin >> x >> y;`, respectively.
+
+4. Optimize the `ccwise` function:
+   - Modify the `ccwise` function to compute the cross product once and reuse the result, as follows:
+     ```cpp
+     CCWiseState ccwise(Point a, Point b, Point c) {
+       Point ba = b - a;
+       Point ca = c - a;
+       double cross = cross_prod(ba, ca);
+       if (cross > 0) {
+         return COUNTER_CLOCKWISE;
+       } else if (cross < 0) {
+         return CLOCKWISE;
+       } else if (dot_prod(ba, ca) < 0) {
+         return ONLINE_BACK;
+       } else if (norm(ba) < norm(ca)) {
+         return ONLINE_FRONT;
+       } else {
+         return ON_SEGMENT;
+       }
+     }
+     ```
+
+5. Consider using compiler optimizations or pragma directives:
+   - Add compiler-specific optimizations or pragma directives to hint the compiler to optimize certain parts of the code, such as loop unrolling or vectorization. This step may vary depending on the compiler and platform being used.
+
+Finally, here is the complete optimized code:
+
+```cpp
+#include <algorithm>
+#include <complex>
+#include <iostream>
+#include <array>
+
+using namespace std;
+
+static const double EPS = 1e-12;
+static const double INF = 1e24;
+
+using Point = complex<double>;
+using Plane = array<Point, 3>;
+
+bool operator<(const Point &a, const Point &b) {
+  return real(a) != real(b) ? real(a) < real(b) : imag(a) < imag(b);
+}
+
+double cross_prod(const Point &a, const Point &b) {
+  return imag(a * b);
+}
+
+double dot_prod(const Point &a, const Point &b) {
+  return real(a * b);
+}
+
+struct Line : public pair<Point, Point> {
+  Line() {}
+  Line(const Point &a, const Point &b) {
+    first = a;
+    second = b;
+  }
+};
+
+struct LineSeg : public pair<Point, Point> {
+  LineSeg() {}
+  LineSeg(const Point &a, const Point &b) {
+    first = a;
+    second = b;
+  }
+};
+
+struct Circle {
+  Point p;
+  double r;
+  Circle() {}
+  Circle(const Point &p, const double r) : p(p), r(r) {}
+};
+
+enum CCWiseState {
+  ONLINE_FRONT = -2,
+  CLOCKWISE,
+  ON_SEGMENT,
+  COUNTER_CLOCKWISE,
+  ONLINE_BACK,
+};
+
+CCWiseState ccwise(Point a, Point b, Point c) {
+  Point ba = b - a;
+  Point ca = c - a;
+  double cross = cross_prod(ba, ca);
+  if (cross > 0) {
+    return COUNTER_CLOCKWISE;
+  } else if (cross < 0) {
+    return CLOCKWISE;
+  } else if (dot_prod(ba, ca) < 0) {
+    return ONLINE_BACK;
+  } else if (norm(ba) < norm(ca)) {
+    return ONLINE_FRONT;
+  } else {
+    return ON_SEGMENT;
+  }
+}
+
+bool testcase_ends() {
+  double x, y;
+  if (!(cin >> x >> y))
+    return true;
+  Point A(x, y);
+  cin >> x >> y;
+  Point B(x, y);
+  cin >> x >> y;
+  Point C(x, y);
+  cin >> x >> y;
+  Point P(x, y);
+  CCWiseState tmp = ccwise(A, P, B);
+  if (tmp != ccwise(B, P, C)) {
+    return !printf("NO\n");
+  } else if (tmp != ccwise(C, P, A)) {
+    return !printf("NO\n");
+  }
+  printf("YES\n");
+  return false;
+}
+
+int main() {
+  int solved = 0;
+  while (!testcase_ends())
+    ++solved;
+  return !solved;
+}
+```
+
+The optimized code incorporates the proposed optimizations, making the code more efficient in terms of running time and memory usage.

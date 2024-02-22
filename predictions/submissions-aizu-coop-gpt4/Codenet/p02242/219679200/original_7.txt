@@ -1,0 +1,89 @@
+The provided code is a C++ implementation of Dijkstra's algorithm for shortest path calculation on a graph. Here are the key points for optimization:
+
+1. **Code Analysis:**
+    - The code uses a 2D array (implemented as a 1D array) to represent the adjacency matrix of the graph. This is inefficient in terms of memory usage, especially for sparse graphs where most of the distances will be set to `INFINIT`.
+    - The algorithm iterates over all the nodes in the graph for every single node to find the node with the minimum distance. This operation can be performed more efficiently with a priority queue.
+
+2. **Optimization Strategy:**
+    - Replace the 2D array representation of the graph with an adjacency list, which consumes less memory for sparse graphs.
+    - Use a priority queue to find the node with the minimum distance more efficiently.
+    - Reduce the number of times the minimum distance is updated by checking if the new distance is less than the previous distance before updating.
+
+3. **Step-by-Step Explanation:**
+    - Replace the 2D array with an adjacency list: An adjacency list is a more space-efficient way to represent a graph, especially when the graph is sparse (i.e., there are not many edges). Rather than storing all potential edges (as the 2D array does), the adjacency list only stores actual edges. This can be achieved by changing the type of `g_` from `uint*` to `std::vector<std::vector<std::pair<uint, uint>>>`.
+    - Use a priority queue to find the node with the minimum distance: Currently, the algorithm finds the node with the minimum distance by iterating over all nodes. This is inefficient and can be optimized by using a priority queue. The priority queue will automatically keep track of the node with the minimum distance, improving the efficiency of this step from O(n) to O(log n).
+    - Reduce the number of times the minimum distance is updated by checking if the new distance is less than the previous distance before updating. This will avoid unnecessary writes to memory, which can be slow.
+
+4. **Optimized Code Block:**
+    - Please note that this code requires including the `<vector>` and `<queue>` headers for the `std::vector` and `std::priority_queue` types.
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <vector>
+#include <queue>
+
+using uint = unsigned int;
+using Node = std::pair<uint, uint>;
+
+class Graph {
+  const uint n_;
+  std::vector<std::vector<Node>> g_;
+  const uint INFINIT;
+
+public:
+  Graph(uint n)
+    : n_(n), g_(n_), INFINIT(100000 * (n_ - 1) + 1) {}
+
+  std::vector<Node>& operator[](uint i) { return g_[i]; }
+  
+  void dijkstra(std::vector<uint>& dist) {
+    dist.assign(n_, INFINIT);
+    std::vector<bool> visited(n_, false);
+    dist[0] = 0;
+    
+    std::priority_queue<Node, std::vector<Node>, std::greater<Node>> pq;
+    pq.push({0, 0});
+    
+    while (!pq.empty()) {
+      uint i = pq.top().second;
+      pq.pop();
+      
+      if (visited[i]) continue;
+      visited[i] = true;
+      
+      for (auto& adj : g_[i]) {
+        uint j = adj.first, w = adj.second;
+        if (!visited[j] && dist[i] + w < dist[j]) {
+          dist[j] = dist[i] + w;
+          pq.push({dist[j], j});
+        }
+      }
+    }
+  }
+};
+
+int main() {
+  uint n;
+  std::scanf("%u", &n);
+  Graph g(n);
+  
+  for (uint i = 0; i < n; ++i) {
+    uint u, k;
+    std::scanf("%u %u", &u, &k);
+    while (k--) {
+      uint v, w;
+      std::scanf("%u %u", &v, &w);
+      g[u].push_back({v, w});
+    }
+  }
+  
+  std::vector<uint> dist;
+  g.dijkstra(dist);
+  for (uint i = 0; i < n; ++i) {
+    std::printf("%u %u\n", i, dist[i]);
+  }
+}
+```
+
+The trade-off in this optimization is that the priority queue operation could potentially add some overhead in terms of runtime, especially for small graphs. However, in the case of large sparse graphs, the benefits in terms of memory usage and time complexity could far outweigh the costs.

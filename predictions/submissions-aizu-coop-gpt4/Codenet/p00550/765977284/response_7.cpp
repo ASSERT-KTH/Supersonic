@@ -1,0 +1,21 @@
+The given C++ code is quite complex and involves several array manipulations and breadth-first search (BFS) traversals, which may cause performance bottlenecks. Here are a few optimization strategies that could be used:
+
+1. **Avoid unnecessary calls to `getchar_unlocked()`:** The `reader` method is called several times in the code, and it contains multiple calls to `getchar_unlocked()`. Each call to this method involves system-level operations that are time-consuming. It would be more efficient to read all the required values at once and then parse them into integers.
+
+2. **Use of 'memset' for array initialization:** `memset` is used to initialize the array 'd'. Although it's a fast way to initialize an array, it's not always safe in C++. For example, it does not work correctly for non-trivial data types. It's better to use standard algorithm `std::fill_n` or loop to fill the array.
+
+3. **Avoid vector clear operation:** `E[i].clear()` is called for each 'i' in the range of 'n'. Clearing a vector involves deallocating its memory, which is an expensive operation. This operation can be avoided by reassigning the vector to a new empty vector, which is a cheaper operation.
+
+4. **Avoid unnecessary push and pop operations in queue:** In the BFS function, elements are pushed into the queue and then popped out. These operations could be reduced by checking the conditions before pushing into the queue.
+
+A detailed step-by-step explanation of each optimization step is as follows:
+
+1. **Avoid unnecessary calls to `getchar_unlocked()`:** Instead of calling `getchar_unlocked()` multiple times, we can read the entire line at once using `std::getline(std::cin, line)` and then parse the integers using `std::stringstream`. This would reduce the number of system calls and potentially improve performance.
+
+2. **Use of 'memset' for array initialization:** Replace `memset(d, -1, sizeof(d));` with a loop or `std::fill_n` to initialize 'd' array. It would be safer and more C++ idiomatic.
+
+3. **Avoid vector clear operation:** Instead of calling `E[i].clear()`, we can reassign `E[i]` to a new empty vector like this: `E[i] = std::vector<int>();`. This operation is cheaper than clearing the vector.
+
+4. **Avoid unnecessary push and pop operations in queue:** Before pushing an element into the queue, we can check whether it would be popped out later. If it wouldn't, we don't push it. This would reduce the number of push and pop operations and potentially improve performance.
+
+The above steps should optimize the provided code while preserving its functionality and output. The trade-off is that the code might become slightly more complex due to the additional checks and the use of `std::stringstream`. However, the potential performance gain should outweigh this disadvantage.

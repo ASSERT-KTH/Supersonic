@@ -1,0 +1,79 @@
+The provided program seems to be a dynamic programming problem for minimizing some cost, but it seems to be quite inefficient in a few ways. Here are few steps you can take to optimize the program:
+
+1. Removing `#include <bits/stdc++.h>`: Including `bits/stdc++.h` is generally considered bad practice because it includes a lot of unnecessary headers, which can slow down the program and increase memory usage. It's better to include only the headers that are actually needed in the program.
+
+2. Using `std::ios_base::sync_with_stdio(false);` and `cin.tie(NULL);`: These lines can speed up the reading and writing from the standard input and output in C++ by disabling synchronization with the C standard library's I/O functions and untie `cin` from `cout`.
+
+3. Precomputing `min(N, j)`: Instead of computing `min(N, j)` multiple times, it can be stored in a variable and reused.
+
+4. Avoiding the use of `std::vector::push_back`: The `push_back` function can cause reallocation of the entire vector when it grows beyond its capacity, which is quite slow. If the maximum size of the vector is known in advance, it's better to reserve that much space with `std::vector::reserve`.
+
+5. Using `std::array` instead of C-style arrays: `std::array` is a safer, more modern replacement for C-style arrays. It has the same performance, but provides some additional features like automatic storage duration and range-checked access.
+
+6. Avoiding the use of `std::pair`: Using `std::pair` can be slower than using two separate variables, because accessing the elements of a pair involves an additional level of indirection. It's better to use two separate variables if possible.
+
+Here's the optimized version of the program:
+
+```cpp
+#include <iostream>
+#include <string>
+#include <vector>
+#include <array>
+#include <algorithm>
+
+#define INF 1e9
+#define N 100000
+
+using namespace std;
+typedef long long ll;
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+
+  int n, m, hp[101];
+  while (cin >> n, n) {
+    for (int i = 0; i < n; i++)
+      cin >> hp[i];
+
+    array<vector<pair<int, int>>, 2> mg;
+    cin >> m;
+    mg[0].reserve(m);
+    mg[1].reserve(m);
+
+    for (int i = 0, cost, dam; i < m; i++) {
+      string name, type;
+      cin >> name >> cost >> type >> dam;
+      if (dam)
+        mg[type == "All"].emplace_back(dam, cost);
+    }
+
+    array<array<int, N + 10>, 2> dp{};
+    for (int i = 0; i < 2; i++)
+      fill_n(dp[i].begin() + 1, N + 10 - 1, INF);
+
+    for (int k = 0; k < 2; k++)
+      for (const auto &p : mg[k])
+        for (int j = p.first; j <= (N / p.first + 1) * p.first; j++) {
+          int min_j = min(N, j);
+          dp[k][min_j] = min(dp[k][min_j], dp[k][j - p.first] + p.second);
+        }
+
+    for (int i = 0; i < 2; i++)
+      for (int j = N; j >= 0; j--)
+        dp[i][j] = min(dp[i][j], dp[i][j + 1]);
+
+    ll ans = INF;
+    for (int i = 0; i <= N; i++) {
+      ll cost = dp[1][i];
+      for (int j = 0; j < n; j++)
+        cost += dp[0][max(0, hp[j] - i)];
+      ans = min(ans, cost);
+    }
+
+    cout << ans << endl;
+  }
+
+  return 0;
+}
+```

@@ -1,0 +1,139 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+const int INF = 1e18;
+
+struct node {
+  int mx, mi, lz;
+};
+
+const int N = 2e5;
+int n;
+node st[1 << 20];
+
+void apply(int i, int x, int l2, int r2) {
+  st[i].mx -= x;
+  st[i].mi -= x;
+  if (st[i].lz == -INF)
+    st[i].lz = 0;
+  st[i].lz += x;
+}
+
+void push(int i, int l2, int mid, int r2) {
+  if (st[i].lz == -INF)
+    return;
+  apply(2 * i, st[i].lz, l2, mid);
+  apply(2 * i + 1, st[i].lz, mid + 1, r2);
+  st[i].lz = -INF;
+}
+
+void build(int l1, int x, int i = 1, int l2 = 0, int r2 = n - 1) {
+  if (l2 == r2) {
+    st[i].mx = x;
+    st[i].mi = x;
+    st[i].lz = -INF;
+    return;
+  }
+  int mid = (l2 + r2) / 2;
+  if (l1 <= mid)
+    build(l1, x, 2 * i, l2, mid);
+  else
+    build(l1, x, 2 * i + 1, mid + 1, r2);
+  st[i].mx = max(st[2 * i].mx, st[2 * i + 1].mx);
+  st[i].mi = min(st[2 * i].mi, st[2 * i + 1].mi);
+  st[i].lz = -INF;
+}
+
+void upd(int l1, int r1, int x, int i = 1, int l2 = 0, int r2 = n - 1) {
+  if (l1 <= l2 && r2 <= r1) {
+    apply(i, x, l2, r2);
+    return;
+  }
+  int mid = (l2 + r2) / 2;
+  push(i, l2, mid, r2);
+  if (l1 <= mid)
+    upd(l1, r1, x, 2 * i, l2, mid);
+  if (mid < r1)
+    upd(l1, r1, x, 2 * i + 1, mid + 1, r2);
+  st[i].mx = max(st[2 * i].mx, st[2 * i + 1].mx);
+  st[i].mi = min(st[2 * i].mi, st[2 * i + 1].mi);
+}
+
+int qry(int l1, int r1, int type, int i = 1, int l2 = 0, int r2 = n - 1) {
+  if (l1 <= l2 && r2 <= r1) {
+    if (type == 1)
+      return st[i].mx;
+    else
+      return st[i].mi;
+  }
+  int mid = (l2 + r2) / 2;
+  push(i, l2, mid, r2);
+  if (type == 1)
+    return max((l1 <= mid ? qry(l1, r1, type, 2 * i, l2, mid) : -INF),
+               (mid < r1 ? qry(l1, r1, type, 2 * i + 1, mid + 1, r2) : -INF));
+  else
+    return min((l1 <= mid ? qry(l1, r1, type, 2 * i, l2, mid) : INF),
+               (mid < r1 ? qry(l1, r1, type, 2 * i + 1, mid + 1, r2) : INF));
+}
+
+void solve() {
+  int n1;
+  cin >> n1;
+  vector<pair<int, int>> b(n1);
+  for (int i = 0; i < n1; i++) {
+    cin >> b[i].first;
+    b[i].second = i;
+  }
+  n = n1 + 1;
+  for (int i = 0; i < n; i++)
+    build(i, i);
+  sort(b.begin(), b.end());
+  for (int i = n1 - 1; i >= 0; i--) {
+    vector<int> del;
+    int cur = b[i].first;
+    while (i >= 0 && b[i].first == cur) {
+      int j = b[i].second;
+      int p = qry(j + 1, j + 1, 1), q = qry(0, j, 2), r = qry(j + 1, n - 1, 1);
+      del.push_back(b[i].second);
+      cout << (p - q + r - p - 1) / 2 << " ";
+      i--;
+    }
+    for (auto u : del) {
+      upd(u + 1, n - 1, 2);
+    }
+    i++;
+  }
+  for (int i = 0; i < n1; i++)
+    build(i, i);
+  for (int i = 0; i < n1; i++) {
+    vector<int> del;
+    int cur = b[i].first;
+    while (i < n1 && b[i].first == cur) {
+      int j = b[i].second;
+      int p = qry(j + 1, j + 1, 1), q = qry(0, j, 2), r = qry(j + 1, n - 1, 1);
+      del.push_back(b[i].second);
+      cout << max((p - q + r - p) / 2, 0) << " ";
+      i++;
+    }
+    for (auto u : del) {
+      upd(u + 1, n - 1, 2);
+    }
+    i--;
+  }
+}
+
+int main() {
+  ios::sync_with_stdio(0);
+  cin.tie(0);
+  cout.tie(0);
+
+  int t = 1;
+  for (int i = 0; i < t; i++) {
+    solve();
+  }
+
+  return 0;
+}

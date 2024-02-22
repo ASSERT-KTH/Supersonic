@@ -1,0 +1,146 @@
+**Code Analysis:**
+
+The given code is implementing the Convex Hull algorithm using the Graham's scan which is a method of computing the convex hull of a finite set of points in the plane with time complexity O(n log n). It uses a stack to detect and remove concavities in the boundary.
+
+**Optimization Strategy:**
+
+1. **Efficient Data Structures**: The code is already using suitable data structures such as arrays and vectors which are efficient for this task.
+
+2. **Redundant Computations**: The code is well written with no apparent redundant computations. 
+
+3. **Loops and Recursion**: The loops in this code are necessary for the algorithm and they are already optimized. 
+
+4. **Compiler Optimizations**: Since this is a C++ code, we can use compiler optimization flags like `-O2` or `-O3` during compilation to get optimized code.
+
+**Optimization Steps:**
+
+1. **Avoiding unnecessary type casting**: In the `ccw` function, there are many calculations that involve a conversion from `int` to `double`. We can avoid this by changing the type of the `EPS` constant to `double`.
+
+2. **Avoiding unnecessary calculations**: In the `intersect_circle_point` function, there is a call to the `distance_l_p` function which calculates the distance from a point to a line. This calculation involves a division operation which is costly. We can avoid this division by comparing the square of the distance with the square of the radius.
+
+3. **Use of `auto` keyword**: In some places in the code, we can use the `auto` keyword to let the compiler deduce the type of the variable.
+
+4. **Use of `constexpr`**: We can use `constexpr` for the `EPS` and `MAX_N` constants to specify that their values will be evaluated at compile time. This can lead to some performance improvements.
+
+5. **Inclusion of only necessary libraries**: The code is including `bits/stdc++.h`, which includes almost all standard C++ libraries, which increases the compilation time. Instead, we can include only the necessary libraries.
+
+**Optimized Code Block:**
+
+Here is the optimized version of your code considering the above points:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <algorithm>
+using namespace std;
+typedef long long ll;
+typedef pair<int, int> pii;
+#define rep(i, n) for (ll i = 0; i < (ll)(n); i++)
+#define all(a) (a).begin(), (a).end()
+#define vi vector<int>
+#define pb push_back
+#define INF 999999999
+constexpr double EPS = 1e-10;
+constexpr int MAX_N = 100;
+
+class P {
+public:
+  double x, y;
+  P(double _x = 0, double _y = 0) : x(_x), y(_y){};
+  P operator+(P &p) { return P(x + p.x, y + p.y); }
+  P operator-(P &p) { return P(x - p.x, y - p.y); }
+  P operator*(double k) { return P(x * k, y * k); }
+  P operator/(double k) { return P(x / k, y / k); }
+  bool operator==(const P &p) {
+    return (fabs(x - p.x) < EPS && fabs(y - p.y) < EPS);
+  }
+  double norm() { return x * x + y * y; }
+  double abs() { return sqrt(norm()); }
+};
+
+struct L {
+  P p1, p2;
+};
+
+typedef vector<P> Polygon;
+typedef P Vector;
+double dot(Vector a, Vector b) { return a.x * b.x + a.y * b.y; }
+double cross(Vector a, Vector b) { return a.x * b.y - a.y * b.x; }
+int ccw(P p0, P p1, P p2) {
+  Vector a = p1 - p0;
+  Vector b = p2 - p0;
+  if (cross(a, b) > EPS)
+    return 1;
+  if (cross(a, b) < -EPS)
+    return -1;
+  if (dot(a, b) < -EPS)
+    return 2;
+  if (a.norm() < b.norm())
+    return -2;
+  return 0;
+}
+
+bool intersect(P p1, P p2, P p3, P p4) {
+  return (ccw(p1, p2, p3) * ccw(p1, p2, p4) <= 0 &&
+          ccw(p3, p4, p1) * ccw(p3, p4, p2) <= 0);
+}
+
+double distance_l_p(L l, P p) {
+  return abs(cross(l.p2 - l.p1, p - l.p1)) / (l.p2 - l.p1).abs();
+}
+
+bool intersect_circle_point(P center, double r, L line) {
+  double distance = cross(line.p2 - line.p1, center - line.p1);
+  return (distance * distance <= r * r * (line.p2 - line.p1).norm() + EPS);
+}
+
+bool isPointInsidePolygon(vector<L> side, P p) {
+  int c = 0, sideSum = side.size();
+  rep(i, sideSum) {
+    if (cross(side[i].p2 - side[i].p1, p - side[i].p1) > 0)
+      c++;
+  }
+  return !(c % sideSum);
+}
+
+bool cmp_x(const P &p, const P &q) {
+  if (p.x != q.x)
+    return p.x < q.x;
+  return p.y < q.y;
+}
+
+vector<P> convex_hull(P *ps, int n) {
+  sort(ps, ps + n, cmp_x);
+  int k = 0;
+  vector<P> qs(n * 2);
+  rep(i, n) {
+    while (k > 1 && cross((qs[k - 1] - qs[k - 2]), (ps[i] - qs[k - 1])) <= 0)
+      k--;
+    qs[k++] = ps[i];
+  }
+  for (int i = n - 2, t = k; i >= 0; i--) {
+    while (k > t && cross((qs[k - 1] - qs[k - 2]), (ps[i] - qs[k - 1])) <= 0)
+      k--;
+    qs[k++] = ps[i];
+  }
+  qs.resize(k - 1);
+  return qs;
+}
+
+int N;
+P ps[MAX_N];
+int main() {
+  while (cin >> N && N) {
+    rep(i, N) {
+      char ch;
+      cin >> ps[i].x >> ch >> ps[i].y;
+    }
+    auto res = convex_hull(ps, N);
+    cout << N - res.size() << endl;
+  }
+}
+```
+**Trade-offs:**
+
+The trade-off in this optimization is the readability of the code. Usage of `auto` keyword and `constexpr` may make the code harder to understand for beginners. However, these changes can improve the performance of the code.

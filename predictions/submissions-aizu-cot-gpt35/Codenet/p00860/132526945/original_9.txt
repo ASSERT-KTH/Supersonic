@@ -1,0 +1,118 @@
+Explanation of the optimization steps:
+
+1. Remove unnecessary headers: The program includes the headers `<cctype>`, `<cstdio>`, `<cstring>`, and `<queue>`, but it only uses a few functions from `<cctype>`, `<cstdio>`, and `<cstring>`. Therefore, we can remove the inclusion of `<cctype>` and `<cstring>` as they are not required.
+
+2. Use `std::array` for `c` and `wall` arrays: The program uses fixed-size arrays `c` and `wall`. We can replace them with `std::array` containers to improve memory usage and make the code more readable.
+
+3. Use `std::vector` for `vis` array: The program uses a fixed-size array `vis` to store visited states. We can replace it with a `std::vector` to allow dynamic resizing and improve memory usage.
+
+4. Use `std::queue` instead of `queue<int>`: The program uses `queue<int>` for the BFS traversal. We can use `std::queue` instead to improve code readability.
+
+5. Use `std::tuple` instead of bitwise operations: The program uses bitwise operations to manipulate and check positions. We can use `std::tuple` to represent positions and simplify the code.
+
+6. Use `std::getline` instead of `fgets`: The program uses `fgets` to read input lines. We can use `std::getline` to read input lines and remove the dependency on `cstdio`.
+
+7. Avoid redundant checks in the `check` function: The `check` function performs multiple checks in a loop. We can optimize it by avoiding redundant checks and early returning when a condition is not met.
+
+8. Remove redundant `tm0` increment: The `tm0` variable is incremented in every iteration of the main loop. We can remove the increment and initialize `tm0` to 1.
+
+9. Avoid unnecessary initialization of `vis` array: The `vis` array is initialized to 0 in every iteration of the main loop. We can avoid this initialization by initializing `vis` outside the loop and resetting it only when necessary.
+
+10. Use `puts` instead of `printf`: The program uses `printf` to print a single integer. We can use `puts` instead to simplify the code.
+
+Optimized code:
+
+```cpp
+#include <cstdio>
+#include <array>
+#include <vector>
+#include <queue>
+#include <tuple>
+#include <algorithm>
+
+bool wall[256];
+std::array<std::array<char, 20>, 16> c;
+std::vector<unsigned short> vis;
+
+bool check(const std::tuple<int, int, int>& u, const std::tuple<int, int, int>& v) {
+  for (int i = 0; i < 24; i += 8) {
+    int p1 = std::get<1>(v) >> i & 255;
+    if (p1) {
+      int j = i == 16 ? 0 : i + 8;
+      if (wall[p1]) {
+        return false;
+      }
+      int p2 = (std::get<1>(v) >> j % 24) & 255;
+      if (p1 == p2) {
+        return false;
+      }
+      if (p1 == (std::get<1>(u) >> j % 24 & 255) && p2 == (std::get<1>(u) >> i % 24 & 255)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+int solve(int start, int goal) {
+  const std::array<int, 5> dif = {0, -1, 1, -16, 16};
+  std::queue<std::tuple<int, int, int>> q;
+  q.push(std::make_tuple(start, -1, 0));
+  int tm = 1;
+  vis[start] = tm;
+  while (true) {
+    auto u = q.front();
+    q.pop();
+    if (std::get<0>(u) < 0) {
+      q.push(std::make_tuple(-1, -1, std::get<2>(u) + 1));
+      ++tm;
+    } else {
+      for (int i1 = std::get<0>(u) & 255 ? 4 : 0; i1 >= 0; --i1)
+        for (int i2 = std::get<0>(u) >> 8 & 255 ? 4 : 0; i2 >= 0; --i2)
+          for (int i3 = std::get<0>(u) >> 16 ? 4 : 0; i3 >= 0; --i3) {
+            int v = std::get<0>(u) + dif[i1] + (dif[i2] << 8) + (dif[i3] << 16);
+            if (vis[v] > 0) {
+              continue;
+            }
+            if (check(u, std::make_tuple(v, 0, 0))) {
+              if (v == goal) {
+                return std::get<2>(u) + 1;
+              }
+              vis[v] = 1;
+              q.push(std::make_tuple(v, 0, std::get<2>(u) + 1));
+            }
+          }
+    }
+  }
+}
+
+int main() {
+  int w, h;
+  while (scanf("%d%d%*d ", &w, &h), w) {
+    for (int i = 0; i < h; ++i) {
+      std::getline(std::cin, c[i]);
+    }
+    int goal = 0;
+    int start = 0;
+    for (int i = 0; i < h; ++i) {
+      for (int j = 0; j < w; ++j) {
+        if (c[i][j] == '#') {
+          wall[i << 4 | j] = true;
+        } else {
+          wall[i << 4 | j] = false;
+          if (std::isupper(c[i][j])) {
+            goal |= (i << 4 | j) << (c[i][j] - 'A') * 8;
+          } else if (std::islower(c[i][j])) {
+            start |= (i << 4 | j) << (c[i][j] - 'a') * 8;
+          }
+        }
+      }
+    }
+    int tm = solve(start, goal);
+    puts(std::to_string(tm).c_str());
+    if (tm > 55000) {
+      vis.assign(1 << 24, 0);
+    }
+  }
+}
+```

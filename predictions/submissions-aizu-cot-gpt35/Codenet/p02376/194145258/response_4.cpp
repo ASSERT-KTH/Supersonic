@@ -1,0 +1,263 @@
+#include <cstdio>
+#include <cstring>
+#include <algorithm>
+
+#define INF (1 << 29)
+#define max_n 10000
+
+class node_t {
+private:
+    node_t *pp, *lp, *rp;
+    int id, val, mini, minId, lazy;
+    struct edge {
+        int to, cap, rev;
+    };
+    edge *e;
+
+public:
+    node_t(int id, int v) : id(id), val(v) {
+        pp = lp = rp = nullptr;
+        lazy = 0;
+        update();
+    }
+
+    void update() {
+        mini = val, minId = id;
+        if (lp && mini > lp->mini)
+            mini = lp->mini, minId = lp->minId;
+        if (rp && mini > rp->mini)
+            mini = rp->mini, minId = rp->minId;
+    }
+
+    void apply(int v) {
+        lazy += v, val += v, mini += v;
+    }
+
+    void push() {
+        lp->apply(lazy);
+        rp->apply(lazy);
+        lazy = 0;
+    }
+
+    bool is_root() {
+        return !pp || (pp->lp != this && pp->rp != this);
+    }
+
+    void rotr() {
+        node_t *q = pp, *r = q->pp;
+        q->push(), push();
+        if ((q->lp = rp))
+            rp->pp = q;
+        rp = q;
+        q->pp = this;
+        if ((pp = r)) {
+            if (r->lp == q)
+                r->lp = this;
+            if (r->rp == q)
+                r->rp = this;
+        }
+        q->update();
+    }
+
+    void rotl() {
+        node_t *q = pp, *r = q->pp;
+        q->push(), push();
+        if ((q->rp = lp))
+            lp->pp = q;
+        lp = q;
+        q->pp = this;
+        if ((pp = r)) {
+            if (r->lp == q)
+                r->lp = this;
+            if (r->rp == q)
+                r->rp = this;
+        }
+        q->update();
+    }
+
+    void splay() {
+        while (!is_root()) {
+            node_t *q = pp;
+            if (q->is_root()) {
+                if (q->lp == this)
+                    rotr();
+                else
+                    rotl();
+            } else {
+                node_t *r = q->pp;
+                if (r->lp == q) {
+                    if (q->lp == this) {
+                        q->rotr();
+                        rotr();
+                    } else {
+                        rotl();
+                        rotr();
+                    }
+                } else {
+                    if (q->rp == this) {
+                        q->rotl();
+                        rotl();
+                    } else {
+                        rotr();
+                        rotl();
+                    }
+                }
+            }
+        }
+        push();
+        update();
+    }
+
+    friend node_t *expose(node_t *x);
+    friend node_t *find_root(node_t *x);
+    friend void cut(node_t *c);
+    friend void link(node_t *c, node_t *p, int val, edge *e);
+    friend int minId(node_t *x);
+    friend void add(node_t *x, int val);
+};
+
+node_t *expose(node_t *x) {
+    node_t *rp = nullptr;
+    for (node_t *p = x; p; p = p->pp) {
+        p->splay();
+        p->rp = rp;
+        p->update();
+        rp = p;
+    }
+    x->splay();
+    return rp;
+}
+
+node_t *find_root(node_t *x) {
+    expose(x);
+    while (x->lp)
+        x = x->lp;
+    return x;
+}
+
+void cut(node_t *c) {
+    expose(c);
+    node_t *p = c->lp;
+    c->lp = nullptr;
+    p->pp = nullptr;
+    c->val = INF;
+}
+
+void link(node_t *c, node_t *p, int val, node_t::edge *e) {
+    expose(c), expose(p);
+    c->pp = p, p->rp = c;
+    c->val = val;
+    c->update();
+    c->e = e;
+}
+
+int minId(node_t *x) {
+    expose(x);
+    return x->minId;
+}
+
+void add(node_t *x, int val) {
+    expose(x);
+    x->apply(val);
+}
+
+node_t nodes[max_n];
+node_t *lists[max_n];
+node_t::edge g[max_n][max_n];
+int n, ptr[max_n];
+
+bool bfs(int s, int t) {
+    memset(ptr, 0, sizeof(ptr));
+    int dist[max_n];
+    std::fill(dist, dist + max_n, -1);
+    dist[s] = 0;
+    int que[max_n];
+    int front = 0, rear = 0;
+    que[rear++] = s;
+    while (front != rear) {
+        int u = que[front++];
+        if (u == t)
+            return true;
+        for (int j = 0; j < ptr[u]; j++) {
+            node_t::edge e = g[u][j];
+            if (dist[e.to] < 0 && e.cap > 0) {
+                dist[e.to] = dist[u] + 1;
+                que[rear++] = e.to;
+            }
+        }
+    }
+    return false;
+}
+
+bool pour(int id, int i) {
+    int u = lists[id][i].id;
+    if (find_root(&nodes[u]) == &nodes[u])
+        return true;
+    node_t::edge *e = nodes[u].e;
+    expose(&nodes[u]);
+    int df = e->cap - nodes[u].val;
+    e->cap -= df;
+    g[e->to][e->rev].cap += df;
+    return false;
+}
+
+int max_flow(int S, int T) {
+    int flow = 0;
+    while (bfs(S, T)) {
+        for (int i = 0; i < n; ++i)
+            nodes[i] = node_t(i, INF);
+        node_t *s = &nodes[S], *t = &nodes[T];
+        memset(lists, 0, sizeof(lists));
+        while (true) {
+            node_t *v = find_root(s);
+            if (v == t) {
+                expose(v = &nodes[minId(s)]);
+                flow += v->mini;
+                add(s, -v->mini);
+                while (true) {
+                    expose(v = &nodes[minId(s)]);
+                    if (v->val > 0)
+                        break;
+                    g[v->e->to][v->e->rev].cap += v->e->cap;
+                    v->e->cap = 0;
+                    cut(v);
+                }
+                continue;
+            }
+            if (ptr[v->id] < g[v->id].size()) {
+                node_t::edge &e = g[v->id][ptr[v->id]++];
+                if (dist[e.to] == dist[v->id] + 1 && e.cap > 0) {
+                    link(v, &nodes[e.to], e.cap, &e);
+                    lists[e.to] = &nodes[v->id];
+                }
+            } else {
+                if (v == s) {
+                    for (int i = 0; i < n; ++i) {
+                        for (int j = 0; j < ptr[i]; ++j)
+                            pour(i, j);
+                        ptr[i] = 0;
+                    }
+                    break;
+                }
+                for (int i = 0; i < ptr[v->id]; ++i) {
+                    if (!pour(v->id, i))
+                        cut(&nodes[lists[v->id][i].id]);
+                }
+                ptr[v->id] = 0;
+            }
+        }
+    }
+    return flow;
+}
+
+int main(void) {
+    int e, a, b, c;
+    scanf("%d%d", &n, &e);
+    for (int i = 0; i < e; ++i) {
+        scanf("%d%d%d", &a, &b, &c);
+        g[a][ptr[a]++] = {b, c, ptr[b]};
+        g[b][ptr[b]++] = {a, 0, ptr[a] - 1};
+    }
+    printf("%d\n", max_flow(0, n - 1));
+    return 0;
+}

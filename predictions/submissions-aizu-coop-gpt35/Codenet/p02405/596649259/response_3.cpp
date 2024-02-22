@@ -1,0 +1,19 @@
+The given code is a program that prints a checkerboard pattern of dots and hashtags. The size of the checkerboard is determined by the values of `H` and `W`, which are read from the user. The program continues to read new values for `H` and `W` until both are 0, at which point it exits.
+
+Let's analyze the code for potential optimizations:
+
+1. Input Handling: 
+   - The program reads the values of `H` and `W` using `cin` inside the while loop. However, these values are not checked for validity. It would be a good idea to add input validation to ensure that the values entered by the user are within acceptable limits.
+   - The program could also display a prompt to guide the user in entering the values.
+
+2. Loop Structure:
+   - The program uses nested loops to iterate over the rows and columns of the checkerboard. This is a straightforward approach, but there may be opportunities to optimize the loops.
+   - The loops iterate from 1 to `H` and 1 to `W`, respectively. It would be more efficient to iterate from 0 to `H-1` and `W-1`, as this avoids unnecessary arithmetic operations in the loop conditions.
+
+3. Output:
+   - The checkerboard is printed using `cout` in the innermost loop. This can be a performance bottleneck, as `cout` can be slow when used repeatedly.
+   - Instead of printing each character individually, the program could build the entire row as a string and then print the entire row at once. This would reduce the number of `cout` calls and potentially improve performance.
+
+4. Array Access:
+   - The expression `".#"[(i + j) % 2 == 0]` is used to determine whether to print a dot or a hashtag. This involves accessing the characters in the string `".#"`.
+   - Instead of using a string, we can use a character array to store the dot and hashtag characters. This would avoid the overhead of accessing individual characters in the string.

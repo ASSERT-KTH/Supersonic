@@ -1,0 +1,30 @@
+The provided code is a C++ program that performs topological sorting on a given directed graph. It takes as input the number of vertices `n`, the number of edges `m`, and the edges of the graph. The program then prints the vertices in the order they are visited during the topological sorting. Finally, it checks if the sorted order forms a valid path in the graph and prints the result.
+
+Upon analyzing the code, the following potential optimizations and improvements can be identified:
+
+1. Remove unnecessary includes: The code includes the `<bits/stdc++.h>` header file, which is not a standard C++ header and includes many unnecessary headers. It is better to include only the necessary headers explicitly.
+
+2. Avoid using macros: The code uses macros for common operations like addition, subtraction, multiplication, and others. This can lead to unexpected behavior and make the code harder to read and debug. It is better to use inline functions or templates for these operations.
+
+3. Avoid using the `using namespace std` directive: This directive brings all names from the `std` namespace into the global namespace, which can lead to potential naming conflicts. It is better to use the `std::` prefix when referencing names from the `std` namespace.
+
+4. Avoid unnecessary copying of vectors: The `tsort()` function creates a copy of the `ans` vector every time a vertex is added to it. This copying operation can be avoided by using a `std::deque` instead of a `std::vector` for the `ans` vector.
+
+5. Avoid unnecessary `std::pair` creation: The code uses `std::pair` objects to create a map `mp` that stores the presence of edges. Instead of creating a `std::pair` for each edge, it is better to use a `std::unordered_set` to store the edges directly.
+
+6. Avoid unnecessary map lookups: The code performs a map lookup for each pair of consecutive vertices in the sorted order to check if the edge exists. This can be avoided by modifying the topological sorting algorithm to store the edges in a separate data structure.
+
+7. Optimize the topological sorting algorithm: The current implementation uses a stack to perform topological sorting. This can be optimized by using a priority queue or a priority queue with a custom comparator to select the vertices with the least dependencies first.
+
+8. Use a more efficient data structure for storing the graph: The current implementation uses a vector of vectors to represent the adjacency list of the graph. This can be optimized by using a more efficient data structure like a `std::unordered_map` or a `std::unordered_set` to store the outgoing edges of each vertex.
+
+Based on these observations, the following optimization strategy can be formulated:
+
+1. Remove unnecessary includes and macros.
+2. Avoid using the `using namespace std` directive.
+3. Modify the `tsort` class to use a `std::deque` instead of a `std::vector` for the `ans` vector.
+4. Modify the `tsort` class to use a `std::unordered_set` to store the edges instead of a `std::map`.
+5. Modify the `tsort` class to use a more efficient data structure like a `std::unordered_map` or a `std::unordered_set` for the adjacency list of the graph.
+6. Optimize the topological sorting algorithm using a priority queue or a priority queue with a custom comparator.
+7. Provide a step-by-step explanation of each optimization step, including the rationale behind it and any trade-offs involved.
+8. Implement the optimized code block.

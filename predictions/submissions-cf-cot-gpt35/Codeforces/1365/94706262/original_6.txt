@@ -1,0 +1,124 @@
+Step 1: Remove unnecessary includes
+The program includes the `<iostream>` and `<string.h>` headers, but does not actually use any of the functions or types from these headers. Therefore, these includes can be removed.
+
+Step 2: Optimize the `block` function
+The `block` function checks adjacent cells in the maze and performs some operations. However, there are some unnecessary checks that can be removed to improve performance.
+
+- The conditions `(r - 1 == n && c == m && G > 0)` and `(r + 1 == n && c == m && G > 0)` are only true when the current cell is the destination cell and there are still some 'G' cells left. Instead of checking these conditions inside the loop, we can check them once before entering the loop and remember the result in a boolean variable. Then, we can use this variable inside the loop to perform the necessary operations.
+- The conditions `if (maze[r][c - 1] == 'G' || (r == n && c - 1 == m && G > 0))` and `if (maze[r][c + 1] == 'G' || (r == n && c + 1 == m && G > 0))` can be merged into a single condition `if (maze[r][c - 1] == 'G' || maze[r][c + 1] == 'G' || (r == n && (c - 1 == m || c + 1 == m) && G > 0))`.
+
+Step 3: Optimize the `dfs` function
+The `dfs` function performs a depth-first search on the maze. Currently, it uses recursion to explore adjacent cells. This can lead to stack overflow errors for large mazes. To prevent this, we can convert the recursive function into an iterative one using a stack data structure.
+
+Step 4: Optimize the main loop
+Currently, the main loop uses nested loops to iterate over all cells in the maze. However, the loop can be terminated early when a 'B' cell is encountered. We can use a flag variable to remember if a 'B' cell is found and break out of the loop.
+
+Here is the optimized program:
+
+```c++
+#include <iostream>
+
+using namespace std;
+
+int t, n, m, G;
+char maze[51][51] = {0};
+bool visited[51][51] = {0};
+
+bool block(int r, int c) {
+  bool isDestination = (r == n && c == m && G > 0);
+  bool blocked = false;
+
+  if (maze[r - 1][c] == 'G' || isDestination) {
+    blocked = true;
+  }
+  if (maze[r + 1][c] == 'G' || isDestination) {
+    blocked = true;
+  }
+  if (maze[r][c - 1] == 'G' || maze[r][c + 1] == 'G' || (r == n && (c - 1 == m || c + 1 == m) && G > 0)) {
+    blocked = true;
+  }
+  
+  if (maze[r - 1][c] == '.') {
+    maze[r - 1][c] = '#';
+  }
+  if (maze[r + 1][c] == '.') {
+    maze[r + 1][c] = '#';
+  }
+  if (maze[r][c - 1] == '.') {
+    maze[r][c - 1] = '#';
+  }
+  if (maze[r][c + 1] == '.') {
+    maze[r][c + 1] = '#';
+  }
+  
+  return !blocked;
+}
+
+void dfs(int r, int c) {
+  stack<pair<int, int>> st;
+  st.push({r, c});
+
+  while (!st.empty()) {
+    auto [x, y] = st.top();
+    st.pop();
+
+    if (x <= 0 || y <= 0 || x > n || y > m || maze[x][y] == '#' || visited[x][y]) {
+      continue;
+    }
+
+    visited[x][y] = true;
+
+    if (maze[x][y] == 'G') {
+      G--;
+    }
+
+    st.push({x + 1, y});
+    st.push({x - 1, y});
+    st.push({x, y + 1});
+    st.push({x, y - 1});
+  }
+}
+
+int main() {
+  cin >> t;
+  while (t--) {
+    cin >> n >> m;
+    bool flag = false;
+    G = 0;
+
+    for (int i = 1; i <= n; i++) {
+      for (int j = 1; j <= m; j++) {
+        cin >> maze[i][j];
+      }
+    }
+
+    for (int i = 1; i <= n && !flag; i++) {
+      for (int j = 1; j <= m && !flag; j++) {
+        if (maze[i][j] == 'B') {
+          if (!block(i, j)) {
+            cout << "No\n";
+            flag = true;
+            break;
+          }
+        } else if (maze[i][j] == 'G') {
+          G++;
+        }
+      }
+    }
+
+    if (flag) {
+      continue;
+    }
+
+    dfs(n, m);
+
+    if (G == 0) {
+      cout << "Yes\n";
+    } else {
+      cout << "No\n";
+    }
+  }
+
+  return 0;
+}
+```

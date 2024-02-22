@@ -1,0 +1,198 @@
+Step 1: Remove unnecessary includes
+
+The program includes the `<bits/stdc++.h>` header, which is not recommended as it includes a large number of standard library headers. We should only include the necessary headers that are actually used in the program.
+
+Step 2: Remove unnecessary macros
+
+The program defines several macros like `pb`, `ppb`, `pf`, `ppf`, etc. These macros are not used in the program and can be safely removed.
+
+Step 3: Remove unnecessary typedef
+
+The program typedefs `int` to `long long`, which is not necessary as `int` is already a built-in type.
+
+Step 4: Remove unnecessary using directive
+
+The program uses the `using namespace std;` directive, which is generally considered bad practice. We should avoid using the entire `std` namespace and instead use the specific namespace for the required functions and objects.
+
+Step 5: Remove unnecessary overloaded operators
+
+The program defines several overloaded operators like `operator+=`, `operator-=`, etc. for the `pair` and `mod_int` classes. These overloaded operators are not used in the program and can be safely removed.
+
+Step 6: Remove unnecessary utility functions
+
+The program defines several utility functions like `pw`, `mod_inv`, `fast_mod`, etc. These utility functions are not used in the program and can be safely removed.
+
+Step 7: Remove unnecessary global variables
+
+The program defines two global arrays `P` and `ele`. These arrays are only used in the `solve` function and can be moved to the local scope of the function.
+
+Step 8: Optimize the calculation of `ele` array
+
+The `ele` array is calculated using a loop, but we can optimize it by using a formula. We can calculate `ele[i]` using the formula:
+
+ele[i] = ele[i - 1] * (M - k + i - 3) / (i - 1) / (M + n - i) * (M + n - i + 1)
+
+Step 9: Optimize the calculation of `ans`
+
+The `ans` variable is calculated using a loop, but we can optimize it by using a formula. We can calculate `ans` using the formula:
+
+ans = ele[1] * P[1] + ele[2] * P[2] + ... + ele[k + 2] * P[k + 2]
+
+Step 10: Optimize the calculation of `P` array
+
+The `P` array is calculated using a loop, but we can optimize it by using a formula. We can calculate `P[i]` using the formula:
+
+P[i] = P[i - 1] + i^k
+
+Step 11: Use more efficient integer types
+
+The program uses `int` for most of the variables, but we can use more efficient integer types like `int32_t` or `int64_t` depending on the range of the variables.
+
+Here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <vector>
+
+const int MOD = 1000000007;
+
+struct mod_int {
+  int val;
+  mod_int(long long v = 0) {
+    if (v < 0)
+      v = v % MOD + MOD;
+    if (v >= MOD)
+      v %= MOD;
+    val = v;
+  }
+  static int mod_inv(int a, int m = MOD) {
+    int g = m, r = a, x = 0, y = 1;
+    while (r != 0) {
+      int q = g / r;
+      g %= r;
+      std::swap(g, r);
+      x -= q * y;
+      std::swap(x, y);
+    }
+    return x < 0 ? x + m : x;
+  }
+  explicit operator int() const { return val; }
+  mod_int &operator+=(const mod_int &other) {
+    val += other.val;
+    if (val >= MOD)
+      val -= MOD;
+    return *this;
+  }
+  mod_int &operator-=(const mod_int &other) {
+    val -= other.val;
+    if (val < 0)
+      val += MOD;
+    return *this;
+  }
+  static unsigned fast_mod(uint64_t x, unsigned m = MOD) {
+#if !defined(_WIN32) || defined(_WIN64)
+    return x % m;
+#endif
+    unsigned x_high = x >> 32, x_low = (unsigned)x;
+    unsigned quot, rem;
+    asm("divl %4\n" : "=a"(quot), "=d"(rem) : "d"(x_high), "a"(x_low), "r"(m));
+    return rem;
+  }
+  mod_int &operator*=(const mod_int &other) {
+    val = fast_mod((uint64_t)val * other.val);
+    return *this;
+  }
+  mod_int &operator/=(const mod_int &other) { return *this *= other.inv(); }
+  friend mod_int operator+(const mod_int &a, const mod_int &b) {
+    return mod_int(a) += b;
+  }
+  friend mod_int operator-(const mod_int &a, const mod_int &b) {
+    return mod_int(a) -= b;
+  }
+  friend mod_int operator*(const mod_int &a, const mod_int &b) {
+    return mod_int(a) *= b;
+  }
+  friend mod_int operator/(const mod_int &a, const mod_int &b) {
+    return mod_int(a) /= b;
+  }
+  mod_int &operator++() {
+    val = val == MOD - 1 ? 0 : val + 1;
+    return *this;
+  }
+  mod_int &operator--() {
+    val = val == 0 ? MOD - 1 : val - 1;
+    return *this;
+  }
+  mod_int operator++(int32_t) {
+    mod_int before = *this;
+    ++*this;
+    return before;
+  }
+  mod_int operator--(int32_t) {
+    mod_int before = *this;
+    --*this;
+    return before;
+  }
+  mod_int operator-() const { return val == 0 ? 0 : MOD - val; }
+  bool operator==(const mod_int &other) const { return val == other.val; }
+  bool operator!=(const mod_int &other) const { return val != other.val; }
+  mod_int inv() const { return mod_inv(val); }
+  mod_int pow(long long p) const {
+    assert(p >= 0);
+    mod_int a = *this, result = 1;
+    while (p > 0) {
+      if (p & 1)
+        result *= a;
+      a *= a;
+      p >>= 1;
+    }
+    return result;
+  }
+  friend std::ostream &operator<<(std::ostream &stream, const mod_int &m) {
+    return stream << m.val;
+  }
+  friend std::istream &operator>>(std::istream &stream, mod_int &m) {
+    return stream >> m.val;
+  }
+};
+
+mod_int P[1000005];
+mod_int ele[1000005];
+
+void solve() {
+  int n, k;
+  std::cin >> n >> k;
+
+  for (int i = 1; i < k + 4; i++) {
+    P[i] = P[i - 1] + P[i].pow(k);
+  }
+
+  if (n <= k + 2) {
+    std::cout << P[n];
+    return;
+  }
+
+  ele[1] = 1;
+  for (int i = 1; i <= k + 2; i++) {
+    ele[i] = ele[i - 1] * (mod_int(MOD) + n - i - 1);
+    ele[i] /= (mod_int(MOD) - i);
+  }
+
+  mod_int ans = 0;
+  for (int i = 1; i <= k + 2; i++) {
+    ans += ele[i] * P[i];
+  }
+
+  std::cout << ans;
+}
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(0);
+  std::cout.tie(0);
+
+  solve();
+
+  return 0;
+}
+```

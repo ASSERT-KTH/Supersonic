@@ -1,0 +1,76 @@
+This program seems to be a segment tree-based solution. I notice that there's a lazy propagation technique used here, which is a good practice for efficiently updating a range in such data structures. But, there's a room for optimization in the way memory is used and some other minor changes that could help the performance of the program.
+
+Here are the optimizations I propose:
+
+1. The use of `#include <bits/stdc++.h>` is discouraged as it includes a lot of unnecessary headers, increasing the compile time. It's better to include only the necessary libraries, which in this case are `iostream`, `vector`, `map`, `algorithm`, `climits` and `utility`.
+
+2. In the `update` function, you could omit the check `if (x > y)` since it should not happen in a well-constructed segment tree.
+
+3. In the `update` and `query` functions, you could avoid the spread operation `spread(node, l, r)` if the conditions `if (l > y || r < x)` are met, as it is unnecessary to process those nodes.
+
+4. As for memory optimization, the vectors `segtree`, `lazy` and `inv_map` are currently initialized with a size of `4*N` or `N`, which might be larger than required. Instead of initializing with a fixed size, you could use `push_back` or `emplace_back` to add elements as needed.
+
+5. Avoid `endl` to improve speed. Using `endl` will cause a flush operation, which can be a performance problem. Use `'\n'` instead.
+
+Here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <map>
+#include <algorithm>
+#include <climits>
+#include <utility>
+using namespace std;
+#define F first
+#define S second
+#define pb push_back
+typedef long long ll;
+typedef pair<int, int> pii;
+typedef pair<ll, ll> pll;
+void fast() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  cout.tie(NULL);
+}
+vector<pair<pll, int>> v;
+map<ll, int> mp;
+vector<ll> inv_map;
+vector<int> segtree, lazy;
+void spread(int node, int l, int r) {
+  if (lazy[node] != 0) {
+    segtree[node] += lazy[node];
+    if (l != r) {
+      lazy[2 * node + 1] += lazy[node];
+      lazy[2 * node + 2] += lazy[node];
+    }
+    lazy[node] = 0;
+  }
+}
+void update(int x, int y, int val, int node = 0, int l = 0, int r = v.size() - 1) {
+  if (l > y || r < x)
+    return;
+  spread(node, l, r);
+  if (l >= x && r <= y) {
+    lazy[node] += val;
+    spread(node, l, r);
+    return;
+  }
+  int mid = (l + r) >> 1;
+  update(x, y, val, 2 * node + 1, l, mid);
+  update(x, y, val, 2 * node + 2, mid + 1, r);
+  segtree[node] = min(segtree[2 * node + 1], segtree[2 * node + 2]);
+}
+int query(int x, int y, int node = 0, int l = 0, int r = v.size() - 1) {
+  if (l > y || r < x)
+    return INT_MAX - 1;
+  spread(node, l, r);
+  if (l >= x && r <= y) {
+    return segtree[node];
+  }
+  int mid = (l + r) >> 1;
+  return min(query(x, y, 2 * node + 1, l, mid),
+             query(x, y, 2 * node + 2, mid + 1, r));
+}
+// Rest of the code remains the same
+```

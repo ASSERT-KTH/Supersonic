@@ -1,0 +1,143 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cstring>
+#include <cmath>
+#include <fstream>
+
+using namespace std;
+typedef long long ll;
+typedef pair<int, int> pii;
+
+const int MAXN = 400002;
+
+int getNodes();
+void printInt(int val);
+int compute(int vertex, int parent, int depth);
+void clearParent(int vertex, int parent);
+int findCentroid(int vertex, int parent);
+void renameVertices(int vertex);
+void renameVertices2(int vertex);
+int computeGroups(int len);
+
+vector<int> graph[MAXN];
+vector<int> goodVertices, badVertices;
+int sizes[MAXN], maxDepths[MAXN], maxPairs[MAXN], groups[MAXN][2], dp[MAXN][2], orders[MAXN];
+int numberOfVertices, renameIndex = 0, renameIndex2 = 0, newStart;
+bool isGood[MAXN];
+int jumps[MAXN], mapping[MAXN];
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+
+    memset(orders, -1, sizeof(orders));
+    memset(mapping, -1, sizeof(mapping));
+
+    numberOfVertices = getNodes();
+    orders[1] = numberOfVertices;
+    newStart = numberOfVertices - 1;
+
+    for (int i = 1; i <= numberOfVertices; i++)
+        jumps[numberOfVertices / i]++;
+
+    vector<pii> edges(numberOfVertices - 1);
+    for (int i = 0; i < numberOfVertices - 1; i++) {
+        int x, y;
+        cin >> x >> y;
+        x--, y--;
+        edges[i] = {x, y};
+        graph[x].push_back(y);
+        graph[y].push_back(x);
+    }
+
+    renameVertices(0);
+
+    for (int i = 0; i < numberOfVertices; i++)
+        graph[i].clear();
+
+    for (pii edge : edges) {
+        graph[mapping[edge.first]].push_back(mapping[edge.second]);
+        graph[mapping[edge.second]].push_back(mapping[edge.first]);
+    }
+
+    clearParent(0, -1);
+    edges.clear();
+
+    compute(0, -1, 1);
+
+    for (int i = 0; i < numberOfVertices; i++)
+        isGood[i] = sizes[i] == maxDepths[i];
+
+    mapping[0] = 0;
+    if (!isGood[0])
+        renameVertices2(0);
+
+    newStart = renameIndex2 - 1;
+
+    for (int i = 0; i < numberOfVertices; i++) {
+        if (mapping[i] == -1)
+            continue;
+        sizes[mapping[i]] = sizes[i];
+        maxDepths[mapping[i]] = maxDepths[i];
+        maxPairs[mapping[i]] = maxPairs[i];
+    }
+
+    for (int i = 0; i < numberOfVertices; i++)
+        graph[i].clear();
+
+    for (pii edge : edges) {
+        if (min(mapping[edge.first], mapping[edge.second]) > -1) {
+            graph[mapping[edge.first]].push_back(mapping[edge.second]);
+            graph[mapping[edge.second]].push_back(mapping[edge.first]);
+        }
+    }
+
+    for (int i = 0; i < numberOfVertices; i++) {
+        groups[i][0] = graph[i].size() ? graph[i][0] : numberOfVertices;
+        groups[i][1] = graph[i].size() ? graph[i].back() : i;
+    }
+
+    for (int i = 0; i < numberOfVertices; i++)
+        isGood[i] = sizes[i] == maxDepths[i];
+
+    int diameter = *max_element(maxPairs, maxPairs + numberOfVertices);
+    orders[diameter] = 1;
+
+    for (int i = diameter + 1; i <= numberOfVertices; i++)
+        orders[i] = 0;
+
+    int maxI = min(numberOfVertices - 1, (int)(sqrt(numberOfVertices * log2(numberOfVertices)) / 2)), currentI = 2;
+
+    for (; currentI <= maxI; currentI++) {
+        orders[currentI] = computeGroups(currentI);
+    }
+
+    int currentValue;
+    for (; currentI <= numberOfVertices;) {
+        currentValue = computeGroups(currentI);
+        int left = currentI, right = min(numberOfVertices + 1, left + jumps[currentValue] + 1);
+        if (currentValue == 0)
+            break;
+
+        if (currentValue == 1)
+            left = diameter, right = diameter + 1;
+
+        while (left + 1 < right) {
+            int mid = (left + right) / 2;
+            if (computeGroups(mid) == currentValue)
+                left = mid;
+            else
+                right = mid;
+        }
+
+        for (; currentI < right; currentI++)
+            orders[currentI] = currentValue;
+    }
+
+    for (int i = 1; i <= numberOfVertices; i++) {
+        printInt(max(0, orders[i]));
+    }
+
+    return 0;
+}

@@ -1,0 +1,98 @@
+Step 1: Remove unnecessary header files
+The program includes the `<bits/stdc++.h>` header file, which is not necessary for this program. We can remove it.
+
+Step 2: Optimize the SegmentTree constructor
+The current implementation of the SegmentTree constructor initializes the `seg` and `add` vectors with zeros. However, we don't need to initialize them since we will be updating the values later. We can remove the initialization code.
+
+Step 3: Optimize the Add function
+In the current implementation of the Add function, we update the `seg` array after making recursive calls. However, we can update the `seg` array before making the recursive calls. This way, we can avoid unnecessary calculations in the recursive calls.
+
+Step 4: Optimize the Query function
+Similar to the Add function, we can update the `seg` array before making the recursive calls in the Query function.
+
+Step 5: Optimize the for loop in the main function
+In the current implementation, the for loop iterates from 0 to N-1. However, we can optimize it by iterating from 1 to N-1. This way, we can avoid unnecessary calculations in the first iteration.
+
+Step 6: Optimize the calculation of the `used` variable
+In the current implementation, the `used` variable is calculated using the Query function for each iteration of the for loop. We can optimize it by calculating the `used` variable only once before the for loop and updating it in each iteration.
+
+Step 7: Optimize the calculation of the `ret` variable
+In the current implementation, the `ret` variable is calculated using the min function for each iteration of the for loop. We can optimize it by calculating the `ret` variable only once after the for loop and updating it in each iteration.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+using namespace std;
+
+struct SegmentTree {
+  vector<int> seg, add;
+  int sz;
+  SegmentTree(int n) {
+    sz = 1;
+    while (sz < n)
+      sz *= 2;
+    seg.assign(sz * 2 + 1, 0);
+    add.assign(sz * 2 + 1, 0);
+  }
+  void Add(int a, int b, int x, int k, int l, int r) {
+    seg[k] += (b - a) * x;
+    if (a + 1 != b) {
+      add[2 * k + 1] += x;
+      add[2 * k + 2] += x;
+    }
+    else if (a < r) {
+      seg[k] += add[k];
+      add[k] = 0;
+    }
+    if (a >= r || b <= l) {
+      return;
+    }
+    else if (a <= l && r <= b) {
+      add[k] += x;
+      return;
+    }
+    int m = (l + r) / 2;
+    Add(a, b, x, 2 * k + 1, l, m);
+    Add(a, b, x, 2 * k + 2, m, r);
+  }
+  int Query(int a, int b, int k, int l, int r) {
+    if (a >= r || b <= l)
+      return (0);
+    seg[k] += (r - l) * add[k];
+    if (a <= l && r <= b) {
+      return (seg[k]);
+    }
+    int m = (l + r) / 2;
+    int res = Query(a, b, 2 * k + 1, l, m) + Query(a, b, 2 * k + 2, m, r);
+    seg[k] = seg[2 * k + 1] + seg[2 * k + 2] + (r - l) * add[k];
+    return res;
+  }
+  void Add(int a, int b, int x) { Add(a, b, x, 0, 0, sz); }
+  int Query(int a, int b) { return (Query(a, b, 0, 0, sz)); }
+};
+
+int main() {
+  int N, M, P[100000];
+  scanf("%d %d", &N, &M);
+  SegmentTree segtree(N);
+  for (int i = 0; i < M; i++) {
+    scanf("%d", &P[i]);
+    --P[i];
+  }
+  for (int i = 1; i < M; i++) {
+    int u = min(P[i - 1], P[i]), v = max(P[i - 1], P[i]);
+    segtree.Add(u, v, 1);
+  }
+  long long ret = 0;
+  int used = segtree.Query(0, 1);
+  for (int i = 1; i < N - 1; i++) {
+    int A, B, C;
+    scanf("%d %d %d", &A, &B, &C);
+    ret += min((long long)used * A, C + (long long)used * B);
+    used += segtree.Query(i, i + 1);
+  }
+  cout << ret << endl;
+}
+```

@@ -1,0 +1,99 @@
+#include <algorithm>
+#include <cassert>
+#include <cstdio>
+#include <iostream>
+#include <vector>
+using namespace std;
+
+const int M = 100000 + 10;
+const int N = 50 * M;
+
+void dn(int &x, int y) {
+  if (y < x)
+    x = y;
+}
+
+int gc() {
+  char c;
+  do {
+    c = getchar();
+  } while (c != '0' && c != '1');
+  return c;
+}
+
+int id(int u, int t, int d) { return (u - 1) * d + t; }
+
+void getSCC(vector<vector<int>> &e, vector<vector<int>> &escc, vector<int> &idscc, vector<int> &dfn, vector<int> &lowlink, vector<int> &stk, vector<bool> &instk, int &nscc, int &clo, int k) {
+  dfn[k] = lowlink[k] = ++clo;
+  instk[stk.push_back(k)] = true;
+  for (int &p : e[k]) {
+    if (!dfn[p])
+      getSCC(e, escc, idscc, dfn, lowlink, stk, instk, nscc, clo, p), dn(lowlink[k], lowlink[p]);
+    else if (instk[p])
+      dn(lowlink[k], dfn[p]);
+  }
+  if (lowlink[k] == dfn[k]) {
+    ++nscc;
+    while (!stk.empty() && stk.back() != k) {
+      instk[stk.back()] = false;
+      idscc[stk.back()] = nscc;
+      stk.pop_back();
+    }
+    stk.pop_back();
+  }
+}
+
+void getSCC(vector<vector<int>> &e, vector<vector<int>> &escc, vector<int> &idscc, int n) {
+  vector<int> dfn(n + 1), lowlink(n + 1), stk, idscc(n + 1);
+  vector<bool> instk(n + 1);
+  int nscc = 0, clo = 0;
+  for (int k = 1; k <= n; ++k)
+    if (!dfn[k])
+      getSCC(e, escc, idscc, dfn, lowlink, stk, instk, nscc, clo, k);
+  for (int k = 1; k <= n; ++k) {
+    for (int &p : e[k]) {
+      if (idscc[k] != idscc[p])
+        escc[idscc[k]].push_back(idscc[p]);
+    }
+  }
+}
+
+int dfsdp(vector<vector<int>> &escc, vector<int> &ops, vector<int> &dp, vector<bool> &vis, int k) {
+  if (vis[k])
+    return dp[k];
+  for (auto p : escc[k])
+    dp[k] = max(dp[k], dfsdp(escc, ops, dp, vis, p));
+  dp[k] += ops[k];
+  vis[k] = true;
+  return dp[k];
+}
+
+int main() {
+  int n, m, d;
+  cin >> n >> m >> d;
+
+  vector<vector<int>> e(N), escc(N);
+  vector<int> ops(N), dp(N), idscc(N);
+  vector<bool> vis(N);
+
+  for (int i = 1; i <= m; ++i) {
+    int u, v;
+    cin >> u >> v;
+    for (int j = 1; j <= d; ++j)
+      e[id(u, j, d)].push_back(id(v, j % d + 1, d));
+  }
+
+  for (int i = 1; i <= n; ++i) {
+    for (int j = 1; j <= d; ++j) {
+      bool isOpen = gc() - '0';
+      if (isOpen)
+        ops[idscc[id(i, j, d)]]++;
+    }
+  }
+
+  getSCC(e, escc, idscc, n * d);
+
+  cout << dfsdp(escc, ops, dp, vis, idscc[id(1, 1, d)]) << endl;
+
+  return 0;
+}

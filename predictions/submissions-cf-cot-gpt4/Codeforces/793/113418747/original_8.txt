@@ -1,0 +1,83 @@
+This program can be optimized in two ways: 
+
+1. Reducing the number of redundant minimum calculations.
+
+In the program, there are blocks of code where the same minimum calculation is done repeatedly. For instance:
+
+```
+f[i][j][k][0] = min(f[i][j][k][0], f[i2][j][k - 1][0] + c[i][i2]);
+f[i][j][k][0] = min(f[i][j][k][0], f[i2][j][k - 1][1] + c[i][j]);
+f[i][j][k][0] = min(f[i][j][k][0], f[i2][j][k][0] + c[i][i2]);
+f[i][j][k][0] = min(f[i][j][k][0], f[i2][j][k][1] + c[i][j]);
+```
+
+In these lines, we are repeatedly calculating the minimum of the current value of `f[i][j][k][0]` and some other value. Instead, we can calculate the minimum of the other values first and then calculate the minimum with the current value of `f[i][j][k][0]` once.
+
+2. Using `std::ios::sync_with_stdio(false);`
+
+This line can speed up I/O operations, which can be useful if the program is I/O bound. It is a way to decouple C++'s I/O streams from the C-style streams. This decoupling can prevent unnecessary synchronizations and buffer flushes, speeding up the program.
+
+Here's the optimized code:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+const int INF = 1000000007;
+const int N = 81;
+int n, m, p;
+int c[N][N], f[N][N][N][2];
+int main() {
+  std::ios::sync_with_stdio(false);
+  cin >> n >> p >> m;
+  for (int i = 1; i <= n; ++i) {
+    for (int j = 1; j <= n; ++j)
+      c[i][j] = INF;
+  }
+  for (int i = 1, x, y, dis; i <= m; ++i) {
+    scanf("%d%d", &x, &y);
+    scanf("%d", &dis);
+    c[x][y] = min(dis, c[x][y]);
+  }
+  for (int i = 1; i <= n; ++i) {
+    for (int j = 1; j <= n; ++j) {
+      for (int k = 0; k <= p; ++k) {
+        f[i][j][k][0] = f[i][j][k][1] = INF;
+      }
+    }
+  }
+  for (int i = 1; i <= n; ++i) {
+    f[i][i][1][0] = f[i][i][1][1] = 0;
+  }
+  for (int d = 1; d < n; ++d) {
+    for (int i = 1; i + d <= n; ++i) {
+      int j = i + d;
+      for (int k = 2; k <= p; ++k) {
+        int temp_min = INF;
+        for (int i2 = i + 1; i2 < j; ++i2) {
+          temp_min = min(temp_min, f[i2][j][k - 1][0] + c[i][i2]);
+          temp_min = min(temp_min, f[i2][j][k - 1][1] + c[i][j]);
+          temp_min = min(temp_min, f[i2][j][k][0] + c[i][i2]);
+          temp_min = min(temp_min, f[i2][j][k][1] + c[i][j]);
+        }
+        f[i][j][k][0] = min(f[i][j][k][0], temp_min);
+        temp_min = INF;
+        for (int j2 = j - 1; j2 > i; --j2) {
+          temp_min = min(temp_min, f[i][j2][k - 1][1] + c[j][j2]);
+          temp_min = min(temp_min, f[i][j2][k - 1][0] + c[j][i]);
+          temp_min = min(temp_min, f[i][j2][k][1] + c[j][j2]);
+          temp_min = min(temp_min, f[i][j2][k][0] + c[j][i]);
+        }
+        f[i][j][k][1] = min(f[i][j][k][1], temp_min);
+      }
+    }
+  }
+  int ans = INF;
+  for (int i = 1; i <= n; ++i) {
+    for (int j = 1; j <= n; ++j) {
+      ans = min(ans, f[i][j][p][0]);
+      ans = min(ans, f[i][j][p][1]);
+    }
+  }
+  cout << (ans == INF ? -1 : ans) << endl;
+}
+```

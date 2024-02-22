@@ -1,0 +1,86 @@
+Let's break down the optimization steps one by one:
+
+1. **Code Analysis**: The code reads a list of weights from the user, calculates the sum of all weights, and then tries to divide the weights across a given number of trucks (`k`). The function `IsAllLoaded` checks if a given maximum load (`P`) is enough to load all weights into `k` trucks, while `Calc` calculates the minimum possible `P` that can satisfy the condition.
+
+2. **Optimization Strategy**:
+
+   A. The function `Input` uses `vector::push_back` to add elements to the vector `W`. This might cause multiple reallocations if the vector's capacity is exceeded. We can avoid this by using `vector::reserve`.
+
+   B. The function `IsAllLoaded` is called multiple times with the same vector `W` in `Calc`. Each call involves traversing the entire vector. We could try to reduce the number of calls to `IsAllLoaded`.
+
+   C. The function `Calc` uses a linear search to find the minimum `P`. We can optimize this to a binary search because if a `P` can load all weights, any `P' > P` can also load all weights.
+
+   D. The vector `W` is passed by value to `IsAllLoaded` and `Calc`, which involves copying the entire vector. This can be avoided by passing the vector by reference.
+
+3. **Step-by-Step Explanation**:
+
+   A. In the function `Input`, after reading `n`, we can call `W.reserve(n)` before the loop. This allocates enough memory for `n` elements at once, avoiding reallocations during the loop.
+
+   B. Instead of incrementing `P` by 1 in `Calc`, we can use a binary search between `P` and `Sum` to find the minimum `P` that returns `true` from `IsAllLoaded`. This reduces the number of calls to `IsAllLoaded` from `O(n)` to `O(log n)`.
+
+   C. In `Calc`, we change the while loop to a binary search. We set `left` to `P` and `right` to `Sum`. While `left < right`, we set `mid` to `(left + right) / 2` and call `IsAllLoaded(mid, W, k)`. If it returns `true`, we set `right` to `mid`. Otherwise, we set `left` to `mid + 1`. Finally, we return `left`.
+
+   D. We change `vector<int> W` to `const vector<int>& W` in the parameter list of `IsAllLoaded` and `Calc`. This avoids copying the vector when the functions are called.
+
+4. **Optimized Code Block**:
+
+```cpp
+#include <iostream>
+#include <numeric>
+#include <vector>
+using namespace std;
+
+vector<int> Input(const int n) {
+  vector<int> W;
+  W.reserve(n);  // avoid multiple reallocations
+  for (int i = 0; i < n; i++) {
+    int w;
+    cin >> w;
+    W.push_back(w);
+  }
+  return W;
+}
+
+bool IsAllLoaded(int P, const vector<int>& W, int k) { // avoid copying W
+  int TrackIndex = 0;
+  int CurrentSum = 0;
+  int i = 0;
+  for (i = 0; i < W.size(); i++) {
+    if (W[i] > P) {
+      return false;
+    }
+    if (CurrentSum + W[i] > P) {
+      TrackIndex++;
+      if (TrackIndex == k) {
+        return false;
+      }
+      CurrentSum = 0;
+    }
+    CurrentSum += W[i];
+  }
+  return true;
+}
+
+int Calc(const vector<int>& W, int k) { // avoid copying W
+  int Sum = accumulate(W.begin(), W.end(), 0);
+  int left = (Sum + k - 1) / k, right = Sum;
+  while (left < right) {
+    int mid = left + (right - left) / 2;
+    if (IsAllLoaded(mid, W, k)) {
+      right = mid;
+    } else {
+      left = mid + 1;
+    }
+  }
+  return left;
+}
+
+int main() {
+  int n, k;
+  cin >> n >> k;
+  vector<int> W = Input(n);
+  int P = Calc(W, k);
+  cout << P << endl;
+  return 0;
+}
+```

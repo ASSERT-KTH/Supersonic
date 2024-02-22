@@ -1,0 +1,82 @@
+The main optimization that can be performed here is to avoid redundant processing and unnecessary branching of program's flow. Here's the step-by-step analysis:
+
+1. Function calls in C++ have a certain overhead. The function `deduce()` is called in every branch of the `formula()` function, which can lead to significant overhead in large inputs. Instead of calling `deduce()` function, we can directly compute the value within `formula()` function.
+
+2. There is a lot of branching in the `formula()` function. Each branch checks a condition that could possibly be eliminated or combined with another condition.
+
+3. The `boolean()` function is also called multiple times, which may lead to performance issues. This function can be integrated into the `formula()` function for optimization.
+
+4. The `solve()` function is called for every possible mask, but the function call is unnecessary if the result is already determined to be false. We can break out of the loop as soon as we get a false result.
+
+Here's the optimized code based on these suggestions:
+
+```cpp
+#include <algorithm>
+#include <cctype>
+#include <iostream>
+#include <string>
+#include <vector>
+using namespace std;
+int mask;
+template <class T> struct Parser {
+  typedef string::const_iterator State;
+  T solve(const string &S) {
+    State begin = S.begin();
+    return equation(begin);
+  }
+  T equation(State &begin) {
+    T left = formula(begin);
+    begin++;
+    T right = formula(begin);
+    return left == right;
+  }
+  T formula(State &begin) {
+    T left, right;
+    char op;
+    if (*begin == '(') {
+      begin++;
+      left = formula(begin);
+      op = *begin;
+      begin++;
+      if (op == '-')
+        begin++;
+      right = formula(begin);
+      begin++;
+    } else if (*begin == '-') {
+      begin++;
+      return !formula(begin);
+    } else {
+      left = (*begin == 'T') ? 1 : (*begin == 'F') ? 0 : (mask >> (*begin - 'a')) & 1;
+      begin++;
+      op = *begin;
+      begin++;
+      right = formula(begin);
+    }
+    if (op == '*') {
+      return left and right;
+    } else if (op == '+') {
+      return left or right;
+    } else {
+      return !left or right;
+    }
+  }
+};
+void solve(string S) {
+  Parser<bool> ps;
+  for (mask = 0; mask < (1 << 11); mask++) {
+    if (!ps.solve(S)) {
+      cout << "NO" << endl;
+      return;
+    }
+  }
+  cout << "YES" << endl;
+}
+int main() {
+  string S;
+  while (cin >> S && S != "#") {
+    solve(S);
+  }
+  return 0;
+}
+```
+The optimized code minimizes function calls and branching, which can significantly improve the speed of the program.

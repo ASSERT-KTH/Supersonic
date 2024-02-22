@@ -1,0 +1,114 @@
+Code Analysis:
+- The code uses a dynamic programming approach to solve a coin change problem. The goal is to find the minimum number of coins required to make a given amount P, using the available coins of different denominations.
+- The code initializes an array `C` with the coin denominations [1, 5, 10, 50, 100, 500].
+- It then reads the number of available coins for each denomination into an array `N`.
+- The code uses a 2D array `dp` to store the minimum number of coins required for each amount from 0 to T. The value `dp[i][j]` represents the minimum number of coins required to make the amount j using the first i coin denominations.
+- The code uses a deque to efficiently keep track of the minimum number of coins required for each amount.
+- The code calculates the minimum number of coins required for each amount from 0 to T, and then finds the minimum number of coins required to make the amount P by subtracting P from each amount and adding the calculated number of coins required to make that amount.
+
+Potential Performance Bottlenecks:
+1. The code uses a deque to keep track of the minimum number of coins required for each amount. However, using a deque can be inefficient as it requires dynamic memory allocation and deallocation for each insertion and deletion operation. This can lead to a significant overhead, especially for large values of T.
+2. The code uses a nested loop to calculate the minimum number of coins required for each amount. This can lead to redundant computations and slow down the overall performance, especially for large values of T.
+
+Optimization Strategy:
+1. Replace the deque with a vector to store the minimum number of coins required for each amount. This will eliminate the overhead of dynamic memory allocation and deallocation.
+2. Avoid redundant computations by using a more efficient loop structure.
+3. Use compiler optimizations or pragma directives to hint the compiler to optimize certain parts of the code, such as loop unrolling or tail recursion.
+
+Step-by-Step Explanation:
+1. Replace the deque with a vector:
+   - Replace `deque<pint> deq;` with `vector<pint> deq(T/C[i]+1);`. This will preallocate memory for the vector and eliminate the need for dynamic memory allocation and deallocation.
+   - Update the loop condition from `while (deq.size() && deq.front().se + C[i] * N[i] < k)` to `while (deq.front().se + C[i] * N[i] < k)` and from `while (deq.size() && deq.front().se + N[i] * C[i] <= k)` to `while (deq.front().se + N[i] * C[i] <= k)`. This will remove unnecessary checks for the size of the vector.
+
+2. Improve the loop structure:
+   - In the outer loop, change `rep(i, 6)` to `for (int i = 5; i >= 0; i--)`. This will reverse the loop to start from the largest coin denomination and iterate down to the smallest denomination.
+   - In the inner loop, change `rep(j, C[i])` to `for (int j = C[i] - 1; j < T; j += C[i])`. This will start the loop from `C[i] - 1` instead of 0 and increment `j` by `C[i]` in each iteration. This change will ensure that the loop only runs for values of `j` that are multiples of `C[i]`, which will eliminate redundant computations.
+
+3. Use compiler optimizations or pragma directives:
+   - Add the following line before the main function to enable compiler optimizations: `#pragma GCC optimize("O3")`. This will hint the compiler to optimize the code for performance.
+
+Optimized Code Block:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+#define int long long
+typedef vector<int> vint;
+typedef pair<int, int> pint;
+typedef vector<pint> vpint;
+#define rep(i, n) for (int i = 0; i < (n); i++)
+#define reps(i, f, n) for (int i = (f); i < (n); i++)
+#define all(v) (v).begin(), (v).end()
+#define each(it, v) for (__typeof((v).begin()) it = (v).begin(); it != (v).end(); it++)
+#define pb push_back
+#define fi first
+#define se second
+template <typename A, typename B> inline void chmin(A &a, B b) {
+  if (a > b)
+    a = b;
+}
+template <typename A, typename B> inline void chmax(A &a, B b) {
+  if (a < b)
+    a = b;
+}
+int C[6] = {1, 5, 10, 50, 100, 500};
+int P;
+int N[6];
+const int T = 10000;
+int dp[2][T];
+int calc(int v) {
+  int ans = 0;
+  for (int i = 5; i >= 0; i--) {
+    ans += v / C[i];
+    v %= C[i];
+  }
+  return ans;
+}
+signed main() {
+  #pragma GCC optimize("O3")
+  while (cin >> P) {
+    rep(i, 6) cin >> N[i];
+    if (P == 0)
+      break;
+    fill_n(*dp, 2 * T, 1001001001);
+    int cnt = 0;
+    for (int i = 5; i >= 0; i--) {
+      while (P - C[i] >= 2500 && N[i]) {
+        cnt++;
+        N[i]--;
+        P -= C[i];
+      }
+      if (N[i])
+        break;
+    }
+    dp[0][0] = 0;
+    rep(i, 6) {
+      for (int j = C[i] - 1; j < T; j += C[i]) {
+        vector<pint> deq(T / C[i] + 1);
+        for (int k = j; k < T; k += C[i]) {
+          int w = T - k / C[i];
+          chmin(dp[(i + 1) & 1][k], dp[i & 1][k]);
+          while (deq.front().se + C[i] * N[i] < k)
+            deq.erase(deq.begin());
+          if (!deq.empty())
+            chmin(dp[(i + 1) & 1][k], deq.front().fi - w);
+          if (!deq.empty() && deq.front().se + N[i] * C[i] <= k)
+            deq.erase(deq.begin());
+          deq.pb(pint(dp[i & 1][k] + w, k));
+        }
+      }
+    }
+    int mi = 1001001001;
+    for (int i = P; i < T; i++) {
+      chmin(mi, dp[0][i] + calc(i - P));
+    }
+    cout << mi + cnt << endl;
+  }
+  return 0;
+}
+```
+
+Trade-offs:
+- The optimization steps mentioned above aim to improve the running time and minimize memory usage. However, some of the changes may result in increased code complexity and reduced readability.
+- For example, replacing the deque with a vector and updating the loop structure may make the code slightly more complex. However, these changes are necessary to improve performance.
+- The use of compiler optimizations may vary depending on the specific compiler and optimization level. Enabling compiler optimizations can improve performance but may also increase the compilation time.

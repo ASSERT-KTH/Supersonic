@@ -1,0 +1,118 @@
+The given program is using a segment tree to solve a problem. The segment tree is used to find the minimum value in a range efficiently. However, there are a few optimizations that can be made to improve the running time and memory usage.
+
+1. Remove unnecessary includes - The program includes unnecessary headers such as `<algorithm>` and `<stdio.h>`. These headers are not used in the program, so they can be removed.
+
+2. Remove unnecessary namespace - The program is using the `using namespace std;` directive. However, it is not needed because the program is already explicitly using the `std` namespace.
+
+3. Use `vector` instead of fixed-size arrays - The program is using fixed-size arrays `a`, `node`, `l`, `r`, and `res`. Using `std::vector` instead of fixed-size arrays can improve memory usage and make the program more flexible.
+
+4. Use prefix increment and decrement operators - The program is using postfix increment and decrement operators in the `update` and `find` functions. Using prefix increment and decrement operators can be more efficient.
+
+5. Avoid unnecessary calculations - In the `update` and `find` functions, the calculation `(l + r) / 2` is done multiple times. This calculation can be done once and stored in a variable to avoid unnecessary calculations.
+
+6. Optimize reverse operations - The program is using the `reverse` function to reverse the array `a`. However, instead of reversing the array, we can iterate over the array in reverse order to achieve the same result.
+
+7. Avoid unnecessary memset - The program is using `memset` to initialize the `node` array to zero. However, this is not necessary because the array is already initialized to zero when it is declared.
+
+8. Avoid unnecessary variable initialization - The variable `id` is initialized to zero before the loop, but it is immediately overwritten in the loop. This initialization is not necessary and can be removed.
+
+9. Use `reserve` for vectors - In the main function, the size of vector `a` is known in advance. Using `reserve` can improve the performance of the vector by allocating memory in advance.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+
+const int N = 5e5 + 9;
+
+std::vector<int> a, node, l, r, res;
+
+void update(int id, int l, int r, int pos, int x) {
+  if (l > pos || r < pos)
+    return;
+  if (l == r) {
+    node[id] = x;
+    return;
+  }
+  int mid = (l + r) / 2;
+  update(id * 2, l, mid, pos, x);
+  update(id * 2 + 1, mid + 1, r, pos, x);
+  node[id] = std::min(node[id * 2], node[id * 2 + 1]);
+}
+
+int find(int id, int l, int r, int tr, int ph, int x) {
+  if (tr > ph || l > ph || r < tr || node[id] > x)
+    return 0;
+  if (l == r)
+    return r;
+  int mid = (l + r) / 2;
+  if (l >= tr && r <= ph) {
+    if (node[id] > x)
+      return 0;
+    if (node[id * 2 + 1] <= x)
+      return find(id * 2 + 1, mid + 1, r, tr, ph, x);
+    else
+      return find(id * 2, l, mid, tr, ph, x);
+  }
+  return std::max(find(id * 2, l, mid, tr, ph, x),
+             find(id * 2 + 1, mid + 1, r, tr, ph, x));
+}
+
+int main() {
+  std::ios::sync_with_stdio(false);
+  std::cin.tie(0);
+  
+  int n;
+  std::cin >> n;
+
+  a.reserve(n + 1);
+  node.resize(4 * (n + 1));
+  l.resize(n + 1);
+  r.resize(n + 1);
+  res.resize(n + 1);
+
+  for (int i = 1; i <= n; i++)
+    std::cin >> a[i];
+
+  for (int i = 1; i <= n; i++) {
+    int id = find(1, 1, n, 1, i - 1, a[i]);
+    update(1, 1, n, i, a[i]);
+    l[i] = l[id] + a[i] * (i - id);
+  }
+
+  node.clear(); // clear node to save memory
+
+  for (int i = n; i >= 1; i--) {
+    int id = find(1, 1, n, 1, i - 1, a[i]);
+    update(1, 1, n, i, a[i]);
+    r[i] = r[id] + a[i] * (i - id);
+  }
+
+  int sum = 0, pos;
+  for (int i = 1; i <= n; i++)
+    if (sum < l[i] + r[n - i + 1] - a[i]) {
+      sum = l[i] + r[n - i + 1] - a[i];
+      pos = i;
+    }
+
+  int minn = a[pos];
+  res[pos] = a[pos];
+
+  for (int i = pos - 1; i >= 1; i--) {
+    minn = std::min(minn, a[i]);
+    res[i] = minn;
+  }
+
+  minn = a[pos];
+  for (int i = pos + 1; i <= n; i++) {
+    minn = std::min(minn, a[i]);
+    res[i] = minn;
+  }
+
+  for (int i = 1; i <= n; i++)
+    std::cout << res[i] << " ";
+
+  return 0;
+}
+```

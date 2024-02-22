@@ -1,0 +1,112 @@
+The provided code seems to convert dates between two different calendar systems: the Gregorian calendar and a Mayan calendar. The first function, `M2S`, converts a Mayan date to a Gregorian date, while the `S2M` function does the opposite.
+
+The program reads dates from the input in the form of strings, separates them into their constituent parts, and then performs the necessary conversion.
+
+Optimization Strategy:
+
+1. Avoiding Unnecessary Operations: The first step is to identify operations replicated multiple times in the code and try to minimize them. This is particularly important in loops and recursion, where such operations can lead to large performance hits. For instance, the code calls `check()` function multiple times, which could be minimized.
+
+2. Data Storage and Access: Efficient data structures will be used wherever possible. The use of an array to store the number of days in each month is efficient. However, the way the code extracts the individual parts of the date from the input string could be improved.
+
+3. Loop Unrolling: Loop unrolling is a common technique for optimizing performance in C/C++. However, in this case, the loops in the code seem necessary and efficient, and unrolling them could make the code unnecessarily complex without significantly improving performance.
+
+Step-by-Step Explanation:
+
+1. Avoiding Unnecessary Operations: The `check()` function is called multiple times inside the while loops in `M2S` and `S2M` functions. This function checks if a year is a leap year or not. This operation could be minimized by calling the `check()` function once and storing the result in a variable, then using that variable inside the loop. This would reduce the number of function calls, resulting in a slight performance gain.
+
+2. Data Storage and Access: The code uses a while loop to parse the input string and separate it into its constituent parts. This could be replaced with the `getline()` function in combination with a `stringstream`. This would make the code simpler and potentially faster.
+
+Here is the optimized code:
+
+```c++
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+struct S {
+  ll y, m, d;
+};
+struct Ma {
+  ll b, ka, t, w, ki;
+};
+int M[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+bool check(ll y) { return (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)); }
+
+S M2S(ll b, ll ka, ll t, ll w, ll ki) {
+  ka += b * 20;
+  t += ka * 20;
+  w += t * 18;
+  ki += w * 20;
+  S res;
+  res.y = 2012, res.m = 12, res.d = 21 + ki;
+  if (res.d <= 31)
+    return res;
+  bool isLeap = check(res.y + 1);
+  while (res.d / (365 + isLeap))
+    res.y++, res.d -= (365 + isLeap), isLeap = check(res.y + 1);
+  if (res.d == 0)
+    res.m--, res.d = M[res.m - 1] + (isLeap && res.m == 2);
+  if (res.d <= 31)
+    return res;
+  res.y++, res.m = 1, res.d -= 31;
+  isLeap = check(res.y);
+  while (res.d / (M[res.m - 1] + (isLeap && res.m == 2))) {
+    res.d -= (M[res.m - 1] + (isLeap && res.m == 2));
+    res.m++;
+  }
+  if (res.d == 0)
+    res.m--, res.d = M[res.m - 1] + (isLeap && res.m == 2);
+  return res;
+}
+
+Ma S2M(ll y, ll m, ll d) {
+  y -= 2012;
+  if (y)
+    d += 10;
+  else
+    d = (d - 21);
+  for (int i = 0; i < m - 1 && y; i++)
+    d += (M[i] + (i == 1 && check(y + 2012)));
+  y--;
+  bool isLeap = check(y + 2012);
+  while (y > 0)
+    d += (365 + isLeap), y--, isLeap = check(y + 2012);
+  Ma res;
+  d %= 13 * 20 * 20 * 18 * 20;
+  res.ki = d;
+  res.w = res.ki / 20;
+  res.ki %= 20;
+  res.t = res.w / 18;
+  res.w %= 18;
+  res.ka = res.t / 20;
+  res.t %= 20;
+  res.b = res.ka / 20;
+  res.ka %= 20;
+  return res;
+}
+
+int main() {
+  while (1) {
+    string str;
+    getline(cin, str);
+    if (str == "#")
+      break;
+    stringstream ss(str);
+    string part;
+    vector<int> a;
+    while (getline(ss, part, '.')) {
+      a.push_back(stoi(part));
+    }
+    if (a.size() == 5) {
+      S ans = M2S(a[0], a[1], a[2], a[3], a[4]);
+      cout << ans.y << "." << ans.m << "." << ans.d << endl;
+    } else {
+      Ma ans = S2M(a[0], a[1], a[2]);
+      cout << ans.b << "." << ans.ka << "." << ans.t << "." << ans.w << "."
+           << ans.ki << endl;
+    }
+  }
+  return 0;
+}
+```
+
+The changes made in this code include the use of a variable to store the result of the `check()` function calls and the use of the `getline()` function and a `stringstream` to parse the input string. These changes should improve the performance of the code slightly, and make it more readable.

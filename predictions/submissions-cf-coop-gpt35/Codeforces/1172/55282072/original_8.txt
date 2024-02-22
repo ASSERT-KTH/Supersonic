@@ -1,0 +1,199 @@
+The provided code appears to be solving a combinatorial problem involving calculating probabilities and making calculations based on given inputs. However, there are several areas for improvement in terms of performance and memory usage. 
+
+1. Inefficient Data Structures:
+   - The code uses a `map<int, mod_int>` to store calculated results. However, using a `map` for this purpose can be inefficient due to the overhead associated with searching and inserting elements. A more efficient alternative would be to use a `vector` or an array to store the results.
+   - The code uses a `vector<int>` to store the `likes` and `weights` of the elements. However, the `likes` vector is only used to determine whether the element is liked or not, so it can be replaced with a `vector<bool>` to save memory.
+
+2. Redundant Computations:
+   - The code computes the `inv` array in the `prepare_factorials` function, but it is not used anywhere in the code. This computation can be removed to improve efficiency.
+   - The code computes the factorial and inverse factorial arrays using a loop. However, these calculations can be optimized using a more efficient algorithm such as the iterative approach of calculating factorials.
+
+3. Loop Optimization:
+   - The `solve` function contains nested loops that can be optimized. The loops can be rearranged to reduce the number of calculations and improve performance.
+
+4. Compiler Optimizations:
+   - The code can benefit from compiler optimizations such as loop unrolling and function inlining. Adding appropriate compiler pragmas or directives can hint the compiler to perform these optimizations.
+
+Based on these observations, the following steps can be taken to optimize the code:
+
+1. Replace the `map<int, mod_int>` with a `vector<mod_int>` to store calculated results. This can be done by replacing `save[2]` with `vector<mod_int>`.
+
+2. Replace the `vector<int>` for `likes` with a `vector<bool>`. This can be done by changing the declaration of `likes` to `vector<bool> likes`.
+
+3. Remove the computation of the `inv` array in the `prepare_factorials` function.
+
+4. Optimize the computation of the factorial and inverse factorial arrays using an iterative approach. This can be done by replacing the loop in the `prepare_factorials` function with an iterative loop.
+
+5. Optimize the nested loops in the `solve` function by rearranging them to reduce the number of calculations.
+
+6. Add appropriate compiler optimizations, such as loop unrolling and function inlining, by using compiler pragmas or directives.
+
+Here is the optimized code:
+
+```cpp
+#include <algorithm>
+#include <cassert>
+#include <iostream>
+#include <vector>
+using namespace std;
+const int MOD = 998244353;
+struct mod_int {
+  int val;
+  mod_int(long long v = 0) {
+    if (v < 0)
+      v = v % MOD + MOD;
+    if (v >= MOD)
+      v %= MOD;
+    val = v;
+  }
+  static int mod_inv(int a, int m = MOD) {
+    int g = m, r = a, x = 0, y = 1;
+    while (r != 0) {
+      int q = g / r;
+      g %= r;
+      swap(g, r);
+      x -= q * y;
+      swap(x, y);
+    }
+    return x < 0 ? x + m : x;
+  }
+  explicit operator int() const { return val; }
+  mod_int &operator+=(const mod_int &other) {
+    val += other.val;
+    if (val >= MOD)
+      val -= MOD;
+    return *this;
+  }
+  mod_int &operator-=(const mod_int &other) {
+    val -= other.val;
+    if (val < 0)
+      val += MOD;
+    return *this;
+  }
+  mod_int &operator*=(const mod_int &other) {
+    val = (uint64_t)val * other.val % MOD;
+    return *this;
+  }
+  mod_int &operator/=(const mod_int &other) { return *this *= other.inv(); }
+  friend mod_int operator+(const mod_int &a, const mod_int &b) {
+    return mod_int(a) += b;
+  }
+  friend mod_int operator-(const mod_int &a, const mod_int &b) {
+    return mod_int(a) -= b;
+  }
+  friend mod_int operator*(const mod_int &a, const mod_int &b) {
+    return mod_int(a) *= b;
+  }
+  friend mod_int operator/(const mod_int &a, const mod_int &b) {
+    return mod_int(a) /= b;
+  }
+  mod_int &operator++() {
+    val = val == MOD - 1 ? 0 : val + 1;
+    return *this;
+  }
+  mod_int operator++(int) {
+    mod_int before = *this;
+    ++*this;
+    return before;
+  }
+  mod_int &operator--() {
+    val = val == 0 ? MOD - 1 : val - 1;
+    return *this;
+  }
+  mod_int operator--(int) {
+    mod_int before = *this;
+    --*this;
+    return before;
+  }
+  mod_int operator-() const { return val == 0 ? 0 : MOD - val; }
+  bool operator==(const mod_int &other) const { return val == other.val; }
+  bool operator!=(const mod_int &other) const { return val != other.val; }
+  mod_int inv() const { return mod_inv(val); }
+  mod_int pow(long long p) const {
+    assert(p >= 0);
+    mod_int a = *this, result = 1;
+    while (p > 0) {
+      if (p & 1)
+        result *= a;
+      a *= a;
+      p >>= 1;
+    }
+    return result;
+  }
+};
+vector<mod_int> factorial, inv_factorial;
+void prepare_factorials(int max) {
+  factorial.resize(max + 1);
+  inv_factorial.resize(max + 1);
+  factorial[0] = inv_factorial[0] = 1;
+  for (int i = 1; i <= max; i++) {
+    factorial[i] = i * factorial[i - 1];
+    inv_factorial[i] = mod_int::mod_inv(factorial[i]);
+  }
+}
+mod_int choose(int n, int r) {
+  assert(0 <= r && r <= n);
+  return factorial[n] * inv_factorial[r] * inv_factorial[n - r];
+}
+int N, M;
+int L, DL;
+vector<bool> likes;
+vector<int> weights;
+vector<mod_int> probability;
+vector<mod_int> save[2];
+mod_int solve(int like, int weight) {
+  if (save[like][weight] != 0)
+    return save[like][weight];
+  mod_int answer = 0;
+  if (like) {
+    for (int up = 0; up <= M; up++) {
+      if (probability[2 * up] == 0)
+        continue;
+      mod_int starter = probability[2 * up];
+      mod_int other = 1;
+      for (int i = 0; i < up; i++) {
+        starter /= mod_int(L + i);
+        other *= mod_int(L - weight + i);
+      }
+      for (int u = 0; u <= up; u++) {
+        if (u > 0)
+          other /= mod_int(L - weight + up - u);
+        mod_int product = starter * choose(up, u) * (weight + u);
+        if (L == weight) {
+          if (u < up)
+            product = 0;
+        } else {
+          product *= other;
+        }
+        answer += product;
+        starter *= mod_int(weight + u);
+      }
+    }
+  } else {
+    for (int down = 0; down <= M; down++) {
+      if (probability[2 * (M - down)] == 0)
+        continue;
+      mod_int starter = probability[2 * (M - down)];
+      mod_int other = 1;
+      for (int i = 0; i < down; i++) {
+        starter /= mod_int(DL - i);
+        other *= mod_int(DL - weight - i);
+      }
+      for (int d = 0; d <= min(down, weight); d++) {
+        if (d > 0)
+          other /= mod_int(DL - weight + down - d);
+        mod_int product = starter * choose(down, d) * (weight - d);
+        if (DL == weight) {
+          if (d < down)
+            product = 0;
+        } else {
+          product *= other;
+        }
+        answer += product;
+        starter *= mod_int(weight - d);
+      }
+    }
+  }
+  return save[like][weight] = answer;
+}
+int main

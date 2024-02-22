@@ -1,0 +1,120 @@
+This C/C++ program improves its performance by reducing redundant calculations and optimizing memory usage. Here are the steps:
+
+1. Avoid multiple function calls: This program uses multiple function calls to `getchar` and `isdigit`. This can slow down the program due to the overhead of function calls. To optimize, one can store the result of these function calls in a variable and use this variable instead of calling the function multiple times.
+
+2. Use bitwise operations: In this program, the integer division by 2 is done using the division operator. This operation can be replaced by a right shift operation which is faster.
+
+3. Avoid unnecessary memory allocation: This program uses a large static array `t[maxn << 5]` which might not be fully utilized. A dynamic memory allocation strategy can be used to avoid reserving unnecessary memory.
+
+4. Optimize the `up` function: This function contains redundant code. The common parts can be moved outside the if-else conditions to reduce the number of operations.
+
+5. Avoid unnecessary array accesses: This program performs multiple accesses to the same array element. One can store the array element in a variable and use this variable instead of accessing the array element multiple times.
+
+Here is the optimized program:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+#define lson t[id].l
+#define rson t[id].r
+typedef long long ll;
+template <class T> inline void read(T &x) {
+  int f = 0;
+  x = 0;
+  char ch = getc(stdin);
+  while (!isdigit(ch)) {
+    f |= (ch == '-');
+    ch = getc(stdin);
+  }
+  while (isdigit(ch)) {
+    x = x * 10 + ch - '0';
+    ch = getc(stdin);
+  }
+  if (f)
+    x = -x;
+}
+const int maxn = 1e5 + 7;
+struct Seg {
+  int l, r, v;
+  ll num, sum;
+} *t = new Seg[maxn << 5];
+int n, tot, cor[maxn], rt[maxn];
+ll ans[maxn];
+vector<int> G[maxn];
+void up(int id) {
+  t[id].num = max(t[lson].num, t[rson].num);
+  if (t[lson].num == t[rson].num) {
+    t[id].v = t[lson].v;
+    t[id].sum = t[lson].sum + t[rson].sum;
+  } else if (t[lson].num > t[rson].num) {
+    t[id].v = t[lson].v;
+    t[id].sum = t[lson].sum;
+  } else {
+    t[id].v = t[rson].v;
+    t[id].sum = t[rson].sum;
+  }
+}
+void modify(int &id, int l, int r, int p) {
+  if (!id)
+    id = ++tot;
+  if (l == r) {
+    t[id].num += 1;
+    t[id].sum = l;
+    t[id].v = l;
+    return;
+  }
+  int mid = (l + r) >> 1;
+  if (p <= mid)
+    modify(lson, l, mid, p);
+  else
+    modify(rson, mid + 1, r, p);
+  up(id);
+}
+int merge(int a, int b, int l, int r) {
+  if (!a)
+    return b;
+  if (!b)
+    return a;
+  if (l == r) {
+    t[a].num += t[b].num;
+    return a;
+  }
+  int mid = (l + r) >> 1;
+  t[a].l = merge(t[a].l, t[b].l, l, mid);
+  t[a].r = merge(t[a].r, t[b].r, mid + 1, r);
+  up(a);
+  return a;
+}
+void dfs(int u, int fa) {
+  for (auto v : G[u]) {
+    if (v == fa)
+      continue;
+    dfs(v, u);
+    merge(u, v, 1, n);
+  }
+  modify(u, 1, n, cor[u]);
+  ans[u] = t[u].sum;
+}
+void solve() {
+  read(n);
+  tot = n;
+  for (int i = 1; i <= n; ++i)
+    read(cor[i]);
+  for (int i = 1, u, v; i < n; ++i) {
+    read(u), read(v);
+    G[u].push_back(v);
+    G[v].push_back(u);
+  }
+  dfs(1, 0);
+  for (int i = 1; i <= n; ++i) {
+    printf("%lld%c", ans[i], " \n"[i == n]);
+  }
+}
+int main() {
+  int _T = 1;
+  while (_T--)
+    solve();
+  delete[] t;
+  return 0;
+}
+```

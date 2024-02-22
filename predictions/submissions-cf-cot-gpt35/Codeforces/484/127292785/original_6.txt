@@ -1,0 +1,81 @@
+Step 1: Remove unnecessary headers
+
+The program includes `<bits/stdc++.h>` which includes all the standard headers. This can lead to increased compilation time and unnecessary memory usage. We can remove this line and include only the necessary headers.
+
+Step 2: Remove unnecessary preprocessor directives
+
+The program includes several preprocessor directives (`#pragma`) for compiler optimization and linker settings. While these directives can improve performance, they are often compiler-specific and may not be necessary for all platforms. We can remove these directives and rely on the default compiler settings.
+
+Step 3: Optimize memory usage
+
+The program initializes a vector `a` with a size of `R+5` and sets all elements to 0. However, only `n` elements of this vector are actually used. We can optimize memory usage by initializing `a` with a size of `n` instead.
+
+Step 4: Optimize nested loops
+
+The program has a nested loop structure which iterates over all possible values of `i` and `j`. However, we can optimize this by changing the loop conditions. Since `a` only contains elements up to `R`, we can limit the outer loop to iterate up to `R` instead of `R+1`. Similarly, we can limit the inner loop to iterate up to `R/i` instead of `R+1`.
+
+Optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <cmath>
+using namespace std;
+
+struct SparseTable {
+  int N, K;
+  vector<vector<int>> table;
+  vector<int> logtwo;
+  int f(int a, int b) { return max(a, b); }
+  SparseTable(vector<int> a) {
+    N = a.size();
+    K = log2(N) + 2;
+    table = vector<vector<int>>(N, vector<int>(K));
+    logtwo = vector<int>(N + 5);
+    logtwo[1] = 0;
+    for (int i = 2; i <= N; i++) { logtwo[i] = logtwo[i / 2] + 1; }
+    for (int i = N - 1; i >= 0; i--) {
+      table[i][0] = a[i];
+      for (int j = 1; i + (1 << j) - 1 < N; j++) {
+        table[i][j] = f(table[i][j - 1], table[i + (1 << (j - 1))][j - 1]);
+      }
+    }
+  }
+  int query(int l, int r) {
+    int temp = logtwo[r - l + 1];
+    int ans = f(table[l][temp], table[r - (1 << temp) + 1][temp]);
+    return ans;
+  }
+};
+
+void solve() {
+  int R = 1e6;
+  int n;
+  cin >> n;
+  vector<int> a(n, 0);
+  for (int i = 0; i < n; i++) {
+    int x;
+    cin >> x;
+    a[x] = x;
+  }
+  SparseTable tab(a);
+  int maxi = 0;
+  for (int i = 2; i <= R; i++) {
+    if (!a[i])
+      continue;
+    for (int j = i; j <= R/i; j++) {
+      int temp = tab.query(j, min(j + i - 1, R)) - j;
+      maxi = max(maxi, temp);
+    }
+  }
+  cout << maxi << endl;
+}
+
+int main() {
+  int test = 1;
+  while (test--) {
+    solve();
+  }
+  return 0;
+}
+```

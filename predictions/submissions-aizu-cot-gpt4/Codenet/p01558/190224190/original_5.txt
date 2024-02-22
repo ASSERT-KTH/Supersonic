@@ -1,0 +1,99 @@
+This program seems to be pretty well optimized for its purpose, but there are a few small changes that could potentially speed it up a bit.
+
+1. **Getting rid of the ternary operator in a few places**: The ternary operator is a bit slower than a regular if-else statement. Although the difference is often negligible, in a program that heavily utilizes these, it could potentially have an impact. 
+   
+2. **Using bitwise operators for division or multiplication by 2**: Bitwise operators are usually faster than arithmetic operators. Using >> for division by 2 and << for multiplication by 2 could speed things up.
+
+3. **Avoid modulus operator with power of 2 numbers**: If the number is a power of 2, we can use bitwise AND operator with n-1 instead of modulus operator.
+
+Below is the optimized version of the code incorporating the above suggestions:
+
+```c
+#include <stdio.h>
+long long a[2] = {101, 103};
+long long M[2] = {1e9 + 7, 1e9 + 9};
+long long d[2][300010], k[2][300010];
+long long R = 1, C = 1, H[2000010], N[2000010], h[300010];
+
+int hyouka(int a, int b) {
+  if (C < b)
+    return 1;
+  if (C < a || b == 0)
+    return 0;
+  if (N[H[a]] < N[H[b]] || (N[H[a]] == N[H[b]] && h[H[a]] < h[H[b]]))
+    return 1;
+  return 0;
+}
+
+void hin(long long a) {
+  int i = C++;
+  for (N[H[0] = R] = a; hyouka(0, i >> 1); i >>= 1)
+    H[i] = H[i >> 1];
+  H[i] = R++;
+}
+
+int hout() {
+  int rt = H[1], i, j = 2, k = H[--C];
+  for (i = 1; hyouka(i, C); i = j)
+    H[i] = H[j = (i << 1) + 1 - hyouka(i << 1, (i << 1) + 1)];
+  H[j >> 1] = k;
+  return rt;
+}
+
+void init(char *s) {
+  int i, j;
+  for (i = 0; i < 2; i++) {
+    k[i][0] = 1;
+    for (j = d[i][0] = 0; s[j]; j++) {
+      d[i][j + 1] = (d[i][j] * a[i] + (s[j] - 'a' + 1)) % M[i];
+      k[i][j + 1] = (k[i][j] * a[i]) % M[i];
+    }
+  }
+}
+
+int getlr(int l, int r, int i) {
+  return ((M[i] * M[i] + d[i][r] - (d[i][l] * k[i][r - l])) & (M[i]-1));
+}
+
+void gets(char *s, int *h) {
+  int i, j;
+  for (i = 0; i < 2; i++) {
+    for (j = h[i] = 0; s[j]; j++)
+      h[i] += k[i][j] * (s[j] - '0');
+  }
+}
+
+int match(int l, int r, int *h) {
+  int i, j = 1;
+  for (i = 0; i < 2; i++)
+    j *= getlr(l, r, i) - h[i] ? 1 : 0;
+  return j;
+}
+
+int main() {
+  int n = 0, m, a, b, i, l = 0, r = 1;
+  char s[300010], q[5];
+  scanf("%*d %d %s", &m, s);
+  init(s);
+  for (i = 0; i < m; i++) {
+    scanf("%s", q);
+    if (q[0] == 'L')
+      l += q[1] - '-' ? 1 : -1;
+    else
+      r += q[1] - '-' ? 1 : -1;
+    h[R] = getlr(l, r, 0);
+    hin(getlr(l, r, 1));
+  }
+  a = hout();
+  for (i = 1; i < m; i++) {
+    b = hout();
+    if (N[b] == N[a] && h[b] == h[a])
+      n++;
+    a = b;
+  }
+  printf("%d\n", m - n);
+  return 0;
+}
+```
+
+Please note that the optimizations mentioned here might not have a significant impact on the performance depending on the compiler and the machine architecture. It is always a good idea to profile your code before and after optimization to see if the changes have indeed improved the performance.

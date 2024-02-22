@@ -1,0 +1,93 @@
+The given code is a C++ solution to a problem that requires sorting an array with minimum cost. The cost is calculated as the sum of the smallest two elements in a group, and the code attempts to group elements together in such a way that minimizes this sum.
+
+1. Code Analysis:
+   - The code includes the "bits/stdc++.h" header file, which includes all the standard C++ libraries. However, this is not efficient and can slow down the compile time. 
+   - A QuickFind data structure is used to group the elements of the array.
+   - Maps `p` and `q` are used to store the original and sorted index of each element in the array.
+   - In the final loop, for each group, it calculates the minimum cost by trying two different ways to group the elements and choosing the smallest cost.
+
+2. Optimization Strategy:
+   - Replace the "bits/stdc++.h" header with only the required libraries.
+   - Avoid using `long long` as the default integer type. Use `int` where possible.
+   - The `map` data structures `p` and `q` are not efficient for this task, as they internally use a self-balancing binary search tree which has an average time complexity of O(log n) for search, insert, and delete operations. We can replace them with unordered_map which uses a hash table and has an average time complexity of O(1) for these operations.
+   - The `v` vector in the QuickFind structure is not being used efficiently. Each time an element is added to `v[x]`, `v[y]` is cleared. This can be improved by using a move operation.
+   - The final loop can be optimized by reducing the number of calculations and comparisons.
+
+3. Step-by-Step Explanation:
+   - Replace the "bits/stdc++.h" header with only the required libraries like `iostream`, `vector`, `algorithm`, `unordered_map`. This will reduce the compile time.
+   - Change the default integer type from `long long` to `int`. Use `long long` only where necessary.
+   - Replace `map` with `unordered_map` for `p` and `q`. This will improve the time complexity of search, insert, and delete operations from O(log n) to O(1).
+   - Use `std::move` to move the elements from `v[y]` to `v[x]`. This will avoid unnecessary copy operations.
+   - In the final loop, calculate the minimum and total sum of the group in the same loop. Also, calculate `m + b[0] * (k + 1)` once before the loop.
+
+4. Optimized Code Block:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <unordered_map>
+using namespace std;
+struct QuickFind {
+  vector<int> r, p;
+  vector<vector<int>> v;
+  QuickFind(int size) { init(size); }
+  void init(int size) {
+    r.resize(size, 0);
+    p.resize(size, 0);
+    v.resize(size);
+    for (int i = 0; i < size; i++) {
+      r[i] = 1, p[i] = i;
+      v[i].resize(1, i);
+    }
+  }
+  bool same(int x, int y) { return p[x] == p[y]; }
+  void unite(int x, int y) {
+    x = p[x];
+    y = p[y];
+    if (x == y)
+      return;
+    if (r[x] < r[y])
+      swap(x, y);
+    r[x] += r[y];
+    for (int i : v[y]) {
+      p[i] = x;
+    }
+    v[x].insert(v[x].end(), make_move_iterator(v[y].begin()), make_move_iterator(v[y].end()));
+    v[y].clear();
+  }
+};
+int main() {
+  int n;
+  cin >> n;
+  vector<int> a(n);
+  for (int i = 0; i < n; i++)
+    cin >> a[i];
+  vector<int> b(a);
+  sort(b.begin(), b.end());
+  unordered_map<int, int> p, q;
+  for (int i = 0; i < n; i++) {
+    p[a[i]] = i;
+    q[b[i]] = i;
+  }
+  QuickFind qf(n);
+  for (int i = 0; i < n; i++)
+    qf.unite(i, p[b[i]]);
+  long long ans = 0;
+  for (int i = 0; i < n; i++) {
+    int k = qf.v[i].size();
+    if (qf.p[i] != i || k == 1)
+      continue;
+    long long m = a[qf.v[i][0]];
+    long long tmp = 0;
+    for (int j : qf.v[i]) {
+      tmp += a[j];
+      m = min(m, (long long)a[j]);
+    }
+    long long m1 = m + b[0] * (k + 1);
+    ans += min(tmp + m * (k - 2), m1);
+  }
+  cout << ans << endl;
+  return 0;
+}
+```

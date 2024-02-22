@@ -1,0 +1,107 @@
+**Code Analysis**
+
+The program uses two major data structures: an array of long long integers (`factmodary`) and an array of integers (`word`). The program also uses a map `bubblehist`.
+
+`factmodary` stores the factorial of numbers modulo `divisor` and does not seem to have any performance issues. The use of the map `bubblehist` can be a potential performance bottleneck due to its logarithmic time complexity for lookup, insertion, and remove operations.
+
+In the main loop, there are two nested loops. The outer loop runs until the user enters 0, and the inner loop runs `R` times. The inner loop performs swapping of elements in the array `word`. There is another loop that inserts elements into `bubblehist` and increments all elements after the inserted one. This loop can be a potential performance bottleneck due to its worst-case time complexity of O(N^2).
+
+**Optimization Strategy**
+
+1. **Data structures:** Instead of using a map `bubblehist`, we could use a data structure that supports more efficient operations. For example, a Fenwick tree (also known as a binary indexed tree) could be used, which supports update and prefix sum queries in logarithmic time. 
+
+2. **Redundant computations:** The program computes the factorial of a number modulo `divisor` in every iteration of the main loop. We can precompute these values and store them in a global array to avoid redundant computations.
+
+3. **Loop optimization:** The loop that increments all elements in `bubblehist` after the inserted one can be optimized. Instead of incrementing all elements after the inserted one, we can keep track of the total count of elements and subtract the prefix sum up to the current element to get the number of elements after it.
+
+4. **Compiler optimizations:** We can use the `-O3` compiler flag to enable all optimization levels provided by the gcc compiler.
+
+**Step-by-Step Explanation**
+
+1. **Data structures:** We replace `bubblehist` with a Fenwick tree. This reduces the time complexity of updating and calculating prefix sums from O(N) to O(log N).
+
+   **Trade-offs:** The Fenwick tree is a bit more complex to implement and understand compared to a map. However, it provides significant performance improvements.
+
+2. **Redundant computations:** We precompute the factorials of numbers modulo `divisor` and store them in a global array. This avoids the need to compute the same values in every iteration of the main loop.
+
+   **Trade-offs:** This increases the memory usage slightly but reduces the time complexity.
+
+3. **Loop optimization:** Instead of incrementing all elements in `bubblehist` after the inserted one, we keep track of the total count of elements and subtract the prefix sum up to the current element. This reduces the time complexity from O(N) to O(log N).
+
+   **Trade-offs:** This increases the code complexity slightly but provides significant performance improvements.
+
+4. **Compiler optimizations:** We use the `-O3` compiler flag to enable all compiler optimizations. This can improve the performance of the program by allowing the compiler to perform various optimizations such as loop unrolling, function inlining, etc.
+
+   **Trade-offs:** This can make the program harder to debug, and it may not always result in performance improvements. However, in most cases, it provides significant performance gains.
+
+**Optimized Code Block**
+
+Please note that without the exact input/output requirements and the constraints, it is hard to test and ensure that the optimizations will work correctly. Thus, the following optimized code is provided as a general guideline based on the above strategy and might require further adjustments according to the specific requirements and constraints of the problem.
+
+```c++
+#include <iostream>
+#include <vector>
+using namespace std;
+
+const int divisor = 1000000007;
+const int N = 100001;
+long long factmodary[N];
+vector<int> fenwick_tree(N, 0);
+
+void update(int i, int val) {
+    for(; i <= N; i += i & -i)
+        fenwick_tree[i] += val;
+}
+
+int prefix_sum(int i) {
+    int sum = 0;
+    for(; i > 0; i -= i & -i)
+        sum += fenwick_tree[i];
+    return sum;
+}
+
+int main() {
+    factmodary[0] = 1;
+    for (int i = 1; i < N; i++) {
+        factmodary[i] = factmodary[i - 1] * i % divisor;
+    }
+
+    int word[N] = {0};
+
+    for (;;) {
+        int n, r;
+        cin >> n;
+        if (n == 0)
+            break;
+
+        cin >> r;
+        for (int i = 0; i < n; i++) {
+            word[i] = i + 1;
+            update(i + 1, 1);
+        }
+
+        for (int i = 0; i < r; i++) {
+            int s, t;
+            cin >> s >> t;
+            swap(word[s - 1], word[t - 1]);
+        }
+
+        long long ans = 0;
+        for (int i = 0; i < n; i++) {
+            update(word[i], -1);
+            ans = (ans + factmodary[n - i - 1] * prefix_sum(word[i] - 1)) % divisor;
+        }
+        cout << ans << "\n";
+        for (int i = 0; i < n; i++) {
+            update(word[i], 1);
+        }
+    }
+    return 0;
+}
+```
+
+Compile the program with `-O3` flag for further optimizations:
+
+```bash
+g++ -O3 program.cpp
+```

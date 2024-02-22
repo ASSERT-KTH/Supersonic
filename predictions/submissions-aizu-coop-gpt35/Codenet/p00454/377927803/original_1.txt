@@ -1,0 +1,264 @@
+Code Analysis:
+- The code includes several unnecessary includes, such as `<climits>`, `<cmath>`, `<cstdlib>`, `<deque>`, `<functional>`, `<map>`, `<queue>`, `<set>`, `<sstream>`, `<stack>`, and `<utility>`. These are not used in the code and can be removed to improve compilation time.
+- There are several unnecessary macros defined, such as `PB`, `MP`, `all(a)`, `rall(a)`, `omajinai`, `rep(i, x)`, `rep1(i, x)`, and the overloaded operators `<<` for `pair` and `vector`. These macros can be removed to simplify the code and improve readability.
+- The code uses global variables for the width and height of the grid (`w` and `h`), as well as for the number of rectangles (`n`). It would be better to pass these variables as function arguments to avoid global state and improve code modularity.
+- The code uses arrays for the coordinates of the rectangles (`x1`, `x2`, `y1`, `y2`). It would be more efficient to use a vector of pairs (`vector<pair<int, int>>`) to store the coordinates, as it would simplify the code and reduce memory usage.
+- The `compress` function is used to compress the x and y coordinates of the rectangles. However, it uses a vector `xs` to store the unique coordinates and then performs binary search to find the compressed coordinates. This can be optimized by using a set instead of a vector to automatically store unique values and perform logarithmic time lookup.
+- The code uses a 2D boolean array `fld` to represent the grid and mark the filled cells. However, the array is unnecessarily large, as it has dimensions `(1005 * 6 + 2) x (1005 * 6 + 2)`, even though the maximum size of the grid is `1005 x 1005`. This can be optimized by using a smaller array of dimensions `w x h`.
+- The code uses a nested loop to iterate over the grid and count the number of disconnected regions. However, it uses a flood-fill algorithm with a queue to find the connected cells, which can be slow for large grids. This can be optimized by using a disjoint-set data structure to efficiently find the number of connected components in the grid.
+
+Optimization Strategy:
+1. Remove unnecessary includes: Remove the unnecessary includes `<climits>`, `<cmath>`, `<cstdlib>`, `<deque>`, `<functional>`, `<map>`, `<queue>`, `<set>`, `<sstream>`, `<stack>`, and `<utility>`.
+2. Remove unnecessary macros: Remove the unnecessary macros `PB`, `MP`, `all(a)`, `rall(a)`, `omajinai`, `rep(i, x)`, `rep1(i, x)`, and the overloaded operators `<<` for `pair` and `vector`.
+3. Pass variables as function arguments: Replace the global variables `w`, `h`, and `n` with function arguments.
+4. Use vector of pairs for coordinates: Replace the arrays `x1`, `x2`, `y1`, `y2` with a vector of pairs `rects`.
+5. Optimize the `compress` function: Use a set instead of a vector to store unique coordinates and perform logarithmic time lookup.
+6. Optimize the grid representation: Use a smaller array of dimensions `w x h` instead of the larger array `fld`.
+7. Optimize the disconnected regions count: Use a disjoint-set data structure to efficiently find the number of connected components in the grid.
+
+Step-by-Step Explanation:
+1. Remove unnecessary includes: Remove the unnecessary includes `<climits>`, `<cmath>`, `<cstdlib>`, `<deque>`, `<functional>`, `<map>`, `<queue>`, `<set>`, `<sstream>`, `<stack>`, and `<utility>`. These are not used in the code and can be safely removed.
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <cstring>
+#include <iostream>
+#include <vector>
+using namespace std;
+```
+
+2. Remove unnecessary macros: Remove the unnecessary macros `PB`, `MP`, `all(a)`, `rall(a)`, `omajinai`, `rep(i, x)`, `rep1(i, x)`, and the overloaded operators `<<` for `pair` and `vector`. These macros are not used in the code and can be safely removed.
+
+3. Pass variables as function arguments: Replace the global variables `w`, `h`, and `n` with function arguments. This will improve code modularity and avoid global state.
+
+```cpp
+int compress(vector<pair<int, int>>& rects, int size_limit) {
+  set<int> xs;
+  for (const auto& rect : rects) {
+    for (int d = -1; d <= 1; ++d) {
+      int tx1 = rect.first + d, tx2 = rect.second + d;
+      if (0 <= tx1 && tx1 <= size_limit)
+        xs.insert(tx1);
+      if (0 <= tx2 && tx2 <= size_limit)
+        xs.insert(tx2);
+    }
+  }
+  int index = 0;
+  map<int, int> compress_map;
+  for (const auto& x : xs) {
+    compress_map[x] = index++;
+  }
+  for (auto& rect : rects) {
+    rect.first = compress_map[rect.first];
+    rect.second = compress_map[rect.second];
+  }
+  return xs.size();
+}
+```
+
+4. Use vector of pairs for coordinates: Replace the arrays `x1`, `x2`, `y1`, `y2` with a vector of pairs `rects`. This will simplify the code and reduce memory usage.
+
+```cpp
+vector<pair<int, int>> rects(n);
+for (auto& rect : rects) {
+  cin >> rect.first >> rect.second;
+}
+```
+
+5. Optimize the `compress` function: Update the `compress` function to use a set instead of a vector to store unique coordinates and perform logarithmic time lookup. This will improve the efficiency of the function.
+
+```cpp
+int compress(vector<pair<int, int>>& rects, int size_limit) {
+  set<int> xs;
+  for (const auto& rect : rects) {
+    for (int d = -1; d <= 1; ++d) {
+      int tx1 = rect.first + d, tx2 = rect.second + d;
+      if (0 <= tx1 && tx1 <= size_limit)
+        xs.insert(tx1);
+      if (0 <= tx2 && tx2 <= size_limit)
+        xs.insert(tx2);
+    }
+  }
+  int index = 0;
+  map<int, int> compress_map;
+  for (const auto& x : xs) {
+    compress_map[x] = index++;
+  }
+  for (auto& rect : rects) {
+    rect.first = compress_map[rect.first];
+    rect.second = compress_map[rect.second];
+  }
+  return xs.size();
+}
+```
+
+6. Optimize the grid representation: Replace the larger array `fld` with a smaller array `grid` of dimensions `w x h`. This will reduce memory usage and improve cache locality.
+
+```cpp
+vector<vector<bool>> grid(h, vector<bool>(w, false));
+```
+
+7. Optimize the disconnected regions count: Use a disjoint-set data structure to efficiently find the number of connected components in the grid. This will improve the efficiency of the algorithm.
+
+```cpp
+class DisjointSet {
+public:
+  DisjointSet(int size) : parent(size), rank(size, 0), count(size, 1) {
+    for (int i = 0; i < size; ++i) {
+      parent[i] = i;
+    }
+  }
+
+  int Find(int x) {
+    if (parent[x] != x) {
+      parent[x] = Find(parent[x]);
+    }
+    return parent[x];
+  }
+
+  void Union(int x, int y) {
+    int rootX = Find(x);
+    int rootY = Find(y);
+    if (rootX != rootY) {
+      if (rank[rootX] < rank[rootY]) {
+        parent[rootX] = rootY;
+        count[rootY] += count[rootX];
+      } else if (rank[rootX] > rank[rootY]) {
+        parent[rootY] = rootX;
+        count[rootX] += count[rootY];
+      } else {
+        parent[rootY] = rootX;
+        count[rootX] += count[rootY];
+        rank[rootX]++;
+      }
+    }
+  }
+
+  int GetCount(int x) {
+    return count[Find(x)];
+  }
+
+private:
+  vector<int> parent;
+  vector<int> rank;
+  vector<int> count;
+};
+
+int ans = 0;
+DisjointSet ds(w * h);
+
+for (int y = 0; y < h - 1; ++y) {
+  for (int x = 0; x < w - 1; ++x) {
+    if (grid[y][x])
+      continue;
+    ans++;
+    if (y > 0 && !grid[y - 1][x]) {
+      ds.Union(y * w + x, (y - 1) * w + x);
+    }
+    if (x > 0 && !grid[y][x - 1]) {
+      ds.Union(y * w + x, y * w + (x - 1));
+    }
+  }
+}
+
+cout << ans << endl;
+```
+
+Optimized Code Block:
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <cstring>
+#include <iostream>
+#include <set>
+#include <vector>
+using namespace std;
+
+int compress(vector<pair<int, int>>& rects, int size_limit) {
+  set<int> xs;
+  for (const auto& rect : rects) {
+    for (int d = -1; d <= 1; ++d) {
+      int tx1 = rect.first + d, tx2 = rect.second + d;
+      if (0 <= tx1 && tx1 <= size_limit)
+        xs.insert(tx1);
+      if (0 <= tx2 && tx2 <= size_limit)
+        xs.insert(tx2);
+    }
+  }
+  int index = 0;
+  map<int, int> compress_map;
+  for (const auto& x : xs) {
+    compress_map[x] = index++;
+  }
+  for (auto& rect : rects) {
+    rect.first = compress_map[rect.first];
+    rect.second = compress_map[rect.second];
+  }
+  return xs.size();
+}
+
+class DisjointSet {
+public:
+  DisjointSet(int size) : parent(size), rank(size, 0), count(size, 1) {
+    for (int i = 0; i < size; ++i) {
+      parent[i] = i;
+    }
+  }
+
+  int Find(int x) {
+    if (parent[x] != x) {
+      parent[x] = Find(parent[x]);
+    }
+    return parent[x];
+  }
+
+  void Union(int x, int y) {
+    int rootX = Find(x);
+    int rootY = Find(y);
+    if (rootX != rootY) {
+      if (rank[rootX] < rank[rootY]) {
+        parent[rootX] = rootY;
+        count[rootY] += count[rootX];
+      } else if (rank[rootX] > rank[rootY]) {
+        parent[rootY] = rootX;
+        count[rootX] += count[rootY];
+      } else {
+        parent[rootY] = rootX;
+        count[rootX] += count[rootY];
+        rank[rootX]++;
+      }
+    }
+  }
+
+  int GetCount(int x) {
+    return count[Find(x)];
+  }
+
+private:
+  vector<int> parent;
+  vector<int> rank;
+  vector<int> count;
+};
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+
+  int w, h;
+  while (cin >> w >> h, w) {
+    int n;
+    cin >> n;
+
+    vector<pair<int, int>> rects(n);
+    for (auto& rect : rects) {
+      cin >> rect.first >> rect.second;
+    }
+
+    w = compress(rects, w);
+    h = compress(rects, h);
+
+    vector<vector<bool>> grid(h, vector<bool>(w, false));
+    for (const auto& rect : rects) {
+      for (

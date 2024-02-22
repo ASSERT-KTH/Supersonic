@@ -1,0 +1,1 @@
+bool variables[11];

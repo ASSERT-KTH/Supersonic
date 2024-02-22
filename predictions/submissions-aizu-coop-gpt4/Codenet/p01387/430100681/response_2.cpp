@@ -1,0 +1,15 @@
+This program is a complex one and involves the use of Centroid Path Decomposition, Randomized Binary Search Trees, and Ordered MultiSet. Upon a first glance, the program does not have any glaring performance issues. However, there are a few areas where we can improve the program's efficiency:
+
+1. **Use of `#include <bits/stdc++.h>`**: This header file includes a lot of unnecessary headers which can slow down the compilation time. Replace it with the specific headers needed in the program.
+
+2. **Avoid using `std::endl`**: `std::endl` flushes the output buffer along with inserting a new line, which can slow down the program. Instead, use `'\n'` for new lines.
+
+3. **Avoid using `std::vector::push_back()` in a loop**: When elements are pushed into a vector one by one, the vector may need to reallocate its memory multiple times, which can be costly. Consider using `std::vector::reserve()` beforehand if the maximum size of the vector is known in advance.
+
+4. **Avoid unnecessary computations in loops**: For example, in the `while` loop inside the `query` method of `CentroidPathDecomposition` class, `Centroids[TreeIdxA].Deep` and `Centroids[TreeIdxB].Deep` are each computed twice in every iteration. We can compute them once before the loop and update them whenever `TreeIdxA` or `TreeIdxB` changes.
+
+5. **Avoid repeated calls to the same function with the same arguments**: For example, the method `count` in `OrderedMultiSet` class is called twice with the same arguments in the `sum` lambda function in `main()`. We can store the result in a variable and reuse it.
+
+6. **Use fast IO**: The standard C++ IO operations (cin, cout) are slower than the C-style IO operations (scanf, printf). We can use the latter for faster IO, especially when dealing with large amounts of data. 
+
+7. **Compiler optimizations**: Use compiler flags like `-O2` or `-O3` for optimizations during the compilation process. These flags tell the compiler to focus on code optimization during the compilation to make the program run faster.

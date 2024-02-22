@@ -1,0 +1,22 @@
+This code tries to solve a problem which is likely about fitting circles within given points, hence the use of complex numbers, vectors, and smallest enclosing disc functions. Here are the performance bottlenecks and the optimization strategy:
+
+1. Code Analysis:
+    1. 'Bits/stdc++.h': This header file is quite large and includes more libraries than necessary. It can slow down compilation time.
+    2. Unnecessary use of complex numbers and vectors: This can lead to slower performance and higher memory usage.
+    3. The nested loop inside 'smallest_enclosing_disc' function: This can lead to high time complexity, especially for large input sizes.
+    4. Redundant computations: The function 'c3' computes the norm of the same values multiple times.
+    5. Global variables: Using global variables is a bad practice as it can lead to bugs and problems with reusability and testability.
+
+2. Optimization Strategy:
+    1. Replace 'bits/stdc++.h' with only necessary includes.
+    2. Minimize the use of complex numbers and vectors.
+    3. Optimize the nested loop inside 'smallest_enclosing_disc' function.
+    4. Precompute values that are used multiple times to avoid redundant computations.
+    5. Avoid use of global variables.
+
+3. Step-by-Step Explanation:
+    1. Replace 'bits/stdc++.h' with only necessary includes to speed up compilation time.
+    2. Replace complex numbers and vectors with simpler and more efficient data structures where possible.
+    3. The loop inside 'smallest_enclosing_disc' function can be optimized by breaking the loop when the condition is met, instead of looping through all elements.
+    4. Precompute values that are used multiple times. For example, in the 'c3' function, the norm of the same values is computed multiple times. These values can be computed once and stored for later use.
+    5. Avoid use of global variables to improve code structure and readability.

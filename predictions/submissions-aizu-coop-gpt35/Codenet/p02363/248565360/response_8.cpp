@@ -1,0 +1,11 @@
+Upon analyzing the provided code, I have identified several potential areas for optimization:
+
+1. Use of `std::vector` for the `edges` data structure: The vector is used to store the edges of the graph. However, using a vector incurs overhead due to dynamic memory allocation and deallocation. A more efficient alternative would be to use a fixed-size array since the maximum number of edges is known in advance.
+
+2. Use of `std::string` for `ans`: The `ans` string is used to store the final output. However, using a string and appending to it in each iteration can be inefficient due to repeated reallocation and copying. A more efficient approach would be to use a fixed-size character array and directly write into it.
+
+3. Unnecessary casting in the `fill` function: The `fill` function is called with an array of integers, but it is casted to `(int *)`. This casting is unnecessary and can be removed.
+
+4. Redundant check for `i == vNum - 1` inside the inner loop: The check `if (i == vNum - 1)` is performed inside the inner loop for every edge. This check is only needed once after the inner loop completes. Moving this check outside the inner loop will eliminate redundant computations.
+
+5. Unnecessary use of `to_string` for integer to string conversion: The `to_string` function is used to convert integers to strings when appending to `ans`. However, this function can be expensive in terms of time and memory. Instead, a more efficient approach would be to use a custom integer to string conversion function.

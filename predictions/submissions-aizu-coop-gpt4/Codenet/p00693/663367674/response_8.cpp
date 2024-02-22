@@ -1,0 +1,22 @@
+1. Code Analysis:
+   - The code primarily involves string operations and manipulations. There are multiple custom string functions, which can likely be replaced with standard library functions.
+   - The code also involves iterating over arrays and handling user input and output. 
+   - The code uses C-style string handling in a C++ program, which could be optimized using C++ standard string class that provides more efficient and safer string handling functions.
+   - Memory allocation for the struct objects is done on the stack, which might cause stack overflow for large inputs. These should be allocated on the heap.
+   - The code uses some unnecessary global variables. These should be moved to local scope, to reduce the risk of accidental modification.
+
+2. Optimization Strategy:
+   1. Replacing C-style string operations with C++ std::string operations: This will not only make the code cleaner and safer, but also reduce the need for manual memory management and string length computations.
+   2. Memory allocation on heap instead of stack: For large inputs, stack allocation can cause stack overflow. Hence, using dynamic allocation on heap is a better choice.
+   3. Replacing raw arrays with std::vector: This will provide dynamic size adjustment and better memory management.
+   4. Moving global variables to local scope: This will reduce the risk of accidental modification and improve code readability.
+   5. Avoiding unnecessary computations: The custom string compare functions are unnecessary, as the standard library provides these functions. Also, computing the string length multiple times is unnecessary, as the length can be stored and reused.
+
+3. Step-by-Step Explanation:
+   1. Replacing C-style string operations with C++ std::string operations: The custom string compare and copy functions can be replaced with the std::string::compare and std::string::assign functions. Also, the string length computations are unnecessary, as std::string provides a length() function.
+   2. Memory allocation on heap instead of stack: The struct objects should be created dynamically on the heap using pointers and the new keyword. This will prevent stack overflow for large inputs.
+   3. Replacing raw arrays with std::vector: The OK and NOT arrays can be replaced with std::vector, which will provide automatic size adjustment and memory management.
+   4. Moving global variables to local scope: The variables N, M, OK, and NOT should be moved to the func() function, as they are only used there. This will improve code readability and reduce the risk of accidental modification.
+   5. Avoiding unnecessary computations: The string length computations in the custom string compare functions are unnecessary, as the length can be stored and reused. Also, the standard library provides string compare functions, so the custom functions can be removed.
+
+4. Trade-offs: The proposed optimizations will make the code cleaner and more efficient, but might also make it slightly more complex for beginners to understand, especially the use of pointers and dynamic memory allocation.

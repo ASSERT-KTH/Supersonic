@@ -1,0 +1,201 @@
+#include <cstdio>
+#include <cstring>
+#include <queue>
+#include <bitset>
+using namespace std;
+
+#define REP(i, a, n) for (int i = a; i < n; i++)
+#define rep(i, n) REP(i, 0, n)
+
+const int dx[] = {0, 1, 0, -1};
+const int dy[] = {-1, 0, 1, 0};
+
+int W, H, sx, sy, gx, gy;
+char csize, wsize, wx[3], wy[3], cx[3], cy[3];
+char field[16][16];
+bitset<8> DP[9][9][9][9][9][9][9][9];
+
+struct state {
+  char x, y, cx[3], cy[3];
+  bitset<8> Sc;
+
+  state(char _x, char _y, char _cx[], char _cy[], bitset<8> _Sc) {
+    x = _x, y = _y;
+    Sc = _Sc;
+    memcpy(cx, _cx, sizeof(cx));
+    memcpy(cy, _cy, sizeof(cy));
+  }
+
+  bool operator<(const state &a) const {
+    if (x != a.x)
+      return x < a.x;
+    if (y != a.y)
+      return y < a.y;
+
+    for (int i = 0; i < csize; i++) {
+      if (cx[i] != a.cx[i])
+        return cx[i] < a.cx[i];
+      if (cy[i] != a.cy[i])
+        return cy[i] < a.cy[i];
+    }
+
+    return Sc < a.Sc;
+  }
+
+  bool operator==(const state &a) const {
+    if (x != a.x || y != a.y || Sc != a.Sc)
+      return false;
+
+    for (int i = 0; i < csize; i++) {
+      if (cx[i] != a.cx[i] || cy[i] != a.cy[i])
+        return false;
+    }
+
+    return true;
+  }
+};
+
+bool isdel(char tx, char ty, char ncx[], char ncy[]) {
+  if (field[ty][tx] != 'w')
+    return true;
+
+  for (int i = 0; i < csize; i++) {
+    if (ncx[i] == tx && ncy[i] == ty)
+      return true;
+  }
+
+  return false;
+}
+
+bool iscontena(char tx, char ty, char ncx[], char ncy[], bitset<8> Sc) {
+  for (int i = 0; i < csize; i++) {
+    if (ncx[i] == tx && ncy[i] == ty && !Sc[i])
+      return true;
+  }
+
+  return false;
+}
+
+void BFS(char nx, char ny, char ncx[], char ncy[], bitset<8> Sc) {
+  queue<pair<int, int>> q;
+  q.push(make_pair(nx, ny));
+
+  while (!q.empty()) {
+    int x = q.front().first;
+    int y = q.front().second;
+    q.pop();
+
+    for (int k = 0; k < 4; k++) {
+      int tx = x + dx[k];
+      int ty = y + dy[k];
+
+      if (field[ty][tx] == '#' || iscontena(tx, ty, ncx, ncy, Sc))
+        continue;
+
+      if (field[ty][tx] == 'w' && !isdel(tx, ty, ncx, ncy))
+        continue;
+
+      if (!DP[ncx[0]][ncy[0]][ncx[1]][ncy[1]][ncx[2]][ncy[2]][tx][ty]) {
+        DP[ncx[0]][ncy[0]][ncx[1]][ncy[1]][ncx[2]][ncy[2]][tx][ty] = true;
+        q.push(make_pair(tx, ty));
+      }
+    }
+  }
+}
+
+void input() {
+  rep(i, H) {
+    scanf("%s", field[i]);
+    rep(j, W) {
+      if (field[i][j] == '@')
+        sx = j, sy = i;
+      if (field[i][j] == 'E')
+        gx = j, gy = i;
+      if (field[i][j] == 'w') {
+        wx[wsize] = j, wy[wsize] = i;
+        wsize++;
+      }
+      if (field[i][j] == 'c') {
+        cx[csize] = j, cy[csize] = i;
+        csize++;
+      }
+    }
+  }
+}
+
+int main() {
+  while (scanf("%d%d", &H, &W), H | W) {
+    csize = wsize = 0;
+    memset(DP, false, sizeof(DP));
+    memset(cx, 0, sizeof(cx));
+    memset(cy, 0, sizeof(cy));
+
+    input();
+
+    int res = -1;
+    priority_queue<pair<int, state>, vector<pair<int, state>>, greater<pair<int, state>>> q;
+    q.push(make_pair(0, state(sx, sy, cx, cy, 0)));
+    DP[cx[0]][cy[0]][cx[1]][cy[1]][cx[2]][cy[2]][sx][sy] = true;
+
+    while (!q.empty()) {
+      int cost = q.top().first;
+      char nx = q.top().second.x;
+      char ny = q.top().second.y;
+      bitset<8> tSc = q.top().second.Sc;
+      char ncx[3];
+      char ncy[3];
+      memcpy(ncx, q.top().second.cx, sizeof(ncx));
+      memcpy(ncy, q.top().second.cy, sizeof(ncy));
+      q.pop();
+
+      if (res != -1 && cost >= res)
+        break;
+
+      BFS(nx, ny, ncx, ncy, tSc);
+
+      if (DP[ncx[0]][ncy[0]][ncx[1]][ncy[1]][ncx[2]][ncy[2]][gy][gx]) {
+        res = cost;
+        continue;
+      }
+
+      for (int i = 0; i < csize; i++) {
+        if (!tSc[i]) {
+          for (int j = 0; j < 4; j++) {
+            int tx = ncx[i] + dx[j];
+            int ty = ncy[i] + dy[j];
+
+            if (DP[ncx[0]][ncy[0]][ncx[1]][ncy[1]][ncx[2]][ncy[2]][tx][ty])
+              continue;
+
+            int dir = (j + 2) % 4;
+            int tcx = ncx[i];
+            int tcy = ncy[i];
+
+            while (true) {
+              int ay = tcy + dy[dir];
+              int ax = tcx + dx[dir];
+
+              if (field[ay][ax] == '#' || iscontena(ax, ay, ncx, ncy, tSc))
+                break;
+
+              tcx += dx[dir];
+              tcy += dy[dir];
+
+              if (field[ay][ax] == 'w' && !isdel(ax, ay, ncx, ncy)) {
+                tSc[i] = true;
+                break;
+              }
+            }
+
+            if (tcx == ncx[i] && tcy == ncy[i])
+              continue;
+
+            char ttcx[3];
+            char ttcy[3];
+            memcpy(ttcx, ncx, sizeof(ttcx));
+            memcpy(ttcy, ncy, sizeof(ttcy));
+            ttcx[i] = tcx;
+            ttcy[i] = tcy;
+
+            if (!DP[ttcx[0]][ttcy[0]][ttcx[1]][ttcy[1]][ttcx[2]][ttcy[2]][tx][ty]) {
+              DP[ttcx[0]][ttcy[0]][ttcx[1]][ttcy[1]][ttcx[2]][ttcy[2]][tx][ty] = true;

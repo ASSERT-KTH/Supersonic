@@ -1,0 +1,126 @@
+This C++ program seems to be using a lot of unnecessary macros, includes, and functions that are not being used. 
+
+Here are the optimization steps:
+
+1. Remove unnecessary includes: The program includes `<bits/stdc++.h>` which is a non-standard header file and includes all the standard C++ library headers. This can be replaced with the necessary standard library headers that are actually being used.
+
+2. Remove unnecessary macros: The program defines a lot of macros that are not being used. We can remove the macros that are not being used to simplify the code.
+
+3. Optimize the `havecycle` function: The `havecycle` function uses a recursive DFS approach to detect cycles in the graph. However, it can be optimized by using an iterative approach instead of a recursive one. This will reduce the function call overhead and improve the running time.
+
+4. Optimize the construction of the `map` object: The program constructs a `map` object to map the elements of the `TS` vector to their indices. However, this can be optimized by using a simple array instead of a `map`. This will reduce the memory usage and improve the running time.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <set>
+#include <map>
+#include <algorithm>
+
+using namespace std;
+
+bool dfs(int i, vector<int>& visited, vector<int>& being_visited,
+         vector<int>& TS, vector<vector<int>>& g) {
+  if (visited[i]) {
+    return false;
+  } else if (being_visited[i]) {
+    return true;
+  } else {
+    being_visited[i] = 1;
+    for (auto j : g[i]) {
+      if (dfs(j, visited, being_visited, TS, g))
+        return true;
+    }
+  }
+  being_visited[i] = 0;
+  visited[i] = 1;
+  TS.push_back(i);
+  return false;
+}
+
+void solve() {
+  int n, m;
+  cin >> n >> m;
+  vector<int> visited(n + 1, 0), being_visited(n + 1, 0), TS;
+  vector<vector<int>> g(n + 1);
+  vector<set<int>> G(n + 1);
+  for (int i = 0; i < m; ++i) {
+    int t, x, y;
+    cin >> t >> x >> y;
+    if (t)
+      g[x].push_back(y);
+    G[x].insert(y);
+    G[y].insert(x);
+  }
+  for (int i = 1; i <= n; ++i) {
+    bool ch = true;
+    if (g[i].size() == 0 and G[i].size() > 0) {
+      for (auto j : G[i]) {
+        ch &= (!G[j].count(i));
+      }
+    } else {
+      ch = false;
+    }
+    if (ch) {
+      for (auto j : G[i]) {
+        g[i].push_back(j);
+      }
+    }
+  }
+  auto havecycle = [&]() {
+    vector<int> stack;
+    for (int i = 1; i <= n; ++i) {
+      if (!visited[i]) {
+        stack.push_back(i);
+        while (!stack.empty()) {
+          int node = stack.back();
+          stack.pop_back();
+          if (visited[node]) {
+            continue;
+          } else if (being_visited[node]) {
+            return true;
+          } else {
+            being_visited[node] = 1;
+            stack.push_back(node);
+            for (auto neighbor : g[node]) {
+              if (!visited[neighbor]) {
+                stack.push_back(neighbor);
+              }
+            }
+          }
+          being_visited[node] = 0;
+          visited[node] = 1;
+          TS.push_back(node);
+        }
+      }
+    }
+    return false;
+  };
+
+  if (havecycle()) {
+    cout << "NO" << endl;
+    return;
+  }
+  reverse(TS.begin(), TS.end());
+  vector<int> node_index(n + 1);
+  for (int i = 0; i < n; ++i) node_index[TS[i]] = i;
+  cout << "YES" << endl;
+  for (int i = 1; i <= n; ++i) {
+    for (auto j : G[i]) {
+      if (node_index[j] < node_index[i])
+        cout << j << " " << i << endl;
+    }
+  }
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  cout.tie(NULL);
+  int t = 1;
+  for (cin >> t; t--; solve())
+    ;
+}
+```

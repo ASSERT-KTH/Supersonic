@@ -1,0 +1,121 @@
+The given program is already quite optimized in terms of including the necessary headers, using appropriate data types, and using efficient algorithms. However, there are a few areas where further optimization can be done:
+
+1. In the `build` function, we can use a loop instead of recursion to build the segment tree. This will save some function call overhead.
+
+2. In the `add_val` and `get_min` functions, we can pass the `root` pointer by reference instead of by value. This will eliminate the need to return the updated `root` pointer from these functions.
+
+3. We can remove the unnecessary `push` function calls in the `add_val` and `get_min` functions. Since we are always pushing the values before accessing them, we can remove these extra function calls.
+
+4. We can remove the unnecessary `push(root)` call in the `solve` function before the first `add_val` call. Since the `root` node is just created and not modified before this call, there is no need to push the values.
+
+5. Instead of using `endl` to print a newline character, we can use `'\n'`. This is because `endl` flushes the output buffer, which can be an expensive operation.
+
+With these optimizations in mind, here is the optimized version of the program:
+
+```cpp
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <set>
+#include <string>
+#include <vector>
+#pragma GCC optimize("Ofast")
+using namespace std;
+typedef long long ll;
+typedef long double ld;
+#define pll pair<ll, ll>
+#define pb push_back
+const ll maxn = ll(2e5) + 11;
+const ll inf = ll(1e15) + 12;
+const ll mod = ll(1e9) + 7;
+ll n;
+ll a[maxn], ps[maxn], p[maxn], pref[maxn];
+struct node {
+  ll l, mid, r, val, add;
+  node *left, *right;
+  node(ll l, ll r) : l(l), r(r) {
+    add = 0;
+    mid = (l + r) / 2;
+    val = 0;
+    left = right = nullptr;
+  }
+};
+ll f(ll x, ll y) { return min(x, y); }
+void build(node *root) {
+  vector<node*> stack;
+  stack.push_back(root);
+  while (!stack.empty()) {
+    node* cur = stack.back();
+    stack.pop_back();
+    if (cur->r - cur->l == 1) {
+      cur->val = pref[cur->l];
+      if (cur->l == n - 1) {
+        cur->val = inf;
+      }
+    } else {
+      cur->left = new node(cur->l, cur->mid);
+      cur->right = new node(cur->mid, cur->r);
+      stack.push_back(cur->left);
+      stack.push_back(cur->right);
+    }
+  }
+}
+void add_val(node *&root, ll ql, ll qr, ll val) {
+  if (root->r <= ql || root->l >= qr) {
+    return;
+  }
+  if (ql == root->l && root->r == qr) {
+    root->add += val;
+    return;
+  }
+  add_val(root->left, ql, min(root->mid, qr), val);
+  add_val(root->right, max(root->mid, ql), qr, val);
+  root->val = f(root->left->val + root->left->add, root->right->val + root->right->add);
+}
+ll get_min(node *&root, ll ql, ll qr) {
+  if (root->r <= ql || root->l >= qr) {
+    return inf;
+  }
+  if (ql == root->l && root->r == qr) {
+    return root->val + root->add;
+  }
+  return f(get_min(root->left, ql, min(root->mid, qr)),
+           get_min(root->right, max(root->mid, ql), qr));
+}
+void solve() {
+  cin >> n;
+  for (ll i = 0; i < n; i++) {
+    ll cur;
+    cin >> cur;
+    p[i] = cur;
+    ps[cur - 1] = i;
+  }
+  for (ll i = 0; i < n; i++) {
+    ll cur;
+    cin >> cur;
+    a[i] = cur;
+    if (i == 0) {
+      pref[i] = cur;
+    } else
+      pref[i] = pref[i - 1] + cur;
+  }
+  node *root = new node(0, n);
+  build(root);
+  ll ans = min(a[0], a[n - 1]);
+  ll mus = 0;
+  for (ll i = 0; i < n; i++) {
+    add_val(root, ps[i], n, -2 * a[ps[i]]);
+    mus += a[ps[i]];
+    ll cur = get_min(root, 0, n) + mus;
+    ans = min(ans, cur);
+  }
+  cout << ans << '\n';
+}
+int main() {
+  ios::sync_with_stdio(false);
+  solve();
+  return 0;
+}
+```
+
+These optimizations should improve the running time and memory usage of the program.

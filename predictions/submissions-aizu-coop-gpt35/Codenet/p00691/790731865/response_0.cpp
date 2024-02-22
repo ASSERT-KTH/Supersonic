@@ -1,0 +1,15 @@
+This is the given code which calculates the minimum difference between a given number and the sum of two cubes. The code works correctly, but there are several areas where it can be optimized for performance and memory usage. 
+
+Let's start by analyzing the code step by step:
+
+1. The `nr` function finds the largest number in the `tb` array that is less than or equal to the given parameter `a`. This function can be optimized by using binary search instead of linear search. Linear search has a time complexity of O(n), while binary search has a time complexity of O(log n).
+
+2. The `calc` function calculates the minimum difference between `z` and the sum of two cubes. It iterates from 1 to `z`, and for each `i`, it finds the largest number in the `tb` array that is less than `z^3 - i^3`. This can be optimized by using binary search instead of linear search, similar to the `nr` function.
+
+3. The `main` function initializes the `tb` array with cube values, and then calculates and stores the answers in the `ans` array. Finally, it reads input from the user and prints the corresponding answer from the `ans` array. There is no major optimization opportunity in this part.
+
+Now let's formulate the optimization strategy:
+
+1. Optimize the `nr` function by replacing linear search with binary search.
+2. Optimize the `calc` function by replacing linear search with binary search.
+3. No major optimization opportunity in the `main` function.

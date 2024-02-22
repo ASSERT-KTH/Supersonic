@@ -1,0 +1,53 @@
+#include <stdbool.h>
+#include <stdio.h>
+#define MAX_PACKET 100000
+
+int weight[MAX_PACKET];
+
+bool canAlloc(long capacity, int num_packet, int num_track) {
+  long i = 0;
+  long alloced_in_one = 0;
+  int track_id = 0;
+  for (i = 0; i < num_packet; i++) {
+    if (alloced_in_one + weight[i] <= capacity) {
+      alloced_in_one += weight[i];
+    } else {
+      alloced_in_one = 0;
+      i--;
+      if (++track_id == num_track) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+int main(void) {
+  int num_packet;
+  int num_track;
+  scanf("%d %d", &num_packet, &num_track);
+
+  int max_weight = 0;
+  long sum_weight = 0;
+  for (int i = 0; i < num_packet; i++) {
+    scanf("%d", &weight[i]);
+    if (weight[i] > max_weight) {
+      max_weight = weight[i];
+    }
+    sum_weight += weight[i];
+  }
+
+  long low = 0;
+  long upp = sum_weight;
+  while (low < upp) {
+    long mid = low + (upp - low) / 2;
+    if (canAlloc(mid, num_packet, num_track)) {
+      upp = mid;
+    } else {
+      low = mid + 1;
+    }
+  }
+
+  printf("%ld\n", low);
+  return 0;
+}

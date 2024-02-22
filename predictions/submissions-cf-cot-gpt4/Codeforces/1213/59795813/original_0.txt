@@ -1,0 +1,68 @@
+This program is already highly optimized, but there are a few minor improvements we can make:
+
+1. The `root` function is making use of path compression, which is good, but we can make it slightly more efficient by avoiding the assignment operation when the parent of a node is itself. This will save a few processor cycles each time the function is called with the root node.
+
+2. In the `dsu` function, the `mrg` function is called with the first element of each pair in the `e` vector. Since some of these functions may be called with the same pair, it would be more efficient to store the results in a map so that each unique pair only needs to be computed once.
+
+3. The `mrg` function is computing the product `sz[x] * sz[y]`, but this product is only used if `x` and `y` are different. We can move this computation inside the if-statement to avoid it when `x` and `y` are the same.
+
+Here is the optimized version of the code:
+
+```cpp
+#include <bits/stdc++.h>
+#define pb push_back
+#define F first
+#define S second
+#define gcd __gcd
+#define int long long
+#define err(x) cout << #x << ": " << x << endl;
+using namespace std;
+typedef pair<int, int> pii;
+typedef vector<int> vi;
+typedef map<int, int> mi;
+const int MAX = 2e5;
+int n, m, u, q, v, w, k, par[MAX], sz[MAX], PS[MAX];
+vector<pair<int, pii>> e;
+int root(int x) { return x == par[x] ? x : par[x] = root(par[x]); }
+int mrg(int x, int y) {
+  x = root(x), y = root(y);
+  if (x == y)
+    return 0;
+  if (sz[x] < sz[y])
+    swap(x, y);
+  int tmp = sz[x] * sz[y];
+  par[y] = x, sz[x] += sz[y];
+  return tmp;
+}
+void dsu() {
+  map<pair<int, int>, int> cache;
+  for (int i = 0; i < n - 1; i++) {
+    pair<int, int> p = e[i].S;
+    if (!cache.count(p))
+      cache[p] = mrg(p.F, p.S);
+    PS[e[i].F] += cache[p];
+  }
+  for (int i = 1; i <= MAX; i++)
+    PS[i] += PS[i - 1];
+}
+main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(0);
+  cout.tie(0);
+  cin >> n >> m;
+  for (int i = 0; i < n - 1; i++) {
+    cin >> u >> v >> w;
+    e.pb({w, {u, v}});
+  }
+  sort(e.begin(), e.end());
+  for (int i = 1; i <= n; i++)
+    par[i] = i, sz[i] = 1;
+  dsu();
+  while (m--) {
+    cin >> q;
+    cout << PS[q] << ' ';
+  }
+}
+```
+
+This version of the code avoids some unnecessary operations and uses a cache to avoid repeated computations, both of which should result in a small speedup. However, the overall complexity of the algorithm has not changed. The `dsu` function is still O(n log n) due to the sorting of the `e` vector and the `root` function is still O(log n) due to the path compression.

@@ -1,0 +1,77 @@
+This C++ code is quite complex and has multiple data structures and operations involved for optimization. However, I can still suggest a few optimizations that might have a significant impact on the performance of this program.
+
+1. Reduce unnecessary conversions:
+In the given C++ code, there are many unnecessary conversions like `int pos = *root;`. In this case, `operator*` just returns an unsigned integer stored in `pos`. We can simply use `root.pos` here, and similar changes can be made throughout the code.
+
+2. Repeated use of the `get` method:
+In the add, split and filterjoin methods, the `get` method is repeatedly called for the same `CTPtr`. We can call the `get` method once for each `CTPtr` at the start of these methods and store the result in a reference. This will avoid multiple vector accesses.
+
+3. Use of std::tie:
+Using `std::tie` for unpacking pairs can be relatively expensive. We can use structured bindings introduced in C++17 instead which are more efficient and also provide better code readability.
+
+4. Use of `vector<int> by_length[N + 1];`:
+The `by_length` vector seems to be used as a 2D array. As vector objects are dynamically allocated, this can lead to a lot of unnecessary memory fragmentation. We should consider replacing this with a 2D array.
+
+Optimized Program:
+```cpp
+#include <algorithm>
+#include <cstdlib>
+#include <iostream>
+#include <queue>
+#include <random>
+#include <tuple>
+#include <utility>
+#include <vector>
+using namespace std;
+constexpr int N = 5e4, M = 1e5, LOGN = 16;
+int &mini(int &lhs, int rhs) { return lhs = min(lhs, rhs); }
+class CT {
+public:
+  void create(int r, int t) {
+    yseed = (yseed ? yseed : rand()) * (RAND_MAX + 1u) + rand();
+    storage.push_back({r, yseed, t, {}, {}});
+    if (!add(root, storage.size() - 1)) {
+      storage.pop_back();
+    }
+  }
+  int mintlq(int r) const {
+    int res = M;
+    unsigned pos = root.pos;
+    const CTVertex *a = storage.data();
+    while (pos != -1) {
+      if (a[pos].x > r) {
+        pos = a[pos].l.pos;
+      } else {
+        res = a[pos].t;
+        pos = a[pos].r.pos;
+      }
+    }
+    return res;
+  }
+
+private:
+  struct CTPtr {
+    unsigned pos;
+    CTPtr(unsigned pos = -1) : pos{pos} {}
+    operator bool() const { return pos != -1; }
+  };
+  struct CTVertex {
+    int x, y, t;
+    CTPtr l, r;
+  };
+  CTPtr root;
+  vector<CTVertex> storage;
+  static unsigned yseed;
+  const CTVertex &get(const CTPtr &ptr) const { return storage[ptr.pos]; }
+  CTVertex &get(const CTPtr &ptr) { return storage[ptr.pos]; }
+  // rest of the code remains unchanged
+};
+unsigned CT::yseed{};
+using interval = pair<int, int>;
+interval rent[M + 1];
+int by_length[N + 1][N + 1];
+int ans[N + 1];
+CT ft[N];
+// rest of the code remains unchanged
+```
+Please note that without concrete profiling data, it's impossible to say which parts of the code are the most demanding and need to be optimized. The suggestions above are based on good practices and may not lead to a significant performance increase. In real-life scenarios, profiling tools should be used to identify bottlenecks.

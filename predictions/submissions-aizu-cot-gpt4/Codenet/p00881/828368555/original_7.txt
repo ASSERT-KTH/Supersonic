@@ -1,0 +1,65 @@
+Here are some optimizations we can do:
+
+1. We can replace `std::map` with `std::unordered_map` as it has a faster average search, insert, and delete time complexity of O(1) compared to `std::map`'s O(log n). However, `std::unordered_map` uses more memory than `std::map`.
+
+2. We can avoid generating the same `std::pair` twice in the search function. First, we create a pair to check if it's in the map, then we create it again to get the value or set the value. We should create it once and use it for both operations.
+
+3. The `vi.size()` function is called twice. We can store its result in a variable and reuse it.
+
+4. We can use `reserve()` for vectors `a` and `b` to allocate memory in advance and reduce the number of memory reallocations.
+
+Here's the optimized code:
+
+```c++
+#include <iostream>
+#include <unordered_map>
+#include <string>
+#include <vector>
+using namespace std;
+unordered_map<pair<vector<int>, int>, int> mp;
+string qes[128];
+int search(vector<int> &vi, int depth, int used, int m, int n) {
+  pair<vector<int>, int> key = make_pair(vi, used);
+  auto found = mp.find(key);
+  if (found != mp.end())
+    return found->second;
+  int vi_size = vi.size();
+  if (vi_size > (1 << (m - depth)))
+    return 100;
+  if (vi_size == 1)
+    return depth;
+  int res = 100;
+  for (int i = 0; i < m; i++) {
+    if ((used >> i) & 1)
+      continue;
+    vector<int> a, b;
+    a.reserve(vi_size);
+    b.reserve(vi_size);
+    for (int j = 0; j < vi_size; j++) {
+      if (qes[vi[j]][i] == '0')
+        a.push_back(vi[j]);
+      else
+        b.push_back(vi[j]);
+    }
+    if (a.empty() || b.empty())
+      continue;
+    res = min(res, max(search(a, depth + 1, used | (1 << i), m, n),
+                       search(b, depth + 1, used | (1 << i), m, n)));
+  }
+  return mp[key] = res;
+}
+int main() {
+  int m, n;
+  while (cin >> m >> n, m) {
+    for (int i = 0; i < n; i++)
+      cin >> qes[i];
+    vector<int> vi(n);
+    for (int i = 0; i < n; i++)
+      vi[i] = i;
+    mp.clear();
+    cout << search(vi, 0, 0, m, n) << endl;
+  }
+}
+```
+
+Keep in mind that these optimizations might not always result in noticeable performance improvements. The real-world performance depends on various factors such as the compiler, computer hardware, and the specific inputs to the program.

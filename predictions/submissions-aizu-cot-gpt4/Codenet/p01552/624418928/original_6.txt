@@ -1,0 +1,173 @@
+The program is relatively complex with many functions and recursive calls. However, there are some potential optimization points:
+
+1. **Memory usage** - The program uses a lot of dynamic memory allocation (new keyword) which is not efficient. Instead, we can use `unique_ptr` which can automatically deallocate the memory when it is not in use. This not only optimizes memory usage but also prevents potential memory leaks.
+
+2. **String concatenation** - String concatenation in C++ can be costly if done in a loop, as it is in this case. Instead of appending to a string one character at a time, it would be better to append in chunks or use `stringstream` for better performance.
+
+3. **Use of `#define`** - The use of `#define` is not recommended in modern C++ as it does not respect scope and can lead to bugs. It would be better to use `constexpr` or `const` for constant values, and functions or inline functions for macros that represent code.
+
+4. **Use of `std::endl`** - `std::endl` not only inserts a newline character, but also flushes the output stream. This can be costly in terms of performance if done frequently. It would be better to use `'\n'` for a newline character and flush the output stream only when necessary.
+
+5. **Use of `assert`** - The `assert` function is typically used for debugging and is removed in release mode. If these checks are necessary for the program to function correctly, they should be replaced with actual error handling code.
+
+6. **Use of recursion in `indent`** function - This function is currently implemented recursively. Since it is essentially a loop, it can be rewritten as a loop for better performance and to avoid potential stack overflow errors.
+
+7. **Use of bits/stdc++.h** - This header file includes a lot of unnecessary libraries which increases the compilation time. It is better to include only the necessary libraries.
+
+Here is the optimized version of the code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <string>
+#include <memory>
+#include <sstream>
+#include <algorithm>
+#include <assert.h>
+
+using namespace std;
+using ll = long long;
+using pii = pair<int, int>;
+
+const int inf = 1 << 30;
+const ll infll = 1LL << 62;
+const double eps = 1e-9;
+const int dx[] = {1, 0, -1, 0}, dy[] = {0, 1, 0, -1};
+
+struct item {
+    vector<unique_ptr<item>> ptr;
+    string val;
+    bool is_str;
+};
+
+bool isalphabet(char ch) { return 'a' <= ch and ch <= 'z'; }
+
+bool is_indent_n(string &s, int i, int n) {
+    if (n == 0)
+        return true;
+    if (i == s.size() or s[i] != ' ')
+        return false;
+    return is_indent_n(s, i + 1, n - 1);
+}
+
+void yaml(string &s, int &i, item &itm);
+void mapping(string &s, int &i, item &itm, int n);
+void mapping_item(string &s, int &i, item &itm, int n);
+string key(string &s, int &i);
+string string_(string &s, int &i);
+void indent(string &s, int &i, int n);
+
+void yaml(string &s, int &i, item &itm) { mapping(s, i, itm, 0); }
+
+void mapping(string &s, int &i, item &itm, int n) {
+    mapping_item(s, i, itm, n);
+    if (i != s.size() and is_indent_n(s, i, n))
+        mapping(s, i, itm, n);
+}
+
+void mapping_item(string &s, int &i, item &itm, int n) {
+    indent(s, i, n);
+    unique_ptr<item> itm_ = make_unique<item>();
+    itm_->val = key(s, i);
+    itm.ptr.push_back(move(itm_));
+    assert(i < s.size());
+    assert(s[i] == ':');
+    ++i;
+    if (s[i] == ' ') {
+        ++i;
+        unique_ptr<item> str = make_unique<item>();
+        str->is_str = true;
+        str->val = string_(s, i);
+        itm_->ptr.push_back(move(str));
+        assert(s[i] == '\n');
+        ++i;
+    } else {
+        assert(s[i] == '\n');
+        ++i;
+        int j = i;
+        while (j != s.size() and s[j] == ' ')
+            ++j;
+        assert(n < j - i);
+        mapping(s, i, *itm_, j - i);
+    }
+}
+
+string key(string &s, int &i) {
+    stringstream res;
+    while (isalphabet(s[i]) or isdigit(s[i])) {
+        res << s[i];
+        ++i;
+    }
+    return res.str();
+}
+
+string string_(string &s, int &i) {
+    stringstream res;
+    while (isalphabet(s[i]) or isdigit(s[i]) or s[i] == ' ') {
+        res << s[i];
+        ++i;
+    }
+    return res.str();
+}
+
+void indent(string &s, int &i, int n) {
+    for (int j = 0; j < n; ++j) {
+        assert(s[i] == ' ');
+        ++i;
+    }
+}
+
+void solve() {
+    string qry, yaml_str;
+    cin >> qry;
+    cin.ignore();
+    {
+        string buf;
+        while (getline(cin, buf)) {
+            yaml_str += buf;
+            yaml_str += '\n';
+        }
+    }
+    item root;
+    root.val = "root";
+    {
+        int idx = 0;
+        yaml(yaml_str, idx, root);
+    }
+    {
+        item *itm = &root;
+        int idx = 1;
+        while (true) {
+            string str = string_(qry, idx);
+            bool ok = false;
+            for(int i=0; i < itm->ptr.size(); ++i) if (!itm->ptr[i]->is_str and itm->ptr[i]->val == str) {
+                itm = itm->ptr[i].get();
+                ok = true;
+                break;
+            }
+            if (!ok) {
+                cout << "no such property" << '\n';
+                return;
+            }
+            if (idx == qry.size()) {
+                item *obj = itm->ptr.front().get();
+                if (obj->is_str)
+                    cout << "string \"" << obj->val << "\"" << '\n';
+                else
+                    cout << "object" << '\n';
+                return;
+            }
+            ++idx;
+        }
+    }
+}
+
+int main() {
+    std::cin.tie(0);
+    std::ios::sync_with_stdio(false);
+    cout.setf(ios::fixed);
+    cout.precision(10);
+    solve();
+    return 0;
+}
+```

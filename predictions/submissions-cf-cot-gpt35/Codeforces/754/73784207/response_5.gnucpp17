@@ -1,0 +1,98 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <map>
+using namespace std;
+
+const int N = 6e5 + 5;
+
+void solve() {
+  int n, k;
+  cin >> n >> k;
+  vector<pair<pair<long long, long long>, int>> v(n);
+  map<long long, int> mp;
+  vector<long long> inv_map;
+  vector<int> segtree(4 * N, 0), lazy(4 * N, 0);
+
+  for (int i = 0; i < n; i++) {
+    cin >> v[i].first.first >> v[i].first.second;
+    v[i].second = i + 1;
+    mp[v[i].first.first] = 0;
+    mp[v[i].first.second] = 0;
+  }
+
+  int c = 0;
+  for (auto& i : mp) {
+    inv_map.push_back(i.first);
+    i.second = c++;
+  }
+
+  sort(v.begin(), v.end());
+
+  long long mx = 0, idx = -1;
+
+  for (int i = 0; i < n; i++) {
+    int scaled_val = mp[v[i].first.first];
+    int tt = -1;
+    int s = scaled_val, e = c;
+
+    while (s <= e) {
+      int mid = (s + e) >> 1;
+      int val = segtree_query(segtree, lazy, scaled_val, mid);
+      if (val >= k) {
+        tt = mid;
+        s = mid + 1;
+      } else {
+        e = mid - 1;
+      }
+    }
+
+    if (tt == -1) continue;
+
+    long long temp = inv_map[tt] - v[i].first.first + 1;
+    if (temp > mx) {
+      mx = temp;
+      idx = i;
+    }
+    
+    segtree_update(segtree, lazy, mp[v[i].first.first], mp[v[i].first.second], 1);
+  }
+
+  if (idx == -1) {
+    cout << 0 << endl;
+    for (int i = 1; i <= k; i++) {
+      cout << i << ' ';
+    }
+    cout << endl;
+    return;
+  }
+
+  long long l = v[idx].first.first, r = l + mx - 1;
+  vector<int> ans;
+
+  for (auto& i : v) {
+    if (k == 0) break;
+    if (i.first.first <= l && r <= i.first.second) {
+      ans.push_back(i.second);
+      k--;
+    }
+  }
+
+  sort(ans.begin(), ans.end());
+
+  cout << mx << endl;
+  for (int i : ans) {
+    cout << i << " ";
+  }
+  cout << endl;
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  cout.tie(NULL);
+
+  solve();
+
+  return 0;
+}

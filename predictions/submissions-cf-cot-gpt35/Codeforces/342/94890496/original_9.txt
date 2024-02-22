@@ -1,0 +1,169 @@
+Step 1: Remove unnecessary includes and macros
+
+The program includes the entire `bits/stdc++.h` header, which is not necessary. We can include only the necessary headers for the program. Additionally, the macros are not used in the program, so we can remove them.
+
+Step 2: Optimize memory usage
+
+The program uses a set of size 100001 for storing the adjacency lists of the graph, which may not be necessary. We can use a vector instead, which will reduce memory usage.
+
+Step 3: Optimize variable names
+
+The variable names in the program are not very descriptive. We can rename them to improve readability and maintainability.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <set>
+#include <cmath>
+#include <climits>
+
+using namespace std;
+
+typedef long long int ll;
+
+vector<set<ll>> adjList;
+vector<set<ll>> centroidTree;
+vector<ll> subtreeSize;
+vector<ll> centroidParent;
+vector<ll> level;
+vector<vector<ll>> lca;
+
+void dfs(ll node, ll parent, ll lvl) {
+  level[node] = lvl;
+  lca[node][0] = parent;
+  for (auto child : adjList[node]) {
+    if (child != parent) {
+      dfs(child, node, lvl + 1);
+    }
+  }
+}
+
+void generateLCA() {
+  for (ll i = 1; i < 21; i++) {
+    for (ll j = 1; j <= n; j++) {
+      if (lca[j][i - 1] != -1) {
+        lca[j][i] = lca[lca[j][i - 1]][i - 1];
+      }
+    }
+  }
+}
+
+ll getLCA(ll a, ll b) {
+  if (level[a] > level[b]) {
+    swap(a, b);
+  }
+  ll d = level[b] - level[a];
+  while (d > 0) {
+    ll x = log2(d);
+    b = lca[b][x];
+    d -= (1 << x);
+  }
+  if (a == b) {
+    return a;
+  }
+  for (ll i = 20; i >= 0; i--) {
+    if (lca[a][i] != lca[b][i]) {
+      a = lca[a][i];
+      b = lca[b][i];
+    }
+  }
+  return lca[a][0];
+}
+
+ll getDistance(ll a, ll b) {
+  return level[a] + level[b] - 2 * level[getLCA(a, b)];
+}
+
+void calculateSubtreeSize(ll node, ll parent) {
+  subtreeSize[node] = 1;
+  for (auto child : adjList[node]) {
+    if (child != parent) {
+      calculateSubtreeSize(child, node);
+      subtreeSize[node] += subtreeSize[child];
+    }
+  }
+}
+
+ll getCentroid(ll node, ll parent) {
+  for (auto child : adjList[node]) {
+    if (child != parent && subtreeSize[child] > n / 2) {
+      return getCentroid(child, node);
+    }
+  }
+  return node;
+}
+
+ll decompose(ll root) {
+  calculateSubtreeSize(root, -1);
+  ll centroid = getCentroid(root, -1);
+  for (auto child : adjList[centroid]) {
+    adjList[child].erase(centroid);
+    ll subtreeCentroid = decompose(child);
+    centroidTree[centroid].insert(subtreeCentroid);
+    centroidTree[subtreeCentroid].insert(centroid);
+    centroidParent[subtreeCentroid] = centroid;
+  }
+  return centroid;
+}
+
+void update(ll parent, ll node) {
+  if (parent == -1) {
+    return;
+  }
+  ans[parent] = min(ans[parent], getDistance(node, parent));
+  update(centroidParent[parent], node);
+}
+
+ll getAnswer(ll parent, ll node) {
+  if (parent == -1) {
+    return INT_MAX;
+  }
+  return min(getAnswer(centroidParent[parent], node), ans[parent] + getDistance(node, parent));
+}
+
+int main() {
+  ios_base::sync_with_stdio(0);
+  cin.tie(0);
+
+  ll n, m;
+  cin >> n >> m;
+
+  adjList.resize(n + 1);
+  centroidTree.resize(n + 1);
+  subtreeSize.resize(n + 1);
+  centroidParent.resize(n + 1);
+  level.resize(n + 1);
+  lca.resize(n + 1, vector<ll>(21, -1));
+
+  for (ll i = 1; i < n; i++) {
+    ll a, b;
+    cin >> a >> b;
+    adjList[a].insert(b);
+    adjList[b].insert(a);
+  }
+
+  vector<ll> ans(n + 1, INT_MAX);
+
+  dfs(1, -1, 0);
+  generateLCA();
+  ll centroidRoot = decompose(1);
+  centroidParent[centroidRoot] = -1;
+  ans[1] = 0;
+  update(centroidParent[1], 1);
+
+  while (m--) {
+    ll a, b;
+    cin >> a >> b;
+    if (a == 1) {
+      ans[b] = 0;
+      update(centroidParent[b], b);
+    } else {
+      cout << getAnswer(b, b) << "\n";
+    }
+  }
+
+  return 0;
+}
+```

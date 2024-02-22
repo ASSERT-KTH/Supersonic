@@ -1,0 +1,1 @@
+std::vector<ld> r(n), mb(m);

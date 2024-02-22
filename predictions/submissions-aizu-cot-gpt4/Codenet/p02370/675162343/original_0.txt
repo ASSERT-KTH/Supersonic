@@ -1,0 +1,65 @@
+This C++ program performs topological sort on a directed acyclic graph (DAG). The edges of the graph are stored in an adjacency list, and the program keeps track of the in-degree of each vertex. Vertices with zero in-degree are added to a stack, and as vertices are removed from the stack, their edges are removed from the graph, potentially reducing the in-degree of other vertices to zero.
+
+The following optimizations can be applied to the code:
+
+1. Instead of using `vector<vector<Edge>>` to represent the graph, we can use `vector<list<int>>`. This change will reduce the memory usage of the program because `list` uses less memory than `vector` and `Edge` instances are larger than integers.
+
+2. In the `topological_sort` function, we can replace the `vector<int> S` stack with `deque<int> S`. This change will allow us to pop elements from the front of the dequeue in O(1) time, improving the performance of the program.
+
+3. Instead of copying `Edge e = G[v][i]` in the `topological_sort` function, we can use reference `const Edge &e = G[v][i]` which will avoid unnecessary copy operations.
+
+4. When inputting the graph, we can directly push the edges into the graph without creating temporary `Edge` instances.
+
+5. In the `main` function, we can reserve the space for the `ans` vector before the `topological_sort` function is called.
+
+Here is the optimized code:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+typedef vector<list<int>> Adj_list;
+vector<int> topological_sort(Adj_list G) {
+  const int V = G.size();
+  deque<int> S;
+  vector<int> inorder(V, 0);
+  for (int i = 0; i < V; i++)
+    for (const int &e : G[i])
+      inorder[e]++;
+  for (int i = 0; i < V; i++)
+    if (inorder[i] == 0)
+      S.push_front(i);
+  assert(!S.empty());
+  vector<int> topological_order;
+  while (!S.empty()) {
+    int v = S.front();
+    S.pop_front();
+    topological_order.push_back(v);
+    for (auto it = G[v].rbegin(); it != G[v].rend(); ++it) {
+      const int &e = *it;
+      inorder[e]--;
+      if (inorder[e] == 0)
+        S.push_front(e);
+    }
+  }
+  for (int i = 0; i < V; i++)
+    assert(inorder[i] == 0);
+  return topological_order;
+}
+int main() {
+  int V, E;
+  cin >> V >> E;
+  Adj_list G(V);
+  for (int i = 0; i < E; i++) {
+    int s, t;
+    cin >> s >> t;
+    G[s].push_back(t);
+  }
+  vector<int> ans;
+  ans.reserve(V);
+  ans = topological_sort(G);
+  for (int i = 0; i < V; i++)
+    cout << ans[i] << endl;
+}
+```
+
+Please note that, optimization is a trade-off process, and the optimization here is based on the assumption that the graph is sparse. If the graph is dense, the original version might be more efficient because `vector` has better locality than `list`.

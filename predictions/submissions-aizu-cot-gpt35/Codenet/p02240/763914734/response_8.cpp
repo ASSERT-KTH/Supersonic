@@ -1,0 +1,1 @@
+V = new vector<int>[n];

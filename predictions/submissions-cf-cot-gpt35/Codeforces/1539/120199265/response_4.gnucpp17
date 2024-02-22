@@ -1,0 +1,157 @@
+#include <iostream>
+#include <vector>
+
+const int INF = 1e18;
+const int MOD = 1e9 + 7;
+
+struct node {
+  int mx, mi, lz;
+};
+
+std::vector<node> st;
+int n;
+
+void apply(int i, int x) {
+  st[i].mx -= x;
+  st[i].mi -= x;
+  if (st[i].lz == -MOD)
+    st[i].lz = 0;
+  st[i].lz += x;
+}
+
+void push(int i, int l2, int mid, int r2) {
+  if (st[i].lz == -MOD)
+    return;
+  apply(2 * i, st[i].lz);
+  apply(2 * i + 1, st[i].lz);
+  st[i].lz = -MOD;
+}
+
+void build(int l1, int x, int i = 1, int l2 = 0, int r2 = n - 1) {
+  if (l2 == r2) {
+    st[i].mx = x;
+    st[i].mi = x;
+    st[i].lz = -MOD;
+    return;
+  }
+  int mid = (l2 + r2) / 2;
+  if (l1 <= mid)
+    build(l1, x, 2 * i, l2, mid);
+  else
+    build(l1, x, 2 * i + 1, mid + 1, r2);
+  st[i].mx = std::max(st[2 * i].mx, st[2 * i + 1].mx);
+  st[i].mi = std::min(st[2 * i].mi, st[2 * i + 1].mi);
+  st[i].lz = -MOD;
+}
+
+void upd(int l1, int r1, int x, int i = 1, int l2 = 0, int r2 = n - 1) {
+  if (l1 <= l2 && r2 <= r1) {
+    apply(i, x);
+    return;
+  }
+  int mid = (l2 + r2) / 2;
+  push(i, l2, mid, r2);
+  if (l1 <= mid)
+    upd(l1, r1, x, 2 * i, l2, mid);
+  if (mid < r1)
+    upd(l1, r1, x, 2 * i + 1, mid + 1, r2);
+  st[i].mx = std::max(st[2 * i].mx, st[2 * i + 1].mx);
+  st[i].mi = std::min(st[2 * i].mi, st[2 * i + 1].mi);
+}
+
+int qry1(int l1, int r1, int i = 1, int l2 = 0, int r2 = n - 1) {
+  int res = -MOD;
+  while (true) {
+    if (l1 <= l2 && r2 <= r1) {
+      return st[i].mx;
+    }
+    int mid = (l2 + r2) / 2;
+    push(i, l2, mid, r2);
+    if (l1 <= mid) {
+      i = 2 * i;
+      r2 = mid;
+    } else {
+      i = 2 * i + 1;
+      l2 = mid + 1;
+    }
+  }
+}
+
+int qry2(int l1, int r1, int i = 1, int l2 = 0, int r2 = n - 1) {
+  int res = MOD;
+  while (true) {
+    if (l1 <= l2 && r2 <= r1) {
+      return st[i].mi;
+    }
+    int mid = (l2 + r2) / 2;
+    push(i, l2, mid, r2);
+    if (l1 <= mid) {
+      i = 2 * i;
+      r2 = mid;
+    } else {
+      i = 2 * i + 1;
+      l2 = mid + 1;
+    }
+  }
+}
+
+void solve() {
+  int n1;
+  std::cin >> n1;
+  std::vector<int> arr(n1);
+  std::vector<std::array<int, 3>> b;
+  for (int i = 0; i < n1; i++) {
+    std::cin >> arr[i];
+    b.push_back({arr[i], i, 0});
+  }
+  n = n1 + 1;
+  st.resize(4 * n);
+  build(0, 0);
+  int ans[n1] = {0};
+  for (int i = n1 - 1; i >= 0; i--) {
+    int cur = b[i][0];
+    while (i >= 0 && b[i][0] == cur) {
+      int j = b[i][1];
+      int p = qry1(j + 1, j + 1), q = qry2(0, j), r = qry1(j + 1, n - 1);
+      ans[j] = (p - q + r - p - 1) / 2;
+      b[i][2] = 1;
+      i--;
+    }
+    for (int j = i + 1; j < b.size(); j++) {
+      if (b[j][2] == 1) {
+        upd(b[j][1] + 1, n - 1, 2);
+      }
+    }
+    i++;
+  }
+  build(0, 0);
+  for (int i = 0; i < n1; i++) {
+    int cur = b[i][0];
+    while (i < n1 && b[i][0] == cur) {
+      int j = b[i][1];
+      int p = qry1(j + 1, j + 1), q = qry2(0, j), r = qry1(j + 1, n - 1);
+      ans[j] = std::max(ans[j], (p - q + r - p) / 2);
+      b[i][2] = 1;
+      i++;
+    }
+    for (int j = i - 1; j >= 0; j--) {
+      if (b[j][2] == 1) {
+        upd(b[j][1] + 1, n - 1, 2);
+      }
+    }
+    i--;
+  }
+  for (int i = 0; i < n1; i++)
+    std::cout << ans[i] << " ";
+}
+
+int main() {
+  std::ios::sync_with_stdio(0);
+  std::cin.tie(0);
+  std::cout.tie(0);
+  int t = 1;
+  for (int i = 0; i < t; i++) {
+    solve();
+  }
+  return 0;
+}

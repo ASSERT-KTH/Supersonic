@@ -1,0 +1,158 @@
+Step by Step Optimization:
+
+1. The first step would be replacing `#include <bits/stdc++.h>` with specific headers. This is because `<bits/stdc++.h>` includes a lot of unnecessary headers and will increase compilation time.
+
+2. Remove the use of global variables for `N` and `a[N]` array. Instead, we can declare them locally inside the `run` function. This is because global variables use static storage, which means they're constructed and initialized once for the duration of the program. If we use them locally, they will be constructed and destructed whenever they are needed, freeing up memory.
+
+3. The `gcd` function can be optimized by using a while loop instead of recursion. This will prevent the overhead of function calls and potential stack overflow for large inputs.
+
+4. The `lcm` function has a printf and an exit statement which can be removed. Instead of stopping the program execution, we can return an error code (e.g., -1) and check for it in the parent function.
+
+5. The `binmul` function can be optimized by using a while loop and bitwise operators. This will not only make the code more readable and easier to understand, but also reduce the number of recursive calls.
+
+6. Use `std::vector` instead of a raw array for `a`. This will automatically manage the memory and size of the array.
+
+7. Instead of using `printf` and `scanf`, we can use `std::cout` and `std::cin` respectively, as they are more type-safe and easier to use.
+
+After applying these optimizations, the program would look as follows:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <chrono>
+#define NAME "File"
+
+using ll = long long;
+using ld = long double;
+
+const double PI = atan2(0.0, -1.0);
+const int INF = 0x3f3f3f3f;
+const ll LINF = (ll)2e18;
+
+ll gcd(ll a, ll b) {
+  while (b != 0) {
+    ll temp = a % b;
+    a = b;
+    b = temp;
+  }
+  return a;
+}
+
+ll lcm(ll a, ll b) {
+  ll d = gcd(a, b);
+  a /= d;
+  if (a > LINF / b) {
+    return -1;
+  }
+  return a * b;
+}
+
+ll gcdEx(ll a, ll b, ll &x, ll &y) {
+  if (b == 0) {
+    x = 1;
+    y = 0;
+    return a;
+  }
+  ll x1, y1;
+  ll d = gcdEx(b, a % b, x1, y1);
+  x = y1;
+  y = x1 - y1 * (a / b);
+  return d;
+}
+
+ll binmul(ll a, ll b, ll mod) {
+  ll res = 0;
+  while (b > 0) {
+    if (b & 1) {
+      res = (res + a) % mod;
+    }
+    a = (2 * a) % mod;
+    b >>= 1;
+  }
+  return res;
+}
+
+ll solve(ll r1, ll mod1, ll r2, ll mod2) {
+  ll g = gcd(mod1, mod2);
+  if (r1 % g != r2 % g) {
+    return -1;
+  }
+  ll a = mod1 / g;
+  ll b = (r2 - r1) / g;
+  ll c = mod2 / g;
+  ll x, y;
+  gcdEx(a, c, x, y);
+  x = (x % c + c) % c;
+  ll k = binmul(b, x, c);
+  ll ans = (r1 + k * mod1) % lcm(mod1, mod2);
+  return ans;
+}
+
+void run() {
+  ll n, m;
+  int k;
+  std::cin >> n >> m >> k;
+  std::vector<ll> a(k);
+  for (int i = 0; i < k; ++i) {
+    std::cin >> a[i];
+  }
+  ll l = a[0];
+  for (int i = 1; i < k; ++i) {
+    l = lcm(l, a[i]);
+    if (l == -1) {
+      std::cout << "NO\n";
+      return;
+    }
+  }
+  if (l > n) {
+    std::cout << "NO\n";
+    return;
+  }
+  std::vector<std::pair<ll, ll>> eq(k);
+  for (int i = 0; i < k; ++i) {
+    eq[i].second = a[i];
+    eq[i].first = ((-i) % a[i] + a[i]) % a[i];
+  }
+  ll r1 = eq[0].first;
+  ll mod1 = eq[0].second;
+  for (int i = 1; i < k; ++i) {
+    ll curMod = lcm(mod1, eq[i].second);
+    ll curR = solve(r1, mod1, eq[i].first, eq[i].second);
+    if (curR == -1) {
+      std::cout << "NO\n";
+      return;
+    }
+    r1 = (curR % curMod + curMod) % curMod;
+    mod1 = curMod;
+  }
+  if (r1 == 0) {
+    r1 += mod1;
+  }
+  if (r1 + k - 1 > m) {
+    std::cout << "NO\n";
+    return;
+  }
+  for (int i = 0; i < k; ++i) {
+    if (gcd(l, r1 + i) != a[i]) {
+      std::cout << "NO\n";
+      return;
+    }
+  }
+  std::cout << "YES\n";
+}
+
+int main(void) {
+  auto start = std::chrono::high_resolution_clock::now();
+  run();
+  auto end = std::chrono::high_resolution_clock::now();
+  std::cerr << "Execution time: "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(end -
+                                                                     start)
+                   .count()
+            << " ms" << std::endl;
+  return 0;
+}
+```
+
+Note: The complexity of the program itself is not changed as the algorithm remains the same. These optimizations are mainly targeted at better practices, readability, and minor performance improvements.

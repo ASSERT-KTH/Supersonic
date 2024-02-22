@@ -1,0 +1,140 @@
+1. Code Analysis:
+This code is a C++ program that reads a graph from the input, performs a series of calculations on it, and outputs the result. The graph is stored as an adjacency list, and multiple types of traversals and transformations are done on it. The code is complex, but there are no obvious bugs or major inefficiencies. However, there are several areas that could be improved.
+
+2. Optimization Strategy:
+    1. Many of the vector objects in the code are declared and then immediately resized or filled with data. This could be made more efficient by using the correct constructor to set the size and initial value simultaneously.
+    2. The nested for-loops in the mul() function could potentially be optimized.
+    3. The shortPhase() function has a loop that runs up to 150 times, which might be more iterations than necessary. 
+    4. The shortPhase() function uses a break statement, which could be replaced with a more efficient control flow structure.
+    5. The calcMinStep() function uses a bitwise shift operation, which could potentially be replaced with a multiplication operation for better readability.
+    6. The use of #define for for-loops can be replaced with standard for-loops for better readability and avoid macro substitution issues.
+
+3. Step-by-Step Explanation:
+    1. Replace object declarations followed by resizing or data filling with a single declaration that sets the size and initial value. This reduces the time complexity and makes the code cleaner.
+    2. Experiment with different loop structures in the mul() function. There may be a more efficient way to iterate over the matrices, especially if their sizes are known in advance.
+    3. In the shortPhase() function, replace the static limit of 150 iterations with a dynamic limit based on the size of the graph. This could substantially reduce the number of iterations for smaller graphs.
+    4. In the shortPhase() function, replace the break statement with a return statement in an if-else structure. This could reduce unnecessary iterations.
+    5. In the calcMinStep() function, replace the bitwise shift operation with a multiplication operation. This could improve readability without affecting performance.
+    6. Replace #defines with standard for-loops, as it makes the code more readable and avoids potential problems with macro substitution.
+
+Let's go ahead and apply these optimizations.
+
+4. Optimized Code Block:
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+typedef vector<int> Ary;
+typedef vector<Ary> Mat;
+
+struct Edge {
+  int to, c;
+};
+
+void maxUpdate(int &a, int b) { 
+  a = max(a, b); 
+}
+
+void mul(Mat &res, Mat &a, Mat &b) {
+  int N = a.size();
+  res = a;
+  for (int i = 0; i < N; ++i) 
+    for (int j = 0; j < N; ++j) 
+      for (int k = 0; k < N; ++k)
+        if (a[i][k] >= 0 && b[k][j] >= 0)
+          maxUpdate(res[i][j], a[i][k] + b[k][j]);
+}
+
+int V, K, E;
+vector<vector<Edge>> adj;
+vector<vector<int>> dp(155, vector<int>(155, -1));
+vector<vector<int>> prv(155, vector<int>(155, -1));
+
+void restore(int step, int v) {
+  int c = step;
+  vector<int> path;
+  while (v != -1) {
+    path.push_back(v);
+    v = prv[c--][v];
+  }
+  reverse(path.begin(), path.end());
+  for(int i = 0; i < step + 1; ++i) 
+    cout << path[i] << (i < step ? " " : "\n");
+}
+
+bool shortPhase() {
+  for (int v = 0; v < V; ++v) dp[0][v] = 0;
+  int max_score = -1, step = -1, terminal = -1;
+  for (int i = 0; i < V; ++i) {
+    for (int v = 0; v < V; ++v) {
+      if (dp[i][v] == -1)
+        continue;
+      for (Edge e : adj[v]) {
+        if (dp[i + 1][e.to] < dp[i][v] + e.c) {
+          dp[i + 1][e.to] = dp[i][v] + e.c;
+          prv[i + 1][e.to] = v;
+          if (max_score < dp[i + 1][e.to]) {
+            max_score = dp[i + 1][e.to];
+            terminal = e.to;
+          }
+        }
+      }
+    }
+    if (max_score >= K) {
+      step = i + 1;
+      return true;
+    }
+  }
+  if (max_score == -1) {
+    cout << -1 << endl;
+    return true;
+  }
+  return false;
+}
+
+int calcMinStep() {
+  Mat mat[21], ini(V, Ary(V, -1));
+  for(int v = 0; v < V; ++v) 
+    for (Edge e : adj[v]) 
+      maxUpdate(ini[v][e.to], e.c); 
+
+  mat[0] = ini;
+  for(int i = 0; i < 20; ++i) 
+    mul(mat[i + 1], mat[i], mat[i]);
+
+  int res = 0;
+  Mat x(V, Ary(V, -1)), nx;
+  for(int v = 0; v < V; ++v) 
+    x[v][v] = 0;
+
+  for(int h = 19; h >= 0; --h) {
+    mul(nx, x, mat[h]);
+    int max_score = 0;
+    for(int u = 0; u < V; ++u) 
+      for(int v = 0; v < V; ++v) 
+        maxUpdate(max_score, nx[u][v]);
+    if (max_score < K) {
+      x = nx;
+      res += pow(2,h);
+    }
+  }
+  return res + 1;
+}
+
+void solve() {
+  if (!shortPhase()) {
+    int ans = calcMinStep();
+    cout << (ans > (int)1e6 ? -1 : ans) << endl;
+  }
+}
+
+int main() {
+  cin >> V >> E >> K;
+  adj.assign(V, vector<Edge>());
+  for(int i = 0; i < E; ++i) {
+    int u, v, c;
+    cin >> u >> v >> c;
+    adj[u].push_back(Edge{v, c});
+  }
+  solve();
+}
+```

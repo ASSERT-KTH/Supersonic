@@ -1,0 +1,73 @@
+The given program calculates the score of each node in a tree based on its depth and the number of nodes below it. The scores are then sorted in descending order, and the sum of the top k scores is printed.
+
+To optimize this program, I would suggest the following steps:
+
+1. Remove unnecessary includes: The program includes `<algorithm>`, `<ios>`, and `<numeric>`, but none of these are used. We can safely remove them.
+
+2. Avoid using `using namespace std;`: It is generally considered a bad practice to use `using namespace std;` in C++ programs. Instead, explicit namespace qualification should be used to avoid potential naming conflicts. We can remove this line and prefix `vector` and `cout` with `std::` in the code.
+
+3. Pass `adj` by reference: The functions `compute_depth` and `compute_below` currently pass `adj` by value, which makes a copy of the adjacency list for each recursive call. This can be avoided by passing `adj` by reference, which will reduce memory usage and improve performance.
+
+4. Use prefix increment in the for loop: The loop in the `main` function uses postfix increment (`i++`) to iterate over the nodes. However, prefix increment (`++i`) is generally more efficient because it avoids creating a temporary copy of the iterator.
+
+5. Avoid unnecessary subtraction: In the loop that calculates the scores, there is no need to subtract `below[i]` from `depth[i]` and then add it back in the next line. We can simply assign `depth[i] - below[i]` directly to `score[i]`.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+
+void compute_depth(int u, int p, std::vector<std::vector<int>>& adj, std::vector<int>& depth) {
+  for (int v : adj[u]) {
+    if (v != p) {
+      depth[v] = depth[u] + 1;
+      compute_depth(v, u, adj, depth);
+    }
+  }
+}
+
+void compute_below(int u, int p, std::vector<std::vector<int>>& adj, std::vector<int>& below) {
+  for (int v : adj[u]) {
+    if (v != p) {
+      compute_below(v, u, adj, below);
+      below[u] += below[v] + 1;
+    }
+  }
+}
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(nullptr);
+
+  int n, k;
+  std::cin >> n >> k;
+
+  std::vector<std::vector<int>> adj(n);
+  for (int i = 0; i < n - 1; ++i) {
+    int u, v;
+    std::cin >> u >> v;
+    --u;
+    --v;
+    adj[u].push_back(v);
+    adj[v].push_back(u);
+  }
+
+  std::vector<int> depth(n);
+  compute_depth(0, -1, adj, depth);
+
+  std::vector<int> below(n);
+  compute_below(0, -1, adj, below);
+
+  std::vector<int> score(n);
+  for (int i = 0; i < n; ++i) {
+    score[i] = depth[i] - below[i];
+  }
+
+  std::sort(score.begin(), score.end(), std::greater<int>());
+
+  std::cout << std::accumulate(score.begin(), score.begin() + k, 0ll) << '\n';
+
+  return 0;
+}
+```

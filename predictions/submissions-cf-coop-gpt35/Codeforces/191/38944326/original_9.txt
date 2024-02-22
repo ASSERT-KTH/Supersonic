@@ -1,0 +1,151 @@
+Analysis:
+1. The code uses an adjacency list representation to store the graph.
+2. The code uses depth-first search (DFS) to calculate the size of each subtree rooted at a node, the heaviest child of each node, and the depth of each node.
+3. The code uses a second DFS to assign a top node to each node, which represents the top node of the path from the root to that node.
+4. The code uses a third DFS to calculate the number of paths passing through each edge.
+5. The code uses an unordered map to store the counts of paths passing through each edge.
+6. The code uses a pair of arrays to store the edges of the graph.
+7. The code reads the input from standard input and writes the output to standard output.
+
+Potential optimizations:
+1. Instead of using an unordered map to store the counts of paths passing through each edge, we can use a 2D array to represent the adjacency matrix of the graph. This will reduce the memory usage and improve cache locality.
+2. Instead of using a pair of arrays to store the edges of the graph, we can use a single array of pairs. This will reduce the memory usage and improve cache locality.
+3. Instead of using recursion for DFS, we can use an iterative approach. This will avoid the overhead of function calls and improve performance.
+4. Instead of using the `unordered_map` container, we can use a 2D array to store the counts of paths passing through each edge. This will improve memory access time and reduce memory usage.
+5. Instead of using `scanf` and `printf` for input/output, we can use faster input/output functions like `scanf_s` and `printf_s`.
+
+Optimization Strategy:
+1. Replace the `unordered_map<int, unordered_map<int, int>> ans` with a 2D array to store the counts of paths passing through each edge.
+2. Replace the pair of arrays `pair<int, int> out[N]` with a single array of pairs.
+3. Replace the recursive DFS functions `dfs`, `dfs2`, and `dfs3` with iterative versions.
+4. Replace the `scanf` and `printf` functions with faster input/output functions.
+
+Step-by-Step Explanation:
+1. Replace the `unordered_map<int, unordered_map<int, int>> ans` with a 2D array to store the counts of paths passing through each edge. This will reduce memory usage and improve cache locality. Declare a new array `int ans[N][N]` to store the counts.
+2. Replace the pair of arrays `pair<int, int> out[N]` with a single array of pairs. Declare a new array `pair<int, int> out[N-1]` to store the edges of the graph.
+3. Replace the recursive DFS functions `dfs`, `dfs2`, and `dfs3` with iterative versions. Instead of using recursion, use a stack to keep track of the nodes to be visited. Initialize the stack with the root node and iterate until the stack is empty. In each iteration, pop a node from the stack, process it, and push its children onto the stack.
+4. Replace the `scanf` and `printf` functions with faster input/output functions like `scanf_s` and `printf_s`. This will improve the input/output performance.
+
+Optimized Code:
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <utility>
+#include <vector>
+using namespace std;
+const int N = 100001;
+int par[N], hev[N], siz[N], dep[N], top[N], dif[N], bak[N];
+vector<int> edg[N];
+int ans[N][N];
+void dfs(int u) {
+  siz[u] = 1;
+  hev[u] = -1;
+  vector<int> stack;
+  stack.push_back(u);
+  while (!stack.empty()) {
+    int node = stack.back();
+    stack.pop_back();
+    for (int v : edg[node]) {
+      if (v == par[node])
+        continue;
+      par[v] = node;
+      dep[v] = dep[node] + 1;
+      stack.push_back(v);
+      siz[u] += siz[v];
+      if (hev[u] == -1 || siz[v] > siz[hev[u]])
+        hev[u] = v;
+    }
+  }
+}
+void dfs2(int u) {
+  vector<int> stack;
+  stack.push_back(u);
+  while (!stack.empty()) {
+    int node = stack.back();
+    stack.pop_back();
+    for (int v : edg[node]) {
+      if (v == par[node])
+        continue;
+      if (v == hev[node])
+        top[v] = top[node];
+      else
+        top[v] = v;
+      stack.push_back(v);
+    }
+  }
+}
+void path(int u, int v) {
+  while (true) {
+    if (top[u] == top[v]) {
+      if (dep[u] > dep[v])
+        swap(u, v);
+      dif[u]++;
+      dif[v]--;
+      return;
+    }
+    if (dep[top[u]] > dep[top[v]])
+      swap(u, v);
+    dif[top[v]]++;
+    dif[v]--;
+    bak[top[v]]++;
+    v = par[top[v]];
+  }
+}
+void dfs3(int u, int cnt) {
+  vector<int> stack;
+  stack.push_back(u);
+  while (!stack.empty()) {
+    int node = stack.back();
+    stack.pop_back();
+    for (int v : edg[node]) {
+      if (v == par[node])
+        continue;
+      if (v == hev[node]) {
+        ans[min(node, v)][max(node, v)] += cnt + dif[node];
+        stack.push_back(v);
+        dfs3(v, cnt + dif[node]);
+      } else {
+        ans[min(node, v)][max(node, v)] += bak[v];
+        stack.push_back(v);
+        dfs3(v, 0);
+      }
+    }
+  }
+}
+int main() {
+  int n, k, u, v;
+  scanf_s("%d\n", &n);
+  for (int i = 0; i < n; i++)
+    edg[i] = vector<int>();
+  for (int i = 0; i < n - 1; i++) {
+    scanf_s("%d%d", &u, &v);
+    u--;
+    v--;
+    if (u > v)
+      swap(u, v);
+    edg[u].push_back(v);
+    edg[v].push_back(u);
+    out[i] = {u, v};
+    ans[u][v] = 0;
+  }
+  par[0] = 0;
+  dep[0] = 0;
+  dfs(0);
+  top[0] = 0;
+  dfs2(0);
+  fill_n(dif, n, 0);
+  fill_n(bak, n, 0);
+  scanf_s("%d\n", &k);
+  while (k--) {
+    scanf_s("%d%d", &u, &v);
+    u--;
+    v--;
+    path(u, v);
+  }
+  dfs3(0, 0);
+  printf_s("%d", ans[out[0].first][out[0].second]);
+  for (int i = 1; i < n - 1; i++)
+    printf_s(" %d", ans[out[i].first][out[i].second]);
+  printf_s("\n");
+}
+```

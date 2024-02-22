@@ -1,0 +1,147 @@
+The given code appears to solve a graph problem using the Union-Find algorithm. However, there are several areas where optimization can be applied to improve performance:
+
+1. Avoid using the `bits/stdc++.h` header: This header includes all standard library headers, which can slow down compilation and increase memory usage. It's better to include only the necessary headers.
+
+2. Improve data structure usage:
+   - Replace the `vector<int>` data structure in the `UnionFind` class with a `vector<int64>` to avoid potential overflow issues.
+   - Use a `vector<bool>` instead of a `bool` array `killed` to save memory.
+
+3. Optimize the Union-Find algorithm:
+   - Use path compression in the `find` function of the `UnionFind` class to reduce the height of the tree.
+   - Use union by rank in the `unite` function of the `UnionFind` class to merge smaller sets into larger sets.
+   
+4. Avoid unnecessary computations:
+   - Remove the unnecessary `idx` member variable from the `edge1` and `edge2` structs.
+   - Remove the unused `set<pair<int, int>> component[100000]` variable.
+
+5. Optimize the recursion in the `rec` function:
+   - Instead of using recursion, use an iterative approach to traverse the tree.
+   - Avoid using sets for component merging. Instead, use a simple array to store the minimum cost for each node.
+
+6. Use `std::ios_base::sync_with_stdio(false)` and `std::cin.tie(NULL)` before `scanf` and `printf` to disable synchronization between C and C++ standard streams, which can improve I/O performance.
+
+7. Replace `printf` and `scanf` with `std::cout` and `std::cin` for better C++ stream performance.
+
+With these optimizations in mind, here's the optimized code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using int64 = long long;
+
+struct UnionFind {
+  std::vector<int64> data;
+
+  UnionFind(int sz) : data(sz, -1) {}
+
+  bool unite(int x, int y) {
+    x = find(x), y = find(y);
+    if (x == y)
+      return false;
+    if (data[x] > data[y])
+      std::swap(x, y);
+    data[x] += data[y];
+    data[y] = x;
+    return true;
+  }
+
+  int find(int k) {
+    if (data[k] < 0)
+      return k;
+    return (data[k] = find(data[k]));
+  }
+
+  int size(int k) { return (-data[find(k)]); }
+};
+
+struct edge {
+  int u, v, cost;
+  bool operator<(const edge &e) const { return cost < e.cost; }
+};
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(NULL);
+  
+  int N, M;
+  std::cin >> N >> M;
+
+  std::vector<int> A(M), B(M), C(M);
+  std::vector<edge> edges(M);
+
+  for (int i = 0; i < M; i++) {
+    std::cin >> A[i] >> B[i] >> C[i];
+    --A[i], --B[i];
+    edges[i] = {A[i], B[i], C[i]};
+  }
+
+  UnionFind uf(N);
+  std::sort(edges.begin(), edges.end());
+
+  int64 all = 0;
+  std::vector<bool> killed(M, false);
+  for (auto &e : edges) {
+    if (uf.unite(e.v, e.u)) {
+      killed[e.idx] = true;
+      all += e.cost;
+    }
+  }
+
+  if (uf.size(0) != N) {
+    for (int i = 0; i < M; i++)
+      std::cout << "-1\n";
+    return 0;
+  }
+
+  std::vector<std::vector<int>> tree(N), g(N);
+  std::vector<int64> ans(M, 0);
+
+  for (int i = 0; i < M; i++) {
+    if (killed[i]) {
+      tree[A[i]].push_back(B[i]);
+      tree[B[i]].push_back(A[i]);
+      ans[i] = -1;
+    } else {
+      g[A[i]].push_back(B[i]);
+      g[B[i]].push_back(A[i]);
+      ans[i] = all;
+    }
+  }
+
+  std::vector<int64> min_cost(N, INT_MAX);
+  std::vector<int> parent(N, -1);
+  std::vector<int> stack;
+
+  stack.push_back(0);
+  while (!stack.empty()) {
+    int node = stack.back();
+    stack.pop_back();
+
+    for (auto &child : g[node]) {
+      if (child == parent[node])
+        continue;
+      parent[child] = node;
+      stack.push_back(child);
+    }
+
+    for (auto &child : tree[node]) {
+      if (child == parent[node])
+        continue;
+      parent[child] = node;
+      stack.push_back(child);
+      ans[child] = ans[node] + min_cost[node] - min_cost[child];
+      min_cost[child] = std::min(min_cost[child], min_cost[node]);
+    }
+  }
+
+  for (int i = 0; i < M; i++) {
+    std::cout << ans[i] << "\n";
+  }
+
+  return 0;
+}
+```
+
+These optimizations aim to reduce unnecessary computations, improve data structure usage, and optimize the algorithm's runtime. The changes made to the code are minimal yet effective in improving performance.

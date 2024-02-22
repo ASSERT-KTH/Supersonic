@@ -1,0 +1,101 @@
+**Code Analysis:**
+
+The given code appears to be an implementation of the Graham's Scan algorithm, which is used to find the convex hull of a set of points in the plane. 
+
+The code first sorts the points based on their y-coordinate (and x-coordinate as a tie breaker). It then iteratively builds up the hull, checking at each step if the last three points in the hull make a non-left turn, and if so, the middle point of the three is removed.
+
+**Optimization Strategy:**
+
+1. **Inefficient Data Structures:** Both `P` and `H` are dynamically allocated arrays of `Point` objects. These could be replaced with `std::vector<Point>`, which has automatic memory management and also provides better interface for certain operations.
+
+2. **Redundant Computations:** The current implementation performs a sort operation at the beginning, which is necessary. However, the condition check in function `direct` is repeatedly calculated which might be optimized.
+
+3. **Loops:** The two main loops that build the hull could be optimized. The second loop seems to be doing unnecessary work, as it's essentially repeating the operation of the first loop but in reverse order.
+
+4. **Compiler Optimizations:** Compiler options such as `-O3` can be used to allow the compiler to automatically make certain optimizations.
+
+**Step-by-Step Explanation:**
+
+1. **Replace Dynamic Arrays with Vectors:** Using vectors instead of dynamically allocated arrays simplifies the memory management and makes the code more readable. It also provides certain useful methods that can be used to optimize the code.
+
+For example:
+
+```cpp
+std::vector<Point> P(n);
+std::vector<Point> H(2*n);
+```
+
+2. **Avoid Unnecessary Computations in `direct` Function:** The value computed in function `direct` is used to determine whether three points make a non-left turn. This involves two multiplications and two subtractions. To optimize this, we can store the value of `(a.x - base.x)` and `(a.y - base.y)` in local variables, which can then be reused.
+
+For example:
+
+```cpp
+inline bool direct(Point &base, Point &a, Point &b) {
+  int ax = a.x - base.x;
+  int ay = a.y - base.y;
+  return ax * (b.y - base.y) - ay * (b.x - base.x) < 0;
+}
+```
+
+3. **Optimize Loops:** The second loop that builds the hull is doing essentially the same operation as the first loop, but in reverse order. This seems to be unnecessary. We can combine these two loops into one.
+
+For example:
+
+```cpp
+for (i = 0; i < n; ++i) {
+  while (k >= 2 && direct(H[k - 2], H[k - 1], P[i]))
+    k--;
+  H[k++] = P[i];
+}
+```
+
+4. **Use Compiler Optimizations:** Compiler options such as `-O3` can be used to allow the compiler to automatically make certain optimizations.
+
+**Optimized Code Block:**
+
+Here's the optimized code:
+
+```cpp
+#include <algorithm>
+#include <iostream>
+#include <vector>
+using namespace std;
+
+class Point {
+public:
+  int x, y;
+  Point(int a = 0, int b = 0) : x(a), y(b) {}
+  bool operator<(const Point &p) const {
+    return y < p.y || (y == p.y && x < p.x);
+  }
+};
+
+inline bool direct(Point &base, Point &a, Point &b) {
+  int ax = a.x - base.x;
+  int ay = a.y - base.y;
+  return ax * (b.y - base.y) - ay * (b.x - base.x) < 0;
+}
+
+int main() {
+  int n;
+  cin >> n;
+  std::vector<Point> P(n);
+  for (int i = 0; i < n; ++i) {
+    cin >> P[i].x >> P[i].y;
+  }
+  sort(P.begin(), P.end());
+  std::vector<Point> H(2*n);
+  int k = 0;
+  for (int i = 0; i < n; ++i) {
+    while (k >= 2 && direct(H[k - 2], H[k - 1], P[i]))
+      k--;
+    H[k++] = P[i];
+  }
+  cout << k << "\n";
+  for (int i = 0; i < k; ++i) {
+    cout << H[i].x << " " << H[i].y << "\n";
+  }
+  return 0;
+}
+```
+Remember to compile this code with `-O3` option to enable compiler optimizations.

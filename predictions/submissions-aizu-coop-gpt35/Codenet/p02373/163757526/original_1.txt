@@ -1,0 +1,117 @@
+Code Analysis:
+
+1. The code uses a depth-first search (DFS) algorithm to traverse a tree and construct an array `path` that stores the depth and node values of each node in the DFS traversal.
+2. The code then builds a sparse table `ST` to efficiently compute the lowest common ancestor (LCA) of two nodes in constant time.
+3. Finally, the code reads queries to find the LCA of pairs of nodes and prints the results.
+
+Potential Optimizations:
+
+1. Reducing Memory Usage:
+   - The `path` array is currently allocated with a size of `MAXN << 1`, which is unnecessarily large. The size of the `path` array can be reduced to `2 * num_nodes - 1` since each node contributes two entries (one for entering the subtree and one for leaving the subtree) except for the last node.
+   - The `ST` array is allocated with a size of `LOGN * (MAXN << 1)`, which can also be reduced to `LOGN * (2 * num_nodes - 1)`.
+
+2. Avoiding Redundant Computations:
+   - The `dfs` function currently adds the same entry `ii(depth, u)` twice to the `path` array. This duplication can be avoided by moving the second addition after the recursive call to `dfs(v, depth + 1)`.
+
+Optimization Strategy:
+
+1. Reduce the memory usage by resizing the `path` array to `2 * num_nodes - 1` and the `ST` array to `LOGN * (2 * num_nodes - 1)`.
+2. Move the second addition of `ii(depth, u)` in the `dfs` function after the recursive call to `dfs(v, depth + 1)`.
+
+Step-by-Step Explanation:
+
+1. Reduce the memory usage by resizing the `path` array to `2 * num_nodes - 1` and the `ST` array to `LOGN * (2 * num_nodes - 1)`:
+
+```cpp
+const int MAXN = 100005;
+const int LOGN = 20;
+int idx_in_path[MAXN];
+ii path[2 * MAXN - 1];
+// ...
+ii ST[LOGN][2 * MAXN - 1];
+```
+
+2. Move the second addition of `ii(depth, u)` in the `dfs` function after the recursive call to `dfs(v, depth + 1)`:
+
+```cpp
+void dfs(int u, int depth = 0) {
+  idx_in_path[u] = path_size;
+  path[path_size++] = ii(depth, u);
+  for (int v : adjList[u]) {
+    dfs(v, depth + 1);
+  }
+  path[path_size++] = ii(depth, u);
+}
+```
+
+Optimized Code:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+#define fi first
+#define se second
+typedef pair<int, int> ii;
+typedef vector<int> vi;
+const int MAXN = 100005;
+const int LOGN = 20;
+int idx_in_path[MAXN];
+ii path[2 * MAXN - 1];
+vi adjList[MAXN];
+int path_size = 0;
+
+void dfs(int u, int depth = 0) {
+  idx_in_path[u] = path_size;
+  path[path_size++] = ii(depth, u);
+  for (int v : adjList[u]) {
+    dfs(v, depth + 1);
+  }
+  path[path_size++] = ii(depth, u);
+}
+
+ii ST[LOGN][2 * MAXN - 1];
+
+void build(int n) {
+  int h = ceil(log2(n + 1));
+  for (int i = 0; i < n; i++)
+    ST[0][i] = path[i];
+  for (int i = 1; i < h; i++)
+    for (int j = 0; j + (1 << i) <= n; j++)
+      ST[i][j] = min(ST[i - 1][j], ST[i - 1][j + (1 << (i - 1))]);
+}
+
+int lca(int u, int v) {
+  int l = idx_in_path[u], r = idx_in_path[v];
+  if (l > r)
+    swap(l, r);
+  r++;
+  int p = 31 - __builtin_clz(r - l);
+  return min(ST[p][l], ST[p][r - (1 << p)]).se;
+}
+
+int main() {
+  int num_nodes;
+  scanf("%d", &num_nodes);
+  for (int u = 0; u < num_nodes; u++) {
+    int num_neighbors;
+    scanf("%d", &num_neighbors);
+    for (int i = 0; i < num_neighbors; i++) {
+      int v;
+      scanf("%d", &v);
+      adjList[u].push_back(v);
+    }
+  }
+  dfs(0);
+  build(path_size);
+  int num_queries;
+  scanf("%d", &num_queries);
+  for (int i = 0; i < num_queries; i++) {
+    int u, v;
+    scanf("%d%d", &u, &v);
+    printf("%d\n", lca(u, v));
+  }
+  return 0;
+}
+```
+
+This optimized code reduces unnecessary memory usage and avoids redundant computations, resulting in improved performance.

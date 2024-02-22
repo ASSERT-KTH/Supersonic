@@ -1,0 +1,112 @@
+This program can be optimized by reducing the usage of dynamic memory allocations and by reducing the number of iterations in some loops.
+
+Here are the following steps that could be considered for optimization:
+
+1. Avoid dynamic memory allocation for vector: In C++, std::vector uses dynamic memory allocation which can be slow. If the size of the vector is known beforehand, it's better to use std::array (in C++11) or traditional C-style arrays. But in this case, since the arrays 'e' and 'escc' are of significant size and the size is not known beforehand, we can at least reserve the memory in advance if we know the maximum possible size. This can be done by using the reserve() function.
+
+2. Use prefix increment: In C++, the prefix increment operator (++i) can be faster than the postfix increment operator (i++), because the postfix operator needs to create a copy of the original value, increment it, and then return the original value, while the prefix operator can simply increment the value. This difference is especially noticeable in loops.
+
+3. Reduce function calls: The program calls the id() function multiple times with the same arguments. This can be optimized by storing the result of the first call in a variable and reusing it.
+
+4. Unnecessary operations: The program performs some operations that are not needed. For example, in the function getSCC(), it pushes every 'p' into 'escc[idscc[k]]' without checking if it is already there. We can use std::set instead of std::vector for 'escc' to ensure that every element is unique and avoid the need for a check.
+
+Here is an optimized version of your code with the above optimizations implemented:
+
+```cpp
+#include <algorithm>
+#include <cassert>
+#include <cstdio>
+#include <vector>
+#include <set>
+using namespace std;
+const int M = 100000 + 10, N = 50 * M;
+inline void dn(int &x, int y) {
+  if (y < x)
+    x = y;
+}
+char gc() {
+  char c = getchar();
+  if (c != '0' && c != '1')
+    c = getchar();
+  return c;
+}
+int n, m, d;
+bool open[M][50 + 5];
+int id(int u, int t) { return (u - 1) * d + t; }
+vector<int> e[N];
+set<int> escc[N];
+int nscc, idscc[N], dfn[N], lowlink[N], clo;
+int stk[N], top;
+bool instk[N];
+void dfscc(int k) {
+  dfn[k] = lowlink[k] = ++clo;
+  instk[stk[++top] = k] = true;
+  for (int &p : e[k]) {
+    if (!dfn[p])
+      dfscc(p), dn(lowlink[k], lowlink[p]);
+    else if (instk[p])
+      dn(lowlink[k], dfn[p]);
+  }
+  if (lowlink[k] == dfn[k]) {
+    ++nscc;
+    while (top && stk[top] != k) {
+      instk[stk[--top]] = false;
+      idscc[stk[top]] = nscc;
+    }
+  }
+}
+void getSCC(int n) {
+  for (int k = 1; k <= n; ++k)
+    if (!dfn[k])
+      dfscc(k);
+  for (int k = 1; k <= n; ++k) {
+    for (int &p : e[k]) {
+        escc[idscc[k]].insert(idscc[p]);
+    }
+  }
+}
+int ops[N];
+int dp[N];
+bool vis[N];
+int dfsdp(int k) {
+  if (vis[k])
+    return dp[k];
+  for (auto p : escc[k])
+    dp[k] = max(dp[k], dfsdp(p));
+  dp[k] += ops[k];
+  vis[k] = 1;
+  return dp[k];
+}
+int main() {
+  scanf("%d%d%d", &n, &m, &d);
+  e->reserve(N);
+  escc->reserve(N);
+  for (int i = 1; i <= m; ++i) {
+    int u, v, id_uj, id_vj;
+    scanf("%d%d", &u, &v);
+    for (int j = 1; j <= d; ++j) {
+      id_uj = id(u, j);
+      id_vj = id(v, j % d + 1);
+      e[id_uj].push_back(id_vj);
+    }
+  }
+  for (int i = 1; i <= n; ++i)
+    for (int j = 1; j <= d; ++j)
+      open[i][j] = gc() - '0';
+  getSCC(n * d);
+  for (int i = 1; i <= n; ++i) {
+    int tmp[50], ntmp = 0;
+    for (int j = 1; j <= d; ++j)
+      if (open[i][j]) {
+        int id_ij = id(i, j);
+        tmp[ntmp++] = idscc[id_ij];
+      }
+    sort(tmp, tmp + ntmp);
+    ntmp = unique(tmp, tmp + ntmp) - tmp;
+    for (int j = 0; j < ntmp; ++j)
+      ++ops[tmp[j]];
+  }
+  printf("%d", dfsdp(idscc[id(1, 1)]));
+  return 0;
+}
+```

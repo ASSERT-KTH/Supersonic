@@ -1,0 +1,14 @@
+The provided code is a C program that reads input from the user and prints output based on the input. However, the code can be optimized to improve its performance in terms of running time and memory usage. Let's analyze the code and identify potential areas for optimization.
+
+1. Inefficient memory usage:
+   - The array `t` has a fixed size of 999. This means that even if the input size is smaller than 999, memory is wasted. We can optimize the memory usage by dynamically allocating memory based on the input size.
+
+2. Redundant computations:
+   - The `bzero` function is called to initialize the `t` array to zero before each test case. This is unnecessary as the array will be overwritten in the loop that follows. We can remove this function call.
+
+3. Inefficient loops:
+   - The loop that reads and processes the input characters is using the variable `i` as the index. However, `i` is not initialized before its first use. Initializing `i` before the loop will ensure correct behavior.
+   - The loop that reads the query characters can be improved by avoiding the use of the `putchar` function for each character. Instead, we can store the characters in an array and print them in a single `puts` call after the loop.
+
+4. Compiler optimizations:
+   - We can use compiler optimizations to allow the compiler to generate more efficient code. For example, enabling optimization flags like `-O2` or `-O3` can help the compiler perform various optimizations, such as loop unrolling and function inlining.

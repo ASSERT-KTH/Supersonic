@@ -1,0 +1,84 @@
+This program could be optimized in the following ways:
+
+1. Using `reserve` instead of `resize`: `resize` allocates memory and initializes the new elements. If you are going to overwrite them anyway, it's better to use `reserve` which will just allocate memory without initializing the elements.
+
+2. Reducing the usage of `vector::push_back`: Every time `push_back` is called, it checks whether there is enough capacity in the vector to accommodate the new element. If not, it allocates a new block of memory, copies the existing elements to the new location, and then adds the new element. This can be quite inefficient. A better way is to use `reserve` to allocate enough memory in advance.
+
+3. Avoiding unnecessary `clear` function: The `vector::clear` function releases the memory held by the vector. This can be quite expensive if the vector is large. Instead, we can just let the vector go out of scope, and its destructor will automatically release the memory.
+
+4. Using `ios::sync_with_stdio(false)`: This can speed up I/O operations by unsynchronizing C's stdio buffers with C++'s streams. This can make a significant difference in programs that perform a lot of I/O operations.
+
+Here is the optimized version of your program:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+#define int long long
+struct QuickFind {
+    vector<int> r, p;
+    vector<vector<int>> v;
+    QuickFind() {}
+    QuickFind(int size) { init(size); }
+    void init(int size) {
+        r.reserve(size);
+        p.reserve(size);
+        v.reserve(size);
+        for (int i = 0; i < size; i++) {
+            r[i] = 1, p[i] = i;
+            v[i].reserve(1);
+            v[i].push_back(i);
+        }
+    }
+    bool same(int x, int y) { return p[x] == p[y]; }
+    void unite(int x, int y) {
+        x = p[x];
+        y = p[y];
+        if (x == y)
+            return;
+        if (r[x] < r[y])
+            swap(x, y);
+        r[x] += r[y];
+        v[x].reserve(v[x].size() + v[y].size());
+        for (int i = 0; i < (int)v[y].size(); i++) {
+            p[v[y][i]] = x;
+            v[x].push_back(v[y][i]);
+        }
+    }
+};
+signed main() {
+    ios::sync_with_stdio(false);
+    cin.tie(NULL);
+    int n;
+    cin >> n;
+    vector<int> a(n);
+    for (int i = 0; i < n; i++)
+        cin >> a[i];
+    vector<int> b(a);
+    sort(b.begin(), b.end());
+    map<int, int> p, q;
+    for (int i = 0; i < n; i++) {
+        p[a[i]] = i;
+        q[b[i]] = i;
+    }
+    QuickFind qf(n);
+    for (int i = 0; i < n; i++)
+        qf.unite(i, p[b[i]]);
+    int ans = 0;
+    for (int i = 0; i < n; i++) {
+        int k = qf.v[i].size();
+        if (qf.p[i] != i || k == 1)
+            continue;
+        int m = a[qf.v[i][0]];
+        int tmp = 0;
+        for (int j = 0; j < k; j++) {
+            tmp += a[qf.v[i][j]];
+            m = min(m, a[qf.v[i][j]]);
+        }
+        ans += min(tmp + m * (k - 2), tmp + m + b[0] * (k + 1));
+    }
+    cout << ans << endl;
+    return 0;
+}
+```
+
+Please note that this optimization may not significantly improve the performance because the original code is already quite efficient. The main bottleneck is the algorithm itself, which cannot be improved without changing the logic of the program.

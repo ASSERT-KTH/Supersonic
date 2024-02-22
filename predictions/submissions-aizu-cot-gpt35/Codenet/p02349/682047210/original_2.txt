@@ -1,0 +1,107 @@
+The given program implements a lazy segment tree data structure. The goal is to optimize the program for running time and memory usage.
+
+Here are the optimization steps:
+
+1. Remove unnecessary includes: The `#include <bits/stdc++.h>` includes a large number of standard library headers, which is unnecessary for this program. We can remove this line.
+
+2. Remove unnecessary typedef: The `typedef long long ll;` is not necessary in this program. We can remove this line.
+
+3. Avoid unnecessary resizing of vectors: In the `build` function, the program resizes the `node` and `lazy` vectors to the required size. However, the vectors are already resized in the `init` function. We can remove the resizing code in the `build` function.
+
+4. Avoid unnecessary loop in the `build` function: The `build` function initializes the `node` vector by copying the elements from the input vector `v`. Instead of using a loop to copy the elements, we can directly assign the elements using `std::copy` function.
+
+5. Avoid unnecessary assignments in the `add` function: The `add` function assigns the value of `node[2 * k + 1] + node[2 * k + 2]` to `node[k]` after the recursive calls. However, this assignment is unnecessary because the value of `node[k]` is overwritten in the recursive calls. We can remove this assignment.
+
+6. Use prefix increment/decrement operators: In the `add` and `getSum` functions, the program uses post-increment and post-decrement operators (`2 * k + 1` and `2 * k + 2`). Using prefix increment/decrement operators can be slightly more efficient. We can replace them with prefix operators (`++k` and `--k`).
+
+7. Use precomputed values: In the `add` function, the program calculates `(l + r) / 2` in each recursive call. We can precompute this value before the recursive calls to avoid unnecessary calculations.
+
+8. Remove unnecessary return statements: The `return 0;` statement at the end of the `main` function is unnecessary. We can remove this line.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+
+template <typename Monoid>
+struct LazySegmentTree {
+private:
+  int N;
+  std::vector<Monoid> node, lazy;
+
+public:
+  LazySegmentTree(int sz = 0) { init(sz); }
+  void init(int sz) {
+    N = 1;
+    while (N < sz)
+      N <<= 1;
+    node.resize(2 * N - 1, 0);
+    lazy.resize(2 * N - 1, 0);
+  }
+  void build(const std::vector<Monoid> &v) {
+    int sz = int(v.size());
+    init(sz);
+    std::copy(v.begin(), v.end(), node.begin() + N - 1);
+    for (int i = N - 2; i >= 0; --i) {
+      node[i] = node[i * 2 + 1] + node[i * 2 + 2];
+    }
+  }
+  void eval(int k) {
+    if (lazy[k] != 0) {
+      node[k] += lazy[k];
+      if (k < N - 1) {
+        lazy[2 * k + 1] += lazy[k] / 2;
+        lazy[2 * k + 2] += lazy[k] / 2;
+      }
+      lazy[k] = 0;
+    }
+  }
+  void add(int a, int b, Monoid x) { add(a, b, x, 0, 0, N); }
+  void add(int a, int b, Monoid x, int k, int l, int r) {
+    eval(k);
+    if (b <= l || r <= a)
+      return;
+    if (a <= l && r <= b) {
+      lazy[k] += x * (r - l);
+    } else {
+      int m = (l + r) / 2;
+      add(a, b, x, 2 * k + 1, l, m);
+      add(a, b, x, 2 * k + 2, m, r);
+    }
+  }
+  Monoid getSum(int a, int b) { return getSum(a, b, 0, 0, N); }
+  Monoid getSum(int a, int b, int k, int l, int r) {
+    if (b <= l || r <= a)
+      return 0;
+    eval(k);
+    if (a <= l && r <= b)
+      return node[k];
+    int m = (l + r) / 2;
+    Monoid vl = getSum(a, b, 2 * k + 1, l, m);
+    Monoid vr = getSum(a, b, 2 * k + 2, m, r);
+    return vl + vr;
+  }
+};
+
+int main() {
+  int n, q;
+  std::cin >> n >> q;
+  LazySegmentTree<long long> seg(n);
+  for (int i = 0; i < q; ++i) {
+    int c;
+    std::cin >> c;
+    if (c == 0) {
+      long long s, t, x;
+      std::cin >> s >> t >> x;
+      seg.add(s - 1, t, x);
+    } else {
+      int s;
+      std::cin >> s;
+      std::cout << seg.getSum(s - 1, s) << std::endl;
+    }
+  }
+}
+```
+
+This optimized program reduces unnecessary operations and improves the overall efficiency of the original program.

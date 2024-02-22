@@ -1,0 +1,89 @@
+Here are the steps to optimize this C++ program:
+
+1. Avoid using `#define` for commonly used keywords. It's better to use `typedef` or `using` for type definitions.
+2. Use `std::array` instead of `std::vector` for `del`. This is because the size of `del` is constant and known at compile time.
+3. Remove unused variables, such as `j`.
+4. Avoid using `std::endl` for newlines, as it causes unnecessary flushes of the output buffer. Use `'\n'` instead.
+5. Avoid unnecessary copying when pushing elements into vectors. Use `emplace_back` instead of `push_back` to construct elements in place.
+6. Avoid using `std::pair` for simple coordinate pairs. Instead, define a simple struct `Coord` with `x` and `y` members for better code readability.
+7. Use `std::ios::sync_with_stdio(false)` and `std::cin.tie(NULL)`, `std::cout.tie(NULL)` only when you are sure that you need to mix standard IO and C++ IO, otherwise these lines are unnecessary.
+
+Here's the optimized version of the code:
+
+```cpp
+#include <bits/stdc++.h>
+#include <ext/pb_ds/assoc_container.hpp>
+#include <ext/pb_ds/tree_policy.hpp>
+using namespace std;
+using int64 = long long;
+const int mx = 3e5 + 10;
+array<vector<int64>, mx> del;
+struct Coord {
+    int64 x, y;
+};
+
+int main() {
+    int64 tc = 1, i, k;
+    while (tc--) {
+        int64 a, b;
+        cin >> a >> b;
+        vector<pair<int64, int64>> dif;
+        vector<int64> pre, suf;
+        vector<Coord> v;
+        Coord c;
+        for (i = 0; i < a; i++) {
+            cin >> c.x >> c.y;
+            v.emplace_back(c);
+            dif.emplace_back(make_pair(c.y - c.x, i));
+        }
+        sort(dif.begin(), dif.end());
+        for (i = 0; i < a; i++) {
+            k = dif[i].second;
+            suf.push_back(v[k].y);
+            if (i)
+                suf[i] += suf[i - 1];
+        }
+        for (i = a - 1; i >= 0; i--) {
+            k = dif[i].second;
+            pre.push_back(v[k].x);
+        }
+        for (i = 1; i < a; i++)
+            pre[i] += pre[i - 1];
+        reverse(pre.begin(), pre.end());
+        for (i = 0; i < b; i++) {
+            cin >> c.x >> c.y;
+            k = v[c.x - 1].y - v[c.x - 1].x;
+            int64 m = v[c.y - 1].y - v[c.y - 1].x;
+            if (m <= k) {
+                del[c.x].push_back(v[c.x - 1].x + v[c.y - 1].y);
+                del[c.y].push_back(v[c.x - 1].x + v[c.y - 1].y);
+            } else {
+                del[c.x].push_back(v[c.x - 1].y + v[c.y - 1].x);
+                del[c.y].push_back(v[c.x - 1].y + v[c.y - 1].x);
+            }
+            k = del[c.x].size();
+            if (k > 1LL)
+                del[c.x][k - 1] += del[c.x][k - 2];
+            k = del[c.y].size();
+            if (k > 1LL) {
+                del[c.y][k - 1] += del[c.y][k - 2];
+            }
+        }
+        for (i = 0; i < a; i++) {
+            int64 ans = 0;
+            k = v[i].y - v[i].x;
+            k = upper_bound(dif.begin(), dif.end(), make_pair(k, LLONG_MAX)) - dif.begin();
+            if (k - 1 >= 0)
+                ans = suf[k - 1] + ((k - 1) * v[i].x) - v[i].y;
+            if (k < a) {
+                ans += pre[k] + (a - k) * v[i].y;
+            }
+            if (!del[i + 1].empty())
+                ans -= del[i + 1].back();
+            cout << ans << '\n';
+        }
+    }
+    return 0;
+}
+```
+This version of the code should run faster and use less memory than the original version.

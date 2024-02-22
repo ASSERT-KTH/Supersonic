@@ -1,0 +1,141 @@
+#include <algorithm>
+#include <iostream>
+#include <unordered_map>
+#include <vector>
+
+struct dat {
+  std::vector<int> A;
+  std::unordered_map<int, int> M;
+  dat* next = nullptr;
+  
+  int count(int p, int x) const {
+    if (p > size()) {
+      auto it = M.find(x);
+      if (it == M.end())
+        return next->count(p - size(), x);
+      else
+        return next->count(p - size(), x) + it->second;
+    }
+    return std::count(A.begin(), A.begin() + p, x);
+  }
+  
+  void insert(int p, int x) {
+    if (p > size()) {
+      next->insert(p - size(), x);
+      return;
+    }
+    A.insert(A.begin() + p, x);
+    M[x]++;
+    split();
+  }
+  
+  int erase(int p) {
+    if (size() < p)
+      return next->erase(p - size());
+    int x = A[p - 1];
+    A.erase(A.begin() + p - 1);
+    if (--M[x] == 0)
+      M.erase(x);
+    merge();
+    return x;
+  }
+  
+  void push_back(int x) {
+    A.push_back(x);
+    M[x]++;
+  }
+  
+  void push_front(int x) {
+    A.insert(A.begin(), x);
+    M[x]++;
+  }
+  
+  int pop_back() {
+    int x = A.back();
+    A.pop_back();
+    if (--M[x] == 0)
+      M.erase(x);
+    return x;
+  }
+  
+  int pop_front() {
+    int x = A.front();
+    A.erase(A.begin());
+    if (--M[x] == 0)
+      M.erase(x);
+    return x;
+  }
+  
+  int size() const {
+    return A.size();
+  }
+  
+  void split() {
+    if (size() < A.size() * 2)
+      return;
+    dat tmp;
+    while (size() > A.size())
+      tmp.push_front(pop_back());
+    tmp.next = next;
+    next = new dat(tmp);
+  }
+  
+  void merge() {
+    if (next == nullptr || size() + next->size() > A.size())
+      return;
+    std::rotate(A.end(), next->A.begin(), next->A.end());
+    std::unordered_map<int, int> tmpM(next->M);
+    for (int x : next->A)
+      M[x] += tmpM[x];
+    next = next->next;
+  }
+  
+  void print() const {
+    for (int x : A)
+      std::cerr << x << " ";
+    if (next == nullptr)
+      std::cerr << std::endl;
+    else
+      next->print();
+  }
+};
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(nullptr);
+  
+  int n, m, last = 0;
+  std::cin >> n;
+  dat D;
+  for (int i = 0; i < n; i++) {
+    int x;
+    std::cin >> x;
+    D.push_back(x);
+  }
+  
+  std::cin >> m;
+  for (; m > 0; m--) {
+    int op, l, r, k;
+    std::cin >> op;
+    if (op == 1) {
+      std::cin >> l >> r;
+      l = (l + last - 1) % n + 1;
+      r = (r + last - 1) % n + 1;
+      if (l > r)
+        std::swap(l, r);
+      D.insert(l - 1, D.erase(r));
+    } else {
+      std::cin >> l >> r >> k;
+      l = (l + last - 1) % n + 1;
+      r = (r + last - 1) % n + 1;
+      k = (k + last - 1) % n + 1;
+      if (l > r)
+        std::swap(l, r);
+      l = D.count(l - 1, k);
+      r = D.count(r, k);
+      std::cout << (last = r - l) << "\n";
+    }
+  }
+  
+  return 0;
+}

@@ -1,0 +1,58 @@
+Optimization step by step:
+
+1. Change `list<int> primes` to `vector<int> primes`: `list` is not cache-friendly and has a larger memory footprint than `vector`. Since we're only appending to the end, `vector` will be faster.
+
+2. Change the for loop in the `sieve` function that pushes prime numbers to the vector to use `emplace_back` instead of `push_back`. This can potentially avoid a copy of the integer.
+
+3. Change `for (auto x : inputs)` to `for (auto& x : inputs)`, this will avoid copying each integer from the vector.
+
+4. Change `for (auto p : primes)` to `for (auto& p : primes)`, this will avoid copying each integer from the vector.
+
+5. Change `*max_element(inputs.begin(), inputs.end())` to `max_element(begin(inputs), end(inputs))`, this will make use of the `std::begin()` and `std::end()` free functions, which are more general than the member functions.
+
+6. Use `reserve` function before pushing back elements to `inputs` vector. This can potentially avoid reallocation of memory which would improve performance. However, to use this, you need an estimate of the number of elements that will be pushed back. So, if there is a fixed number of elements to be pushed back, `reserve` can be used.
+
+Now the optimized program:
+
+```cpp
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <vector>
+using namespace std;
+void sieve(int n, vector<int> &primes) {
+  vector<bool> v(n + 1, true);
+  for (int i = 3, end = sqrt(n); i <= end; i += 2) {
+    if (!v[i])
+      continue;
+    for (int j = i * i, skip = i * 2; j <= n; j += skip)
+      v[j] = false;
+  }
+  primes.emplace_back(2);
+  for (int i = 3; i <= n; i += 2)
+    if (v[i])
+      primes.emplace_back(i);
+}
+int main() {
+  vector<int> primes;
+  vector<int> inputs;
+  inputs.reserve(100);  // an estimated size
+  for (int x; cin >> x;)
+    inputs.push_back(x);
+  sieve(*max_element(begin(inputs), end(inputs)), primes);
+  for (const auto& x : inputs) {
+    int count = 0;
+    for (const auto& p : primes)
+      if (p == x) {
+        count++;
+        break;
+      } else if (p > x)
+        break;
+      else
+        count++;
+    cout << count << endl;
+  }
+  return 0;
+}
+```
+Please note that the `reserve` function call in the `main` function is based on an estimated size and may need to be adjusted based on the expected number of inputs.

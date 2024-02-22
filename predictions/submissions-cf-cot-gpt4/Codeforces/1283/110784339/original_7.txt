@@ -1,0 +1,101 @@
+This program is overall quite efficient, but there are some areas where we can make some small modifications to potentially improve the performance:
+
+1. Instead of using `std::unordered_map` for `d`, use `std::map`. Although `std::unordered_map` has average constant-time complexity for access/insertion/deletion, `std::map` has logarithmic time complexity. The reason for this change is that `std::map` uses a red-black tree internally, and red-black trees are more efficient for larger datasets. Additionally, `std::unordered_map` has more overhead due to handling hash collisions. Therefore, `std::map` might be more memory-efficient. However, keep in mind that this might not always be the case, and it depends on the actual data and usage scenario.
+
+2. Instead of calling `res.size()` in each iteration of the `while` loop, store the result in a variable before the loop, and update it inside the loop when `res` changes. This is because calling `vector::size()` is a constant time operation and storing the size in a variable reduces the number of function calls.
+
+3. Instead of using `std::vector::push_back`, use `std::vector::emplace_back`. `emplace_back` constructs the object in place, and can be more efficient than `push_back` because it avoids the extra copy or move operation.
+
+4. Instead of using `std::queue::push` and `std::queue::pop`, use `std::queue::emplace` and `std::queue::front` / `std::queue::back` respectively. `emplace` is more efficient than `push` because it constructs the object in place. `front` / `back` are more efficient than `pop` because they don't destroy the returned element.
+
+Here is the optimized code:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+#define ll long long
+#define ull unsigned long long
+#define pb push_back
+#define mp make_pair
+#define F first
+#define S second
+#define PI 3.1415926535897932384626
+#define deb(x) cout << #x << "=" << x << endl
+#define deb2(x, y) cout << #x << "=" << x << ", " << #y << "=" << y << endl
+typedef pair<int, int> pii;
+typedef pair<ll, ll> pll;
+typedef vector<int> vi;
+typedef vector<ll> vll;
+typedef vector<ull> vull;
+typedef vector<pii> vpii;
+typedef vector<pll> vpll;
+typedef vector<vi> vvi;
+typedef vector<vll> vvll;
+typedef vector<vull> vvull;
+const int INF = 0x3f3f3f3f;
+const int mod = 1e9 + 7;
+struct custom_hash {
+  static uint64_t splitmix64(uint64_t x) {
+    x += 0x9e3779b97f4a7c15;
+    x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
+    x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
+    return x ^ (x >> 31);
+  }
+  size_t operator()(uint64_t x) const {
+    static const uint64_t FIXED_RANDOM =
+        chrono::steady_clock::now().time_since_epoch().count();
+    return splitmix64(x + FIXED_RANDOM);
+  }
+};
+mt19937 rng(time(0));
+void solve() {
+  int n, m;
+  cin >> n >> m;
+  vi v(n);
+  for (auto &x : v)
+    cin >> x;
+  map<ll, ll> d;
+  queue<ll> q;
+  for (int i = 0; i < n; i++) {
+    d[v[i]] = 0LL;
+    q.emplace(v[i]);
+  }
+  vll res;
+  ll mini_sum = 0LL;
+  int res_size = res.size();
+  while (!q.empty()) {
+    if (res_size == m)
+      break;
+    ll cur = q.front();
+    q.pop();
+    if (d[cur] != 0) {
+      res.emplace_back(cur);
+      mini_sum += d[cur];
+      ++res_size;
+    }
+    if (!d.count(cur - 1)) {
+      d[cur - 1] = d[cur] + 1;
+      q.emplace(cur - 1);
+    }
+    if (!d.count(cur + 1)) {
+      d[cur + 1] = d[cur] + 1;
+      q.emplace(cur + 1);
+    }
+  }
+  shuffle(res.begin(), res.end(), rng);
+  cout << mini_sum << "\n";
+  for (auto x : res)
+    cout << x << " ";
+  cout << "\n";
+}
+int main() {
+  ios_base::sync_with_stdio(false), cin.tie(nullptr), cout.tie(nullptr);
+  int t = 1;
+  while (t--) {
+    solve();
+  }
+  return 0;
+}
+```
+
+Please note that these optimizations might not always provide a noticeable improvement, depending on the actual data and usage scenario. It is always recommended to profile your code to see where the bottlenecks are and where you should focus your optimization efforts.

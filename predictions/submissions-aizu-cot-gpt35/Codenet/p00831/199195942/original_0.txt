@@ -1,0 +1,105 @@
+Step 1: Remove unnecessary headers
+- The `bits/stdc++.h` header includes a lot of unnecessary headers, which can slow down compilation time. We can replace it with the necessary headers instead.
+- Remove the line `#include <bits/stdc++.h>`.
+
+Step 2: Remove unnecessary macros
+- The macros `rep` and `debug` are not used in the program. We can remove them.
+- Remove the lines `#define rep(i, x, y) for (int i = (x); i < (y); ++i)` and `#define debug(x) #x << "=" << (x)`.
+
+Step 3: Remove unnecessary debug code
+- The `print` function and the `DEBUG` macro are not used in the program. We can remove them.
+- Remove the lines `#ifdef DEBUG`, `#define _GLIBCXX_DEBUG`, and `print(x)`.
+
+Step 4: Optimize the `damerau_levenshtein_distance` function
+- The `unordered_map` is used to store the dynamic programming table `d`, which results in unnecessary memory usage.
+- We can replace the `unordered_map<int, unordered_map<int, int>>` with a 2D array to improve memory usage and access time.
+- Replace the line `unordered_map<int, unordered_map<int, int>> d;` with `vector<vector<int>> d(a.size() + 1, vector<int>(b.size() + 1));`.
+
+Step 5: Optimize the `solve` function
+- The `sort` function is used to sort the `name` vector, which has a time complexity of O(n log n). However, we only need to find pairs of names that have a Damerau-Levenshtein distance less than or equal to `d`. We can optimize this by using a different data structure.
+- Instead of sorting the `name` vector, we can use a hash set to store the names. Then, for each name, we can iterate through all possible names with a Damerau-Levenshtein distance less than or equal to `d`. This will reduce the time complexity from O(n^2 log n) to O(n^2).
+- Replace the line `sort(name.begin(), name.end());` with `unordered_set<string> names(name.begin(), name.end());`.
+- Replace the nested loop `rep(i, 0, n)` and `rep(j, i + 1, n)` with a nested loop that iterates through all possible pairs of names in the hash set.
+- Replace the line `if (damerau_levenshtein_distance(name[i], name[j], 26) > d) continue;` with `if (damerau_levenshtein_distance(name[i], name[j], 26) <= d) count++;`.
+
+Step 6: Optimize input/output operations
+- The program uses `cin` and `cout` for input/output operations, which can be slow for large inputs/outputs. We can use `scanf` and `printf` instead for faster input/output.
+- Replace the lines `cin >> d;`, `cin >> name[i];`, `cout << name[i] << "," << name[j] << endl;`, and `cout << count << endl;` with `scanf("%d", &d);`, `scanf("%s", &name[i][0]);`, `printf("%s,%s\n", name[i].c_str(), name[j].c_str());`, and `printf("%d\n", count);` respectively.
+
+Step 7: Optimize the main function
+- The program uses `std::cin.tie(0)` and `std::ios::sync_with_stdio(false)` to improve input/output performance, but since we have already optimized the input/output operations, we can remove these lines.
+- Remove the lines `std::cin.tie(0);` and `std::ios::sync_with_stdio(false);`.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <unordered_set>
+using namespace std;
+
+int damerau_levenshtein_distance(const string& a, const string& b, const int alphabet_size) {
+    vector<int> da(alphabet_size, 0);
+    vector<vector<int>> d(a.size() + 1, vector<int>(b.size() + 1));
+    int maxdist = a.size() + b.size();
+    d[-1][-1] = maxdist;
+    for (int i = 0; i <= a.size(); ++i) {
+        d[i][-1] = maxdist;
+        d[i][0] = i;
+    }
+    for (int i = 0; i <= b.size(); ++i) {
+        d[-1][i] = maxdist;
+        d[0][i] = i;
+    }
+    for (int i = 1; i <= a.size(); ++i) {
+        int db = 0;
+        for (int j = 1; j <= b.size(); ++j) {
+            int k = da[b[j - 1]], l = db, cost;
+            if (a[i - 1] == b[j - 1]) {
+                cost = 0;
+                db = j;
+            } else {
+                cost = 1;
+            }
+            d[i][j] = min({d[i - 1][j - 1] + cost, d[i][j - 1] + 1, d[i - 1][j] + 1,
+                           d[k - 1][l - 1] + (i - k - 1) + 1 + (j - l - 1)});
+        }
+        da[a[i - 1]] = i;
+    }
+    return d[a.size()][b.size()];
+}
+
+void solve(int n) {
+    int d;
+    vector<string> name(n);
+    scanf("%d", &d);
+    for (int i = 0; i < n; i++) {
+        char buffer[101];
+        scanf("%s", buffer);
+        name[i] = buffer;
+    }
+    unordered_set<string> names(name.begin(), name.end());
+    int count = 0;
+    for (auto it1 = names.begin(); it1 != names.end(); ++it1) {
+        for (auto it2 = next(it1); it2 != names.end(); ++it2) {
+            if (damerau_levenshtein_distance(*it1, *it2, 26) <= d) {
+                count++;
+                printf("%s,%s\n", it1->c_str(), it2->c_str());
+            }
+        }
+    }
+    printf("%d\n", count);
+}
+
+int main() {
+    for (;;) {
+        int n;
+        scanf("%d", &n);
+        if (!n) {
+            break;
+        }
+        solve(n);
+    }
+    return 0;
+}
+```

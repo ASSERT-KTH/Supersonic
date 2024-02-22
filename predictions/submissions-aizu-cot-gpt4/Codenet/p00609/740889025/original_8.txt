@@ -1,0 +1,56 @@
+The given program seems to perform some sort of spatial query, possibly finding all points within a certain distance of a query point.
+
+Optimization steps are as follow:
+
+1. Reduce the number of sort operations: The code sorts each of the vectors in the array v every time it reads the inputs. It would be more efficient to sort the vectors only after all points have been inserted. This way, each vector is sorted only once.
+
+2. Cache the square root computation: The program computes the same square root many times, which is unnecessary. You can compute it once for each possible value of `p` and store the results in a lookup table.
+
+3. Use `std::ios_base::sync_with_stdio(false)`: This will turn off synchronization between the C and C++ standard streams, which can speed up I/O operations.
+
+Here is the optimized code:
+
+```cpp
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <iostream>
+#include <map>
+#include <vector>
+using namespace std;
+typedef pair<int, int> pii;
+vector<int> v[10000];
+int sqrt_values[20001]; // for storing precalculated square roots
+
+int main() {
+  std::ios_base::sync_with_stdio(false); // turn off synchronization
+  int aN, bN, R;
+  while (cin >> aN >> bN >> R, aN) {
+    for (int i = 0; i < 10000; i++)
+      v[i].clear();
+    for (int i = 0; i < aN; i++) {
+      int x, y;
+      scanf("%d%d", &x, &y);
+      v[y].push_back(x);
+    }
+    for (int i = 0; i < 10000; i++)
+      sort(v[i].begin(), v[i].end());
+    int D = 4 * R, ans = 0;
+    for (int p = -D; p <= D; p++) {
+      sqrt_values[p + D] = sqrt((D - p) * (D + p)); // precalculate the square roots
+    }
+    for (int i = 0; i < bN; i++) {
+      int x, y;
+      scanf("%d%d", &x, &y);
+      for (int p = -D; p <= D; p++) {
+        if (y + p < 0 || y + p >= 10000)
+          continue;
+        int m = sqrt_values[p + D]; // get the precalculated square root
+        ans += upper_bound(v[y + p].begin(), v[y + p].end(), x + m) -
+               lower_bound(v[y + p].begin(), v[y + p].end(), x - m);
+      }
+    }
+    cout << ans << endl;
+  }
+}
+```

@@ -1,0 +1,153 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+const int INF = 1e18;
+
+struct node {
+  int mx, mi, lz;
+};
+
+vector<node> st;
+
+void apply(int i, int x, int l2, int r2) {
+  st[i].mx -= x;
+  st[i].mi -= x;
+  if (st[i].lz == -INF)
+    st[i].lz = 0;
+  st[i].lz += x;
+}
+
+void push(int i, int l2, int mid, int r2) {
+  if (st[i].lz == -INF)
+    return;
+  apply(2 * i, st[i].lz, l2, mid);
+  apply(2 * i + 1, st[i].lz, mid + 1, r2);
+  st[i].lz = -INF;
+}
+
+void build(int l1, int x, int i = 1, int l2 = 0, int r2 = 0) {
+  if (l2 == r2) {
+    st[i].mx = x;
+    st[i].mi = x;
+    st[i].lz = -INF;
+    return;
+  }
+  int mid = (l2 + r2) / 2;
+  if (l1 <= mid)
+    build(l1, x, 2 * i, l2, mid);
+  else
+    build(l1, x, 2 * i + 1, mid + 1, r2);
+  st[i].mx = max(st[2 * i].mx, st[2 * i + 1].mx);
+  st[i].mi = min(st[2 * i].mi, st[2 * i + 1].mi);
+  st[i].lz = -INF;
+}
+
+void upd(int l1, int r1, int x, int i = 1, int l2 = 0, int r2 = 0) {
+  if (l1 <= l2 && r2 <= r1) {
+    apply(i, x, l2, r2);
+    return;
+  }
+  int mid = (l2 + r2) / 2;
+  push(i, l2, mid, r2);
+  if (l1 <= mid)
+    upd(l1, r1, x, 2 * i, l2, mid);
+  if (mid < r1)
+    upd(l1, r1, x, 2 * i + 1, mid + 1, r2);
+  st[i].mx = max(st[2 * i].mx, st[2 * i + 1].mx);
+  st[i].mi = min(st[2 * i].mi, st[2 * i + 1].mi);
+}
+
+int qry1(int l1, int r1, int i = 1, int l2 = 0, int r2 = 0) {
+  if (l1 <= l2 && r2 <= r1) {
+    return st[i].mx;
+  }
+  int mid = (l2 + r2) / 2;
+  push(i, l2, mid, r2);
+  return max((l1 <= mid ? qry1(l1, r1, 2 * i, l2, mid) : -INF),
+             (mid < r1 ? qry1(l1, r1, 2 * i + 1, mid + 1, r2) : -INF));
+}
+
+int qry2(int l1, int r1, int i = 1, int l2 = 0, int r2 = 0) {
+  if (l1 <= l2 && r2 <= r1) {
+    return st[i].mi;
+  }
+  int mid = (l2 + r2) / 2;
+  push(i, l2, mid, r2);
+  return min((l1 <= mid ? qry2(l1, r1, 2 * i, l2, mid) : INF),
+             (mid < r1 ? qry2(l1, r1, 2 * i + 1, mid + 1, r2) : INF));
+}
+
+void solve() {
+  int n1;
+  cin >> n1;
+  vector<int> arr(n1);
+  vector<pair<int, int>> b;
+  b.reserve(n1);
+  for (int i = 0; i < n1; i++) {
+    cin >> arr[i];
+    b.emplace_back(arr[i], i);
+  }
+  sort(b.begin(), b.end());
+  
+  int n = n1 + 1;
+  st.resize(4 * n);
+  
+  vector<int> ans(n1);
+  for (int i = n1 - 1; i >= 0; i--) {
+    vector<int> del;
+    int cur = b[i].first;
+    while (i >= 0 && b[i].first == cur) {
+      int j = b[i].second;
+      int p = qry1(j + 1, j + 1);
+      int q = qry2(0, j);
+      int r = qry1(j + 1, n - 1);
+      del.emplace_back(b[i].second);
+      ans[j] = (p - q + r - p - 1) / 2;
+      i--;
+    }
+    for (auto u : del) {
+      upd(u + 1, n - 1, 2);
+    }
+    i++;
+  }
+  
+  for (int i = 0; i < n1; i++) {
+    vector<int> del;
+    int cur = b[i].first;
+    while (i < n1 && b[i].first == cur) {
+      int j = b[i].second;
+      int p = qry1(j + 1, j + 1);
+      int q = qry2(0, j);
+      int r = qry1(j + 1, n - 1);
+      del.emplace_back(b[i].second);
+      ans[j] = max(ans[j], (p - q + r - p) / 2);
+      i++;
+    }
+    for (auto u : del) {
+      upd(u + 1, n - 1, 2);
+    }
+    i--;
+  }
+  
+  for (int i = 0; i < n1; i++) {
+    cout << ans[i] << " ";
+  }
+}
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+  cout.tie(nullptr);
+  
+  clock_t time = clock();
+  int t = 1;
+  for (int i = 0; i < t; i++) {
+    solve();
+  }
+  double time_taken = ((double)(clock() - time)) / CLOCKS_PER_SEC;
+  cerr << "Time taken: " << time_taken << " seconds" << endl;
+  
+  return 0;
+}

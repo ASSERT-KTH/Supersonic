@@ -1,0 +1,155 @@
+Code Analysis:
+
+1. The code defines a graph-based problem where the goal is to determine if a given field can be divided into multiple disconnected regions.
+2. The field is represented as a matrix of values, where 0 represents an empty cell and any other value represents a filled cell.
+3. The code uses a graph representation to model the connections between empty cells in the field.
+4. The algorithm performs a depth-first search (DFS) to check if the graph is connected.
+5. The code uses a set to memoize the visited states and optimize the DFS.
+6. The code also uses a bitset to keep track of the visited nodes.
+
+Potential Optimizations:
+
+1. Inefficient Memory Usage: The code uses multiple 2D vectors to represent the field, vertices, and edges. This can be optimized to reduce memory usage.
+2. Redundant Computations: The code computes the reachability for each cut vertex multiple times. This can be optimized to avoid redundant computations.
+3. Inefficient DFS: The DFS can be optimized by avoiding unnecessary checks and early termination when a solution is found.
+4. Compiler Optimizations: Compiler optimizations, such as loop unrolling and pragma directives, can be used to improve performance.
+
+Optimization Strategy:
+
+1. Replace 2D Vectors with a Compact Data Structure: Instead of using a vector of vectors to represent the field, vertices, and edges, we can use a compact data structure. We can use a single vector to represent the field by flattening the 2D structure. Similarly, we can use a single vector to represent the vertices and edges.
+2. Avoid Redundant Computations: Instead of recomputing the reachability for each cut vertex, we can compute it once and reuse it.
+3. Optimize DFS: We can optimize the DFS by avoiding unnecessary checks and early termination when a solution is found.
+4. Compiler Optimizations: We can use compiler optimizations, such as loop unrolling and pragma directives, to improve performance.
+
+Step-by-Step Explanation:
+
+1. Replace 2D Vectors with a Compact Data Structure:
+   - Replace `vector<vector<int>> field` with `vector<int> field`.
+   - Replace `vector<vector<int>> vertex` with `vector<int> vertex`.
+   - Replace `vector<vector<int>> edge` with `vector<vector<int>> edge`.
+
+2. Avoid Redundant Computations:
+   - Create a new function `computeReachability` to compute the reachability for each vertex once and store it in a vector.
+   - Call `computeReachability` after `make_graph`.
+   - Modify `cut_vertex` to use the reachability vector instead of recomputing the reachability.
+
+3. Optimize DFS:
+   - Remove the `memo` set since it is not needed.
+   - Modify the `dfs` function to return early when a solution is found.
+   - Remove the `visited.set(from)` statement from the `dfs` function since it is unnecessary.
+
+4. Compiler Optimizations:
+   - Add compiler optimizations, such as loop unrolling and pragma directives, to improve performance. This can be done by specifying compiler-specific flags or directives.
+
+Optimized Code Block:
+
+```cpp
+#include <algorithm>
+#include <bitset>
+#include <iostream>
+#include <set>
+#include <vector>
+using namespace std;
+const int N = 49;
+int w, h;
+vector<int> field;
+int size;
+vector<int> vertex;
+vector<vector<int>> edge;
+vector<bitset<N>> reachability;
+
+void make_graph() {
+  enum { Y, X };
+  const int NEXT[4][2] = {{0, 1}, {1, 0}, {-1, 0}, {0, -1}};
+  const int NIL = -1;
+  size = 0;
+  vertex = vector<int>(h * w, NIL);
+  for (int y = 0; y < h; ++y)
+    for (int x = 0; x < w; ++x)
+      if (!field[y * w + x])
+        vertex[y * w + x] = size++;
+  edge = vector<vector<int>>(h * w, vector<int>());
+  for (int y = 0; y < h; ++y)
+    for (int x = 0; x < w; ++x) {
+      if (vertex[y * w + x] == NIL)
+        continue;
+      for (const auto &d : NEXT) {
+        int ny = y + d[Y];
+        int nx = x + d[X];
+        if (ny < 0 || h <= ny || nx < 0 || w <= nx)
+          continue;
+        if (vertex[ny * w + nx] == NIL)
+          continue;
+        edge[vertex[y * w + x]].push_back(vertex[ny * w + nx]);
+      }
+    }
+};
+
+void computeReachability(const int &from, bitset<N> &visited) {
+  visited.set(from);
+  for (const auto &to : edge[from])
+    if (!visited[to])
+      computeReachability(to, visited);
+}
+
+bool cut_vertex(const int &from) {
+  auto dup = reachability[from];
+  dup.set(from);
+  for (const auto &to : edge[from]) {
+    if (dup[to])
+      continue;
+    return dup.count() != size;
+  }
+  return dup.count() != size;
+}
+
+bool dfs(const int &start, int from) {
+  if (cut_vertex(from))
+    return false;
+  for (int u = 0; u < size; ++u) {
+    if (u == from)
+      continue;
+    if (reachability[u][from])
+      continue;
+    int degree = 0;
+    for (const auto &v : edge[u])
+      if (v == start || !reachability[v][u])
+        ++degree;
+    if (degree < 2)
+      return false;
+  }
+  for (const auto &to : edge[from]) {
+    if (to == start && reachability[from].count() == size)
+      return true;
+    if (!reachability[to][from])
+      continue;
+    if (dfs(start, to))
+      return true;
+  }
+  return false;
+}
+
+bool solve() {
+  make_graph();
+  reachability = vector<bitset<N>>(size, bitset<N>(0));
+  for (int i = 0; i < size; ++i) {
+    computeReachability(i, reachability[i]);
+  }
+  for (int y = 0; y < h; ++y)
+    for (int x = 0; x < w; ++x)
+      if (!field[y * w + x])
+        return dfs(vertex[y * w + x], vertex[y * w + x]);
+  return false;
+}
+
+int main() {
+  while (cin >> w >> h, w | h) {
+    field = vector<int>(h * w);
+    for (auto &v : field)
+      cin >> v;
+    cout << (solve() ? "Yes" : "No") << endl;
+  }
+}
+```
+
+The optimized code reduces memory usage by using a compact data structure, avoids redundant computations by storing reachability information, optimizes the DFS by removing unnecessary checks and early termination, and suggests using compiler optimizations to further improve performance.

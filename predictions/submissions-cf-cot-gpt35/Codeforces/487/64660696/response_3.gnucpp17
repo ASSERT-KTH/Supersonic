@@ -1,0 +1,98 @@
+#include <iostream>
+#include <utility>
+using namespace std;
+
+constexpr int maxLig = 100005;
+constexpr int maxCol = 12;
+constexpr int maxReq = 100005;
+constexpr int sqr = 600;
+
+int nbLig, nbCol, nbReq;
+char grille[maxLig * maxCol];
+int proc[maxLig * maxCol];
+int tps = 0;
+pair<int, int> go[maxLig * maxCol];
+
+void comp(int lig, int col, int safeLig) {
+  int index = lig * nbCol + col;
+  if (proc[index] == tps)
+    return;
+  proc[index] = tps;
+  int nextLig = lig, nextCol = col;
+  char currentCell = grille[index];
+  if (currentCell == '<')
+    --nextCol;
+  else if (currentCell == '>')
+    ++nextCol;
+  else if (currentCell == '^')
+    --nextLig;
+  if (nextLig == safeLig || grille[nextLig * nbCol + nextCol] == '~') {
+    go[index] = {nextLig, nextCol};
+  } else if (currentCell != '^' && grille[lig * nbCol + nextCol] != '^' &&
+             currentCell != grille[lig * nbCol + nextCol]) {
+    go[index] = {0, 0};
+  } else {
+    comp(nextLig, nextCol, safeLig);
+    go[index] = go[nextLig * nbCol + nextCol];
+  }
+}
+
+void getFin(int& lig, int& col) {
+  int index = lig * nbCol + col;
+  while (grille[index] != '~') {
+    pair<int, int> e = go[index];
+    lig = e.first;
+    col = e.second;
+    index = lig * nbCol + col;
+  }
+}
+
+int blocRef[maxLig];
+bool compBloc(int bloc) {
+  int deb = bloc * sqr, fin = min(nbLig, (bloc + 1) * sqr);
+  if (deb >= nbLig)
+    return false;
+  for (int lig = deb + 1; lig <= fin; ++lig) {
+    int blockRef = bloc;
+    for (int col = 1; col <= nbCol; ++col) {
+      comp(lig, col, deb);
+    }
+    blocRef[lig] = blockRef;
+  }
+  return true;
+}
+
+int main() {
+  scanf("%d %d %d", &nbLig, &nbCol, &nbReq);
+  fill_n(grille, maxLig * maxCol, '~');
+  for (int lig = 1; lig <= nbLig; ++lig) {
+    for (int col = 1; col <= nbCol; ++col) {
+      scanf(" %c", &grille[lig * nbCol + col]);
+    }
+  }
+  ++tps;
+  for (int bloc = 0; compBloc(bloc); ++bloc);
+
+  for (int req = 0; req < nbReq; ++req) {
+    char mode;
+    int lig, col;
+    scanf(" %c %d %d", &mode, &lig, &col);
+    if (mode == 'A') {
+      getFin(lig, col);
+      if (lig == 0 && col == 0)
+        printf("-1 -1\n");
+      else
+        printf("%d %d\n", lig, col);
+    } else {
+      ++tps;
+      char nv;
+      scanf(" %c", &nv);
+      grille[lig * nbCol + col] = nv;
+      int bloc = blocRef[lig];
+      compBloc(bloc);
+      if (bloc)
+        compBloc(bloc - 1);
+    }
+  }
+  return 0;
+}

@@ -1,0 +1,180 @@
+Code Analysis:
+
+1. The code uses a struct `mod_int` to perform arithmetic operations modulo a given constant `MOD`.
+2. The `prepare_factorials` function calculates the inverses of numbers modulo `MOD` and initializes the `factorial` and `inv_factorial` vectors.
+3. The `choose` function calculates the binomial coefficient using the `factorial` and `inv_factorial` vectors.
+4. The `solve` function recursively calculates the probability of selecting a certain number of items from each group based on the given weights and likes/dislikes.
+5. The main function reads the input, calculates the probabilities using the `solve` function, and prints the final answers.
+
+Potential Optimizations:
+
+1. Use a more efficient data structure for `save`. The current implementation uses a map, which has a time complexity of O(log n) for insertion and retrieval. Since there are only two possible values for `like`, we can use an array or a vector of size 2 to store the results instead.
+2. Reduce the number of unnecessary calculations in the `solve` function. There are several computations that can be precalculated outside the loop to avoid redundant calculations.
+3. Use a more efficient algorithm for calculating the probabilities in the main loop. The current implementation uses a nested loop to calculate the probabilities, which can be optimized by using a more efficient algorithm such as dynamic programming or memoization.
+
+Optimization Strategy:
+
+1. Replace the `map<int, mod_int> save[2]` with a `vector<mod_int> save[2]` to store the results of the `solve` function.
+2. Move the calculation of `starter` and `other` outside the loop in the `solve` function to avoid redundant calculations.
+3. Use memoization to store and retrieve the results of the `solve` function instead of recalculating them every time.
+4. Replace the nested loop in the main loop with a more efficient algorithm to calculate the probabilities.
+
+Step-by-Step Explanation:
+
+1. Replace the `map<int, mod_int> save[2]` with a `vector<mod_int> save[2]` to store the results of the `solve` function. The map has a time complexity of O(log n) for insertion and retrieval, while a vector has a time complexity of O(1). This change reduces the time complexity of the `solve` function.
+
+```cpp
+vector<mod_int> save[2];
+```
+
+2. Move the calculation of `starter` and `other` outside the loop in the `solve` function to avoid redundant calculations. These calculations do not depend on the loop variables and can be moved outside the loop to improve efficiency.
+
+```cpp
+mod_int starter = probability[2 * up];
+mod_int other = 1;
+for (int i = 0; i < up; i++) {
+  starter /= mod_int(L + i);
+  other *= mod_int(L - weight + i);
+}
+```
+
+3. Use memoization to store and retrieve the results of the `solve` function instead of recalculating them every time. This can be done by checking if the result for a particular input has already been calculated and stored in the `save` array. If it has, return the stored result instead of recalculating it.
+
+```cpp
+mod_int solve(int like, int weight) {
+  if (save[like].size() > weight)
+    return save[like][weight];
+  // Rest of the code
+}
+```
+
+4. Replace the nested loop in the main loop with a more efficient algorithm to calculate the probabilities. The current implementation has a time complexity of O(M^2), which can be optimized to O(M) using dynamic programming or memoization. One approach is to use a vector of size 2*M+1 to store the probabilities and update it iteratively.
+
+```cpp
+vector<mod_int> new_probability(2 * M + 1, 0);
+for (int i = -M; i <= M; i++) {
+  if ((i + iter) % 2 != 0 || abs(i) > iter)
+    continue;
+  int up = (iter + i) / 2, down = (iter - i) / 2;
+  if (down > DL)
+    continue;
+  mod_int like_probability = mod_int(L + up) / mod_int(L + DL + i);
+  mod_int dislike_probability = mod_int(1) - like_probability;
+  new_probability[M + i + 1] += probability[M + i] * like_probability;
+  new_probability[M + i - 1] += probability[M + i] * dislike_probability;
+}
+swap(probability, new_probability);
+```
+
+Optimized Code:
+
+```cpp
+#include <algorithm>
+#include <cassert>
+#include <iostream>
+#include <map>
+#include <vector>
+using namespace std;
+const int MOD = 998244353;
+struct mod_int {
+  int val;
+  mod_int(long long v = 0) {
+    if (v < 0)
+      v = v % MOD + MOD;
+    if (v >= MOD)
+      v %= MOD;
+    val = v;
+  }
+  static int mod_inv(int a, int m = MOD) {
+    int g = m, r = a, x = 0, y = 1;
+    while (r != 0) {
+      int q = g / r;
+      g %= r;
+      swap(g, r);
+      x -= q * y;
+      swap(x, y);
+    }
+    return x < 0 ? x + m : x;
+  }
+  explicit operator int() const { return val; }
+  mod_int &operator+=(const mod_int &other) {
+    val += other.val;
+    if (val >= MOD)
+      val -= MOD;
+    return *this;
+  }
+  mod_int &operator-=(const mod_int &other) {
+    val -= other.val;
+    if (val < 0)
+      val += MOD;
+    return *this;
+  }
+  mod_int &operator*=(const mod_int &other) {
+    val = (uint64_t)val * other.val % MOD;
+    return *this;
+  }
+  mod_int &operator/=(const mod_int &other) { return *this *= other.inv(); }
+  friend mod_int operator+(const mod_int &a, const mod_int &b) {
+    return mod_int(a) += b;
+  }
+  friend mod_int operator-(const mod_int &a, const mod_int &b) {
+    return mod_int(a) -= b;
+  }
+  friend mod_int operator*(const mod_int &a, const mod_int &b) {
+    return mod_int(a) *= b;
+  }
+  friend mod_int operator/(const mod_int &a, const mod_int &b) {
+    return mod_int(a) /= b;
+  }
+  mod_int &operator++() {
+    val = val == MOD - 1 ? 0 : val + 1;
+    return *this;
+  }
+  mod_int operator++(int) {
+    mod_int before = *this;
+    ++*this;
+    return before;
+  }
+  mod_int &operator--() {
+    val = val == 0 ? MOD - 1 : val - 1;
+    return *this;
+  }
+  mod_int operator--(int) {
+    mod_int before = *this;
+    --*this;
+    return before;
+  }
+  mod_int operator-() const { return val == 0 ? 0 : MOD - val; }
+  bool operator==(const mod_int &other) const { return val == other.val; }
+  bool operator!=(const mod_int &other) const { return val != other.val; }
+  mod_int inv() const { return mod_inv(val); }
+  mod_int pow(long long p) const {
+    assert(p >= 0);
+    mod_int a = *this, result = 1;
+    while (p > 0) {
+      if (p & 1)
+        result *= a;
+      a *= a;
+      p >>= 1;
+    }
+    return result;
+  }
+};
+vector<mod_int> factorial, inv_factorial;
+vector<mod_int> inv;
+void prepare_factorials(int max) {
+  inv.assign(max + 1, 1);
+  for (int p = 2; p * p <= MOD; p++)
+    assert(MOD % p != 0);
+  for (int i = 2; i <= max; i++)
+    inv[i] = inv[MOD % i] * (MOD - MOD / i);
+  factorial.resize(max + 1);
+  inv_factorial.resize(max + 1);
+  factorial[0] = inv_factorial[0] = 1;
+  for (int i = 1; i <= max; i++) {
+    factorial[i] = i * factorial[i - 1];
+    inv_factorial[i] = inv[i] * inv_factorial[i - 1];
+  }
+}
+mod_int choose(int n, int r) {
+  assert(0 <= r && r <= n);

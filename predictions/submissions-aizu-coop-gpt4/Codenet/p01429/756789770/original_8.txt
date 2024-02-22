@@ -1,0 +1,129 @@
+1. Code Analysis:
+
+The provided code is a C++ program that involves reading input, performing computations, and providing output based on the results of those computations. It seems to be solving some problem involving notes, beauty, and repulsion force.
+
+Some potential performance bottlenecks and areas for optimization include:
+
+- The use of several arrays, including a 2D array "dp", and a large 1D array "sum". Both arrays are frequently accessed and manipulated, which may lead to performance issues, especially as the size of the input increases.
+- There are multiple nested loops, which have a high iteration count. This can increase the running time of the program.
+- There is a sort operation and a reverse operation on the "notes" array, which may be optimized or even removed.
+- The "compute" function is called repeatedly within a loop, which could be a performance bottleneck if the function has a high computational cost.
+
+2. Optimization Strategy:
+
+A. Inefficient data structures: 
+
+- The "dp" and "sum" arrays are used for dynamic programming and prefix sum calculations respectively. These are appropriate data structures for these purposes, so there aren't any alternative data structures that would be more efficient.
+
+B. Redundant or unnecessary computations:
+
+- The "compute" function is called multiple times with the same arguments. The results of these computations can be stored in a cache to avoid repeated calculations.
+- The reverse operation on the "notes" array can be removed by sorting the array in descending order initially.
+
+C. Loops or recursive calls:
+
+- The nested loops in the main function can be optimized by eliminating unnecessary iterations. If the "j" loop doesn't modify the "dp" array in the current iteration, it won't modify it in the next iteration, so we can break the loop earlier.
+
+D. Compiler optimizations:
+
+- Compiler optimizations like "-O2" or "-O3" can be used to make the code run faster. However, these optimizations should be used with caution as they can sometimes lead to unexpected behavior.
+
+3. Step-by-Step Explanation:
+
+- Store the results of the "compute" function in a cache to avoid repeated calculations. This is done by creating a new 2D array "compute_cache". Before calling the "compute" function, we check if the result is already in the cache. If it is, we use the cached result instead of calling the function. This reduces the number of function calls, which can significantly improve performance if the function has a high computational cost.
+- Sort the "notes" array in descending order initially to remove the need for the reverse operation. This is done by changing the sort operation from "sort(notes, notes + num_of_notes)" to "sort(notes, notes + num_of_notes, greater<int>())". This reduces the number of operations performed on the array, which can improve performance.
+- Optimize the nested loops by breaking the "j" loop earlier if it doesn't modify the "dp" array in the current iteration. This is done by adding a condition inside the "j" loop to break the loop if "dp[next][j]" and "dp[next][i]" are not modified. This reduces the number of iterations, which can significantly improve performance.
+- Use compiler optimizations like "-O2" or "-O3" to make the code run faster.
+
+Trade-offs:
+
+- Using a cache to store the results of the "compute" function increases memory usage, but it can significantly improve performance by reducing the number of function calls.
+- Breaking the "j" loop earlier can make the code more complex and harder to understand, but it can significantly improve performance by reducing the number of iterations.
+- Compiler optimizations can make the code run faster, but they can sometimes lead to unexpected behavior.
+
+4. Optimized Code Block:
+
+```cpp
+#define _USE_MATH_DEFINES
+#define INF 0x3f3f3f3f
+#define LINF 0x3f3f3f3f3f3f3f3f
+#include <algorithm>
+#include <bitset>
+#include <cctype>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <deque>
+#include <iostream>
+#include <limits>
+#include <list>
+#include <map>
+#include <queue>
+#include <set>
+#include <sstream>
+#include <stack>
+#include <string>
+#include <utility>
+using namespace std;
+typedef long long ll;
+typedef pair<int, int> P;
+typedef pair<int, P> PP;
+const static int tx[] = {0, 1, 1, 1, 0, -1, -1, -1};
+const static int ty[] = {-1, -1, 0, 1, 1, 1, 0, -1};
+static const double EPS = 1e-8;
+int num_of_notes;
+int num_of_beauty;
+ll force_of_repulsion;
+ll sum[200001];
+ll dp[2001][2001];
+int notes[2001];
+ll beauty[100001];
+ll compute_cache[2001][2001]; // cache for compute function results
+bool compute_cached[2001][2001]; // flags to indicate whether a result is in the cache
+ll compute(int i, int j) {
+  if (!compute_cached[i][j]) { // if the result is not in the cache
+    ll lhs = sum[notes[i]];
+    ll rhs = (notes[j] - 1 < 0 ? 0 : sum[notes[j] - 1]);
+    compute_cache[i][j] = (lhs - rhs) / force_of_repulsion; // compute and store the result in the cache
+    compute_cached[i][j] = true; // set the flag to indicate that the result is in the cache
+  }
+  return compute_cache[i][j]; // return the result from the cache
+}
+int main() {
+  while (~scanf("%d %d %lld", &num_of_notes, &num_of_beauty,
+                &force_of_repulsion)) {
+    for (int note_idx = 0; note_idx < num_of_notes; note_idx++) {
+      scanf("%d", notes + note_idx);
+      notes[note_idx]--;
+    }
+    memset(sum, 0, sizeof(sum));
+    for (int beauty_idx = 0; beauty_idx < num_of_beauty; beauty_idx++) {
+      scanf("%d", beauty + beauty_idx);
+      sum[beauty_idx] =
+          (beauty_idx - 1 >= 0 ? sum[beauty_idx - 1] : 0) + beauty[beauty_idx];
+    }
+    sort(notes, notes + num_of_notes, greater<int>()); // sort in descending order
+    memset(dp, 0x3f, sizeof(dp));
+    memset(compute_cache, 0, sizeof(compute_cache)); // initialize the cache
+    memset(compute_cached, false, sizeof(compute_cached)); // initialize the flags
+    dp[0][0] = 0;
+    for (int i = 0; i < num_of_notes; i++) {
+      int next = i + 1;
+      for (int j = 0; j <= i; j++) {
+        ll new_dp_next_j = dp[i][j] + compute(i, next);
+        ll new_dp_next_i = dp[i][j] + compute(j, next);
+        if (dp[next][j] <= new_dp_next_j && dp[next][i] <= new_dp_next_i)
+          break; // if dp[next][j] and dp[next][i] are not modified, break the loop
+        dp[next][j] = min(dp[next][j], new_dp_next_j);
+        dp[next][i] = min(dp[next][i], new_dp_next_i);
+      }
+    }
+    ll res = LINF;
+    for (int i = 0; i < num_of_notes; i++) {
+      res = min(dp[num_of_notes - 1][i] + compute(i, num_of_notes - 1), res);
+    }
+    printf("%lld\n", res);
+  }
+}
+```

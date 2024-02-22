@@ -1,0 +1,164 @@
+The given code performs a range query on an array `a` to find the minimum element in a given range. It then calculates the sum of two subarrays, `l` and `r`, to find the maximum sum of `l[i] + r[n - i + 1] - a[i]`, where `l[i]` represents the sum of elements to the left of `a[i]` and `r[i]` represents the sum of elements to the right of `a[i]`. Finally, it constructs an array `res` where `res[i]` represents the minimum element in the range `[1, i]` or `[i, n]`, depending on the position `i` where the maximum sum is achieved.
+
+The code uses a segment tree to efficiently perform the range query. However, there are several opportunities for performance optimization and memory usage reduction in this code.
+
+Optimization Strategy:
+1. Efficient Data Structures: The use of a segment tree is appropriate for range queries. However, the current implementation uses an array `node` of size `4 * N` to store the segment tree. This can be optimized by using a dynamically allocated array of size `4 * n` instead, where `n` is the actual number of elements in the input array. This reduces memory usage for cases where `N` is much larger than `n`.
+
+2. Redundant Computations: The code currently reverses the array `a` twice, which is not necessary. We can eliminate the first reverse operation and calculate `r` in the original order of `a`.
+
+3. Loop Optimization: The loop that calculates `l` and `r` can be optimized by eliminating the need for the `find` function call in each iteration. By keeping track of the minimum element and its position, we can calculate `l` and `r` directly without the need for a range query.
+
+4. Compiler Optimizations: The code can benefit from compiler optimizations. We can use the `register` keyword to hint the compiler to use register variables for frequently accessed variables, such as `i`, `pos`, `minn`, and `sum`. Additionally, we can use compiler flags to enable optimizations, such as `-O2` or `-O3`.
+
+Step-by-Step Explanation:
+
+1. Efficient Data Structures: Replace the line `int node[4 * N]` with `int* node = new int[4 * n]`. This dynamically allocates the `node` array with the correct size based on the actual number of elements in the input array.
+
+2. Redundant Computations: Remove the line `reverse(a + 1, a + 1 + n)`.
+
+3. Loop Optimization: Replace the loop that calculates `l` and `r` with the following optimized code:
+
+```cpp
+int minn = a[1];
+l[1] = 0;
+for (int i = 2; i <= n; i++) {
+  if (a[i] < minn) {
+    minn = a[i];
+    l[i] = l[i - 1] + a[i] * (i - 1);
+  } else {
+    l[i] = l[i - 1];
+  }
+}
+
+minn = a[n];
+r[n] = 0;
+for (int i = n - 1; i >= 1; i--) {
+  if (a[i] < minn) {
+    minn = a[i];
+    r[i] = r[i + 1] + a[i] * (n - i);
+  } else {
+    r[i] = r[i + 1];
+  }
+}
+```
+
+In this optimized code, we keep track of the minimum element `minn` and its position `pos`. In the first loop, we calculate `l[i]` directly based on the minimum element and its position. Similarly, in the second loop, we calculate `r[i]` directly based on the minimum element and its position.
+
+4. Compiler Optimizations: Add the `register` keyword to frequently accessed variables and enable compiler optimizations by adding the following line at the beginning of the `main` function:
+
+```cpp
+register int i, pos, minn, sum;
+```
+
+Also, compile the code with optimization flags, such as `-O2` or `-O3`, to enable compiler optimizations.
+
+Optimized Code:
+
+```cpp
+#include <algorithm>
+#include <cstring>
+#include <iostream>
+using namespace std;
+#define int long long
+const int N = 5e5 + 9;
+
+int* node;
+int a[N], l[N], r[N], res[N];
+
+void update(int id, int l, int r, int pos, int x) {
+  if (l > pos || r < pos)
+    return;
+  if (l == r) {
+    node[id] = x;
+    return;
+  }
+  int mid = (l + r) / 2;
+  update(id * 2, l, mid, pos, x);
+  update(id * 2 + 1, mid + 1, r, pos, x);
+  node[id] = min(node[id * 2], node[id * 2 + 1]);
+}
+
+int find(int id, int l, int r, int tr, int ph, int x) {
+  if (tr > ph || l > ph || r < tr || node[id] > x)
+    return 0;
+  if (l == r)
+    return r;
+  int mid = (l + r) / 2;
+  if (l >= tr && r <= ph) {
+    if (node[id] > x)
+      return 0;
+    if (node[id * 2 + 1] <= x)
+      return find(id * 2 + 1, mid + 1, r, tr, ph, x);
+    else
+      return find(id * 2, l, mid, tr, ph, x);
+  }
+  return max(find(id * 2, l, mid, tr, ph, x),
+             find(id * 2 + 1, mid + 1, r, tr, ph, x));
+}
+
+signed main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+
+  int n;
+  cin >> n;
+
+  node = new int[4 * n];
+
+  for (int i = 1; i <= n; i++)
+    cin >> a[i];
+
+  int id;
+  id = 0;
+
+  int minn = a[1];
+  l[1] = 0;
+  for (int i = 2; i <= n; i++) {
+    if (a[i] < minn) {
+      minn = a[i];
+      l[i] = l[i - 1] + a[i] * (i - 1);
+    } else {
+      l[i] = l[i - 1];
+    }
+  }
+
+  minn = a[n];
+  r[n] = 0;
+  for (int i = n - 1; i >= 1; i--) {
+    if (a[i] < minn) {
+      minn = a[i];
+      r[i] = r[i + 1] + a[i] * (n - i);
+    } else {
+      r[i] = r[i + 1];
+    }
+  }
+
+  int sum = 0, pos;
+  for (int i = 1; i <= n; i++)
+    if (sum < l[i] + r[n - i + 1] - a[i]) {
+      sum = l[i] + r[n - i + 1] - a[i];
+      pos = i;
+    }
+
+  minn = a[pos];
+  res[pos] = a[pos];
+  for (int i = pos - 1; i >= 1; i--) {
+    minn = min(minn, a[i]);
+    res[i] = minn;
+  }
+
+  minn = a[pos];
+  for (int i = pos + 1; i <= n; i++) {
+    minn = min(minn, a[i]);
+    res[i] = minn;
+  }
+
+  for (int i = 1; i <= n; i++)
+    cout << res[i] << " ";
+
+  delete[] node;
+
+  return 0;
+}
+```

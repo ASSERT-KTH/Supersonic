@@ -1,0 +1,178 @@
+The provided code calculates the optimal position for a facility in a grid based on the Manhattan distance from a set of locations. The code reads the width and height of the grid, the number of locations, and the coordinates of each location. It then calculates the Manhattan distances for every possible facility position and selects the position with the minimum total distance.
+
+Upon analyzing the code, the following potential areas for optimization are identified:
+
+1. Memory allocation: The code dynamically allocates memory for the arrays `LXY[f1]` and `XY[f1]`. Since the size of these arrays is known at compile-time, it would be more efficient to use fixed-size arrays.
+
+2. Sorting: The code performs stable sorting of the `XY[0]` and `XY[1]` arrays. However, stability is not necessary for the subsequent calculations. Using a more efficient sorting algorithm, such as `std::sort()`, could improve performance.
+
+3. Redundant calculations: The code calculates the Manhattan distance for each facility position twice, once in the inner loop and once in the outer loop. This can be optimized by calculating it once and reusing the calculated value.
+
+4. Redundant checks: The code checks if `L` is equal to 1 multiple times. Since this condition does not change within the loop, it can be moved outside the loop for efficiency.
+
+5. Loop optimization: The code uses nested loops to iterate over all possible facility positions. Loop unrolling can be applied to reduce the number of iterations and improve cache efficiency.
+
+6. Unnecessary variables: The variables `dx` and `dy` are used to determine the number of iterations in the nested loops. However, these values can be directly calculated using conditional statements within the loops.
+
+To optimize the code, the following steps can be taken:
+
+1. Replace the dynamically allocated arrays `LXY[f1]` and `XY[f1]` with fixed-size arrays. This can be done by replacing the lines:
+```cpp
+long long f1, f2, f3, w, h, L, HL, temp, oxy[2][2], *LXY[2], ox, oy, max = 0, dx, dy;
+vector<long long> XY[2];
+```
+with:
+```cpp
+long long f1, f2, f3, w, h, L, HL, temp, oxy[2][2], LXY[2][MAX_L], ox, oy, max = 0, dx, dy;
+long long XY[2][MAX_L];
+```
+where `MAX_L` is the maximum number of locations.
+
+2. Replace the stable sort calls with `std::sort` calls to improve sorting performance. Replace the lines:
+```cpp
+stable_sort(XY[0].begin(), XY[0].end());
+stable_sort(XY[1].begin(), XY[1].end());
+```
+with:
+```cpp
+std::sort(XY[0], XY[0] + L);
+std::sort(XY[1], XY[1] + L);
+```
+
+3. Move the `L == 1` check outside the loop to avoid redundant checks. Replace the lines:
+```cpp
+for (f1 = 0; f1 < 2; f1++) {
+  oxy[0][f1] = XY[f1][HL - 1];
+  oxy[1][f1] = XY[f1][HL];
+}
+dx = (oxy[0][0] == oxy[1][0]) ? 1 : 2;
+dy = (oxy[0][1] == oxy[1][1]) ? 1 : 2;
+for (f2 = 0; f2 < dx; f2++) {
+  for (f3 = 0; f3 < dy; f3++) {
+    // ...
+  }
+}
+```
+with:
+```cpp
+if (L == 1) {
+  printf("0\n");
+  printf("%lld %lld\n", XY[0][0], XY[1][0]);
+  return 0;
+}
+for (f1 = 0; f1 < 2; f1++) {
+  oxy[0][f1] = XY[f1][HL - 1];
+  oxy[1][f1] = XY[f1][HL];
+}
+dx = (oxy[0][0] == oxy[1][0]) ? 1 : 2;
+dy = (oxy[0][1] == oxy[1][1]) ? 1 : 2;
+for (f2 = 0; f2 < dx; f2++) {
+  for (f3 = 0; f3 < dy; f3++) {
+    // ...
+  }
+}
+```
+
+4. Calculate `dx` and `dy` directly within the nested loops to avoid unnecessary variables. Replace the lines:
+```cpp
+dx = (oxy[0][0] == oxy[1][0]) ? 1 : 2;
+dy = (oxy[0][1] == oxy[1][1]) ? 1 : 2;
+for (f2 = 0; f2 < dx; f2++) {
+  for (f3 = 0; f3 < dy; f3++) {
+    // ...
+  }
+}
+```
+with:
+```cpp
+for (f2 = 0; f2 < ((oxy[0][0] == oxy[1][0]) ? 1 : 2); f2++) {
+  for (f3 = 0; f3 < ((oxy[0][1] == oxy[1][1]) ? 1 : 2); f3++) {
+    // ...
+  }
+}
+```
+
+5. Calculate the initial Manhattan distance once and reuse the calculated value within the loop. Replace the lines:
+```cpp
+for (f1 = 0; f1 < L; f1++) {
+  temp = (long long)abs(LXY[0][f1] - oxy[f2][0]) +
+         abs(LXY[1][f1] - oxy[f3][1]);
+  sum += temp;
+  if (max < temp)
+    max = temp;
+}
+```
+with:
+```cpp
+temp = 0;
+for (f1 = 0; f1 < L; f1++) {
+  temp += (long long)abs(LXY[0][f1] - oxy[f2][0]) +
+          abs(LXY[1][f1] - oxy[f3][1]);
+}
+max = temp;
+sum = temp * 2 - max;
+```
+
+6. Apply loop unrolling to reduce the number of iterations and improve cache efficiency. Replace the nested loops:
+```cpp
+for (f2 = 0; f2 < ((oxy[0][0] == oxy[1][0]) ? 1 : 2); f2++) {
+  for (f3 = 0; f3 < ((oxy[0][1] == oxy[1][1]) ? 1 : 2); f3++) {
+    sum = 0LL;
+    max = 0LL;
+    for (f1 = 0; f1 < L; f1++) {
+      temp = (long long)abs(LXY[0][f1] - oxy[f2][0]) +
+             abs(LXY[1][f1] - oxy[f3][1]);
+      sum += temp;
+      if (max < temp)
+        max = temp;
+    }
+    sum *= 2;
+    sum -= max;
+    if (osum == 0 || osum > sum) {
+      osum = sum;
+      ox = oxy[f2][0];
+      oy = oxy[f3][1];
+    }
+  }
+}
+```
+with:
+```cpp
+for (f2 = 0; f2 < ((oxy[0][0] == oxy[1][0]) ? 1 : 2); f2++) {
+  for (f3 = 0; f3 < ((oxy[0][1] == oxy[1][1]) ? 1 : 2); f3++) {
+    sum = 0LL;
+    max = 0LL;
+    for (f1 = 0; f1 < L; f1 += 4) {
+      temp = (long long)abs(LXY[0][f1] - oxy[f2][0]) +
+             abs(LXY[1][f1] - oxy[f3][1]);
+      sum += temp;
+      if (max < temp)
+        max = temp;
+      temp = (long long)abs(LXY[0][f1 + 1] - oxy[f2][0]) +
+             abs(LXY[1][f1 + 1] - oxy[f3][1]);
+      sum += temp;
+      if (max < temp)
+        max = temp;
+      temp = (long long)abs(LXY[0][f1 + 2] - oxy[f2][0]) +
+             abs(LXY[1][f1 + 2] - oxy[f3][1]);
+      sum += temp;
+      if (max < temp)
+        max = temp;
+      temp = (long long)abs(LXY[0][f1 + 3] - oxy[f2][0]) +
+             abs(LXY[1][f1 + 3] - oxy[f3][1]);
+      sum += temp;
+      if (max < temp)
+        max = temp;
+    }
+    sum *= 2;
+    sum -= max;
+    if (osum == 0 || osum > sum) {
+      osum = sum;
+      ox = oxy[f2][0];
+      oy = oxy[f3][1];
+    }
+  }
+}
+```
+
+After applying these optimizations, the complete optimized code is as follows:

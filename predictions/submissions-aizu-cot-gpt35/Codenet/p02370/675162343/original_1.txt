@@ -1,0 +1,89 @@
+The given program is a topological sort implementation using depth-first search. To optimize the program, we can make the following modifications:
+
+1. Remove unnecessary includes: The program includes the entire `bits/stdc++.h` header, which is not necessary. We can remove it.
+
+2. Pass `Adj_list` by reference: The `topological_sort` function currently accepts the `Adj_list` by value. This means that a copy of the `Adj_list` is made each time the function is called, which can be inefficient for large graphs. We can modify the function to accept the `Adj_list` by reference.
+
+3. Use `reserve` when initializing vectors: The `inorder` and `topological_order` vectors are initialized with a size of `V`, but their actual sizes may be smaller. We can use the `reserve` function to allocate memory for the expected number of elements.
+
+4. Use `emplace_back` instead of `push_back`: In the `topological_sort` function, the `S` vector is used to store the vertices with no incoming edges. The `push_back` function is used to add elements to the vector, which involves creating a temporary object and then copying or moving it into the vector. We can use the `emplace_back` function instead, which constructs the object directly in-place within the vector, avoiding unnecessary copying or moving.
+
+5. Use `pop_back` instead of `erase`: In the `topological_sort` function, the `S` vector is used as a stack, and we remove the last element using `S.pop_back()`. Instead of removing the element and shifting the remaining elements, we can simply use `S.pop_back()` to remove the element.
+
+6. Use `reserve` for `S` vector: In the `topological_sort` function, the `S` vector is initially empty and grows dynamically as vertices with no incoming edges are found. We can use `reserve` to allocate memory for the maximum possible size of `S` in advance, which can improve performance.
+
+7. Use a range-based loop: In the `main` function, the `ans` vector is printed using an index-based loop. We can use a range-based loop instead, which is more concise and avoids potential off-by-one errors.
+
+Here is the optimized C++ program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <cassert>
+
+struct Edge {
+  int tgt_;
+  Edge(int t) { tgt_ = t; }
+};
+
+typedef std::vector<std::vector<Edge>> Adj_list;
+
+std::vector<int> topological_sort(Adj_list& G) {
+  const int V = G.size();
+  std::vector<int> S;
+  std::vector<int> inorder(V, 0);
+  
+  for (auto& edges : G)
+    for (Edge& e : edges)
+      inorder[e.tgt_]++;
+  
+  S.reserve(V);
+  for (int i = 0; i < V; i++)
+    if (inorder[i] == 0)
+      S.emplace_back(i);
+  
+  assert(S.size() > 0);
+  
+  std::vector<int> topological_order;
+  topological_order.reserve(V);
+  
+  while (!S.empty()) {
+    int v = S.back();
+    S.pop_back();
+    topological_order.emplace_back(v);
+    
+    for (int i = G[v].size() - 1; i >= 0; i--) {
+      Edge& e = G[v][i];
+      inorder[e.tgt_]--;
+      if (inorder[e.tgt_] == 0)
+        S.emplace_back(e.tgt_);
+    }
+  }
+  
+  assert(inorder[0] == 0); // Assuming the graph is connected
+  
+  return topological_order;
+}
+
+int main() {
+  int V, E;
+  std::cin >> V >> E;
+  
+  Adj_list G(V);
+  
+  for (int i = 0; i < E; i++) {
+    int s, t;
+    std::cin >> s >> t;
+    G[s].emplace_back(t);
+  }
+  
+  std::vector<int> ans = topological_sort(G);
+  
+  for (int vertex : ans)
+    std::cout << vertex << '\n';
+  
+  return 0;
+}
+```
+
+These optimizations should improve the running time and memory usage of the program.

@@ -1,0 +1,125 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+template <typename T, typename JoinFn>
+class seg_tree {
+public:
+  seg_tree(int n, const T &zero = T(), const JoinFn &join_fn = JoinFn())
+      : join_fn_(join_fn), n_(n), data_(2 * next_power_of_two(n_) - 1, zero) {}
+  seg_tree(const std::vector<T> &data, const JoinFn &join_fn = JoinFn())
+      : join_fn_(join_fn), n_((int)data.size()),
+        data_(2 * next_power_of_two(n_) - 1) {
+    init(0, 0, n_ - 1, data);
+  }
+  int size() const { return n_; }
+  template <typename UpdateFn>
+  void update(int pos, const T &val, UpdateFn update_fn) {
+    return update(0, 0, n_ - 1, pos, val, update_fn);
+  }
+  T query(int pos) const { return query(pos, pos); }
+  T query(int first, int last) const {
+    return query(0, 0, n_ - 1, first, last);
+  }
+  template <typename ContainsFn> int find(T val, ContainsFn contains_fn) const {
+    if (!contains_fn(data_[0], val)) {
+      return n_;
+    }
+    return find(0, 0, n_ - 1, val, contains_fn);
+  }
+private:
+  const JoinFn join_fn_;
+  const int n_;
+  std::vector<T> data_;
+  static constexpr int next_power_of_two(int x) {
+    --x;
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+    return ++x;
+  }
+  void init(int node, int t_first, int t_last, const std::vector<T> &data) {
+    if (t_first == t_last) {
+      data_[node] = data[t_first];
+      return;
+    }
+    int t_mid = (t_first + t_last) >> 1;
+    init(2 * node + 1, t_first, t_mid, data);
+    init(2 * node + 2, t_mid + 1, t_last, data);
+    data_[node] = join_fn_(data_[2 * node + 1], data_[2 * node + 2]);
+  }
+  template <typename UpdateFn>
+  void update(int node, int t_first, int t_last, int pos, const T &val,
+              UpdateFn update_fn) {
+    if (t_first == t_last) {
+      update_fn(data_[node], val);
+      return;
+    }
+    int t_mid = (t_first + t_last) >> 1;
+    if (pos <= t_mid) {
+      update(2 * node + 1, t_first, t_mid, pos, val, update_fn);
+    } else {
+      update(2 * node + 2, t_mid + 1, t_last, pos, val, update_fn);
+    }
+    data_[node] = join_fn_(data_[2 * node + 1], data_[2 * node + 2]);
+  }
+  T query(int node, int t_first, int t_last, int first, int last) const {
+    if (first <= t_first && t_last <= last) {
+      return data_[node];
+    }
+    int t_mid = (t_first + t_last) >> 1;
+    if (last <= t_mid) {
+      return query(2 * node + 1, t_first, t_mid, first, last);
+    }
+    if (t_mid < first) {
+      return query(2 * node + 2, t_mid + 1, t_last, first, last);
+    }
+    return join_fn_(query(2 * node + 1, t_first, t_mid, first, last),
+                    query(2 * node + 2, t_mid + 1, t_last, first, last));
+  }
+  template <typename ContainsFn>
+  int find(int node, int t_first, int t_last, T &val,
+           ContainsFn contains_fn) const {
+    if (t_first == t_last) {
+      return t_first;
+    }
+    int t_mid = (t_first + t_last) >> 1;
+    if (contains_fn(data_[2 * node + 1], val)) {
+      return find(2 * node + 1, t_first, t_mid, val, contains_fn);
+    } else {
+      return find(2 * node + 2, t_mid + 1, t_last, val, contains_fn);
+    }
+  }
+};
+
+int main() {
+  std::ios::sync_with_stdio(false);
+  std::cin.tie(nullptr);
+  
+  int n, k;
+  std::cin >> n >> k;
+  
+  std::vector<std::vector<int>> a(n, std::vector<int>(k));
+  for (auto& row : a) {
+    for (auto& element : row) {
+      std::cin >> element;
+    }
+  }
+  
+  auto join = [](const std::pair<int, int>& a, const std::pair<int, int>& b) {
+    return std::pair(std::min(a.first, b.first), std::max(a.second, b.second));
+  };
+  
+  std::vector<seg_tree<std::pair<int, int>, decltype(join)>> trees(
+      1 << k, seg_tree<std::pair<int, int>, decltype(join)>(n, {1e9, -1e9}, join));
+  
+  for (int i = 0; i < n; ++i) {
+    std::vector<int> val(k, 0);
+    for (int j = 0; j < k; ++j) {
+      val[j] = a[i][j];
+    }
+    for (int mask = 0; mask < (1 << k); ++mask) {
+      int sum = 0;
+      for (int j = 0; j < k; ++j) {

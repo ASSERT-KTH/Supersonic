@@ -1,0 +1,20 @@
+The code provided is quite complex and difficult to understand at first glance. To optimize this program, let's break it down into smaller parts and identify the areas that can be improved for running time and memory usage.
+
+1. Variable Declarations:
+   - The arrays `d`, `k`, and `h` are declared with fixed sizes of `300010` and `2000010`. We can optimize memory usage by dynamically allocating memory for these arrays based on the input size.
+
+2. Avoid Unnecessary Calculations:
+   - The function `hyouka` is called multiple times in the `hin` and `hout` functions. We can optimize this function to avoid unnecessary calculations by storing the results in a variable and reusing it.
+
+3. Avoid Duplicate Calculations:
+   - The function `getlr` is called multiple times in the `match` function. We can optimize this function by calculating the result once and storing it in a variable for reuse.
+
+4. Loop Optimizations:
+   - The loop in the `init` function can be optimized by using pre-increment instead of post-increment.
+   - The loop in the `gets` function can be optimized by using pre-increment instead of post-increment.
+
+5. Minimize Redundant Code:
+   - The `getlr` function is called twice in the `hin` function. We can optimize this by calculating the result once and storing it in a variable for reuse.
+
+6. Avoid Unnecessary Variable Assignments:
+   - The variables `j` and `k` are assigned values that are not used in the `hout` function. We can remove these assignments to optimize the program.

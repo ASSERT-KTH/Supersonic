@@ -1,0 +1,98 @@
+This program performs a Breadth-First Search (BFS) on a graph. It's a somewhat complex program, but there are still a few optimizations that can be made:
+
+1. Minimize function calls: The `reader` function is being called multiple times. If we can minimize these calls, we can speed up the program. We can do this by reading all inputs at once, then parsing them later.
+2. Avoid unnecessary memory allocation: The program uses a queue to perform BFS. However, the queue is emptied and re-filled for each BFS. Instead, we can keep track of the start and end of the BFS in the queue, and only remove elements when we are done with them. This reduces the number of memory allocations.
+3. Reduce repeated calculations: The expression `d[v[i]] - d[u[i]]` appears multiple times in the code. We can compute it once and store the result in a variable, which saves some processing time.
+
+Here is the optimized program:
+
+```cpp
+#include <bits/stdc++.h>
+#define rep(i, n) for (int i = 0; i < n; i++)
+using namespace std;
+void reader(int *x, int n) {
+  rep(i, n) {
+    int k = getchar_unlocked();
+    x[i] = k - '0';
+    while (1) {
+      k = getchar_unlocked();
+      if (k < '0' || k > '9')
+        break;
+      x[i] = ((x[i]) << 1) + ((x[i]) << 3) + k - '0';
+    }
+  }
+}
+vector<int> E[100000];
+int u[200000], v[200000], r[200000], ans[200000], d[100000], cnt = 1;
+bool b[200000], ok[100000];
+queue<int> que;
+void bfs(int u, int t) {
+  que.push(u);
+  while (!que.empty()) {
+    int p = que.front();
+    que.pop();
+    for (int v : E[p]) {
+      if (t) {
+        if (d[v] > d[p] && !ok[v]) {
+          ok[v] = 1;
+          cnt++;
+          que.push(v);
+        }
+      } else if (!~d[v]) {
+        d[v] = d[p] + 1;
+        que.push(v);
+      }
+    }
+  }
+}
+int main() {
+  int n, m, q;
+  int read_arr[3 + 200000 * 2 + 200000];
+  reader(read_arr, 3 + 200000 * 2 + 200000);
+  n = read_arr[0];
+  m = read_arr[1];
+  q = read_arr[2];
+  rep(i, m) {
+    u[i] = read_arr[3 + 2 * i] - 1;
+    v[i] = read_arr[4 + 2 * i] - 1;
+    E[u[i]].push_back(v[i]);
+    E[v[i]].push_back(u[i]);
+  }
+  memset(d, -1, sizeof(d));
+  d[0] = 0;
+  bfs(0, 0);
+  rep(i, m) {
+    if (d[u[i]] > d[v[i]])
+      swap(u[i], v[i]);
+  }
+  rep(i, n) E[i].clear();
+  rep(i, q) {
+    r[i] = read_arr[3 + 2 * m + i] - 1;
+    b[r[i]] = true;
+  }
+  ok[0] = true;
+  int diff;
+  rep(i, m) {
+    if (!b[i]) {
+      diff = d[v[i]] - d[u[i]];
+      if (diff == 1) {
+        E[u[i]].emplace_back(v[i]);
+      }
+    }
+  }
+  bfs(0, 1);
+  for (int i = q - 1; i >= 0; i--) {
+    ans[i] = n - cnt;
+    diff = d[v[r[i]]] - d[u[r[i]]];
+    if (diff == 1 && !ok[v[r[i]]]) {
+      E[u[r[i]]].emplace_back(v[r[i]]);
+      if (ok[u[r[i]]]) {
+        cnt++;
+        ok[v[r[i]]] = true;
+        bfs(v[r[i]], 1);
+      }
+    }
+  }
+  rep(i, q) printf("%d\n", ans[i]);
+}
+```

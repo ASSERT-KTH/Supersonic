@@ -1,0 +1,77 @@
+This code is already fairly optimized, but there are a few small changes that can be made.
+
+1. Avoid unnecessary calculations: In the calc function, the calculations for tha and thb are repeated every time the loop runs. We can avoid this by calculating them once and storing the results.
+
+2. Removal of assert statements: Assert statements are generally used for debugging purposes and can slow down the runtime of the program. If you are confident the conditions will always be true, you can remove the assert statements.
+
+3. Avoid variable re-declaration: In the solve function, xa and ya are declared and initialized to the same value ra. We can avoid this re-declaration by initializing xa and ya to ra at the time of their declaration.
+
+4. Use of fast input/output methods: The cin and cout operations are slower compared to scanf and printf. You can replace cin >> W >> H >> sa >> sb >> sc with scanf and printf for faster input/output.
+
+5. Use of const references in for-each loop: In the solve function, the for-each loop iterates over an initializer_list of doubles. By declaring the loop variable as a const reference, we avoid unnecessary copies.
+
+Now let's implement these optimizations:
+
+```cpp
+#include <bits/stdc++.h>
+#define REP(i, n) for (int i = 0; i < (int)(n); ++i)
+using namespace std;
+const double EPS = 1e-4;
+double calc(double ra, double rb, double s) {
+  double lb = abs(ra - rb);
+  double ub = ra + rb;
+  double tha, thb, sum;
+  REP(_, 80) {
+    double d = (lb + ub) / 2;
+    tha = acos((ra * ra + d * d - rb * rb) / (2.0 * d * ra));
+    thb = acos((rb * rb + d * d - ra * ra) / (2.0 * d * rb));
+    sum = ra * ra * tha + rb * rb * thb - ra * d * sin(tha);
+    if (sum > s) {
+      lb = d;
+    } else {
+      ub = d;
+    }
+  }
+  return ub;
+}
+double sq(double x) { return x * x; }
+bool judge(double x, double y, double r, double W, double H) {
+  return x - r > -EPS && x + r < W + EPS && y - r > -EPS && y + r < H + EPS;
+}
+bool solve(double W, double H, double sa, double sb, double sc, bool reversed) {
+  double ra = sqrt(sa / M_PI), rb = sqrt(sb / M_PI), xa = ra, ya = ra;
+  if (2.0 * ra > min(W, H) + EPS || 2.0 * rb > min(W, H) + EPS)
+    return false;
+  double D = calc(ra, rb, sc);
+  for (const double& xb : {ra, rb, W - rb}) {
+    double dy = sqrt(sq(D) - sq(xa - xb));
+    for (int sign = -1; sign <= 1; sign += 2) {
+      double yb = ya + sign * dy;
+      if (judge(xb, yb, rb, W, H)) {
+        printf("%.9f %.9f %.9f %.9f %.9f %.9f\n", reversed ? xb : xa, reversed ? yb : ya, reversed ? rb : ra, reversed ? xa : xb, reversed ? ya : yb, reversed ? ra : rb);
+        return true;
+      }
+    }
+  }
+  for (const double& yb : {ra, rb, H - rb}) {
+    double dx = sqrt(sq(D) - sq(ya - yb));
+    for (int sign = -1; sign <= 1; sign += 2) {
+      double xb = xa + sign * dx;
+      if (judge(xb, yb, rb, W, H)) {
+        printf("%.9f %.9f %.9f %.9f %.9f %.9f\n", reversed ? xb : xa, reversed ? yb : ya, reversed ? rb : ra, reversed ? xa : xb, reversed ? ya : yb, reversed ? ra : rb);
+        return true;
+      }
+    }
+  }
+  return false;
+}
+int main() {
+  double W, H, sa, sb, sc;
+  while (scanf("%lf %lf %lf %lf %lf", &W, &H, &sa, &sb, &sc) && W > 0) {
+    if (solve(W, H, sa, sb, sc, false) || solve(W, H, sb, sa, sc, true))
+      continue;
+    cout << "impossible" << endl;
+  }
+  return 0;
+}
+```

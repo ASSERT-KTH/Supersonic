@@ -1,0 +1,30 @@
+The provided code is a prime number calculator that uses the Sieve of Eratosthenes algorithm to generate a list of prime numbers up to a given limit. It then calculates the cumulative sum of prime numbers up to each index, and finally, it takes input from the user and prints the corresponding cumulative sum of prime numbers.
+
+While the code is functional, there are several opportunities for optimization:
+
+1. Inefficient Memory Usage:
+   - The `num` array has a fixed size of 1,000,000 elements, even though the code only uses elements up to the square root of 1,000,000. This results in inefficient memory usage.
+
+2. Redundant Computations:
+   - The loop to initialize the `num` array with 1s can be avoided by using the `memset` function to set all elements to 1.
+
+3. Inefficient Loop Bounds:
+   - The loop that calculates the cumulative sum of prime numbers can be optimized by starting the loop from index 0 instead of index 1. Additionally, the loop can be terminated at index 999,999 instead of 1,000,000 - 1.
+
+4. Compiler Optimization Hints:
+   - The use of compiler optimization flags or pragma directives can help the compiler generate more efficient code.
+
+Now, let's discuss each optimization step in detail:
+
+1. Inefficient Memory Usage:
+   - Instead of using a fixed-size array of 1,000,000 elements, we can dynamically allocate memory for the `num` array using the `malloc()` function. The size of the `num` array can be reduced to the square root of 1,000,000, as we only need to store prime numbers up to that limit.
+
+2. Redundant Computations:
+   - We can use the `memset()` function to set all elements of the `num` array to 1. This eliminates the need for a loop that iterates over the array and sets each element to 1.
+
+3. Inefficient Loop Bounds:
+   - The loop that calculates the cumulative sum of prime numbers can be optimized by starting the loop from index 0 instead of index 1. This allows us to avoid the `num[i + 1]` operation inside the loop.
+   - We can terminate the loop at index 999,999 instead of 1,000,000 - 1. This is because the cumulative sum of primes up to index 999,999 will give us the sum of prime numbers up to 1,000,000.
+
+4. Compiler Optimization Hints:
+   - We can use compiler optimization flags or pragma directives to instruct the compiler to optimize certain parts of the code. For example, we can use the `-O3` flag to enable aggressive optimizations.

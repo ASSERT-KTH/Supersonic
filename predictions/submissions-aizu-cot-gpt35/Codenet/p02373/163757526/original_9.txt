@@ -1,0 +1,96 @@
+This program finds the lowest common ancestor (LCA) of two nodes in a tree. The optimization can be done in the `build` function and the `lca` function.
+
+First, let's analyze the time complexity of the current program:
+- The `dfs` function has a time complexity of O(V + E), where V is the number of nodes and E is the number of edges in the tree.
+- The `build` function has a time complexity of O(N log N), where N is the total number of nodes in the tree.
+- The `lca` function has a time complexity of O(log N).
+
+To optimize the program for running time, we can improve the `build` function. Currently, it has a time complexity of O(N log N) because it iterates over each element in the `path` array multiple times. We can reduce this time complexity to O(N) by using a technique called "sparse table" or "range minimum query (RMQ)".
+
+The sparse table is a data structure that preprocesses the array to efficiently answer range minimum queries. It uses dynamic programming to build a table with each entry representing the minimum value in a range of the array. By using this data structure, we can reduce the time complexity of the `lca` function from O(log N) to O(1).
+
+To implement the sparse table, we need to modify the `build` function as follows:
+1. Calculate the value of `h` as the maximum power of 2 that is less than or equal to `n`.
+2. Initialize the `ST` array with the same size as the `path` array.
+3. Copy the values from the `path` array to the first row of the `ST` array.
+4. Build the sparse table using dynamic programming. For each row `i` (starting from 1) and each column `j` (starting from 0), calculate `ST[i][j]` as the minimum of `ST[i-1][j]` and `ST[i-1][j + (1 << (i-1))]`.
+5. The `build` function is now complete.
+
+Next, we need to modify the `lca` function to use the sparse table for efficient LCA calculations. Currently, it iterates over the `ST` array to find the minimum value within a range. We can replace this iteration with a direct query to the sparse table.
+
+To implement this optimization, we need to modify the `lca` function as follows:
+1. Calculate the values of `l` and `r` as the indices of `u` and `v` in the `idx_in_path` array.
+2. Swap `l` and `r` if `l` is greater than `r`.
+3. Calculate the value of `p` as the maximum power of 2 that is less than or equal to `r - l + 1`.
+4. Return the minimum of `ST[p][l]` and `ST[p][r - (1 << p) + 1]`.
+
+Here is the optimized program:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+#define fi first
+#define se second
+typedef pair<int, int> ii;
+typedef vector<int> vi;
+const int MAXN = 100005;
+const int LOGN = 20;
+int idx_in_path[MAXN];
+ii path[MAXN << 1];
+vi adjList[MAXN];
+int path_size = 0;
+void dfs(int u, int depth = 0) {
+  idx_in_path[u] = path_size;
+  path[path_size++] = ii(depth, u);
+  for (int v : adjList[u]) {
+    dfs(v, depth + 1);
+    path[path_size++] = ii(depth, u);
+  }
+}
+ii ST[LOGN][MAXN << 1];
+void build(int n) {
+  int h = 31 - __builtin_clz(n);
+  for (int i = 0; i < n; i++)
+    ST[0][i] = path[i];
+  for (int i = 1; i <= h; i++)
+    for (int j = 0; j + (1 << i) <= n; j++)
+      ST[i][j] = min(ST[i - 1][j], ST[i - 1][j + (1 << (i - 1))]);
+}
+int lca(int u, int v) {
+  int l = idx_in_path[u], r = idx_in_path[v];
+  if (l > r)
+    swap(l, r);
+  int p = 31 - __builtin_clz(r - l + 1);
+  return min(ST[p][l], ST[p][r - (1 << p) + 1]).se;
+}
+int main() {
+  int num_nodes;
+  scanf("%d", &num_nodes);
+  for (int u = 0; u < num_nodes; u++) {
+    int num_neighbors;
+    scanf("%d", &num_neighbors);
+    for (int i = 0; i < num_neighbors; i++) {
+      int v;
+      scanf("%d", &v);
+      adjList[u].push_back(v);
+    }
+  }
+  dfs(0);
+  build(path_size);
+  int num_queries;
+  scanf("%d", &num_queries);
+  for (int i = 0; i < num_queries; i++) {
+    int u, v;
+    scanf("%d%d", &u, &v);
+    printf("%d\n", lca(u, v));
+  }
+  return 0;
+}
+```
+
+The optimization steps are as follows:
+
+1. In the `build` function, calculate the value of `h` as the maximum power of 2 that is less than or equal to `n`. This reduces the number of iterations in the outer loop from `n` to `h`.
+2. In the `lca` function, calculate the value of `p` as the maximum power of 2 that is less than or equal to `r - l + 1`. This reduces the number of iterations in the inner loop from `r - l + 1` to `p`.
+3. In the `lca` function, change the indexing of `ST[p][r - (1 << p)]` to `ST[p][r - (1 << p) + 1]`. This ensures that the range includes both `l` and `r`.
+4. Replace the `ceil(log2(n + 1))` calculation in the `build` function with `31 - __builtin_clz(n)`. This calculates the logarithm base 2 of `n` in an efficient way.

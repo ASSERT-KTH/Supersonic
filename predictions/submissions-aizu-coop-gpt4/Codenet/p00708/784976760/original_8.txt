@@ -1,0 +1,98 @@
+This code is a simulation of Kruskal's algorithm for finding the minimum spanning tree. However, there are a number of places where it can be optimized:
+
+1. **Code Analysis:**
+- The vector `v` is a 2D vector that stores four values for each node. This can be optimized by using a struct, which would make the code more readable and allow for better memory management.
+- The parent array is being continuously updated using the root function, which is inefficient and can be optimized using union by rank.
+- The `node` array is not necessary; instead, a priority queue can be used to get the minimum edge in O(1) time instead of sorting the array in O(nlogn) time.
+- The `unite` function is checking if the roots of two nodes are the same, which is unnecessary as this check can be done while adding edges to the priority queue.
+
+2. **Optimization Strategy:**
+- Use a struct for node data instead of a 2D vector.
+- Use union by rank and path compression for efficient union-find operations.
+- Use a priority queue for storing edges sorted by their weights.
+- Avoid the check for same root in `unite` function.
+
+3. **Step-by-Step Explanation:**
+- First, change the 2D vector `v` to a vector of struct `Node`. This struct will have four double variables, `x`, `y`, `z` and `r`. This will make the code more readable and also optimize memory usage as the size will be fixed for each node.
+- Implement union by rank and path compression. Union by rank will always attach the smaller depth tree under the root of the deeper tree, thus the time complexity will be improved to O(logn). Path compression will make each found node point directly to the root, thus flattening the structure of the tree and reducing the time complexity.
+- Use a priority queue for storing edges sorted by their weights. This will allow us to get the minimum edge in O(1) time instead of sorting the array in O(nlogn) time.
+- Avoid the check for same root in `unite` function, as it is unnecessary. We can check this while adding edges to the priority queue.
+
+4. **Optimized Code Block:**
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <cmath>
+using namespace std;
+#define M 9999
+
+struct Node {
+    double x, y, z, r;
+};
+
+struct Edge {
+    double w;
+    int a, b;
+};
+
+struct UnionFind {
+    vector<int> parent, rank;
+    UnionFind(int n): parent(n), rank(n, 0) {
+        for(int i = 0; i < n; ++i) parent[i] = i;
+    }
+    int find(int x) {
+        if(x != parent[x]) parent[x] = find(parent[x]);
+        return parent[x];
+    }
+    void unite(int x, int y) {
+        int rootX = find(x);
+        int rootY = find(y);
+        if(rank[rootX] > rank[rootY]) {
+            parent[rootY] = rootX;
+        } else {
+            parent[rootX] = rootY;
+            if(rank[rootX] == rank[rootY]) ++rank[rootY];
+        }
+    }
+};
+
+auto comp = [](Edge a, Edge b) { return a.w > b.w; };
+priority_queue<Edge, vector<Edge>, decltype(comp)> pq(comp);
+
+int main() {
+    int n;
+    while(cin >> n && n) {
+        vector<Node> nodes(n);
+        for(int i = 0; i < n; ++i)
+            cin >> nodes[i].x >> nodes[i].y >> nodes[i].z >> nodes[i].r;
+        
+        UnionFind uf(n);
+        while(!pq.empty()) pq.pop();
+
+        for(int i = 0; i < n; ++i) {
+            for(int j = i + 1; j < n; ++j) {
+                double dist = sqrt(pow(nodes[i].x - nodes[j].x, 2) + 
+                                   pow(nodes[i].y - nodes[j].y, 2) + 
+                                   pow(nodes[i].z - nodes[j].z, 2)) - 
+                                   nodes[i].r - nodes[j].r;
+                if(dist <= 0) uf.unite(i, j);
+                else pq.push({dist, i, j});
+            }
+        }
+        double res = 0;
+        while(!pq.empty()) {
+            Edge e = pq.top(); pq.pop();
+            if(uf.find(e.a) != uf.find(e.b)) {
+                res += e.w;
+                uf.unite(e.a, e.b);
+            }
+        }
+        printf("%.3f\n", res);
+    }
+    return 0;
+}
+```
+
+This optimized version of the code improves readability and performance. The main trade-off is added complexity due to the introduction of struct and priority queue. However, it's a worthwhile trade-off considering the performance improvement.

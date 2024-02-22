@@ -1,0 +1,125 @@
+To optimize the given C++ program, I would make the following modifications:
+
+1. Remove unnecessary header files: The program includes the header file `<bits/stdc++.h>`, which includes a large number of standard library headers. This can increase the compile time and memory usage. Instead, we can include only the necessary headers.
+
+2. Avoid using macros: The program uses macros for loop iterations and comparisons. Macros can lead to unexpected behavior and can be difficult to debug. Instead, we can use inline functions or lambda functions for loop iterations.
+
+3. Simplify the `make_v` function: The `make_v` function is used to create a vector with a specified size. We can simplify this function by using the vector constructor.
+
+4. Remove unnecessary overload functions: The overloaded `fill_v` function is not used in the program. We can remove it to reduce the code complexity.
+
+5. Remove unnecessary operator overloads: The operator overloads for printing containers are not used in the program. We can remove them to reduce the code complexity.
+
+6. Remove unnecessary constants: The constants `INF`, `LLINF`, and `MOD` are not used in the program. We can remove them to reduce the code complexity.
+
+7. Avoid using `using namespace std;`: Using the `using namespace std;` directive can lead to naming conflicts and can make the code less readable. Instead, we can use the `std::` prefix for standard library functions and types.
+
+8. Avoid using global variables: The variables `u` and `W` are declared as global variables. Using global variables can make the code less modular and harder to understand. Instead, we can pass them as parameters to the `solve` function.
+
+9. Use `cin` and `cout` instead of `scanf` and `printf`: The program uses `scanf` and `printf` for input and output. Using `cin` and `cout` can provide type safety and make the code more readable.
+
+10. Remove unnecessary whitespace: The program includes unnecessary whitespace, which can make the code less readable. We can remove the extra whitespace to improve the code readability.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <functional>
+#include <limits>
+
+template <typename T, typename Compare = std::less<T>>
+std::vector<std::vector<T>> divide_and_conquer(int h, int w, const std::function<T(int, int)> &f, const Compare &comp = Compare()) {
+  const T inf = std::numeric_limits<T>::max() / 10;
+  std::vector<std::vector<T>> dp(h, std::vector<T>(w, inf));
+  std::function<void(int, int, int, int, int)> dfs = [&](int i, int l, int r, int optl, int optr) {
+    if (l > r)
+      return;
+    int mid = (l + r) / 2, optm = -1;
+    for (int j = optl; j <= std::min(mid, optr); j++) {
+      T cost = dp[i][j] + f(j + 1, mid);
+      if (comp(cost, dp[i + 1][mid])) {
+        dp[i + 1][mid] = cost;
+        optm = j;
+      }
+    }
+    dfs(i, l, mid - 1, optl, optm);
+    dfs(i, mid + 1, r, optm, optr);
+  };
+  for (int i = 0; i < w; i++) dp[0][i] = f(0, i);
+  for (int i = 1; i < h; i++) {
+    for (int j = 0; j < w; j++) {
+      dp[i][j] = inf;
+    }
+  }
+  for (int i = 0; i < h - 1; i++) dfs(i, 0, w - 1, 0, w - 1);
+  return dp;
+}
+
+namespace cf190div1E {
+void solve() {
+  int n, k;
+  std::cin >> n >> k;
+  std::vector<std::vector<int>> u(n, std::vector<int>(n));
+  std::vector<std::vector<int>> W(n, std::vector<int>(n));
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      u[i][j] = std::cin.get() - '0';
+      std::cin.ignore();
+    }
+  }
+  
+  for (int w = 1; w <= n; w++) {
+    for (int l = 0, r = l + w; r < n; ++l, ++r) {
+      W[l][r] = u[l][r];
+      if (w >= 2)
+        W[l][r] += W[l + 1][r] + W[l][r - 1] - W[l + 1][r - 1];
+    }
+  }
+  
+  auto f = [&](int i, int j) { return W[i][j]; };
+  auto dp = divide_and_conquer<int>(k, n, f);
+  std::cout << dp[k - 1][n - 1] << std::endl;
+}
+} // namespace cf190div1E
+
+namespace cf438F {
+void solve() {
+  long long N, K;
+  std::cin >> N >> K;
+  std::vector<long long> A(N);
+
+  for (int i = 0; i < N; i++) {
+    std::cin >> A[i];
+    --A[i];
+  }
+  
+  long long L = 0, R = 0, sum = 0;
+  std::vector<long long> appear(100010);
+  
+  auto add = [&](long long idx) { sum += appear[A[idx]]++; };
+  auto del = [&](long long idx) { sum -= --appear[A[idx]]; };
+  
+  std::function<long long(long long, long long)> f = [&](long long l, long long r) {
+    while (L > l)
+      add(--L);
+    while (L < l)
+      del(L++);
+    while (R < r)
+      add(++R);
+    while (R > r)
+      del(R--);
+    return sum;
+  };
+  
+  auto dp = divide_and_conquer<long long>(K, N, f);
+  std::cout << dp[K - 1][N - 1] << std::endl;
+}
+} // namespace cf438F
+
+int main(void) {
+  cf438F::solve();
+  return 0;
+}
+```

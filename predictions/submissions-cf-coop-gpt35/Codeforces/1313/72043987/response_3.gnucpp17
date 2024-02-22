@@ -1,0 +1,95 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+#define COUT(x) std::cout << #x << " = " << (x) << " (L" << __LINE__ << ")" << std::endl
+
+void printvec(const std::vector<int>& v) {
+    for (auto x : v) {
+        std::cout << x << " ";
+    }
+    std::cout << std::endl;
+}
+
+void printtree(const std::vector<std::vector<int>>& tree) {
+    for (int i = 0; i < tree.size(); ++i) {
+        std::cout << i + 1 << ": ";
+        printvec(tree[i]);
+    }
+}
+
+void printmap(const std::map<int, int>& mp) {
+    for (auto x : mp) {
+        std::cout << x.first << "=>" << x.second << std::endl;
+    }
+}
+
+bool chmax(int& a, int b) {
+    if (a < b) {
+        a = b;
+        return true;
+    }
+    return false;
+}
+
+bool chmin(int& a, int b) {
+    if (a > b) {
+        a = b;
+        return true;
+    }
+    return false;
+}
+
+int main(int argc, char** argv) {
+    std::cin.tie(NULL);
+    std::cout.tie(NULL);
+    std::ios_base::sync_with_stdio(false);
+
+    int n, m, k;
+    std::cin >> n >> m >> k;
+    std::vector<std::vector<int>> t(2 * n, std::vector<int>(3));
+    for (int i = 0; i < n; ++i) {
+        int l, r;
+        std::cin >> l >> r;
+        t[2 * i] = { l, 1, i };
+        t[2 * i + 1] = { r + 1, -1, i };
+    }
+    std::sort(t.begin(), t.end());
+    std::vector<int> states(1 << k, 0);
+    std::vector<int> newstates(1 << k, 0);
+    int sz = 0;
+    int pi = t[0][2], ni;
+    int pp = t[0][0], np;
+    std::vector<int> streams;
+    for (int i = 0; i < 2 * n; ++i) {
+        ni = t[i][2];
+        np = t[i][0];
+        if (t[i][1] == -1) {
+            --sz;
+            int gi = 0;
+            while (streams[gi] != ni) {
+                ++gi;
+            }
+            for (int b = 0; b < (1 << sz); ++b) {
+                int exp1 = ((b >> gi) << (gi + 1)) + (b % (1 << gi));
+                int exp2 = exp1 + (1 << gi);
+                newstates[b] = std::max(states[exp1] + (__builtin_popcount(exp1) % 2) * (np - pp),
+                    states[exp2] + (__builtin_popcount(exp2) % 2) * (np - pp));
+            }
+            states = newstates;
+            streams.erase(streams.begin() + gi);
+        }
+        else {
+            streams.push_back(ni);
+            for (int b = 0; b < (1 << sz); ++b) {
+                newstates[b] = states[b] + (__builtin_popcount(b) % 2) * (np - pp);
+                newstates[b + (1 << sz)] = states[b] + (__builtin_popcount(b) % 2) * (np - pp);
+            }
+            states = newstates;
+            ++sz;
+        }
+        pi = ni;
+        pp = np;
+    }
+    std::cout << states[0] << " ";
+}

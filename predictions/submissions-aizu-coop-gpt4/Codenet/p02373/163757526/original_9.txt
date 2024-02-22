@@ -1,0 +1,91 @@
+Before proposing optimizations, let's first understand the existing code. This code is designed to solve the Lowest Common Ancestor (LCA) problem in a tree using a Sparse Table data structure. It reads a tree from the standard input, computes its Euler path (dfs function), builds a Sparse Table (build function), and then answers Lowest Common Ancestor queries.
+
+1. Code Analysis:
+
+The code seems to be well-optimized in terms of data structures and algorithms. However, there are a few areas where it can be improved:
+
+- Input/Output operations: The use of scanf/printf for input/output might be slower compared to other methods in C/C++. 
+- Use of STL containers: The code makes extensive use of STL containers like vector and pair. While these are indeed very handy, they might impose a slight overhead in terms of performance.
+- Use of global variables: The code makes extensive use of global variables. While it's not directly related to performance, it does affect code readability and maintainability.
+
+2. Optimization Strategy:
+
+- I/O operations: Instead of using scanf/printf, we could use faster I/O operations.
+- Use of arrays instead of vectors: To avoid the overhead of STL containers, we can consider using arrays. 
+- Reducing the use of global variables: This will make the code more readable and maintainable. 
+
+3. Step-by-Step Explanation:
+
+- I/O operations: The current method of using scanf and printf is generally slower than using cin and cout combined with ios_base::sync_with_stdio(false) and cin.tie(NULL). This is because the latter method turns off synchronization between the C and C++ standard streams, which can significantly speed up I/O operations.
+- Use of arrays instead of vectors: While STL containers like vector and pair are very convenient to use, they have some overhead associated with their use. By replacing them with C-style arrays, we can potentially gain some performance improvement.
+- Reducing the use of global variables: While this doesn't directly impact performance, it does make the code easier to read and maintain. It's generally a good practice to limit the use of global variables whenever possible.
+
+4. Optimized Code Block:
+
+Please note that the optimized code might be unsafe and less readable than the original code. It would be best to only use it in a competitive programming context, where the primary concern is speed. 
+
+```cpp
+#include <iostream>
+#include <algorithm>
+#include <cmath>
+using namespace std;
+typedef pair<int, int> ii;
+const int MAXN = 100005;
+const int LOGN = 20;
+int idx_in_path[MAXN];
+ii path[MAXN << 1];
+int adjList[MAXN][MAXN];
+int path_size = 0;
+void dfs(int u, int depth = 0, int parent = -1) {
+  idx_in_path[u] = path_size;
+  path[path_size++] = ii(depth, u);
+  for (int v = 0; v < MAXN; v++) {
+    if(adjList[u][v] && v != parent){
+      dfs(v, depth + 1, u);
+      path[path_size++] = ii(depth, u);
+    }
+  }
+}
+ii ST[LOGN][MAXN << 1];
+void build(int n) {
+  int h = ceil(log2(n + 1));
+  for (int i = 0; i < n; i++)
+    ST[0][i] = path[i];
+  for (int i = 1; i < h; i++)
+    for (int j = 0; j + (1 << i) <= n; j++)
+      ST[i][j] = min(ST[i - 1][j], ST[i - 1][j + (1 << (i - 1))]);
+}
+int lca(int u, int v) {
+  int l = idx_in_path[u], r = idx_in_path[v];
+  if (l > r)
+    swap(l, r);
+  r++;
+  int p = 31 - __builtin_clz(r - l);
+  return min(ST[p][l], ST[p][r - (1 << p)]).second;
+}
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  int num_nodes;
+  cin >> num_nodes;
+  for (int u = 0; u < num_nodes; u++) {
+    int num_neighbors;
+    cin >> num_neighbors;
+    for (int i = 0; i < num_neighbors; i++) {
+      int v;
+      cin >> v;
+      adjList[u][v] = 1;
+    }
+  }
+  dfs(0);
+  build(path_size);
+  int num_queries;
+  cin >> num_queries;
+  for (int i = 0; i < num_queries; i++) {
+    int u, v;
+    cin >> u >> v;
+    cout << lca(u, v) << "\n";
+  }
+  return 0;
+}
+```

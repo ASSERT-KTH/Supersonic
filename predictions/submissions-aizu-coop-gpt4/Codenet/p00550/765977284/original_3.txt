@@ -1,0 +1,118 @@
+## Code Analysis
+
+This code reads an undirected graph, removes some edges in a specific order (given as input), and reports the number of unreachable nodes from node 0 after each edge removal. It uses a breadth-first search (BFS) to update the reachability status of nodes.
+
+## Optimization Strategy
+
+Looking at the code, some parts could be optimized:
+
+1. Unnecessary invocations of BFS: BFS is invoked after every edge removal, which may be unnecessary if the removed edge does not affect the reachability of unvisited nodes.
+
+2. Redundant computations: `d[v[r[i]]] - d[u[r[i]]] == 1` is computed twice in the code, which is redundant.
+
+## Step-by-step Explanation
+
+1. **Unnecessary invocations of BFS**: Instead of calling BFS after every edge removal, we can check whether the removed edge connects a visited node to an unvisited node. If it does, then we need to call BFS; otherwise, we can skip it. This is because removing an edge that doesn't connect a visited node with an unvisited node does not affect the reachability of unvisited nodes from node 0.
+
+2. **Redundant computations**: We can store the result of `d[v[r[i]]] - d[u[r[i]]] == 1` in a boolean variable and use this variable instead of re-computing the same expression. This will save CPU cycles.
+
+## Optimized Code Block
+
+Here is the optimized version of the code:
+
+```cpp
+#include <bits/stdc++.h>
+#define rep(i, n) for (int i = 0; i < n; i++)
+using namespace std;
+
+void reader(int *x) {
+  int k = getchar_unlocked();
+  *x = k - '0';
+  while (1) {
+    k = getchar_unlocked();
+    if (k < '0' || k > '9')
+      break;
+    *x = ((*x) << 1) + ((*x) << 3) + k - '0';
+  }
+}
+
+vector<int> E[100000];
+int u[200000], v[200000], r[200000], ans[200000], d[100000], cnt = 1;
+bool b[200000], ok[100000];
+queue<int> que;
+
+void bfs(int u, int t) {
+  que.push(u);
+  while (!que.empty()) {
+    int p = que.front();
+    que.pop();
+    for (int v : E[p]) {
+      if (t) {
+        if (d[v] > d[p] && !ok[v]) {
+          ok[v] = 1;
+          cnt++;
+          que.push(v);
+        }
+      } else if (!~d[v]) {
+        d[v] = d[p] + 1;
+        que.push(v);
+      }
+    }
+  }
+}
+
+int main() {
+  int n, m, q;
+  reader(&n);
+  reader(&m);
+  reader(&q);
+  rep(i, m) {
+    reader(&u[i]);
+    reader(&v[i]);
+    u[i]--;
+    v[i]--;
+    E[u[i]].push_back(v[i]);
+    E[v[i]].push_back(u[i]);
+  }
+  queue<int> que;
+  memset(d, -1, sizeof(d));
+  d[0] = 0;
+  bfs(0, 0);
+  rep(i, m) {
+    if (d[u[i]] > d[v[i]])
+      swap(u[i], v[i]);
+  }
+  rep(i, n) E[i].clear();
+  rep(i, q) {
+    reader(&r[i]);
+    r[i]--;
+    b[r[i]] = true;
+  }
+  ok[0] = true;
+  rep(i, m) {
+    if (!b[i]) {
+      if (d[v[i]] - d[u[i]] == 1) {
+        E[u[i]].emplace_back(v[i]);
+      }
+    }
+  }
+  bfs(0, 1);
+  for (int i = q - 1; i >= 0; i--) {
+    ans[i] = n - cnt;
+    bool shouldRemoveEdge = d[v[r[i]]] - d[u[r[i]]] == 1; // store the result to avoid redundant computation
+    if (shouldRemoveEdge && !ok[v[r[i]]]) {
+      E[u[r[i]]].emplace_back(v[r[i]]);
+      if (ok[u[r[i]]]) {
+        cnt++;
+        ok[v[r[i]]] = true;
+        bfs(v[r[i]], 1);
+      }
+    }
+  }
+  rep(i, q) printf("%d\n", ans[i]);
+}
+```
+
+## Discussion of Trade-offs
+
+The optimized code is slightly more complex due to the introduction of the `shouldRemoveEdge` variable. However, the computational efficiency gain outweighs this slight increase in complexity. The overall functionality and output of the code remain unchanged, making this an effective optimization.

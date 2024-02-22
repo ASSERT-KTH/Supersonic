@@ -1,0 +1,89 @@
+Optimizing this C/C++ program involves several steps, with the goal of improving not just running time but also memory usage. Here is a step-by-step process on how we can optimize the given program:
+
+1. Minimize include headers: The "#include <bits/stdc++.h>" line is not recommended because it includes more libraries than needed, which can slow down the compilation process. Instead, we should only include the necessary libraries, such as <iostream>, <vector>, <algorithm>, etc.
+
+2. Avoid using "using namespace std;": This line can lead to name clashes because it imports all symbols from the std namespace into the global namespace. It is better to use specific items from the std namespace when needed.
+
+3. Avoid unnecessary type definitions: The typedefs for "ll" and "ull" are not necessary and may cause confusion. It's better to use "long long" and "unsigned long long" directly.
+
+4. Avoid defining unnecessary constants: Constants like "mod", "inf", and "maxn" are defined but not used in the program. Removing these can help reduce memory usage.
+
+5. Reduce the use of macros: Macros like "pb", "fi", "se", "rep", and "per" can make the code harder to read and debug. It's better to use the actual commands and loops directly.
+
+6. Avoid unnecessary global random number generator: The mt19937 generator "rng" is global but only used once. It's better to declare it locally where it's needed.
+
+7. Optimize loops: Some loops can be optimized. For example, the nested loop calculating "a[i]" could be simplified by using bitwise operations.
+
+Given these steps, here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <chrono>
+#include <random>
+
+using std::cin;
+using std::cout;
+using std::endl;
+using std::vector;
+
+int main() {
+  std::ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  int n, m, p;
+  cin >> n >> m >> p;
+  vector<long long> a(n + 1);
+  for (int i = 1; i <= n; i++) {
+    for (int j = 0; j < m; j++) {
+      char c;
+      cin >> c;
+      if (c == '1')
+        a[i] |= (1ll << j);
+    }
+  }
+  vector<int> id(n + 1);
+  std::iota(id.begin(), id.end(), 0);
+  std::shuffle(id.begin() + 1, id.end(), std::mt19937(std::chrono::steady_clock::now().time_since_epoch().count()));
+  long long ans = 0;
+  int num = 0;
+  for (int i = 1; i <= std::min(200, n); i++) {
+    vector<int> one;
+    for (int j = 0; j < m; j++) {
+      if (a[id[i]] & (1ll << j))
+        one.push_back(j);
+    }
+    vector<int> dp(1 << one.size());
+    for (int j = 1; j <= n; j++) {
+      int tmp = 0;
+      for (int k = 0; k < one.size(); k++) {
+        if (a[j] & (1ll << one[k]))
+          tmp |= (1 << k);
+      }
+      dp[tmp]++;
+    }
+    for (int j = 0; j < one.size(); j++) {
+      for (int k = 0; k < (1 << one.size()); k++) {
+        if (k & (1 << j))
+          dp[k ^ (1 << j)] += dp[k];
+      }
+    }
+    for (int k = 0; k < (1 << one.size()); k++) {
+      if (dp[k] >= (n + 1) / 2 && __builtin_popcount(k) > num) {
+        num = __builtin_popcount(k);
+        ans = 0;
+        for (int j = 0; j < one.size(); j++) {
+          if (k & (1 << j))
+            ans |= (1ll << one[j]);
+        }
+      }
+    }
+  }
+  for (int i = 0; i < m; i++) { 
+    cout << ((ans >> i) & 1); 
+  }
+  cout << '\n';
+  return 0;
+}
+```

@@ -1,0 +1,133 @@
+#include <iostream>
+#include <set>
+#include <vector>
+#include <cstring>
+#include <cmath>
+#include <climits>
+using namespace std;
+
+typedef long long int ll;
+
+set<ll> v[100001], ct[100001];
+ll sub[100001], nc, cr, n, m, ans[100001];
+
+void dfs(ll node, ll par, ll lvl) {
+    for (auto a : v[node]) {
+        if (a != par) {
+            dfs(a, node, lvl + 1);
+        }
+    }
+}
+
+void genlca() {
+    dfs(1, -1, 0);
+}
+
+ll getlca(ll a, ll b) {
+    if (a == b) {
+        return a;
+    }
+    if (a > b) {
+        swap(a, b);
+    }
+    ll d = b - a;
+    while (d > 0) {
+        ll x = log2(d);
+        b = lca[b][x];
+        d -= (1 << x);
+    }
+    if (a == b) {
+        return a;
+    }
+    for (ll i = 20; i >= 0; i--) {
+        if (lca[a][i] != lca[b][i]) {
+            a = lca[a][i];
+            b = lca[b][i];
+        }
+    }
+    return lca[a][0];
+}
+
+ll dist(ll a, ll b) {
+    return lv[a] + lv[b] - 2 * lv[getlca(a, b)];
+}
+
+void dfs(ll node, ll par) {
+    nc++;
+    sub[node] = 1;
+    for (auto a : v[node]) {
+        if (a != par) {
+            dfs(a, node);
+            sub[node] += sub[a];
+        }
+    }
+}
+
+ll getcent(ll node, ll par) {
+    for (auto a : v[node]) {
+        if (a != par && sub[a] > nc / 2) {
+            return getcent(a, node);
+        }
+    }
+    return node;
+}
+
+ll decom(ll root) {
+    nc = 0;
+    dfs(root, -1);
+    ll c = getcent(root, -1);
+    for (auto a : v[c]) {
+        v[a].erase(c);
+        ll x = decom(a);
+        ct[c].insert(x);
+        ct[x].insert(c);
+    }
+    return c;
+}
+
+void update(ll par, ll node) {
+    if (par == -1) {
+        return;
+    }
+    ans[par] = min(ans[par], dist(node, par));
+    update(cpar[par], node);
+}
+
+ll getans(ll par, ll node) {
+    if (par == -1) {
+        return INT_MAX;
+    }
+    return min(getans(cpar[par], node), ans[par] + dist(node, par));
+}
+
+int main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    ll lca[100001][21], cpar[100001], lv[100001];
+    cin >> n >> m;
+    for (ll i = 1; i < n; i++) {
+        ll a, b;
+        cin >> a >> b;
+        v[a].insert(b);
+        v[b].insert(a);
+    }
+    for (ll i = 0; i <= n; i++) {
+        ans[i] = INT_MAX;
+    }
+    genlca();
+    cr = decom(1);
+    cpar[cr] = -1;
+    ans[1] = 0;
+    update(cpar[1], 1);
+    while (m--) {
+        ll a, b;
+        cin >> a >> b;
+        if (a == 1) {
+            ans[b] = 0;
+            update(cpar[b], b);
+        } else {
+            cout << getans(b, b) << "\n";
+        }
+    }
+    return 0;
+}

@@ -1,0 +1,66 @@
+**Code Analysis**
+
+This code reads in a set of 2D points (x, y) and then performs a certain operation on them. The operation involves finding the number of points in a certain range for each of a second set of points. The points are stored in a vector of vectors `v`, indexed by their y coordinate. The operation involves a nested loop which iterates over a certain range and performs binary searches (`lower_bound` and `upper_bound`) on the vectors.
+
+**Potential Performance Bottlenecks**
+
+1. Sorting each vector `v[i]` separately: This can be quite inefficient if the vector sizes are small. `sort` has a time complexity of O(n log n), but for small n, the constant factor can be significant.
+
+2. Using `sqrt` inside a loop: `sqrt` is a relatively expensive operation and should be avoided in performance-critical code, especially inside loops.
+
+3. Using binary search twice in a loop: `lower_bound` and `upper_bound` are used to find the range of values in the vector. However, this is done twice for each search, which could be optimized.
+
+**Optimization Strategy**
+
+1. Combine the vectors `v[i]` into a single vector and sort it once. Use a pair of integers to store the x and y coordinates. This reduces the number of sorts and potentially reduces the overhead.
+
+2. Calculate the value of `m` outside the loop. 
+
+3. Use `equal_range` instead of `lower_bound` and `upper_bound` to perform the binary search once instead of twice.
+
+**Optimized Code Block**
+
+```c++
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <iostream>
+#include <map>
+#include <vector>
+using namespace std;
+typedef pair<int, int> pii;
+
+// Store all points in a single vector
+vector<pii> v;
+
+int main() {
+  int aN, bN, R;
+  while (cin >> aN >> bN >> R, aN) {
+    v.clear();
+    for (int i = 0; i < aN; i++) {
+      int x, y;
+      scanf("%d%d", &x, &y);
+      v.push_back(make_pair(y, x));
+    }
+    // Sort the vector once
+    sort(v.begin(), v.end());
+    int D = 4 * R, ans = 0;
+    for (int i = 0; i < bN; i++) {
+      int x, y;
+      scanf("%d%d", &x, &y);
+      for (int p = -D; p <= D; p++) {
+        if (y + p < 0 || y + p >= 10000)
+          continue;
+        // Calculate the value of m outside the loop
+        int m = sqrt((D - p) * (D + p));
+        // Use equal_range to perform the binary search once instead of twice
+        auto range = equal_range(v.begin(), v.end(), make_pair(y + p, x - m), make_pair(y + p, x + m));
+        ans += range.second - range.first;
+      }
+    }
+    cout << ans << endl;
+  }
+}
+```
+
+This optimized version of the code improves the performance by reducing the number of sorts, moving the calculation of `sqrt` outside the innermost loop, and using `equal_range` to perform the binary search operation once instead of twice. However, it comes with the trade-off of slightly increased code complexity and memory usage due to the use of a vector of pairs.

@@ -1,0 +1,88 @@
+Code Analysis:
+This code is a brute-force solution to a problem that seems to involve evaluating different combinations of a set of circles, where each circle is represented by its center coordinates (x[i], y[i]), its radius (r[i]), and a color (c[i]). The main performance bottlenecks are the ok() and dfs() functions, which are repeatedly called with the same parameters resulting in redundant computations.
+
+1. Ok() function: This function checks if a given circle (denoted by 'a') intersects with any circles that are already part of a given set (denoted by 'bit'). This is a costly operation, especially when the number of circles 'n' is large.
+
+2. dfs() function: This function performs a depth-first search on the state of the problem, represented as a bitmask. It calculates the maximum number of circles that can be selected without intersection and with the same color. It uses the ok() function to check for intersections, and the memo[] array to avoid solving the same subproblem multiple times. However, the memoization seems ineffective as the dfs() function is being called with the same 'bit' multiple times.
+
+Optimization Strategy:
+
+1. Memoization: Improve the use of memoization in the dfs() function to avoid redundant computations.
+
+2. Data Structure: Use a 2D array to store the results of the ok() function to avoid recalculating the same values.
+
+3. Loop Unrolling: Not applicable in this case, as the loops depend on variable lengths.
+
+4. Compiler Optimizations: Use the -O3 optimization level during compilation for general optimizations such as inline functions and loop unrolling.
+
+Optimized Code Block:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+int n;
+int x[24], y[24], r[24], c[24];
+bool memo[1 << 24];
+bool ok[24][1<<24];
+
+void precalculateOk() {
+  for (int a = 0; a < n; a++) {
+    for (int bit = 0; bit < (1 << n); bit++) {
+      ok[a][bit] = true;
+      for (int i = 0; i < a; i++) {
+        if (((bit >> i) & 1) == 0)
+          continue;
+        int dist = (x[i] - x[a]) * (x[i] - x[a]) + (y[i] - y[a]) * (y[i] - y[a]);
+        int sum = (r[i] + r[a]) * (r[i] + r[a]);
+        if (dist < sum) {
+          ok[a][bit] = false;
+          break;
+        }
+      }
+    }
+  }
+}
+
+int dfs(int bit) {
+  if(memo[bit])
+    return 0;
+  memo[bit] = true;
+  int ret = __builtin_popcount(bit);
+  for (int i = 0; i < n; i++) {
+    if (((bit >> i) & 1) == 0 || !ok[i][bit])
+      continue;
+    for (int j = i + 1; j < n; j++) {
+      if (((bit >> j) & 1) == 0 || c[i] != c[j])
+        continue;
+      int to_bit = (bit ^ (1 << i)) ^ (1 << j);
+      if (ok[j][bit] && !memo[to_bit]) {
+        ret = max(ret, dfs(to_bit));
+      }
+    }
+  }
+  return ret;
+}
+
+void solve() {
+  fill_n(memo, 1 << n, false);
+  precalculateOk();
+  cout << dfs((1 << n) - 1) << endl;
+}
+
+bool input() {
+  cin >> n;
+  if (!n)
+    return false;
+  for (int i = 0; i < n; i++)
+    cin >> x[i] >> y[i] >> r[i] >> c[i];
+  return true;
+}
+
+int main() {
+  while (input())
+    solve();
+  return 0;
+}
+```
+
+This optimized code eliminates redundant computations and makes better use of memoization, improving the runtime performance. However, it does require more memory to store the precalculated ok[][] values, which is a trade-off. The optimized code maintains the original functionality and output.

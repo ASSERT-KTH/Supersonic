@@ -1,0 +1,81 @@
+There are several optimizations that can be made to this code:
+
+1. **Remove unused types and constants:** The code contains several unused types (Plane, Line, LineSeg, Circle) and constants (EPS, INF). These can be removed to reduce memory usage.
+
+2. **Avoid repeating computations:** The ccwise function computes cross_prod(b, c) and dot_prod(b, c) multiple times. Instead, we can compute them once and store their values in temporary variables.
+
+3. **Avoid unnecessary object creation:** In the testcase_ends function, we create Points A, B, C, and P. However, we only use these points once, so we can pass their coordinates directly to the ccwise function.
+
+4. **Minimize I/O operations:** The testcase_ends function uses scanf and printf for input and output. These functions are quite slow, so we can replace them with faster alternatives: std::cin and std::cout.
+
+Here's the optimized code:
+
+```cpp
+#include <complex>
+#include <iostream>
+using namespace std;
+using Point = complex<double>;
+
+namespace std {
+bool operator<(const Point &a, const Point &b) {
+  return real(a) != real(b) ? real(a) < real(b) : imag(a) < imag(b);
+}
+} // namespace std
+
+double cross_prod(const Point &a, const Point &b) { return imag(conj(a) * b); }
+double dot_prod(const Point &a, const Point &b) { return real(conj(a) * b); }
+
+enum CCWiseState {
+  ONLINE_FRONT = -2,
+  CLOCKWISE,
+  ON_SEGMENT,
+  COUNTER_CLOCKWISE,
+  ONLINE_BACK,
+};
+
+CCWiseState ccwise(double ax, double ay, double bx, double by, double cx, double cy) {
+  Point a(ax, ay), b(bx, by), c(cx, cy);
+  b -= a;
+  c -= a;
+  double cross = cross_prod(b, c);
+  double dot = dot_prod(b, c);
+  if (cross > 0) {
+    return COUNTER_CLOCKWISE;
+  } else if (cross < 0) {
+    return CLOCKWISE;
+  } else if (dot < 0) {
+    return ONLINE_BACK;
+  } else if (norm(b) < norm(c)) {
+    return ONLINE_FRONT;
+  } else {
+    return ON_SEGMENT;
+  }
+}
+
+bool testcase_ends() {
+  double ax, ay, bx, by, cx, cy, px, py;
+  if (!(cin >> ax >> ay >> bx >> by >> cx >> cy >> px >> py))
+    return true;
+  CCWiseState tmp = ccwise(ax, ay, px, py, bx, by);
+  if (tmp != ccwise(bx, by, px, py, cx, cy)) {
+    cout << "NO\n";
+    return true;
+  } else if (tmp != ccwise(cx, cy, px, py, ax, ay)) {
+    cout << "NO\n";
+    return true;
+  }
+  cout << "YES\n";
+  return false;
+}
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+  
+  int solved = 0;
+  while (!testcase_ends())
+    ++solved;
+  return !solved;
+}
+```
+In the main function, we disable synchronization between the C and C++ standard streams and untie cin from cout to make I/O operations faster.

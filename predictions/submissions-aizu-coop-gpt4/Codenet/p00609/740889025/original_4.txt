@@ -1,0 +1,63 @@
+**Code Analysis**
+
+This C++ program takes in multiple sets of inputs. Each set includes two integers aN and bN, and a radius R. It first takes aN number of (x, y) co-ordinates, and then bN number of (x, y) co-ordinates. The purpose of the program is to find out how many of the aN points are within a square of side 2R and centered at each of the bN points. It uses a 2D vector to store the x co-ordinates of points at each y co-ordinate.
+
+The program seems to be fairly optimized, but there are a few areas where it can be improved:
+
+1. It uses `scanf` for input which is faster than `cin`, but it uses `cin` for initial input and `cout` for output which are slower than `scanf` and `printf`. 
+2. It calls `sort` function for all 10000 vectors irrespective of whether they contain any elements or not. This is unnecessary as `sort` function on an empty vector is a waste of CPU cycles.
+3. It calculates square root inside a loop. This operation is heavy and should be avoided inside loops when possible.
+
+**Optimization Strategy**
+
+1. Use `scanf` for all input and `printf` for all output operations for uniformity and efficiency.
+2. Call `sort` function only on vectors that have at least one element.
+3. Pre-calculate the values of `m` for all possible values of `p` and store them in an array. This way, square root calculation is done only once for each value of `p` instead of for each value of `p` for all `bN` points.
+
+**Optimized Code**
+
+```cpp
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <vector>
+using namespace std;
+vector<int> v[10000];
+int m[80001]; // to store pre-calculated values of m
+int main() {
+  int aN, bN, R;
+  while (scanf("%d %d %d", &aN, &bN, &R), aN) {
+    for (int i = 0; i < 10000; i++)
+      v[i].clear();
+    for (int i = 0; i < aN; i++) {
+      int x, y;
+      scanf("%d %d", &x, &y);
+      v[y].push_back(x);
+    }
+    for (int i = 0; i < 10000; i++) {
+      if (!v[i].empty()) // avoid sorting empty vectors
+        sort(v[i].begin(), v[i].end());
+    }
+    int D = 4 * R, ans = 0;
+    for (int p = -D; p <= D; p++) {
+      m[p + D] = sqrt((D - p) * (D + p)); // pre-calculate values of m
+    }
+    for (int i = 0; i < bN; i++) {
+      int x, y;
+      scanf("%d %d", &x, &y);
+      for (int p = -D; p <= D; p++) {
+        if (y + p < 0 || y + p >= 10000)
+          continue;
+        ans += upper_bound(v[y + p].begin(), v[y + p].end(), x + m[p + D]) -
+               lower_bound(v[y + p].begin(), v[y + p].end(), x - m[p + D]);
+      }
+    }
+    printf("%d\n", ans);
+  }
+}
+```
+
+**Trade-offs**
+
+1. The optimized code uses an extra array of size 4*R+1 to store the pre-calculated values of `m` which increases memory usage but it significantly reduces the time complexity by avoiding heavy square root calculation inside the loop.
+2. The check for empty vectors before sorting them also saves CPU cycles but adds an extra conditional statement inside the loop. However, the cost of this check is negligible compared to the cost of `sort` function on an empty vector.

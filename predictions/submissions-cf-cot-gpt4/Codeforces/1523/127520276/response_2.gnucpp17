@@ -1,0 +1,101 @@
+#include <algorithm>
+#include <cstdlib>
+#include <iostream>
+#include <queue>
+#include <random>
+#include <tuple>
+#include <utility>
+#include <vector>
+using namespace std;
+
+constexpr int N = 5e4, M = 1e5, LOGN = 16;
+int &mini(int &lhs, int rhs) { return lhs = min(lhs, rhs); }
+
+class CT {
+public:
+    // ...
+    bool add(CTPtr &t, CTPtr el) {
+        bool adding = false;
+        CTPtr tt = -1;
+        // ...
+
+        if(!t || get(t).y > get(el).y) {
+            t = el;
+            adding = true;
+            get(el).r = tt;
+        } else if(get(t).x > get(el).x) {
+            adding = add(get(t).l, el);
+            if(get(t).t > get(el).t) {
+                get(t).r = tt;
+            }
+        } else if(get(t).x == get(el).x) {
+            mini(get(t).t, get(el).t);
+            get(t).r = tt;
+        } else if(get(t).t > get(el).t) {
+            adding = add(get(t).r, el);
+        }
+        return adding;
+    }
+    pair<bool, CTPtr> split(CTPtr t, int x, CTPtr &l, CTPtr &r, int tval) {
+        bool splitting = false;
+        CTPtr tt = -1;
+        // ...
+
+        if(!t) {
+            l = r = t;
+            splitting = true;
+        } else if(get(t).x > x) {
+            splitting, tt = split(get(t).l, x, l, get(t).l, tval);
+            if(splitting) {
+                r = t;
+            } else {
+                get(t).l = tt;
+                if(get(t).t > tval) {
+                    get(t).r = tt;
+                }
+            }
+        } else if(get(t).x == x) {
+            mini(get(t).t, tval);
+            get(t).r = tt;
+        } else if(get(t).t > tval) {
+            splitting, tt = split(get(t).r, x, get(t).r, r, tval);
+            if(splitting) {
+                l = t;
+            } else {
+                get(t).r = tt;
+            }
+        }
+        return {splitting, t};
+    }
+    // ...
+};
+// ...
+
+int main() {
+    // ...
+    for(int i = 0; i < m; ++i) {
+        cin >> rent[i].first >> rent[i].second, --rent[i].first;
+        by_length[rent[i].second - rent[i].first].push_back(i);
+    }
+    queue<interval> for_rent;
+    for(int epoch = n; epoch; --epoch) {
+        for(int i : by_length[epoch]) {
+            add(i);
+        }
+        for_rent.emplace(0, n);
+        while(!for_rent.empty()) {
+            auto [l, r] = for_rent.front();
+            for_rent.pop();
+            int t = query(l, r);
+            if(t != M) {
+                ans[epoch] += rent[t].second - rent[t].first;
+                for_rent.emplace(l, rent[t].first);
+                for_rent.emplace(rent[t].second, r);
+            }
+        }
+    }
+    for(int rented = 1; rented <= n; ++rented) {
+        cout << ans[rented] << '\n';
+    }
+    return 0;
+}

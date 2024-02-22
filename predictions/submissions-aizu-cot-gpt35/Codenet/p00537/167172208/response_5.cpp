@@ -1,0 +1,103 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+struct SegmentTree {
+    std::vector<int> seg, add;
+    int sz;
+
+    SegmentTree(int n) {
+        sz = 1;
+        while (sz < n)
+            sz *= 2;
+        seg.resize(sz * 2 + 1, 0);
+        add.resize(sz * 2 + 1, 0);
+    }
+
+    void Add(int a, int b, int x) {
+        int k = 0, l = 0, r = sz;
+        while (true) {
+            if (a >= r || b <= l) {
+                break;
+            } else if (a <= l && r <= b) {
+                add[k] += x;
+                break;
+            } else {
+                int m = (l + r) / 2;
+                if (a < m) {
+                    Add(a, b, x, 2 * k + 1, l, m);
+                }
+                if (b > m) {
+                    Add(a, b, x, 2 * k + 2, m, r);
+                }
+                seg[k] = seg[2 * k + 1] + add[2 * k + 1] + seg[2 * k + 2] + add[2 * k + 2];
+                break;
+            }
+        }
+    }
+
+    int Query(int a, int b) {
+        int k = 0, l = 0, r = sz;
+        int result = 0;
+        while (true) {
+            if (a >= r || b <= l) {
+                result += 0;
+                break;
+            } else if (a <= l && r <= b) {
+                result += (seg[k] + add[k]);
+                break;
+            } else {
+                int m = (l + r) / 2;
+                if (a < m) {
+                    result += Query(a, b, 2 * k + 1, l, m);
+                }
+                if (b > m) {
+                    result += Query(a, b, 2 * k + 2, m, r);
+                }
+                result += add[k];
+                break;
+            }
+        }
+        return result;
+    }
+
+    void Add(int a, int b, int x, int k, int l, int r) {
+        if (a >= r || b <= l) {
+            return;
+        } else if (a <= l && r <= b) {
+            add[k] += x;
+        } else {
+            int m = (l + r) / 2;
+            if (a < m) {
+                Add(a, b, x, 2 * k + 1, l, m);
+            }
+            if (b > m) {
+                Add(a, b, x, 2 * k + 2, m, r);
+            }
+            seg[k] = seg[2 * k + 1] + add[2 * k + 1] + seg[2 * k + 2] + add[2 * k + 2];
+        }
+    }
+};
+
+int main() {
+    int N, M, P[100000];
+    std::cin >> N >> M;
+    SegmentTree segtree(N);
+    for (int i = 0; i < M; i++) {
+        std::cin >> P[i];
+        --P[i];
+    }
+    for (int i = 1; i < M; i++) {
+        int u = std::min(P[i - 1], P[i]), v = std::max(P[i - 1], P[i]);
+        segtree.Add(u, v, 1);
+    }
+    long long ret = 0;
+    for (int i = 0; i < N - 1; i++) {
+        long long used = segtree.Query(i, i + 1);
+        int A, B, C;
+        std::cin >> A >> B >> C;
+        ret += std::min(used * A, C + used * B);
+    }
+    std::cout << ret << std::endl;
+    return 0;
+}

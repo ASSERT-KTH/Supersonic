@@ -1,0 +1,111 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+const int maxLig = (1e5) + 5;
+const int maxCol = 12;
+const int maxReq = (1e5) + 5;
+
+int nbLig, nbCol, nbReq;
+char grille[maxLig][maxCol];
+
+class DisjointSet {
+public:
+    DisjointSet(int size) {
+        parent.resize(size);
+        rank.resize(size);
+    }
+
+    void makeSet(int x, int y) {
+        int idx = getIndex(x, y);
+        parent[idx] = idx;
+        rank[idx] = 0;
+    }
+
+    pair<int, int> findSet(int x, int y) {
+        int idx = getIndex(x, y);
+        if (parent[idx] != idx) {
+            parent[idx] = findSet(getX(parent[idx]), getY(parent[idx]));
+        }
+        return make_pair(getX(parent[idx]), getY(parent[idx]));
+    }
+
+    void unionSets(int x1, int y1, int x2, int y2) {
+        pair<int, int> p1 = findSet(x1, y1);
+        pair<int, int> p2 = findSet(x2, y2);
+        if (p1 != p2) {
+            if (rank[getIndex(p1.first, p1.second)] < rank[getIndex(p2.first, p2.second)]) {
+                parent[getIndex(p1.first, p1.second)] = getIndex(p2.first, p2.second);
+            } else {
+                parent[getIndex(p2.first, p2.second)] = getIndex(p1.first, p1.second);
+                if (rank[getIndex(p1.first, p1.second)] == rank[getIndex(p2.first, p2.second)]) {
+                    rank[getIndex(p1.first, p1.second)]++;
+                }
+            }
+        }
+    }
+
+private:
+    vector<int> parent;
+    vector<int> rank;
+
+    int getIndex(int x, int y) {
+        return x * maxCol + y;
+    }
+
+    int getX(int idx) {
+        return idx / maxCol;
+    }
+
+    int getY(int idx) {
+        return idx % maxCol;
+    }
+};
+
+int main() {
+    cin >> nbLig >> nbCol >> nbReq;
+
+    DisjointSet ds(nbLig * nbCol);
+
+    for (int lig = 0; lig < nbLig; ++lig) {
+        for (int col = 0; col < nbCol; ++col) {
+            cin >> grille[lig][col];
+            if (grille[lig][col] != '~') {
+                ds.makeSet(lig, col);
+            }
+        }
+    }
+
+    for (int req = 0; req < nbReq; ++req) {
+        char mode;
+        cin >> mode;
+        int lig, col;
+        cin >> lig >> col;
+
+        if (mode == 'A') {
+            pair<int, int> res = ds.findSet(lig - 1, col - 1);
+            if (grille[res.first][res.second] == '~') {
+                res = make_pair(-1, -1);
+            }
+            cout << res.first + 1 << " " << res.second + 1 << "\n";
+        } else {
+            char nv;
+            cin >> nv;
+            grille[lig - 1][col - 1] = nv;
+
+            if (lig - 2 >= 0 && grille[lig - 2][col - 1] != '~') {
+                ds.unionSets(lig - 1, col - 1, lig - 2, col - 1);
+            }
+            if (lig < nbLig && grille[lig][col - 1] != '~') {
+                ds.unionSets(lig - 1, col - 1, lig, col - 1);
+            }
+            if (col - 2 >= 0 && grille[lig - 1][col - 2] != '~') {
+                ds.unionSets(lig - 1, col - 1, lig - 1, col - 2);
+            }
+            if (col < nbCol && grille[lig - 1][col] != '~') {
+                ds.unionSets(lig - 1, col - 1, lig - 1, col);
+            }
+        }
+    }
+
+    return 0;
+}

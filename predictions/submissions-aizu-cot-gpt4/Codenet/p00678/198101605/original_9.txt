@@ -1,0 +1,69 @@
+The original program is a simulation of gradient descent algorithm. The program is well written, but there are some aspects that can be optimized to reduce running time and memory usage:
+
+1. Repeated calculations: In the inner loop of the gradient descent, the distance between two points `now` and `P[j]` is calculated twice. This can be avoided by storing the result of the first calculation and reusing it in the second instance.
+
+2. Use of `pow` function: The `pow` function is used to square the difference in x and y coordinates inside the `dist` function. This can be replaced with direct multiplication, which is faster.
+
+3. Use of `sqrt` function: The `sqrt` function is used to compute the Euclidean distance between two points. However, since we are only interested in comparing distances, we can omit the `sqrt` function and compare the squared distances directly, which is faster.
+
+4. Use of `push_back`: The `push_back` function is used to add elements to the `P` and `V` vectors. This can lead to unnecessary resizing of the vector, which is a costly operation. Since the number of elements `n` is known ahead of time, we can reserve the required space in the vectors at the beginning.
+
+Here is the optimized version of the program:
+
+```c++
+#include <algorithm>
+#include <cstdio>
+#include <iostream>
+#include <vector>
+using namespace std;
+double EPS = 1e-6;
+struct point {
+  double x, y;
+  point() {}
+  point(double x, double y) : x(x), y(y) {}
+  point operator+(point p) { return point(x + p.x, y + p.y); }
+  point operator-(point p) { return point(x - p.x, y - p.y); }
+  point operator*(double d) { return point(x * d, y * d); }
+  point operator/(double d) { return point(x / d, y / d); }
+};
+double dist_sqr(point a, point b) {
+  double dx = a.x - b.x, dy = a.y - b.y;
+  return dx * dx + dy * dy;
+}
+int main(void) {
+  int n, x, y, v;
+  vector<point> P;
+  vector<double> V;
+  while (cin >> n, n) {
+    P.clear();
+    V.clear();
+    P.reserve(n);
+    V.reserve(n);
+    for (int i = 0; i < n; i++) {
+      cin >> x >> y >> v;
+      P.push_back(point(x, y));
+      V.push_back(v);
+    }
+    double r = 0.98;
+    point now(0, 0);
+    for (double d = 10; d > EPS; d *= r) {
+      int mx = 0;
+      double mxd = 0;
+      for (int j = 0; j < P.size(); j++) {
+        double current_dist_sqr = dist_sqr(now, P[j]);
+        if (current_dist_sqr / (V[j] * V[j]) > mxd)
+          mx = j, mxd = current_dist_sqr / (V[j] * V[j]);
+      }
+      now = now + ((P[mx] - now) / sqrt(mxd) * d);
+    }
+    double ans = 0;
+    for (int i = 0; i < P.size(); i++) {
+      ans = max(ans, sqrt(dist_sqr(now, P[i])) / V[i]);
+    }
+    printf("%.8f\n", ans);
+  }
+  return 0;
+}
+```
+
+Performance improvement will be noticeable only for large inputs.

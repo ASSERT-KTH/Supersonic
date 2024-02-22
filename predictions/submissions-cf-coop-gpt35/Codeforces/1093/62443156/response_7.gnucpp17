@@ -1,0 +1,91 @@
+#include <array>
+#include <cassert>
+#include <cstdio>
+#include <deque>
+#include <iostream>
+#include <map>
+#include <numeric>
+#include <queue>
+#include <random>
+#include <set>
+#include <string>
+#include <vector>
+using namespace std;
+
+// Define constants for the maximum number of rows and columns
+constexpr int MAX_ROWS = 100000;
+constexpr int MAX_COLS = 20;
+
+// Define a fixed-size array type for the matrix
+using Matrix = array<array<int, MAX_COLS>, MAX_ROWS>;
+
+// Define a fixed-size array type for the segment tree data
+using SegTreeData = array<pair<int, int>, 2 * MAX_ROWS - 1>;
+
+// Define a fixed-size array type for the segment trees
+using SegTrees = array<SegTreeData, 1 << MAX_COLS>;
+
+// Function to calculate the next power of two
+constexpr int next_power_of_two(int x) {
+  --x;
+  x |= x >> 1;
+  x |= x >> 2;
+  x |= x >> 4;
+  x |= x >> 8;
+  x |= x >> 16;
+  return ++x;
+}
+
+// Function to initialize the segment tree
+void init_seg_tree(const Matrix& a, SegTrees& trees, int n, int k) {
+  auto join = [](const pair<int, int>& a, const pair<int, int>& b) {
+    return pair(min(a.first, b.first), max(a.second, b.second));
+  };
+  auto update = [](pair<int, int>& a, const pair<int, int>& b) { a = b; };
+
+  for (int mask = 0; mask < (1 << k); ++mask) {
+    for (int i = 0; i < n; ++i) {
+      int val = 0;
+      for (int j = 0; j < k; ++j) {
+        if (mask & (1 << j)) {
+          val += a[i][j];
+        } else {
+          val -= a[i][j];
+        }
+      }
+      trees[mask][n + i] = {val, val};
+    }
+    for (int i = n - 1; i > 0; --i) {
+      trees[mask][i] = join(trees[mask][2 * i], trees[mask][2 * i + 1]);
+    }
+  }
+}
+
+// Function to update the segment tree
+void update_seg_tree(SegTrees& trees, int n, int k, int mask, int i,
+                     const array<int, MAX_COLS>& b) {
+  auto update = [](pair<int, int>& a, const pair<int, int>& b) { a = b; };
+  int val = 0;
+  for (int j = 0; j < k; ++j) {
+    if (mask & (1 << j)) {
+      val += b[j];
+    } else {
+      val -= b[j];
+    }
+  }
+  trees[mask][n + i] = {val, val};
+  for (int j = (n + i) / 2; j > 0; j >>= 1) {
+    trees[mask][j] = join(trees[mask][2 * j], trees[mask][2 * j + 1]);
+  }
+}
+
+// Function to perform query type 2
+int query_type_2(const SegTrees& trees, int n, int k, int l, int r) {
+  int max_diff = -1e9;
+  int min_diff = 1e9;
+  for (int mask = 0; mask < (1 << k); ++mask) {
+    auto a = trees[mask][0];
+    int diff = a.second - a.first;
+    max_diff = max(max_diff, diff);
+    min_diff = min(min_diff, diff);
+  }

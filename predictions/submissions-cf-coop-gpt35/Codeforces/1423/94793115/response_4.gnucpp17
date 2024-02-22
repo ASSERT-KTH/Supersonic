@@ -1,0 +1,151 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+struct SegTree {
+  vector<int> sand, sor, lazy;
+  int n;
+
+  SegTree(int n_) {
+    n = n_;
+    sand.assign(n, 0);
+    sor.assign(n, 0);
+    lazy.assign(n, 0);
+  }
+
+  void upd(int id, int v) {
+    sand[id] |= v;
+    sor[id] |= v;
+    lazy[id] |= v;
+  }
+
+  void update(int x, int y, int v) {
+    stack<int> st;
+    st.push(0);
+    while (!st.empty()) {
+      int id = st.top();
+      st.pop();
+      if (lazy[id] == 0)
+        continue;
+      upd(id, lazy[id]);
+      if (y - x == 1)
+        continue;
+      int l = id + 1;
+      int r = id + 2;
+      int mid = (x + y) >> 1;
+      if (y <= mid)
+        st.push(l);
+      else if (x >= mid)
+        st.push(r);
+      else {
+        st.push(r);
+        st.push(l);
+      }
+      lazy[id] = 0;
+    }
+  }
+
+  pair<int, int> get(int x, int y) {
+    stack<int> st;
+    st.push(0);
+    pair<int, int> res = {(1 << 16) - 1, 0};
+    while (!st.empty()) {
+      int id = st.top();
+      st.pop();
+      int l = id + 1;
+      int r = id + 2;
+      int mid = (x + y) >> 1;
+      if (x <= l && r <= y) {
+        res.first &= sand[id];
+        res.second |= sor[id];
+        continue;
+      }
+      if (y <= l || x >= r)
+        continue;
+      if (y <= mid)
+        st.push(l);
+      else if (x >= mid)
+        st.push(r);
+      else {
+        st.push(r);
+        st.push(l);
+      }
+    }
+    return res;
+  }
+
+  void print(int id, int l, int r) {
+    if (r - l < 2) {
+      printf("%d\n", sand[id]);
+      return;
+    }
+    int mid = (l + r) >> 1;
+    int il = id + 1;
+    int ir = id + 2 * (mid - l);
+    print(il, l, mid);
+    print(ir, mid, r);
+  }
+
+  void print() {
+    print(0, 0, n);
+  }
+};
+
+int main() {
+  int k, q;
+  scanf("%d %d", &k, &q);
+  int n = 1 << k;
+  int mask = (1 << k) - 1;
+  SegTree low(n), hig(n);
+  vector<tuple<long long, long long, int>> cons;
+  for (int i = 0; i < q; ++i) {
+    long long l, r;
+    int v;
+    scanf("%lld %lld %d", &l, &r, &v);
+    int la = l & mask, lb = (l >> k) & mask;
+    int ra = r & mask, rb = (r >> k) & mask;
+    if (lb + 1 < rb) {
+      low.update(0, n, v);
+    } else if (lb < rb) {
+      low.update(la, n, v);
+      low.update(0, ra + 1, v);
+    } else {
+      low.update(la, ra + 1, v);
+    }
+    hig.update(lb, rb + 1, v);
+    cons.emplace_back(l, r, v);
+  }
+  auto cek = [&](int la, int ra, int lb, int rb, int v) {
+    bool ok = true;
+    auto resh = hig.get(lb, rb + 1);
+    auto resl = low.get(la, ra + 1);
+    ok &= (resl.second & resh.second) == v;
+    return ok;
+  };
+  bool ok = true;
+  for (auto &c : cons) {
+    long long l, r;
+    int v;
+    tie(l, r, v) = c;
+    int la = l & mask, lb = (l >> k) & mask;
+    int ra = r & mask, rb = (r >> k) & mask;
+    if (lb == rb) {
+      ok &= cek(la, ra, lb, rb, v);
+    } else {
+      ok &= cek(la, n - 1, lb, lb, v);
+      ok &= cek(0, ra, rb, rb, v);
+      if (lb + 1 < rb) {
+        ok &= cek(0, n - 1, lb + 1, rb - 1, v);
+      }
+    }
+    if (!ok)
+      break;
+  }
+  if (!ok) {
+    puts("impossible");
+    return 0;
+  }
+  puts("possible");
+  low.print();
+  hig.print();
+  return 0;
+}

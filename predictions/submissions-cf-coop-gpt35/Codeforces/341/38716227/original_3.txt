@@ -1,0 +1,149 @@
+The given code appears to be a solution to a problem that involves performing range updates and range queries on a 2D grid. The code uses a Fenwick tree data structure to efficiently handle these operations.
+
+Upon analyzing the code, the following potential optimizations can be identified:
+
+1. Remove unnecessary includes: The code includes several unnecessary header files, such as `<ext/pb_ds/assoc_container.hpp>` and `<ext/pb_ds/tree_policy.hpp>`. These headers are not used in the code and can be safely removed.
+
+2. Remove unused macros: The code defines several macros that are not used anywhere in the code, such as `by(x)` and `asche`. These macros can be removed to reduce code complexity.
+
+3. Optimize Fenwick tree implementation:
+   - The current implementation of the Fenwick tree uses a 3D array, `multree` and `addtree`, to store the values. This is not memory-efficient since it allocates a large amount of memory even if the grid size is small. Instead, we can optimize the memory usage by using a 2D array and mapping the 2D indices to 1D indices.
+   - The current implementation of the Fenwick tree uses bitwise XOR operations to calculate the cumulative values. This can be slow, especially for large values of `mxn`. Instead, we can use a simpler approach of storing the cumulative values directly in the Fenwick tree array.
+
+4. Optimize I/O operations: The code uses `cin` and `cout` for input and output operations. These operations can be slow, especially when performing a large number of operations. Instead, we can use `scanf` and `printf` for faster I/O.
+
+Now, let's discuss each optimization step in detail:
+
+1. Remove unnecessary includes:
+   - Remove the following lines from the code:
+     ```
+     #include <ext/pb_ds/assoc_container.hpp>
+     #include <ext/pb_ds/tree_policy.hpp>
+     ```
+   - These headers are not used in the code and can be safely removed.
+
+2. Remove unused macros:
+   - Remove the following macros from the code:
+     ```
+     #define by(x) [](const auto &a, const auto &b) { return a.x < b.x; }
+     #define asche cerr << "Ekhane asche\n";
+     ```
+   - These macros are not used anywhere in the code and can be safely removed.
+
+3. Optimize Fenwick tree implementation:
+   - Modify the `multree` and `addtree` arrays to be 2D arrays of size `mxn x mxn`.
+   - Replace the `query2` function with a simplified version that directly calculates the cumulative values in the Fenwick tree array:
+     ```cpp
+     ll query2(ll tree[mxn][mxn], ll x, ll y) {
+       ll sum = 0;
+       for (ll i = x; i > 0; i -= i & -i) {
+         for (ll j = y; j > 0; j -= j & -j) {
+           sum ^= tree[i][j];
+         }
+       }
+       return sum;
+     }
+     ```
+   - Replace the `upd2` function with a simplified version that directly updates the cumulative values in the Fenwick tree array:
+     ```cpp
+     void upd2(ll tree[mxn][mxn], ll x, ll y, ll val) {
+       for (ll i = x; i < mxn; i += i & -i) {
+         for (ll j = y; j < mxn; j += j & -j) {
+           tree[i][j] ^= val;
+         }
+       }
+     }
+     ```
+
+4. Optimize I/O operations:
+   - Replace the `cin` and `cout` statements with `scanf` and `printf` for faster I/O:
+     ```cpp
+     scanf("%lld", &n);
+     scanf("%lld", &q);
+     while (q--) {
+       scanf("%lld", &tt);
+       if (tt == 2) {
+         scanf("%lld %lld %lld %lld %lld", &x1, &y1, &x2, &y2, &val);
+         upd(x1, y1, x2, y2, val);
+       } else {
+         scanf("%lld %lld %lld %lld", &x1, &y1, &x2, &y2);
+         printf("%lld\n", query(x1, y1, x2, y2));
+       }
+     }
+     ```
+
+Here is the optimized code:
+
+```cpp
+#pragma comment(linker, "/stack:200000000")
+#pragma GCC optimize("Ofast")
+#pragma GCC target("sse,sse2,sse3,ssse3,sse4,popcnt,abm,mmx,avx,tune=native")
+#pragma GCC optimize("unroll-loops")
+#include <bits/stdc++.h>
+using namespace std;
+#define ll long long
+const int mxn = 1010;
+ll multree[mxn][mxn], addtree[mxn][mxn];
+ll yo(ll x) { return (x % 2); }
+ll query2(ll tree[mxn][mxn], ll x, ll y) {
+  ll sum = 0;
+  for (ll i = x; i > 0; i -= i & -i) {
+    for (ll j = y; j > 0; j -= j & -j) {
+      sum ^= tree[i][j];
+    }
+  }
+  return sum;
+}
+ll query1(ll x, ll y) {
+  ll mul = 0, add = 0;
+  for (ll i = x; i > 0; i -= i & -i) {
+    mul ^= query2(multree, i, y);
+    add ^= query2(addtree, i, y);
+  }
+  return (mul * yo(x)) ^ add;
+}
+ll query(ll x1, ll y1, ll x2, ll y2) {
+  return (query1(x2, y2) ^ query1(x1 - 1, y2) ^ query1(x2, y1 - 1) ^
+          query1(x1 - 1, y1 - 1));
+}
+void upd2(ll tree[mxn][mxn], ll x, ll y, ll val) {
+  for (ll i = x; i < mxn; i += i & -i) {
+    for (ll j = y; j < mxn; j += j & -j) {
+      tree[i][j] ^= val;
+    }
+  }
+}
+void upd1(ll x, ll y1, ll y2, ll val) {
+  upd2(multree, x, y1, val);
+  upd2(multree, x, y2, val);
+  upd2(addtree, x, y1, val * yo(y1 - 1));
+  upd2(addtree, x, y2, val * yo(y2));
+}
+void upd(ll x1, ll y1, ll x2, ll y2, ll val) {
+  upd1(x1, y1, y2, val);
+  upd1(x2, y1, y2, val);
+}
+int main() {
+  ll n, q, tt, x1, y1, x2, y2, val;
+  scanf("%lld", &n);
+  scanf("%lld", &q);
+  while (q--) {
+    scanf("%lld", &tt);
+    if (tt == 2) {
+      scanf("%lld %lld %lld %lld %lld", &x1, &y1, &x2, &y2, &val);
+      upd(x1, y1, x2, y2, val);
+    } else {
+      scanf("%lld %lld %lld %lld", &x1, &y1, &x2, &y2);
+      printf("%lld\n", query(x1, y1, x2, y2));
+    }
+  }
+  return 0;
+}
+```
+
+This optimized code makes the following improvements:
+- Removes unnecessary includes and unused macros.
+- Optimizes the Fenwick tree implementation to use less memory and simpler operations.
+- Replaces `cin` and `cout` with `scanf` and `printf` for faster I/O.
+
+These optimizations should result in improved performance and reduced memory usage compared to the original code.

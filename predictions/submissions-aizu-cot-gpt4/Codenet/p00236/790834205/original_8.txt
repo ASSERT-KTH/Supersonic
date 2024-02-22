@@ -1,0 +1,143 @@
+Optimization Steps:
+
+1. Avoid copying vectors: In the current code, vectors are passed by value to functions, which results in unnecessary copying of the vectors. We can avoid this by passing them by reference.
+
+2. Use reserve for vectors: The reserve function in vector is used to reserve space for the elements in the vector. This can prevent unnecessary reallocations as the vector grows.
+
+3. Avoid unnecessary function calls: In the current code, the function `dup.count()` is called multiple times. This may be avoided by storing the result in a variable and using this variable instead.
+
+4. Avoid unnecessary vector initializations: In the current code, the vectors `vertex` and `edge` are initialized with NIL values and later some of the values are changed. This may be avoided by initializing the vectors only with the required values.
+
+5. Reduce scope of variables: Variables should be declared in the smallest possible scope to reduce memory usage.
+
+6. Minimize the use of global variables: Global variables increase memory usage and can cause issues with concurrency and thread safety. We should minimize their usage.
+
+7. Use efficient data structures: `set` is used for `memo`, which has an average time complexity of O(log(n)) for insertions and deletions. We can use `unordered_set` instead, which has an average time complexity of O(1) for insertions and deletions.
+
+Here is the optimized code:
+
+```
+#include <algorithm>
+#include <bitset>
+#include <iostream>
+#include <unordered_set>
+#include <vector>
+using namespace std;
+const int N = 49;
+int w, h;
+vector<vector<int>> field;
+int size;
+vector<vector<int>> vertex;
+vector<vector<int>> edge;
+bitset<N> visited;
+unordered_set<unsigned long long> memo;
+
+void make_graph() {
+  enum { Y, X };
+  const int NEXT[4][2] = {{0, 1}, {1, 0}, {-1, 0}, {0, -1}};
+  const int NIL = -1;
+  size = 0;
+  vertex = vector<vector<int>>(h, vector<int>(w, NIL));
+  for (int y = 0; y < h; ++y) {
+    for (int x = 0; x < w; ++x) {
+      if (!field[y][x])
+        vertex[y][x] = size++;
+    }
+  }
+  edge.reserve(size);
+  for (int y = 0; y < h; ++y) {
+    for (int x = 0; x < w; ++x) {
+      if (vertex[y][x] == NIL)
+        continue;
+      vector<int> adj;
+      for (const auto &d : NEXT) {
+        int ny = y + d[Y];
+        int nx = x + d[X];
+        if (ny < 0 || h <= ny || nx < 0 || w <= nx)
+          continue;
+        if (vertex[ny][nx] != NIL)
+          adj.push_back(vertex[ny][nx]);
+      }
+      edge.push_back(adj);
+    }
+  }
+}
+
+void reachability(const int &from, bitset<N> &visited) {
+  visited.set(from);
+  for (const auto &to : edge[from]) {
+    if (!visited[to])
+      reachability(to, visited);
+  }
+}
+
+bool cut_vertex(const int &from) {
+  auto dup = visited;
+  dup.set(from);
+  for (const auto &to : edge[from]) {
+    if (dup[to])
+      continue;
+    reachability(to, dup);
+    int count = dup.count();
+    if(count != size)
+      return true;
+  }
+  return dup.count() != size;
+}
+
+bool dfs(const int &start, int from) {
+  unsigned long long m = visited.to_ullong() * N + from;
+  if (memo.count(m))
+    return false;
+  memo.insert(m);
+  if (cut_vertex(from))
+    return false;
+  for (int u = 0; u < size; ++u) {
+    if (u == from)
+      continue;
+    if (visited[u])
+      continue;
+    int degree = 0;
+    for (const auto &v : edge[u]) {
+      if (v == start || !visited[v])
+        ++degree;
+    }
+    if (degree < 2)
+      return false;
+  }
+  visited.set(from);
+  for (const auto &to : edge[from]) {
+    if (to == start && visited.count() == size)
+      return true;
+    if (visited[to])
+      continue;
+    if (dfs(start, to))
+      return true;
+  }
+  visited.reset(from);
+  return false;
+}
+
+bool solve() {
+  visited = bitset<N>(0);
+  make_graph();
+  memo.clear();
+  for (int y = 0; y < h; ++y) {
+    for (int x = 0; x < w; ++x) {
+      if (!field[y][x])
+        return dfs(vertex[y][x], vertex[y][x]);
+    }
+  }
+  return false;
+}
+
+int main() {
+  while (cin >> w >> h, w | h) {
+    field = vector<vector<int>>(h, vector<int>(w));
+    for (auto &line : field)
+      for (auto &v : line)
+        cin >> v;
+    cout << (solve() ? "Yes" : "No") << endl;
+  }
+}
+```

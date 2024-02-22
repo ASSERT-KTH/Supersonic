@@ -1,0 +1,115 @@
+#include <iostream>
+#include <vector>
+
+const long long inf = 1e15 + 12;
+
+struct node {
+  long long l, mid, r, val, add;
+  node* left;
+  node* right;
+  node(long long l, long long r) : l(l), r(r) {
+    add = 0;
+    mid = (l + r) / 2;
+    val = 0;
+    left = right = nullptr;
+  }
+};
+
+long long f(long long x, long long y) {
+  return std::min(x, y);
+}
+
+void build(node* root, std::vector<long long>& pref) {
+  if (root->r - root->l == 1) {
+    root->val = pref[root->l];
+    if (root->l == pref.size() - 1) {
+      root->val = inf;
+    }
+  } else {
+    root->left = new node(root->l, root->mid);
+    root->right = new node(root->mid, root->r);
+    build(root->left, pref);
+    build(root->right, pref);
+    root->val = f(root->left->val, root->right->val);
+  }
+}
+
+void push(node* root) {
+  if (root->left != nullptr) {
+    root->left->add += root->add;
+    root->right->add += root->add;
+  }
+  root->val += root->add;
+  root->add = 0;
+}
+
+void add_val(node& root, long long ql, long long qr, long long val) {
+  push(&root);
+  if (root.r <= ql || root.l >= qr) {
+    return;
+  }
+  if (ql == root.l && root.r == qr) {
+    root.add += val;
+    push(&root);
+    return;
+  }
+  add_val(*root.left, ql, std::min(root.mid, qr), val);
+  add_val(*root.right, std::max(root.mid, ql), qr, val);
+  root.val = f(root.left->val, root.right->val);
+}
+
+long long get_min(node& root, long long ql, long long qr) {
+  push(&root);
+  if (root.r <= ql || root.l >= qr) {
+    return inf;
+  }
+  if (ql == root.l && root.r == qr) {
+    return root.val;
+  }
+  return f(get_min(*root.left, ql, std::min(root.mid, qr)),
+           get_min(*root.right, std::max(root.mid, ql), qr));
+}
+
+void solve() {
+  long long n;
+  std::cin >> n;
+
+  std::vector<long long> p(n);
+  std::vector<long long> ps(n);
+  std::vector<long long> a(n);
+  std::vector<long long> pref(n);
+
+  for (auto& cur : p) {
+    std::cin >> cur;
+    ps[cur - 1] = &cur - &p[0];
+  }
+
+  for (long long i = 0; i < n; i++) {
+    std::cin >> a[i];
+    if (i == 0) {
+      pref[i] = a[i];
+    } else {
+      pref[i] = pref[i - 1] + a[i];
+    }
+  }
+
+  node* root = new node(0, n);
+  build(root, pref);
+
+  long long ans = std::min(a[0], a[n - 1]);
+  long long mus = 0;
+
+  for (auto& ps_i : ps) {
+    add_val(*root, ps_i, n, -2 * a[ps_i]);
+    mus += a[ps_i];
+    long long cur = get_min(*root, 0, n) + mus;
+    ans = std::min(ans, cur);
+  }
+
+  std::cout << ans << std::endl;
+}
+
+int main() {
+  solve();
+  return 0;
+}

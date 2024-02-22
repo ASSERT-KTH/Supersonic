@@ -1,0 +1,100 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+struct Interval {
+    int weight;
+    int start;
+    int end;
+};
+
+int solve() {
+    int n, m;
+    cin >> n >> m;
+    if (m == 2) {
+        cout << "0\n";
+        return 0;
+    }
+    vector<Interval> intervals;
+    intervals.reserve(n);
+    for (int i = 0; i < n; i++) {
+        int l, r, w;
+        cin >> l >> r >> w;
+        if (l == 1 && r == m) {
+            cout << "0\n";
+            return 0;
+        }
+        intervals.emplace_back(Interval{w, l, r - 1});
+    }
+    sort(intervals.begin(), intervals.end(), [](const Interval& a, const Interval& b) {
+        return a.weight < b.weight;
+    });
+
+    vector<int> sgtree(4 * m, 0);
+    vector<int> slow(4 * m, 0);
+    int i = 0, j = -1, ans = 1000000;
+    while (j < (int)intervals.size() - 1) {
+        if (sgtree[1] + slow[1] > 0) {
+            int st = intervals[i].start;
+            int en = intervals[i].end;
+            for (int node = 1; node < 4 * m; node *= 2) {
+                sgtree[node] += slow[node];
+                slow[2 * node] += slow[node];
+                slow[2 * node + 1] += slow[node];
+                slow[node] = 0;
+            }
+            slow[1] += -1;
+            sgtree[1] += slow[1];
+            slow[2] += slow[1];
+            slow[3] += slow[1];
+            slow[1] = 0;
+            i++;
+            ans = min(ans, intervals[j].weight - intervals[i].weight);
+        } else {
+            j++;
+            int st = intervals[j].start;
+            int en = intervals[j].end;
+            for (int node = 2 * m + j; node > 1; node /= 2) {
+                sgtree[node] += slow[node];
+                slow[node / 2] += slow[node];
+                slow[node / 2 + 1] += slow[node];
+                slow[node] = 0;
+            }
+            slow[2 * m + j] += 1;
+            sgtree[2 * m + j] += slow[2 * m + j];
+            slow[2 * m + j + 1] += slow[2 * m + j];
+            slow[2 * m + j + 2] += slow[2 * m + j];
+            slow[2 * m + j] = 0;
+        }
+    }
+    while (sgtree[1] + slow[1] > 0) {
+        int st = intervals[i].start;
+        int en = intervals[i].end;
+        for (int node = 1; node < 4 * m; node *= 2) {
+            sgtree[node] += slow[node];
+            slow[2 * node] += slow[node];
+            slow[2 * node + 1] += slow[node];
+            slow[node] = 0;
+        }
+        slow[1] += -1;
+        sgtree[1] += slow[1];
+        slow[2] += slow[1];
+        slow[3] += slow[1];
+        slow[1] = 0;
+        i++;
+        ans = min(ans, intervals[j].weight - intervals[i].weight);
+    }
+    cout << ans << '\n';
+    return 0;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    int t = 1;
+    for (int tc = 1; tc <= t; tc++) {
+        solve();
+    }
+    return 0;
+}

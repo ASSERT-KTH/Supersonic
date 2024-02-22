@@ -1,0 +1,137 @@
+#include <iostream>
+#include <vector>
+#include <set>
+using namespace std;
+
+const int N = 3e5 + 7, K = 20, X = 42, M = 998244353;
+
+int bpow(int a, int n) {
+  if (n == 0)
+    return 1;
+  if (n == 1)
+    return a % M;
+  if (n % 2 == 0) {
+    int mem = bpow(a, n / 2);
+    return (mem * mem) % M;
+  }
+  return (a * bpow(a, n - 1)) % M;
+}
+
+int get_cnk(int n, int k) {
+  static int cnk[X][X] = {0};
+  if (k > n)
+    return 0;
+  if (k < 0)
+    return 0;
+  if (cnk[n][k] != 0)
+    return cnk[n][k];
+  
+  if (k == 0 || k == n) {
+    cnk[n][k] = 1;
+  } else {
+    cnk[n][k] = (get_cnk(n - 1, k) + get_cnk(n - 1, k - 1)) % M;
+  }
+  
+  return cnk[n][k];
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(nullptr);
+  cout.tie(nullptr);
+  
+  int fact[N], defact[N];
+  fact[0] = 1;
+  for (int i = 1; i < N; i++)
+    fact[i] = (fact[i - 1] * i) % M;
+  defact[N - 1] = bpow(fact[N - 1], M - 2);
+  for (int i = N - 2; i >= 0; i--) {
+    defact[i] = (defact[i + 1] * (i + 1)) % M;
+  }
+  
+  int dp[1 << K][X] = {0};
+  int sz[1 << K] = {0};
+  vector<vector<int>> op(N), cl(N);
+  vector<pair<int, int>> lr(N), bad(K);
+  bool has[N] = {false};
+  
+  int n, m;
+  cin >> n >> m;
+  for (int i = 0; i < n; i++) {
+    cin >> lr[i].first >> lr[i].second;
+    op[lr[i].first].push_back(i);
+    cl[lr[i].second].push_back(i);
+  }
+  for (int i = 0; i < m; i++) {
+    cin >> bad[i].first >> bad[i].second;
+    bad[i].first--;
+    bad[i].second--;
+  }
+  
+  dp[0][0] = 1;
+  sz[0] = 0;
+  
+  for (int mask = 1; mask < (1 << m); mask++) {
+    int pos = __builtin_ctz(mask);
+    int nmask = 0, alone = 0, x = bad[pos].first, nmask2 = 0, alone2 = 0;
+    set<int> lol;
+    vector<int> kek, kek2;
+    
+    for (int i = 0; i < m; i++) {
+      if (mask & (1 << i)) {
+        if (bad[i].first != x && bad[i].second != x) {
+          nmask |= (1 << i);
+        }
+        lol.insert(bad[i].first);
+        lol.insert(bad[i].second);
+        if (bad[i].first == x && !has[bad[i].second]) {
+          has[bad[i].second] = true;
+          kek.push_back(bad[i].second);
+        }
+        if (bad[i].second == x && !has[bad[i].first]) {
+          has[bad[i].first] = true;
+          kek.push_back(bad[i].first);
+        }
+      }
+    }
+    
+    for (int i = 0; i < m; i++) {
+      if (mask & (1 << i)) {
+        if (nmask & (1 << i)) {
+          if (!has[bad[i].first] && !has[bad[i].second])
+            nmask2 |= (1 << i);
+        }
+        if (has[bad[i].first] && bad[i].second != x && !has[bad[i].second]) {
+          has[bad[i].second] = true;
+          kek2.push_back(bad[i].second);
+        }
+        if (has[bad[i].second] && bad[i].first != x && !has[bad[i].first]) {
+          has[bad[i].first] = true;
+          kek2.push_back(bad[i].first);
+        }
+      }
+    }
+    
+    for (int elem : kek) {
+      bool flag = false;
+      for (int i = 0; i < m; i++) {
+        if (nmask & (1 << i)) {
+          if (bad[i].first == elem || bad[i].second == elem) {
+            flag = true;
+            break;
+          }
+        }
+      }
+      if (!flag)
+        alone++;
+    }
+    
+    for (int elem : kek2) {
+      bool flag = false;
+      for (int i = 0; i < m; i++) {
+        if (nmask2 & (1 << i)) {
+          if (bad[i].first == elem || bad[i].second == elem) {
+            flag = true;
+            break;
+          }
+        }

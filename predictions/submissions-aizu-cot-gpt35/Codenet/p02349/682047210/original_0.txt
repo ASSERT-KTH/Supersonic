@@ -1,0 +1,111 @@
+To optimize the given program, we can make the following modifications:
+1. Use a more efficient way to read input from the user.
+2. Remove unnecessary includes.
+3. Replace the `typedef` with `using`.
+4. Move the `eval` function call inside the `add` function to a more optimal position.
+5. Replace the `endl` with `"\n"` for faster output.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+
+using ll = long long;
+
+template <typename Monoid>
+struct LazySegmentTree {
+private:
+    int N;
+    std::vector<Monoid> node, lazy;
+
+public:
+    LazySegmentTree(int sz = 0) { init(sz); }
+
+    void init(int sz) {
+        N = 1;
+        while (N < sz)
+            N <<= 1;
+        node.resize(2 * N - 1, 0);
+        lazy.resize(2 * N - 1, 0);
+    }
+
+    void build(std::vector<Monoid> &v) {
+        int sz = static_cast<int>(v.size());
+        init(sz);
+        for (int i = 0; i < sz; i++) {
+            node[i + N - 1] = v[i];
+        }
+        for (int i = N - 2; i >= 0; i--) {
+            node[i] = node[i * 2 + 1] + node[i * 2 + 2];
+        }
+    }
+
+    void eval(int k) {
+        if (lazy[k] != 0) {
+            if (k < N - 1) {
+                lazy[2 * k + 1] += lazy[k] / 2;
+                lazy[2 * k + 2] += lazy[k] / 2;
+            }
+            node[k] += lazy[k] * (N - k);
+            lazy[k] = 0;
+        }
+    }
+
+    void add(int a, int b, Monoid x) { add(a, b, x, 0, 0, N); }
+
+    void add(int a, int b, Monoid x, int k, int l, int r) {
+        if (b <= l || r <= a)
+            return;
+        eval(k);
+        if (a <= l && r <= b) {
+            lazy[k] += x * (r - l);
+            eval(k);
+        } else {
+            add(a, b, x, 2 * k + 1, l, (l + r) / 2);
+            add(a, b, x, 2 * k + 2, (l + r) / 2, r);
+            node[k] = node[2 * k + 1] + node[2 * k + 2];
+        }
+    }
+
+    Monoid getSum(int a, int b) { return getSum(a, b, 0, 0, N); }
+
+    Monoid getSum(int a, int b, int k, int l, int r) {
+        if (b <= l || r <= a)
+            return 0;
+        eval(k);
+        if (a <= l && r <= b)
+            return node[k];
+        Monoid vl, vr;
+        vl = getSum(a, b, 2 * k + 1, l, (l + r) / 2);
+        vr = getSum(a, b, 2 * k + 2, (l + r) / 2, r);
+        return vl + vr;
+    }
+};
+
+int main() {
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+
+    int n, q;
+    std::cin >> n >> q;
+
+    LazySegmentTree<ll> seg(n);
+
+    for (int i = 0; i < q; i++) {
+        int c;
+        std::cin >> c;
+        if (c == 0) {
+            ll s, t, x;
+            std::cin >> s >> t >> x;
+            seg.add(s - 1, t, x);
+        } else {
+            int s;
+            std::cin >> s;
+            std::cout << seg.getSum(s - 1, s) << "\n";
+        }
+    }
+
+    return 0;
+}
+```

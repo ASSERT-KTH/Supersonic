@@ -1,0 +1,83 @@
+Code Analysis:
+The provided code implements a dynamic programming solution for a problem. The code reads a number of test cases and for each case, it reads an array of numbers and calculates a maximum value according to a specific rule. The maximum value is then printed. The dynamic programming implementation uses a 3-dimensional array to save intermediate results.
+
+Optimization Strategy:
+1. Efficient Data Structures: The 3-dimensional array `dp` may be optimized since at any given time the program only uses two layers of this array, which are swapped in each iteration. Hence, we could replace it with two 2-dimensional arrays.
+
+2. Redundant Computations: The repeated computation of `(cur & 1)` and `(cur + 1) & 1` can be saved into variables and reused, this will reduce the total number of bitwise operations.
+
+3. Optimize Loops: The outer loops that iterate over `L` and `M` do not need to run until `MAX` for each iteration. They only need to run until the current input number as any larger value would not have been set in previous iterations. This can greatly reduce the number of iterations.
+
+4. Compiler Optimizations: The `#pragma omp parallel for` directive can be used to parallelize the outer loop, which can significantly speed up the code if running on a multi-core processor.
+
+Step-by-Step Explanation:
+1. Replace the 3-dimensional array `dp` with two 2-dimensional arrays `dp_even` and `dp_odd`. These arrays will be swapped in each iteration, which will effectively half the memory usage. This change will not affect the result of the program, as the third dimension of `dp` was only used to separate results of even and odd iterations.
+
+2. Compute `(cur & 1)` and `(cur + 1) & 1` only once at the beginning of each iteration of the `cur` loop and save the results in variables `cur_mod` and `next_mod`. This will reduce the total number of bitwise operations and thus speed up execution.
+
+3. Change the upper limit of the loops over `L` and `M` to `input[cur]` instead of `MAX`. This will reduce the number of iterations and thus speed up execution.
+
+4. Use the `#pragma omp parallel for` directive to parallelize the outer loop over `L`. This will speed up execution if running on a multi-core processor.
+
+Optimized Code Block:
+```
+#include <algorithm>
+#include <iostream>
+#include <vector>
+#include <omp.h>
+#define REP(i, s, n) for (int i = s; i < n; i++)
+#define rep(i, n) REP(i, 0, n)
+#define MAX 150
+using namespace std;
+bool dp_even[MAX][MAX];
+bool dp_odd[MAX][MAX];
+int main() {
+  int T;
+  while (cin >> T) {
+    while (T--) {
+      rep(i, MAX) rep(j, MAX) dp_even[i][j] = dp_odd[i][j] = false;
+      int N;
+      cin >> N;
+      int input[N];
+      rep(i, N) cin >> input[i];
+      if (N <= 2) {
+        cout << input[N - 1] << endl;
+        continue;
+      }
+      int ans = input[N - 1];
+      REP(cur, 1, N - 1) {
+        int cur_mod = cur & 1;
+        int next_mod = (cur + 1) & 1;
+        bool (*dp_cur)[MAX] = cur_mod ? dp_odd : dp_even;
+        bool (*dp_next)[MAX] = next_mod ? dp_odd : dp_even;
+        dp_cur[input[cur - 1]][input[cur]] = true;
+        int R = input[cur + 1];
+        #pragma omp parallel for
+        rep(L, input[cur] + 1) {
+          rep(M, min(input[cur] + 1, L + 1)) {
+            if (!dp_cur[L][M])
+              continue;
+            if (M == 0) {
+              if (cur + 2 < N) {
+                dp_next[M][R] = true;
+              } else
+                ans = max(ans, R);
+            } else {
+              if (cur + 2 < N) {
+                dp_next[M][R] = true;
+                dp_next[M - 1][R + L] = true;
+              } else {
+                ans = max(ans, R + L);
+              }
+            }
+          }
+        }
+        rep(i, MAX) rep(j, MAX) dp_cur[i][j] = false;
+      }
+      cout << ans << endl;
+    }
+  }
+  return 0;
+}
+```
+This code should run faster and use less memory than the original code. Note that the OpenMP library must be linked to compile the code with the `#pragma omp` directive. Also note that parallelizing the loop may lead to slower execution if running on a single-core processor.

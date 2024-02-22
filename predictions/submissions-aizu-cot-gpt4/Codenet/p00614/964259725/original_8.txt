@@ -1,0 +1,80 @@
+Step 1: Remove the unnecessary #include <bits/stdc++.h>. This header file includes a large number of standard C++ libraries, which can slow down the compilation time significantly. Instead, include only the necessary standard libraries.
+
+Step 2: Replace the #define macros with inline functions or constant variables. Macros are not type safe and can cause errors that are hard to debug.
+
+Step 3: Use std::array instead of C style arrays. std::array is a container that encapsulates fixed size arrays and does not decay to a pointer when passed to a function. It also includes methods like fill() which can be useful for initialization, and it keeps its size information.
+
+Step 4: Use std::min instead of the custom chmin function, and std::max instead of the custom chmax function. These are standard library functions that are well optimized.
+
+Step 5: Use std::vector instead of a 2-dimensional C-style array for dp. This allows for better memory management, as vectors use dynamic memory allocation.
+
+Step 6: Reduce the scope of variables and use them as late as possible. Variables should be declared where they are first used. This makes code easier to read and can help the compiler with optimizations.
+
+Here is the optimized code:
+
+```C++
+#include <iostream>
+#include <vector>
+#include <array>
+#include <deque>
+#include <algorithm>
+
+using namespace std;
+using vint = vector<int>;
+using pint = pair<int, int>;
+using vpint = vector<pint>;
+
+const array<int, 6> C = {1, 5, 10, 50, 100, 500};
+const int T = 10000;
+
+int calc(int v) {
+  int ans = 0;
+  for (int i = 5; i >= 0; i--) {
+    ans += v / C[i];
+    v %= C[i];
+  }
+  return ans;
+}
+
+int main() {
+  int P;
+  while (cin >> P) {
+    array<int, 6> N;
+    for (int &n : N) cin >> n;
+    if (P == 0) break;
+    vector<vector<int>> dp(2, vector<int>(T, 1001001001));
+    int cnt = 0;
+    for (int i = 5; i >= 0; i--) {
+      while (P - C[i] >= 2500 && N[i]) {
+        cnt++;
+        N[i]--;
+        P -= C[i];
+      }
+      if (N[i]) break;
+    }
+    dp[0][0] = 0;
+    for (int i = 0; i < 6; i++) {
+      for (int j = 0; j < C[i]; j++) {
+        deque<pint> deq;
+        for (int k = j; k < T; k += C[i]) {
+          int w = T - k / C[i];
+          dp[(i + 1) & 1][k] = min(dp[(i + 1) & 1][k], dp[i & 1][k]);
+          while (!deq.empty() && deq.front().second + C[i] * N[i] < k)
+            deq.pop_front();
+          if (!deq.empty())
+            dp[(i + 1) & 1][k] = min(dp[(i + 1) & 1][k], deq.front().first - w);
+          if (!deq.empty() && deq.front().second + N[i] * C[i] <= k)
+            deq.pop_front();
+          deq.push_back(pint(dp[i & 1][k] + w, k));
+        }
+      }
+    }
+    int mi = 1001001001;
+    for (int i = P; i < T; i++) {
+      mi = min(mi, dp[0][i] + calc(i - P));
+    }
+    cout << mi + cnt << endl;
+  }
+  return 0;
+}
+```

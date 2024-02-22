@@ -1,0 +1,10 @@
+#include <cstdio>
+
+int main() {
+  double r, s, l, x;
+  scanf("%lf", &r);
+  x = 3.141592653589;
+  s = r * r * x;
+  l = x * (r + r);
+  printf("%.6lf %.6lf\n", s, l);
+}

@@ -1,0 +1,150 @@
+The given program is quite large and complex. I'll focus on some key optimizations that can be made, but please note that there might be other possible improvements that aren't included due to the size and complexity of the program. 
+
+1. Avoid using `#include <bits/stdc++.h>`: This header file includes quite literally everything in the C++ standard library. This can excessively increase the compilation time of your program. Include only the headers that you actually need.
+
+2. Avoid using `using namespace std;` globally: It's generally considered bad practice to do so, as it can lead to naming conflicts.
+
+3. Avoid use of `typedef`: Instead, use `using`, which is more flexible and readable. 
+
+4. Reduce the use of macros: It's harder to debug and read code with extensive macro usage. Use them only when necessary.
+
+5. Avoid using `std::endl`: `std::endl` not only adds a newline character, but also flushes the output buffer, which can slow down the program. Use `"\n"` instead.
+
+6. Avoid unnecessary type conversions: This includes avoiding unnecessary calls to `std::vector::size()`, `std::vector::length()`, etc., which return a `std::size_t` type, and then comparing them with `int`. This can lead to unnecessary type conversions.
+
+Here's an optimized version of the program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <string>
+#include <sstream>
+#include <iomanip>
+#include <utility>
+#include <algorithm>
+#include <cstring>
+
+using std::vector;
+using std::queue;
+using std::string;
+using std::stringstream;
+using std::cin;
+using std::cout;
+using std::pair;
+using std::make_pair;
+using std::ios_base;
+using std::setprecision;
+using std::min_element;
+using std::max_element;
+
+typedef long long ll;
+
+vector<string> split(const string &s, char c) {
+  vector<string> v;
+  stringstream ss(s);
+  string x;
+  while (getline(ss, x, c))
+    v.emplace_back(x);
+  return v;
+}
+
+class graphNode {
+public:
+  vector<int> adj;
+  int a = 0;
+};
+
+class graph {
+public:
+  size_t n;
+  vector<graphNode> nodes;
+  vector<ll> powr;
+  
+  graph(size_t nodeNumber) {
+    n = nodeNumber;
+    nodes.resize(n + 1);
+    powr.resize(3 * 100000);
+    ll k = 1;
+    for (size_t c = 0; c < 3 * 100000; c++) {
+      powr[c] = k;
+      k = (k * 2) % 998244353;
+    }
+  }
+
+  void addEdge(int a, int b) {
+    nodes[a].adj.push_back(b);
+    nodes[b].adj.push_back(a);
+  }
+
+  ll findans() {
+    vector<bool> visited(n + 1, false);
+    vector<int> col(n + 1);
+    vector<int> grcol(3);
+    grcol[1] = 1;
+    ll res = 1;
+    for (size_t c = 1; c < n + 1; c++) {
+      if (!visited[c]) {
+        col[c] = 1;
+        if (!bfs(c, col, visited, grcol)) {
+          return 0;
+        } else {
+          res = (res * (powr[grcol[1]] + powr[grcol[2]])) % 998244353;
+        }
+        grcol[2] = 0;
+        grcol[1] = 1;
+      }
+    }
+    return res;
+  }
+
+  bool bfs(int p, vector<int>& col, vector<bool>& visited, vector<int>& grcol) {
+    queue<int> q;
+    visited[p] = true;
+    q.push(p);
+    while (!q.empty()) {
+      int itr = q.front();
+      q.pop();
+      int chcol = (col[itr] == 2) ? 1 : 2;
+      for (size_t i = 0; i < nodes[itr].adj.size(); i++) {
+        int k = nodes[itr].adj[i];
+        if (col[k] == 0 || col[k] == chcol) {
+          if (col[k] == 0) {
+            col[k] = chcol;
+            grcol[chcol]++;
+          }
+        } else
+          return false;
+        if (!visited[nodes[itr].adj[i]]) {
+          visited[k] = true;
+          q.push(k);
+        }
+      }
+    }
+    return true;
+  }
+};
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  cout.tie(NULL);
+
+  size_t o;
+  cin >> o;
+  while (o--) {
+    size_t n, m;
+    cin >> n >> m;
+    graph mygraph(n);
+    for (size_t c = 0; c < m; c++) {
+      int a, b;
+      cin >> a >> b;
+      mygraph.addEdge(a, b);
+    }
+    cout << mygraph.findans() << "\n";
+  }
+
+  return 0;
+}
+```
+Please note that some parts of the original code that seem to not be used anywhere have been removed. If they are actually used in parts of the program not shown in the original code, they should be added back.

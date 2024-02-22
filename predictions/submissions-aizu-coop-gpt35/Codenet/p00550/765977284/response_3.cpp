@@ -1,0 +1,1 @@
+int E[100000][20]; // Change vector<int> E[100000] to int E[100000][20]

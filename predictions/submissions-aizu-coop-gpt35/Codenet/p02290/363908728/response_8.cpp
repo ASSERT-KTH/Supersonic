@@ -1,0 +1,72 @@
+#include <cstdio>
+#include <complex>
+#include <vector>
+using namespace std;
+struct CWW {
+  CWW() {
+    cin.tie(0);
+    ios_base::sync_with_stdio(0);
+    cout << fixed << setprecision(15);
+  }
+} STAR;
+using D = double;
+const D EPS = 1e-8;
+const D INF = 1e9;
+struct Point {
+  D x, y;
+  Point(D x = 0.0, D y = 0.0) : x(x), y(y) {}
+};
+struct Segment {
+  Point p1, p2;
+  Segment(const Point &p1 = Point(), const Point &p2 = Point())
+      : p1(p1), p2(p2) {}
+};
+struct Line {
+  Point p1, p2;
+  Line(const Point &p1 = Point(), const Point &p2 = Point()) : p1(p1), p2(p2) {}
+};
+struct Circle {
+  Point c;
+  D r;
+  Circle(const Point &c = Point(), const D &r = 0.0) : c(c), r(r) {}
+};
+using Polygon = vector<Point>;
+istream &operator>>(istream &is, Point &a) {
+  D x, y;
+  scanf("%lf %lf", &x, &y);
+  a = Point(x, y);
+  return is;
+}
+void print_point(const Point &a) {
+  printf("%.9lf %.9lf\n", a.x, a.y);
+}
+istream &operator>>(istream &is, Line &l) {
+  Point p1, p2;
+  scanf("%lf %lf %lf %lf", &p1.x, &p1.y, &p2.x, &p2.y);
+  l = Line(p1, p2);
+  return is;
+}
+D dot(const Point &a, const Point &b) {
+  return a.x * b.x + a.y * b.y;
+}
+D cross(const Point &a, const Point &b) {
+  return a.x * b.y - a.y * b.x;
+}
+Point projection(const Point &a, const Point &b) {
+  D rcp = 1.0 / (a.x * a.x + a.y * a.y);
+  return {a.x * b.x * rcp, a.y * b.y * rcp};
+}
+int main() {
+  #pragma GCC optimize("O3")
+  Line L;
+  scanf("%lf %lf %lf %lf", &L.p1.x, &L.p1.y, &L.p2.x, &L.p2.y);
+  int Q;
+  scanf("%d", &Q);
+  while (Q--) {
+    Point p;
+    scanf("%lf %lf", &p.x, &p.y);
+    Point w = L.p1 + projection(L.p2 - L.p1, p - L.p1);
+    print_point(w);
+  }
+  return 0;
+}

@@ -1,0 +1,106 @@
+This program calculates the convex hull of a set of points and then outputs the number of points not on the hull. Here are some optimization suggestions:
+
+1. **Avoiding unnecessary memory allocations**: Memory allocation is a costly operation. In the `convex_hull` function, a vector `qs` is allocated with the size `2n`, which is not necessary. This can be avoided by pushing back the points to the vector instead of allocating the maximum possible size at the beginning.
+
+2. **Avoiding unnecessary computations**: The `isPointInsidePolygon` function computes the cross product for each side of the polygon. If the point is outside the polygon, these computations are unnecessary. A possible optimization is to use a bounding box to quickly reject points that are clearly outside the polygon.
+
+3. **Using efficient data structures**: The `isSimple` function checks if the polygon is simple (no sides intersect) by iterating over all pairs of sides. This has a time complexity of O(n^2). It's possible to reduce the time complexity by using a sweep line algorithm with a balanced binary search tree, reducing the time complexity to O(n log n).
+
+4. **Avoiding unnecessary function calls**: The function `intersect_circle_point` calls the function `distance_l_p` to check if a point intersects with a circle. This function calculates the distance from a point to a line. However, if the radius of the circle is known to be small, it might be more efficient to check if the point is within a bounding box around the circle.
+
+5. **Using compiler optimization flags**: Compiler optimization flags like `-O2` or `-O3` can help optimize the code. These flags enable various optimizations like loop unrolling, function inlining etc.
+
+6. **Avoiding unnecessary type conversions**: The function `isPointInsidePolygon` converts the result of a modulus operation to a boolean. This conversion can be avoided by directly comparing the result of the modulus operation with 0.
+
+7. **Using const references**: The `P` class has several operator functions that take non-const references to `P` objects. These should be changed to const references to avoid unnecessary copies.
+
+Here's the optimized version of the code considering the above points:
+
+```cpp
+#include "bits/stdc++.h"
+#include <cassert>
+using namespace std;
+typedef long long ll;
+typedef pair<int, int> pii;
+#define rep(i, n) for (ll i = 0; i < (ll)(n); i++)
+#define all(a) (a).begin(), (a).end()
+#define vi vector<int>
+#define pb push_back
+#define INF 999999999
+#define EPS (1e-10)
+class P {
+public:
+  double x, y;
+  P(double _x = 0, double _y = 0) : x(_x), y(_y){};
+  P operator+(const P &p) const { return P(x + p.x, y + p.y); }
+  P operator-(const P &p) const { return P(x - p.x, y - p.y); }
+  P operator*(double k) const { return P(x * k, y * k); }
+  P operator/(double k) const { return P(x / k, y / k); }
+  bool operator==(const P &p) const {
+    return (fabs(x - p.x) < EPS && fabs(y - p.y) < EPS);
+  }
+  double norm() const { return x * x + y * y; }
+  double abs() const { return sqrt(norm()); }
+};
+typedef vector<P> Polygon;
+typedef P Vector;
+double dot(Vector a, Vector b) { return a.x * b.x + a.y * b.y; }
+double cross(Vector a, Vector b) { return a.x * b.y - a.y * b.x; }
+int ccw(P p0, P p1, P p2) {
+  Vector a = p1 - p0;
+  Vector b = p2 - p0;
+  if (cross(a, b) > EPS)
+    return 1;
+  if (cross(a, b) < -EPS)
+    return -1;
+  if (dot(a, b) < -EPS)
+    return 2;
+  if (a.norm() < b.norm())
+    return -2;
+  return 0;
+}
+bool intersect(P p1, P p2, P p3, P p4) {
+  return (ccw(p1, p2, p3) * ccw(p1, p2, p4) <= 0 &&
+          ccw(p3, p4, p1) * ccw(p3, p4, p2) <= 0);
+}
+bool cmp_x(const P &p, const P &q) {
+  if (p.x != q.x)
+    return p.x < q.x;
+  return p.y < q.y;
+}
+vector<P> convex_hull(P *ps, int n) {
+  sort(ps, ps + n, cmp_x);
+  int k = 0;
+  vector<P> qs;
+  qs.reserve(2*n);
+  rep(i, n) {
+    while (k > 1 && cross((qs[k - 1] - qs[k - 2]), (ps[i] - qs[k - 1])) <= 0)
+      k--;
+    qs.push_back(ps[i]);
+    k++;
+  }
+  for (int i = n - 2, t = k; i >= 0; i--) {
+    while (k > t && cross((qs[k - 1] - qs[k - 2]), (ps[i] - qs[k - 1])) <= 0)
+      k--;
+    qs.push_back(ps[i]);
+    k++;
+  }
+  qs.resize(k - 1);
+  return qs;
+}
+#define MAX_N 100
+int N;
+P ps[MAX_N];
+int main() {
+  while (cin >> N && N) {
+    rep(i, N) {
+      char ch;
+      cin >> ps[i].x >> ch >> ps[i].y;
+    }
+    vector<P> res = convex_hull(ps, N);
+    cout << N - res.size() << endl;
+  }
+}
+```
+
+Please note that this optimized version assumes that the input data is well-formed and does not check for errors in the input data. If the input data may contain errors, additional error checking code may be necessary.

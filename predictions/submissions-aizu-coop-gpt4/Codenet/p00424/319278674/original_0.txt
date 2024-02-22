@@ -1,0 +1,68 @@
+First, I will analyze the provided C program:
+
+1. The program has a global `int` array `t` with 999 elements and a global `int` `n`.
+2. In the main function, the program first reads an integer into `n`. If the read operation is successful, the loop continues; if unsuccessful, the loop stops.
+3. Inside the loop, it first clears the array `t`.
+4. Then it reads `n` pairs of characters, uses the first character as an index into the array `t`, and assigns the second character to `t[i]`.
+5. Then it reads another integer into `n` and reads `n` characters. For each character, it outputs the corresponding element in the array `t`.
+
+Now, we can move onto the optimization strategy:
+
+1. Use dynamic memory allocation for the array `t` instead of a large static array.
+2. Use a more efficient way to clear array `t`.
+3. Use `fgets` and `sscanf` to read data in bulk instead of reading one character at a time with `scanf`.
+4. Use a buffer to store the output characters and use `fwrite` to write them to stdout in one operation.
+
+Here are the optimization steps:
+
+1. Instead of defining a large static array `t` with 999 elements, we can use `malloc` to allocate memory for `t` dynamically. This change can significantly reduce the memory footprint of the program when the array size is small. However, it requires that we free the memory with `free` when we're done with it to avoid memory leaks.
+
+2. Instead of using `bzero` to clear array `t`, we can use `memset` which is more standard and efficient.
+
+3. Instead of using `scanf` to read one character at a time, we can use `fgets` to read data in bulk and then use `sscanf` to parse the data. This change can reduce the number of system calls and thus improve performance.
+
+4. Instead of calling `putchar` for each output character, we can store the output characters in a buffer and use `fwrite` to write them to stdout in one operation. This change can also reduce the number of system calls and thus improve performance.
+
+Here is the optimized code:
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int main() {
+    int n;
+    int *t = NULL;
+    char line[999 * 3 + 1], ch, *p;
+    char output[999 + 1], *q;
+
+    while (scanf("%d", &n) == 1) {
+        t = realloc(t, n * sizeof(int));
+        memset(t, 0, n * sizeof(int));
+
+        fgets(line, sizeof(line), stdin);
+        for (p = line; n--; ) {
+            sscanf(p, " %c", &ch);
+            t[ch] = *(p + 2);
+            p += 3;
+        }
+
+        scanf("%d", &n);
+        fgets(line, sizeof(line), stdin);
+
+        for (p = line, q = output; n--; ) {
+            sscanf(p, " %c", &ch);
+            *q++ = !t[ch] * ch + t[ch];
+            p += 2;
+        }
+
+        fwrite(output, 1, q - output, stdout);
+        putchar('\n');
+    }
+
+    free(t);
+    return 0;
+}
+```
+
+Note: This code assumes that the input data is well-formatted. Proper error checking should be added in a production environment.

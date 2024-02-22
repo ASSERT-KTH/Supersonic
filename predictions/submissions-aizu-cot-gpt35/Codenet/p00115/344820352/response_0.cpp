@@ -1,0 +1,15 @@
+To optimize the given program, we can make the following modifications:
+
+1. Remove unnecessary header files: The program includes `<bits/stdc++.h>` which is a non-standard header file and includes many unnecessary header files. We can remove this line and include only the necessary header files.
+
+2. Avoid using the `equals` function: The `equals` function is used to compare floating-point numbers for equality. However, floating-point comparisons can be tricky due to precision errors. Instead of using `equals`, we can use a small epsilon value for comparisons.
+
+3. Avoid using the `fabs` function: The `fabs` function is used to compute the absolute value of a floating-point number. However, the `abs` function can be used to achieve the same result.
+
+4. Avoid unnecessary calculations in the `point_on_the_triangle3d` function: The `point_on_the_triangle3d` function calculates cross products and dot products unnecessarily. We can simplify the function by checking if the point lies on any of the triangle edges before performing further calculations.
+
+5. Avoid unnecessary calculations in the `rotateX`, `rorateY`, `rorateZ`, `rotateEuler`, and `rotateRollPitchYaw` functions: These functions perform complex calculations for rotation transformations. However, we can simplify the calculations by using trigonometric identities and simplifications.
+
+6. Avoid unnecessary calculations in the `Plane3d` class: The `Plane3d` class performs unnecessary calculations in the constructor and the `set_d` function. We can simplify the calculations by using the `set_d` function to set the value of `d` directly.
+
+7. Avoid unnecessary calculations in the `crosspointTS` function: The `crosspointTS` function performs unnecessary calculations for computing the intersection between a triangle and a segment. We can simplify the calculations by using the `intersectS` and `crosspointS` functions from the `Plane3d` class.

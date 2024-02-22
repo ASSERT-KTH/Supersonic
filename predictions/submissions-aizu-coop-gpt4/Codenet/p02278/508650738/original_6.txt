@@ -1,0 +1,110 @@
+# Code Analysis
+
+This code reads in a list of integers, sorts them, and uses a custom QuickFind union-find data structure to group the elements based on their original and sorted indexes. It then calculates a minimum cost based on these groups and outputs it.
+
+# Optimization Strategy
+
+1. **Inefficient Data Structures**: The union-find data structure used in the code is not optimized.
+    * The `unite` function reassigns the parent of each element in the smaller subset, which is inefficient. An improved version of union-find, Union by Rank with Path Compression, which merges two subsets based on their size and uses path compression for `same` operation, can be used to improve the efficiency.
+
+2. **Redundant or Unnecessary Computations**: 
+    * The code contains unnecessary map `p` which is not used anywhere. We can remove it.
+
+3. **Loops or Recursive Calls**: 
+    * In the final loop, there are two lookups into `a` vector, and both are under another loop. This can be optimized by using local variable to store the minimum and total sum of each subset.
+
+4. **Compiler Optimizations or Pragma Directives**: 
+    * We can use `ios::sync_with_stdio(false); cin.tie(NULL);` to fasten the IO operations for cin and cout.
+
+# Step-by-Step Explanation
+
+1. **Optimized Union-Find Data Structure**: Union-Find is a data structure that performs two operations very efficiently - `unite` (also called union), which merges two subsets, and `same`, which checks if two elements belong to the same subset. The current `unite` function works in O(n), but we can make it work in O(log n) by using the Union by Rank approach. In the Union by Rank approach, we always attach the smaller depth tree under the root of the deeper tree. This ensures that the depth of the tree remains O(log n) and hence the `unite` operation also takes O(log n) time. Further, we can use Path Compression in the `same` function to make it O(1) amortized. In this approach, we change the parent of every node to the subset's representative as we traverse up the tree.
+
+2. **Remove Unnecessary Computations**: We can remove the map `p` from the code which is not used anywhere.
+
+3. **Minimize Lookups**: In the final loop, we can use local variables to store the sum and minimum of each group. This will reduce the number of lookups in the `a` vector, making the code more efficient.
+
+4. **Fast IO**: We can use `ios::sync_with_stdio(false); cin.tie(NULL);` to fasten the IO operations for cin and cout. This is particularly useful when the input or output size is large.
+
+# Optimized Code Block
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+#define int long long
+
+struct QuickFind {
+  vector<int> r, p;
+  vector<vector<int>> v;
+  QuickFind() {}
+  QuickFind(int size) { init(size); }
+  void init(int size) {
+    r.resize(size, 0);
+    p.resize(size, 0);
+    v.resize(size);
+    for (int i = 0; i < size; i++) {
+      r[i] = 1, p[i] = i;
+      v[i].resize(1, i);
+    }
+  }
+  int find(int x) {
+    if (p[x] != x) {
+      p[x] = find(p[x]); // path compression
+    }
+    return p[x];
+  }
+  bool same(int x, int y) { return find(x) == find(y); }
+  void unite(int x, int y) {
+    x = find(x);
+    y = find(y);
+    if (x == y)
+      return;
+    if (r[x] < r[y])
+      swap(x, y);
+    r[x] += r[y];
+    p[y] = x; // union by rank
+    v[x].insert(v[x].end(), v[y].begin(), v[y].end());
+    v[y].clear();
+  }
+};
+
+signed main() {
+  ios::sync_with_stdio(false);
+  cin.tie(NULL);
+  
+  int n;
+  cin >> n;
+  vector<int> a(n);
+  for (int i = 0; i < n; i++)
+    cin >> a[i];
+  vector<int> b(a);
+  sort(b.begin(), b.end());
+  map<int, int> q;
+  for (int i = 0; i < n; i++) 
+    q[b[i]] = i;
+  
+  QuickFind qf(n);
+  for (int i = 0; i < n; i++)
+    qf.unite(i, q[a[i]]);
+  
+  int ans = 0;
+  for (int i = 0; i < n; i++) {
+    if (qf.p[i] != i)
+      continue;
+    int k = qf.v[i].size();
+    if (k == 1)
+      continue;
+    int m = a[qf.v[i][0]];
+    int tmp = 0;
+    for (int j = 0; j < k; j++) {
+      tmp += a[qf.v[i][j]];
+      m = min(m, a[qf.v[i][j]]);
+    }
+    ans += min(tmp + m * (k - 2), tmp + m + b[0] * (k + 1));
+  }
+  cout << ans << endl;
+  return 0;
+}
+``` 
+
+This optimized code is more efficient due to the following reasons: better union-find implementation, removal of unnecessary computations, reduction in number of vector lookups and faster IO operations.

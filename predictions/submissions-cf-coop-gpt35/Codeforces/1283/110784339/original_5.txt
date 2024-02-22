@@ -1,0 +1,128 @@
+Analysis:
+- The code includes a lot of unnecessary header files that are not used in the program.
+- The code uses unordered_map for storing distances, which incurs a high memory overhead due to hashing.
+- The code uses a queue for BFS traversal, which has a linear time complexity for deletion and insertion.
+- The code uses shuffle function to randomly shuffle the result vector, which can be an expensive operation if the vector is large.
+
+Optimization Strategy:
+1. Remove unnecessary header files: The code includes the `<bits/stdc++.h>` header, which includes all standard library headers. We can remove this line and include only the necessary headers, such as `<iostream>`, `<vector>`, `<unordered_map>`, `<queue>`, and `<algorithm>`.
+2. Replace unordered_map with vector: Instead of using an unordered_map for storing distances, we can use a vector with preallocated size to reduce memory overhead and improve cache locality.
+3. Use a deque instead of a queue: A deque allows efficient insertion and deletion at both ends, which is more suitable for the BFS traversal in this code.
+4. Avoid using shuffle function: Instead of shuffling the result vector using the shuffle function, we can use a random number generator to generate random indices and swap the elements in the vector. This avoids the overhead of shuffling the entire vector.
+
+Step-by-Step Explanation:
+1. Remove unnecessary header files:
+   - Remove the line `#include <bits/stdc++.h>`.
+   - Add the following header files:
+     ```
+     #include <iostream>
+     #include <vector>
+     #include <unordered_map>
+     #include <queue>
+     #include <algorithm>
+     ```
+
+2. Replace unordered_map with vector:
+   - Replace the line `unordered_map<ll, ll, custom_hash> d;` with `vector<ll> d(n, -1);`.
+   - Replace `d[v[i]] = 0LL;` with `d[v[i]] = 0;`.
+   - Replace `if (!d.count(cur - 1))` with `if (d[cur - 1] == -1)`.
+   - Replace `if (!d.count(cur + 1))` with `if (d[cur + 1] == -1)`.
+
+3. Use a deque instead of a queue:
+   - Replace the line `queue<ll> q;` with `deque<ll> q;`.
+   - Replace `q.pop();` with `q.pop_front();`.
+   - Replace `q.push(cur - 1);` with `q.push_back(cur - 1);`.
+   - Replace `q.push(cur + 1);` with `q.push_back(cur + 1);`.
+
+4. Avoid using shuffle function:
+   - Replace the line `shuffle(res.begin(), res.end(), rng);` with the following code:
+     ```
+     for (int i = res.size() - 1; i > 0; i--) {
+       int j = rng() % (i + 1);
+       swap(res[i], res[j]);
+     }
+     ```
+
+Optimized Code:
+```cpp
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+#include <deque>
+#include <algorithm>
+#include <random>
+
+using namespace std;
+
+#define ll long long
+#define ull unsigned long long
+
+struct custom_hash {
+  static uint64_t splitmix64(uint64_t x) {
+    x += 0x9e3779b97f4a7c15;
+    x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
+    x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
+    return x ^ (x >> 31);
+  }
+  size_t operator()(uint64_t x) const {
+    static const uint64_t FIXED_RANDOM =
+        chrono::steady_clock::now().time_since_epoch().count();
+    return splitmix64(x + FIXED_RANDOM);
+  }
+};
+
+mt19937 rng(time(0));
+
+void solve() {
+  int n, m;
+  cin >> n >> m;
+  vector<int> v(n);
+  for (auto &x : v)
+    cin >> x;
+  vector<ll> d(n, -1);
+  deque<ll> q;
+  for (int i = 0; i < n; i++) {
+    d[v[i]] = 0;
+    q.push_back(v[i]);
+  }
+  vector<ll> res;
+  ll mini_sum = 0;
+  while (!q.empty()) {
+    if ((int)res.size() == m)
+      break;
+    ll cur = q.front();
+    q.pop_front();
+    if (d[cur] != 0) {
+      res.push_back(cur);
+      mini_sum += d[cur];
+    }
+    if (d[cur - 1] == -1) {
+      d[cur - 1] = d[cur] + 1;
+      q.push_back(cur - 1);
+    }
+    if (d[cur + 1] == -1) {
+      d[cur + 1] = d[cur] + 1;
+      q.push_back(cur + 1);
+    }
+  }
+  for (int i = res.size() - 1; i > 0; i--) {
+    int j = rng() % (i + 1);
+    swap(res[i], res[j]);
+  }
+  cout << mini_sum << "\n";
+  for (auto x : res)
+    cout << x << " ";
+  cout << "\n";
+}
+
+int main() {
+  ios_base::sync_with_stdio(false), cin.tie(nullptr), cout.tie(nullptr);
+  int t = 1;
+  while (t--) {
+    solve();
+  }
+  return 0;
+}
+```
+
+This optimized code reduces memory usage by replacing the unordered_map with a vector and improves the running time by using a deque instead of a queue for BFS traversal. It also avoids the overhead of shuffling the entire result vector by using a random number generator to generate random indices and swap the elements.

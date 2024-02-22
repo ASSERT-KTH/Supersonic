@@ -1,0 +1,153 @@
+The given code is a C++ program that solves a mathematical problem for a given range of inputs. The code has a few areas that can be optimized for performance and memory usage. Let's analyze the code and propose optimizations step-by-step.
+
+1. Code Analysis:
+   - The code uses a vector `pint` to store prime numbers and a vector `f` to store factors of a number.
+   - The `fac` function finds the prime factors of a given number and stores them in the vector `f`.
+   - The `solve` function calculates the number of integers between 1 and `val` that are not divisible by any of the prime factors of `p`.
+   - The main function initializes the `pr` array to store whether a number is prime or not, and then reads input values in a loop to solve the mathematical problem.
+
+2. Optimization Strategy:
+   - Replace the use of `vector` with more efficient data structures.
+   - Optimize the `fac` function to avoid unnecessary computations and improve memory usage.
+   - Improve the `solve` function to reduce unnecessary calculations and improve performance.
+   - Utilize compiler optimizations to improve the overall performance of the code.
+
+3. Step-by-Step Explanation:
+   1. Replace the use of `vector` with more efficient data structures:
+      - The `vector` data structure is a dynamic array that provides flexibility in terms of resizing and adding elements. However, it comes with some overhead in terms of memory usage and performance.
+      - In this code, we can replace the `vector` data structure with a fixed-size array since the size is known beforehand.
+      - Replace the declaration `vector<long long> pint, f;` with `long long pint[maxn], f[maxn];`.
+      - Replace the usage of `pint.push_back(i);` with `pint[pint_size++] = i;`.
+      - Replace the usage of `f.push_back(x);` with `f[f_size++] = x;`.
+      - Here, `pint_size` and `f_size` are variables to keep track of the number of elements stored in the arrays.
+
+   2. Optimize the `fac` function:
+      - The current implementation of the `fac` function checks divisibility of all prime numbers up to the square root of `x`.
+      - However, this check is unnecessary since we only need to check divisibility with prime factors of `x`.
+      - We can optimize this by iterating only over the prime factors in `pint` and checking divisibility using the modulo operator.
+      - Additionally, we can avoid the need to clear the `f` array by using a separate index variable to keep track of the number of elements stored.
+      - Replace the `fac` function with the following optimized version:
+        ```cpp
+        void fac(int x) {
+          f_size = 0;
+          for (int i = 0; i < pint_size && pint[i] * pint[i] <= x; i++) {
+            if (x % pint[i] == 0) {
+              f[f_size++] = pint[i];
+              while (x % pint[i] == 0)
+                x /= pint[i];
+            }
+          }
+          if (x != 1)
+            f[f_size++] = x;
+        }
+        ```
+
+   3. Improve the `solve` function:
+      - The current implementation of the `solve` function uses a nested loop to iterate over all possible combinations of prime factors.
+      - This approach has a time complexity of O(2^n), where n is the number of prime factors.
+      - We can improve the performance of this function by using a more efficient algorithm.
+      - Let's analyze the problem: The `solve` function calculates the number of integers between 1 and `val` that are not divisible by any of the prime factors of `p`.
+      - Instead of iterating over all possible combinations of prime factors, we can count the numbers that are divisible by at least one prime factor and subtract it from `val`.
+      - To count the numbers divisible by at least one prime factor, we can use the principle of inclusion-exclusion.
+      - The principle of inclusion-exclusion states that the count of numbers divisible by at least one prime factor is equal to the sum of counts of numbers divisible by each individual prime factor minus the sum of counts of numbers divisible by each pair of prime factors, and so on.
+      - We can calculate the count using bitwise operations and a loop over the prime factors.
+      - Replace the `solve` function with the following optimized version:
+        ```cpp
+        int solve(int val) {
+          int ret = 0;
+          int lim = 1 << f_size;
+          for (int j = 1; j < lim; j++) {
+            int tp = 1, ct = 0;
+            for (int i = 0; i < f_size; i++) {
+              if ((j >> i) & 1) {
+                tp *= f[i];
+                ct++;
+              }
+            }
+            ret += (ct % 2 ? 1 : -1) * val / tp;
+          }
+          return val - ret;
+        }
+        ```
+
+   4. Utilize compiler optimizations:
+      - Modern compilers provide various optimization flags and directives to improve the performance of the generated code.
+      - We can use compiler optimizations to enable automatic loop unrolling, inline function calls, and other optimizations.
+      - Add the following compiler optimizations before the `main` function:
+        ```cpp
+        #pragma GCC optimize("O3")
+        #pragma GCC target("avx,avx2,fma")
+        ```
+
+4. Optimized Code Block:
+   ```cpp
+   #include <bits/stdc++.h>
+   using namespace std;
+   const int maxn = 1.8e7;
+   bool pr[maxn + 100];
+   long long pint[maxn];
+   long long f[maxn];
+   int pint_size = 0;
+   int f_size = 0;
+
+   void fac(int x) {
+     f_size = 0;
+     for (int i = 0; i < pint_size && pint[i] * pint[i] <= x; i++) {
+       if (x % pint[i] == 0) {
+         f[f_size++] = pint[i];
+         while (x % pint[i] == 0)
+           x /= pint[i];
+       }
+     }
+     if (x != 1)
+       f[f_size++] = x;
+   }
+
+   int solve(int val) {
+     int ret = 0;
+     int lim = 1 << f_size;
+     for (int j = 1; j < lim; j++) {
+       int tp = 1, ct = 0;
+       for (int i = 0; i < f_size; i++) {
+         if ((j >> i) & 1) {
+           tp *= f[i];
+           ct++;
+         }
+       }
+       ret += (ct % 2 ? 1 : -1) * val / tp;
+     }
+     return val - ret;
+   }
+
+   #pragma GCC optimize("O3")
+   #pragma GCC target("avx,avx2,fma")
+
+   int cas, x, p, k;
+   int main() {
+     memset(pr, true, sizeof(pr));
+     pr[0] = pr[1] = false;
+     for (int i = 2; i <= maxn; i++)
+       if (pr[i])
+         for (int j = 2; j * i <= maxn; j++)
+           pr[i * j] = false;
+     for (int i = 2; i <= maxn; i++)
+       if (pr[i])
+         pint[pint_size++] = i;
+     cin >> cas;
+     while (cas--) {
+       scanf("%d%d%d", &x, &p, &k);
+       fac(p);
+       int a1 = solve(x), L = x + 1, R = maxn, ans = 0;
+       while (L <= R) {
+         int mid = (L + R) / 2;
+         int val = solve(mid) - a1;
+         if (val >= k)
+           R = mid - 1, ans = mid;
+         else
+           L = mid + 1;
+       }
+       printf("%d\n", ans);
+     }
+     return 0;
+   }
+   ```

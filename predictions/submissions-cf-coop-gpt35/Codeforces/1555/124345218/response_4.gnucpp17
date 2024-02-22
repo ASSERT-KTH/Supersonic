@@ -1,0 +1,98 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+struct Range {
+    int w, l, r;
+};
+
+void dfs(int st, int en, int node, int rngst, int rngen, int value, int* sgtree, int* slow) {
+    sgtree[node] += slow[node];
+    slow[2 * node] += slow[node];
+    slow[2 * node + 1] += slow[node];
+    slow[node] = 0;
+    if (st >= rngst && en <= rngen) {
+        slow[node] += value;
+        sgtree[node] += slow[node];
+        slow[2 * node] += slow[node];
+        slow[2 * node + 1] += slow[node];
+        slow[node] = 0;
+    } else if (en < rngst || st > rngen) {
+        slow[node] += 0;
+    } else {
+        dfs(st, (st + en) / 2, 2 * node, rngst, rngen, value, sgtree, slow);
+        dfs(((st + en) / 2) + 1, en, 2 * node + 1, rngst, rngen, value, sgtree, slow);
+        sgtree[node] = min(sgtree[2 * node] + slow[2 * node], sgtree[2 * node + 1] + slow[2 * node + 1]);
+    }
+}
+
+void del(int i, int m, vector<Range>& ve, int* sgtree, int* slow) {
+    dfs(1, m - 1, 1, ve[i].l, ve[i].r, -1, sgtree, slow);
+}
+
+void add(int i, int m, vector<Range>& ve, int* sgtree, int* slow) {
+    dfs(1, m - 1, 1, ve[i].l, ve[i].r, 1, sgtree, slow);
+}
+
+int check(int* sgtree, int* slow) {
+    return sgtree[1] + slow[1];
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int n, m;
+    cin >> n >> m;
+
+    if (m == 2) {
+        cout << "0\n";
+        return 0;
+    }
+
+    vector<Range> ve(n);
+
+    for (int i = 0; i < n; i++) {
+        cin >> ve[i].l >> ve[i].r >> ve[i].w;
+        if (ve[i].l == 1 && ve[i].r == m) {
+            cout << "0\n";
+            return 0;
+        }
+        ve[i].r--;
+    }
+
+    sort(ve.begin(), ve.end(), [](const Range& a, const Range& b) {
+        return a.w < b.w;
+    });
+
+    int* sgtree = new int[4 * m];
+    int* slow = new int[4 * m];
+
+    int i = 0, j = 0, ans = 1000000;
+
+    while (j < ve.size() - 1) {
+        if (check(sgtree, slow) > 0) {
+            del(i, m, ve, sgtree, slow);
+            ans = min(ans, ve[j].w - ve[i].w);
+            i++;
+        } else {
+            j++;
+            add(j, m, ve, sgtree, slow);
+        }
+    }
+
+    while (check(sgtree, slow) > 0) {
+        del(i, m, ve, sgtree, slow);
+        ans = min(ans, ve[j].w - ve[i].w);
+        i++;
+    }
+
+    cout << ans << '\n';
+
+    delete[] sgtree;
+    delete[] slow;
+
+    return 0;
+}

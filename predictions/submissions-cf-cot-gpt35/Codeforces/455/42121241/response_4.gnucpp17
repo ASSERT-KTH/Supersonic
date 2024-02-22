@@ -1,0 +1,156 @@
+#include <cstdio>
+#include <map>
+
+struct dat {
+  static int n;
+  std::deque<int> A;
+  std::map<int, int> M;
+  dat *next = nullptr;
+
+  int count(int p, int x) const {
+    if (p > size()) {
+      auto it = M.find(x);
+      if (it == M.end()) {
+        return next->count(p - size(), x);
+      } else {
+        return next->count(p - size(), x) + it->second;
+      }
+    }
+    return std::count(A.begin(), A.begin() + p, x);
+  }
+
+  void insert(int p, int x) {
+    A.insert(A.begin() + p, x);
+    M[x]++;
+    if (size() >= n << 1) {
+      split();
+    }
+  }
+
+  int erase(int p) {
+    auto it = A.begin() + p - 1;
+    int x = *it;
+    A.erase(it);
+    if (--M[x] == 0) {
+      M.erase(x);
+    }
+    if (next != nullptr && size() + next->size() <= n) {
+      merge();
+    }
+    return x;
+  }
+
+  void push_back(int x) {
+    A.push_back(x);
+    M[x]++;
+    if (size() >= n << 1) {
+      split();
+    }
+  }
+
+  void push_front(int x) {
+    A.push_front(x);
+    M[x]++;
+    if (size() >= n << 1) {
+      split();
+    }
+  }
+
+  int pop_back() {
+    int x = A.back();
+    A.pop_back();
+    if (--M[x] == 0) {
+      M.erase(x);
+    }
+    if (next != nullptr && size() + next->size() <= n) {
+      merge();
+    }
+    return x;
+  }
+
+  int pop_front() {
+    int x = A.front();
+    A.pop_front();
+    if (--M[x] == 0) {
+      M.erase(x);
+    }
+    if (next != nullptr && size() + next->size() <= n) {
+      merge();
+    }
+    return x;
+  }
+
+  int size() const { return A.size(); }
+
+  void split() {
+    if (size() < n << 1) {
+      return;
+    }
+    dat *tmp = new dat;
+    while (size() > n) {
+      tmp->push_front(pop_back());
+    }
+    tmp->next = next;
+    next = tmp;
+  }
+
+  void merge() {
+    if (next == nullptr || size() + next->size() > n) {
+      return;
+    }
+    while (next->size() > 0) {
+      push_back(next->pop_front());
+    }
+    dat *tmp = next;
+    next = tmp->next;
+    delete tmp;
+  }
+
+  void print() const {
+    for (int x : A) {
+      fprintf(stderr, "%3d", x);
+    }
+    if (next == nullptr) {
+      fprintf(stderr, "\n");
+    } else {
+      next->print();
+    }
+  }
+};
+
+int dat::n;
+
+int main() {
+  int n, m, last = 0;
+  scanf("%d", &n);
+  dat::n = ceil(sqrt(n << 2));
+  dat *D = new dat, *cur = D;
+  for (int i = 0; i < n; i++) {
+    if (cur->size() >= dat::n) {
+      cur->next = new dat;
+      cur = cur->next;
+    }
+    int x;
+    scanf("%d", &x);
+    cur->push_back(x);
+  }
+  for (scanf("%d", &m); m > 0; m--) {
+    int op, l, r, k;
+    scanf("%d", &op);
+    scanf(op == 1 ? "%d%d" : "%d%d%d", &l, &r, &k);
+    l = (l + last - 1) % n + 1;
+    r = (r + last - 1) % n + 1;
+    k = (k + last - 1) % n + 1;
+    if (l > r) {
+      std::swap(l, r);
+    }
+    if (op == 1) {
+      D->insert(l - 1, D->erase(r));
+    } else {
+      l = D->count(l - 1, k);
+      r = D->count(r, k);
+      printf("%d\n", r - l);
+      last = r - l;
+    }
+  }
+}

@@ -1,0 +1,29 @@
+This code is quite complex and consists of multiple classes, functions, templates, and a main function. It is a geometric computation program that uses various mathematical operations on vectors, lines, and polygons. The main function reads input, creates necessary objects and performs specific checks.
+
+Optimization Strategy:
+
+1. Unused includes: Remove unused include statements. This can save on compile-time and also makes the code cleaner and easier to read.
+
+2. Use of Macros: The code uses macros extensively, which can sometimes lead to hard-to-debug problems. If possible, consider replacing them with inline functions or constexpr, as they are safer and more flexible.
+
+3. Redundant computations: The check() function is called multiple times with the same arguments in a loop. If its computation is expensive and its results are idempotent (i.e., it always gives the same output for the same input), consider using a hash table or other caching strategy to save and reuse the results.
+
+4. Variable Shadowing: The code has multiple instances where variables are shadowing variables from an outer scope. This is generally bad practice and can lead to confusion and bugs. Renaming these variables to avoid shadowing will make the code clearer and safer.
+
+5. Use of assert: The code uses assert for error checking. While this isn't necessarily bad, it does mean that these checks will not be present in a release build of the code. If these are conditions that should always be checked, then they should be replaced with regular if statements and error handling code.
+
+6. Code Readability: Some parts of the code are quite hard to read due to the use of macros, lack of comments, and single letter variable names. Improving the readability of the code will make it easier to understand, which can help in identifying further optimization opportunities.
+
+Step-by-Step Explanation:
+
+1. Remove all unused includes: The code includes a large number of libraries, not all of which are used. Removing these can marginally improve the compile time and clean up the code. 
+
+2. Replace Macros with inline functions or constexpr: Macros are simple text replacements and do not have any type safety. They can often lead to hard-to-debug problems. It would be better to replace them with inline functions or constexpr, which are type safe and can also offer better performance.
+
+3. Implement a caching strategy for check() function: The check() function seems to be called multiple times with the same arguments. If the computation of this function is expensive, it would be beneficial to store its results in a cache (like a hash table) and reuse them.
+
+4. Rename shadowing variables: There are several instances where variables inside loops or blocks have the same name as variables in an outer scope. This is called shadowing and it can lead to confusion and bugs. Rename these variables to make the code clearer.
+
+5. Replace assert with regular error checks: The code uses assert to check for certain conditions. However, these checks will be removed in a release build. If these are conditions that need to be checked always, replace assert with regular if statements and error handling code.
+
+6. Improve Code Readability: Add comments explaining the purpose of functions and blocks of code. Also, consider renaming single letter variable names to more descriptive names.

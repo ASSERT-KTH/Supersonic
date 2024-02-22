@@ -1,0 +1,19 @@
+The given code is a C++ program that performs some graph operations. It reads input data, builds a graph, performs breadth-first search (BFS), and outputs the results. The code uses the `getchar_unlocked` function to read integers from input and `printf` to print the output.
+
+Now let's analyze the code and identify potential areas for optimization:
+
+1. The `getchar_unlocked` function is used to read integers from input. This function is not only platform-specific but also slow compared to other input methods like `scanf` or `cin`. We can replace it with `scanf` to improve the input reading performance.
+
+2. The `vector` data structure is used to represent the graph edges. However, it is not the most memory-efficient option. We can replace it with a more memory-friendly adjacency list representation using arrays.
+
+3. The `queue` data structure is used for BFS traversal. However, there are two instances of `queue` declared, which is unnecessary. We can remove one of them.
+
+4. The `memset` function is used to initialize the `d` array with `-1`. However, `memset` is not efficient for initializing non-trivial types like `int`. We can use a loop to initialize the array instead.
+
+5. The `swap` function is used to swap `u[i]` and `v[i]` if `d[u[i]] > d[v[i]]`. However, we can optimize this by using an `if` condition and swapping the values directly.
+
+6. The `clear` function is called on each `E[i]` vector to clear its contents. However, this is unnecessary since the vectors will be rebuilt later in the code.
+
+7. The `emplace_back` function is used to add elements to the `E[u[i]]` vector. This function can be replaced with `push_back` for simpler code.
+
+8. The `printf` function is used to print the output. However, `printf` is slower than `cout` in most cases. We can replace it with `cout` for faster output.

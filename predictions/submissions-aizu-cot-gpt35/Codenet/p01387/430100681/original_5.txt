@@ -1,0 +1,92 @@
+To optimize the given C/C++ program, we can make the following modifications:
+
+1. Remove unnecessary include statements:
+The program includes the "bits/stdc++.h" header file, which is not standard and can slow down the compile time. We can remove this include statement and only include the necessary headers.
+
+2. Remove unnecessary template inheritance:
+The "PresidentRandomizedBinarySearchTree" class is derived from the "RandomizedBinarySearchTree" class, but it doesn't add any additional functionality or modify any behavior. We can remove this inheritance and directly use the "RandomizedBinarySearchTree" class.
+
+3. Optimize the "lower_bound" and "upper_bound" functions:
+In the "OrderedMultiSet" class, the "lower_bound" and "upper_bound" functions use a recursive approach to search for the desired element. This can be slow for large sets. We can modify these functions to use an iterative approach, such as binary search, to improve the performance.
+
+4. Remove unnecessary virtual function:
+The "query" function in the "CentroidPathDecomposition" class is marked as virtual, but it is not overridden in any derived classes. We can remove the virtual keyword as it is not needed.
+
+5. Remove unnecessary variable:
+The "NextPath" vector in the "CentroidPathDecomposition" class is not used. We can remove this variable to save memory.
+
+6. Use a more efficient data structure:
+The "OrderedMultiSet" class uses a binary search tree to store the elements. We can replace this with a balanced binary search tree, such as a red-black tree or an AVL tree, to improve the performance of insert, delete, and search operations.
+
+7. Optimize the "sum" function:
+In the main loop of the program, the "sum" function is called multiple times with the same values of "x", "y", and "lca". We can optimize this function by calculating the upper bounds and lower bounds once and storing them in variables, instead of calling the functions multiple times.
+
+Here is the optimized C/C++ program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <functional>
+using namespace std;
+
+template <class Key>
+struct RandomizedBinarySearchTree {
+  struct Node {
+    Node *l, *r;
+    int cnt;
+    Key key;
+    Node() {}
+    Node(const Key &k) : cnt(1), key(k), l(nullptr), r(nullptr) {}
+  };
+  vector<Node> pool;
+  int ptr;
+  RandomizedBinarySearchTree(int sz) : pool(sz), ptr(0) {}
+  inline Node *alloc(const Key &key) { return &(pool[ptr++] = Node(key)); }
+  Node *clone(Node *t) { return t; }
+  inline int count(const Node *t) { return t ? t->cnt : 0; }
+  inline Node *update(Node *t) {
+    t->cnt = count(t->l) + count(t->r) + 1;
+    return t;
+  }
+  Node *propagate(Node *t) { return update(clone(t)); }
+  Node *merge(Node *l, Node *r) {
+    if (!l || !r)
+      return l ? l : r;
+    if (rand() % (l->cnt + r->cnt) < l->cnt) {
+      l = propagate(l);
+      l->r = merge(l->r, r);
+      return update(l);
+    } else {
+      r = propagate(r);
+      r->l = merge(l, r->l);
+      return update(r);
+    }
+  }
+  pair<Node *, Node *> split(Node *t, int k) {
+    if (!t)
+      return {t, t};
+    t = propagate(t);
+    if (k <= count(t->l)) {
+      auto s = split(t->l, k);
+      t->l = s.second;
+      return {s.first, update(t)};
+    } else {
+      auto s = split(t->r, k - count(t->l) - 1);
+      t->r = s.first;
+      return {update(t), s.second};
+    }
+  }
+  Node *build(int l, int r, const vector<Key> &v) {
+    if (l + 1 >= r)
+      return alloc(v[l]);
+    return merge(build(l, (l + r) >> 1, v), build((l + r) >> 1, r, v));
+  }
+  Node *build(const vector<Key> &v) {
+    ptr = 0;
+    return build(0, (int)v.size(), v);
+  }
+  void dump(Node *r, typename vector<Key>::iterator &it) {
+    if (!r)
+      return;
+    r =

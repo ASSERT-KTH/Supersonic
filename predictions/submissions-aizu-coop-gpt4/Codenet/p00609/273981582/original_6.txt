@@ -1,0 +1,112 @@
+The provided code is a solution for a problem that involves some geometric calculations. Here's a brief overview:
+
+1. The code defines two structures, `Point` and `Event`. `Point` stores the coordinates of a point along with a type indicator. `Event` stores a `Point` instance, an integer `x` and a boolean-like `in`.
+2. The `PlaneSweep()` function uses a sweep line algorithm approach. It uses two sets (open[2]) to store `Point` instances. The function iterates through all events, and for each event, it calculates the distance between the event's point and all points in the opposite set that have a y-coordinate within a certain range. It then updates the result and the set of points.
+3. The `main()` function reads input data, constructs the events, sorts them, and calls the `PlaneSweep()` function to get the result.
+
+Given the nature of the problem, the code is already fairly optimized. However, some optimizations can still be done:
+
+1. **Avoid repetitive computation**: In the `PlaneSweep()` function, the expression `(int)p.type ^ 1` is used multiple times. We can calculate it once and reuse the calculated value.
+2. **Preallocate memory for `set<Point>`**: Although `std::set` automatically handles memory allocation, we can still optimize the performance by reserving a reasonable amount of memory for the `set` instances in advance if we have an estimate.
+3. **Use `std::ios_base::sync_with_stdio(false)`**: This can give a significant performance boost when dealing with large amounts of I/O operations in C++.
+
+Here's the optimized code:
+
+```cpp
+#include <algorithm>
+#include <iostream>
+#include <math.h>
+#include <set>
+#include <vector>
+using namespace std;
+typedef long long ll;
+#define REP(i, n) for (int i = 0; i < (int)(n); i++)
+#define MEMSET(v, h) memset((v), h, sizeof(v))
+struct Point {
+  int x;
+  int y;
+  char type;
+  Point() { ; }
+  Point(double x, double y, int type) : x(x), y(y), type(type) { ; }
+  bool operator<(const Point &rhs) const {
+    if (y != rhs.y) {
+      return y < rhs.y;
+    }
+    return x < rhs.x;
+  }
+};
+struct Event {
+  int x;
+  Point p;
+  char in;
+  Event() { ; }
+  Event(int x, Point p, int in) : x(x), p(p), in(in) { ; }
+  bool operator<(const Event &rhs) const {
+    if (x != rhs.x) {
+      return x < rhs.x;
+    }
+    return in > rhs.in;
+  }
+};
+inline int square(int x) { return x * x; }
+inline int dist2(const Point &a, const Point &b) {
+  return square(a.x - b.x) + square(a.y - b.y);
+}
+int an, bn, n;
+int r;
+Event event[500000];
+int PlaneSweep() {
+  int ans = 0;
+  set<Point> open[2];
+  REP(iter, n) {
+    Event &e = event[iter];
+    Point &p = e.p;
+    int type_xor = (int)p.type ^ 1;
+    if (e.in) {
+      set<Point>::iterator lower =
+          open[type_xor].lower_bound(Point(0, p.y - 4 * r - 1, 0));
+      set<Point>::iterator upper =
+          open[type_xor].upper_bound(Point(0, p.y + 4 * r + 1, 0));
+      for (set<Point>::iterator it = lower; it != upper; it++) {
+        if (dist2(*it, p) <= 16 * r * r) {
+          ans++;
+        }
+      }
+      open[(int)p.type].insert(p);
+    } else {
+      open[(int)p.type].erase(open[(int)p.type].find(p));
+    }
+  }
+  return ans;
+}
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  while (cin >> an >> bn >> r, an | bn) {
+    n = (an + bn) * 2;
+    REP(i, an) {
+      int x, y;
+      cin >> x >> y;
+      event[2 * i + 0] = Event(x - 2 * r, Point(x, y, 0), 1);
+      event[2 * i + 1] = Event(x + 2 * r, Point(x, y, 0), 0);
+    }
+    REP(i, bn) {
+      int x, y;
+      cin >> x >> y;
+      event[2 * an + 2 * i + 0] = Event(x - 2 * r, Point(x, y, 1), 1);
+      event[2 * an + 2 * i + 1] = Event(x + 2 * r, Point(x, y, 1), 0);
+    }
+    sort(event, event + n);
+    int ans = PlaneSweep();
+    cout << ans << "\n";
+  }
+  return 0;
+}
+```
+
+In the optimized code, I've made the following changes:
+
+1. Replaced `scanf` and `printf` with `cin` and `cout` for better performance and consistency with other C++ code.
+2. Moved the calculation `(int)p.type ^ 1` outside of the if-else statement in the `PlaneSweep` function.
+3. Applied `std::ios_base::sync_with_stdio(false)` and `cin.tie(NULL)` to speed up the I/O operations.
+4. Removed unused includes and defines.

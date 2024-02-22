@@ -1,0 +1,102 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <cmath>
+#include <cassert>
+#include <cstring>
+#include <deque>
+
+using namespace std;
+
+const int G = 400002;
+
+vector<int> l[G];
+int skok[G], o[G], zam[G], GR[G][2], mxd[G], mxp[G], dp[G][2], sz[G], good[G];
+vector<int> gd, bd;
+
+int CALC(int v, int p, int D) {
+    mxd[v] = 1;
+    sz[v] = 1;
+    int c1 = 0, c2 = 0;
+    for (int h : l[v]) {
+        if (h == p) continue;
+        int x = CALC(h, v, D + 1);
+        mxd[v] = max(mxd[v], x + 1);
+        sz[v] += sz[h];
+        if (x >= c1) c2 = c1, c1 = x;
+        else if (x > c2) c2 = x;
+    }
+    mxp[v] = c1 + c2 + 1;
+    return mxd[v];
+}
+
+int find_centroid(int v, int p) {
+    int MX = 0, num = -1;
+    for (int h : l[v]) {
+        if (h != p && sz[h] > MX) MX = sz[h], num = h;
+    }
+    return MX > a / 2 ? find_centroid(num, v) : v;
+}
+
+void KROLIK(int v) {
+    if (good[v]) gd.push_back(v);
+    else bd.push_back(v);
+    for (int h : l[v]) {
+        if (!good[h]) KROLIK(h);
+    }
+}
+
+void RIP_PAPA(int v, int p) {
+    for (int q = 0; q < l[v].size(); q++) {
+        if (l[v][q] == p) {
+            l[v].erase(l[v].begin() + q);
+            break;
+        }
+    }
+    for (int h : l[v]) RIP_PAPA(h, v);
+}
+
+int eba = 0;
+void rnm(int v) {
+    zam[v] = eba++;
+    deque<int> dq = {v};
+    while (!dq.empty()) {
+        int x = dq[0];
+        dq.pop_front();
+        for (int h : l[x]) {
+            if (zam[h] != -1) continue;
+            dq.push_back(h);
+            zam[h] = eba++;
+        }
+    }
+}
+
+int iba = 0;
+void rnm2(int v) {
+    zam[v] = iba++;
+    deque<int> dq = {v};
+    while (!dq.empty()) {
+        int x = dq[0];
+        dq.pop_front();
+        for (int h : l[x]) {
+            zam[h] = iba++;
+            if (good[h]) continue;
+            dq.push_back(h);
+        }
+    }
+}
+
+int GA(int LEN) {
+    if (o[LEN] != -1) return o[LEN];
+    int d1, d2, w, rg;
+    for (int q = a; q >= 0; q--) {
+        if (good[q]) {
+            dp[q][0] = sz[q] / LEN;
+            dp[q][1] = sz[q] % LEN;
+            continue;
+        }
+        dp[q][0] = 0;
+        d1 = d2 = 0, w = GR[q][0], rg = GR[q][1];
+        for (; w <= rg; w++) {
+            dp[q][0] += dp[w][0];
+            if (dp[w][1] >= d1) d2 = d1, d1 = dp[w][1];

@@ -1,0 +1,168 @@
+Analysis:
+
+1. The code uses a vector of pairs to store the input values. Each pair represents a range of values, and the second element of the pair represents the index of the range.
+2. The code uses a map to create a mapping between the values in the input and their corresponding indices in the vector.
+3. The code updates a segment tree to keep track of the minimum value in a range of indices.
+4. The code performs a binary search to find the maximum range of indices such that the minimum value in the range is at least k.
+5. The code calculates the maximum range and its corresponding index.
+6. The code then finds the indices that fall within the maximum range and prints them.
+
+Potential optimizations:
+
+1. Avoid unnecessary memory allocations: The code uses vectors and maps extensively. We can try to minimize memory allocations by using fixed-size arrays instead of vectors and by using arrays instead of maps where possible.
+
+2. Use a more efficient data structure for the segment tree: The current implementation uses a vector to represent the segment tree. We can optimize this by using an array instead, as it has a lower memory overhead and can provide better cache locality.
+
+3. Optimize the binary search: The binary search is used to find the maximum range of indices. We can optimize this by using a loop instead of recursion and by avoiding unnecessary comparisons and calculations.
+
+4. Minimize unnecessary calculations: There are a few calculations that can be avoided or optimized, such as calculating the size of the range in each iteration of the loop.
+
+5. Use compiler optimizations: We can use compiler optimizations, such as loop unrolling, to improve the performance of the code.
+
+Optimization strategy:
+
+1. Replace the vector of pairs with a fixed-size array: Since the size of the input is known beforehand, we can use a fixed-size array instead of a vector to store the pairs of values. This will avoid unnecessary memory allocations and improve cache locality.
+
+2. Replace the map with an array: Instead of using a map to create a mapping between the values in the input and their corresponding indices, we can use an array. Since the values are integers, we can use the values themselves as indices in the array. This will eliminate the overhead of using a map and improve memory usage.
+
+3. Replace the vector-based segment tree with an array-based implementation: Instead of using a vector to represent the segment tree, we can use an array. This will improve memory usage and cache locality.
+
+4. Optimize the binary search: Instead of using recursion, we can use a loop to perform the binary search. This will eliminate the overhead of function calls and improve performance.
+
+5. Minimize unnecessary calculations: We can avoid unnecessary calculations, such as calculating the size of the range in each iteration of the loop, by storing the size in a separate variable.
+
+6. Use compiler optimizations: We can use compiler optimizations, such as loop unrolling, to improve the performance of the code.
+
+Optimized code:
+
+```cpp
+#include <iostream>
+#include <algorithm>
+#include <vector>
+#include <map>
+#include <climits>
+
+using namespace std;
+
+const int N = 6e5 + 5;
+const int MAX_RANGE = 1e9 + 1;
+
+pair<pair<int, int>, int> v[N];
+int mp[MAX_RANGE] = {0};
+int inv_map[N];
+int segtree[4 * N] = {0};
+int lazy[4 * N] = {0};
+
+void spread(int node, int l, int r) {
+  if (lazy[node] != 0) {
+    segtree[node] += lazy[node];
+    if (l != r) {
+      lazy[2 * node + 1] += lazy[node];
+      lazy[2 * node + 2] += lazy[node];
+    }
+  }
+  lazy[node] = 0;
+}
+
+void update(int x, int y, int val, int node = 0, int l = 0, int r = N - 1) {
+  spread(node, l, r);
+  if (l > y || r < x || x > y)
+    return;
+  if (l >= x && r <= y) {
+    lazy[node] += val;
+    spread(node, l, r);
+    return;
+  }
+  int mid = (l + r) >> 1;
+  update(x, y, val, 2 * node + 1, l, mid);
+  update(x, y, val, 2 * node + 2, mid + 1, r);
+  segtree[node] = min(segtree[2 * node + 1], segtree[2 * node + 2]);
+}
+
+int query(int x, int y, int node = 0, int l = 0, int r = N - 1) {
+  spread(node, l, r);
+  if (l > y || r < x)
+    return INT_MAX - 1;
+  if (l >= x && r <= y) {
+    return segtree[node];
+  }
+  int mid = (l + r) >> 1;
+  return min(query(x, y, 2 * node + 1, l, mid),
+             query(x, y, 2 * node + 2, mid + 1, r));
+}
+
+void solve() {
+  sort(v, v + N);
+  int c = 0;
+  for (int i = 0; i < N; i++) {
+    mp[v[i].first.first] = 0;
+    mp[v[i].first.second] = 0;
+  }
+  for (auto& i : mp) {
+    inv_map[c] = i.first;
+    i.second = c++;
+  }
+  int mx = 0, idx = -1;
+  for (int i = 0; i < N; i++) {
+    update(mp[v[i].first.first], mp[v[i].first.second], 1);
+    int scaled_val = mp[v[i].first.first];
+    int tt = -1;
+    int s = scaled_val, e = c;
+    while (s <= e) {
+      int mid = (s + e) >> 1;
+      int val = query(scaled_val, mid);
+      if (val >= k) {
+        tt = mid;
+        s = mid + 1;
+      } else
+        e = mid - 1;
+    }
+    if (tt == -1)
+      continue;
+    int temp = inv_map[tt] - v[i].first.first + 1;
+    if (temp > mx) {
+      mx = temp;
+      idx = i;
+    }
+  }
+  if (idx == -1) {
+    cout << 0 << endl;
+    for (int i = 1; i <= k; i++)
+      cout << i << ' ';
+    cout << endl;
+    return;
+  }
+  int l = v[idx].first.first, r = l + mx - 1;
+  vector<int> ans;
+  for (int i = 0; i < N; i++) {
+    if (k == 0)
+      break;
+    if (v[i].first.first <= l && r <= v[i].first.second) {
+      ans.push_back(v[i].second);
+      k--;
+    }
+  }
+  sort(ans.begin(), ans.end());
+  cout << mx << endl;
+  for (int i : ans)
+    cout << i << " ";
+  cout << endl;
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  cout.tie(NULL);
+  
+  int n, k;
+  cin >> n >> k;
+  for (int i = 0; i < n; i++) {
+    cin >> v[i].first.first >> v[i].first.second;
+    v[i].second = i + 1;
+  }
+  
+  solve();
+  
+  return 0;
+}
+```

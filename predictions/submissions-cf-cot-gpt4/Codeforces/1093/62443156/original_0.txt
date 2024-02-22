@@ -1,0 +1,100 @@
+The program seems well-structured but there are few changes which can help to optimize it. 
+
+1. Use of `auto` keyword: In the given code, the data type of variables is explicitly mentioned. Replacing it with auto keyword can make the code cleaner and easier to maintain. The auto keyword tells the compiler to automatically deduce the type of the variable at compile time.
+
+2. Use of `emplace_back` instead of `push_back`: For vectors, `emplace_back` constructs the element in place and is generally faster than `push_back` as it avoids an extra copy.
+
+3. Use of `reserve` for vectors: If you know the size of vector in advance, it's better to use `reserve` function to avoid reallocations.
+
+4. Reducing Scope of Variables: Variables should be declared in the smallest possible scope to reduce memory usage and to avoid unnecessary loading and unloading of variables.
+
+5. Remove unnecessary includes: If an include file is not used in the program, it should be removed to decrease compilation time.
+
+Here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <utility>
+#include <chrono>
+#include <random>
+using namespace std;
+
+template <typename T1, typename T2>
+std::ostream &operator<<(std::ostream &os, const std::pair<T1, T2> &p) {
+  return os << '{' << p.first << ", " << p.second << '}';
+}
+
+// Removed unused template function, namespaces, debug macro and unused libraries
+
+template <typename T, typename JoinFn> class seg_tree {
+public:
+  seg_tree(int n, const T &zero = T(), const JoinFn &join_fn = JoinFn())
+      : join_fn_(join_fn), n_(n), data_(2 * next_power_of_two(n_) - 1, zero) {}
+  seg_tree(const std::vector<T> &data, const JoinFn &join_fn = JoinFn())
+      : join_fn_(join_fn), n_((int)data.size()),
+        data_(2 * next_power_of_two(n_) - 1) {
+    init(0, 0, n_ - 1, data);
+  }
+  int size() const { return n_; }
+  template <typename UpdateFn>
+  void update(int pos, const T &val, UpdateFn update_fn) {
+    return update(0, 0, n_ - 1, pos, val, update_fn);
+  }
+  T query(int pos) const { return query(pos, pos); }
+  T query(int first, int last) const {
+    return query(0, 0, n_ - 1, first, last);
+  }
+  template <typename ContainsFn> int find(T val, ContainsFn contains_fn) const {
+    if (!contains_fn(data_[0], val)) {
+      return n_;
+    }
+    return find(0, 0, n_ - 1, val, contains_fn);
+  }
+  friend std::ostream &operator<<(std::ostream &os, const seg_tree &tree) {
+    os << '{';
+    for (int i = 0; i < tree.size(); ++i) {
+      if (i != 0) {
+        os << ", ";
+      }
+      os << tree.query(i);
+    }
+    return os << '}';
+  }
+  
+  // Rest of the seg_tree class remains the same
+  
+};
+
+int main() {
+  std::mt19937 rng(
+      std::chrono::high_resolution_clock::now().time_since_epoch().count());
+  std::ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+  cout << boolalpha;
+  
+  int n, k;
+  cin >> n >> k;
+  vector<vector<int>> a(n, vector<int>(k));
+  for (auto &arr : a) {
+    for (auto &el : arr) {
+      cin >> el;
+    }
+  }
+  auto join = [](const pair<int, int> &a, const pair<int, int> &b) {
+    return pair(min(a.first, b.first), max(a.second, b.second));
+  };
+  auto update = [](pair<int, int> &a, const pair<int, int> &b) { a = b; };
+  vector<seg_tree<pair<int, int>, decltype(join)>> trees;
+  trees.reserve(1 << k);
+  for (int mask = 0; mask < (1 << k); ++mask) {
+    trees.emplace_back(seg_tree<pair<int, int>, decltype(join)>(n, {1e9, -1e9}, join));
+  }
+  
+  // Rest of the main function remains the same
+  
+  return 0;
+}
+```
+
+Please note that the effectiveness of these changes may vary depending on the compiler and architecture.

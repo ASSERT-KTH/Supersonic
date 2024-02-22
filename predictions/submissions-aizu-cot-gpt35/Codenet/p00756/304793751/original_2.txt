@@ -1,0 +1,89 @@
+The given program uses a depth-first search (DFS) algorithm to solve a problem involving circles in a 2D plane. The program checks all possible combinations of circles to find the maximum number of non-overlapping circles that have the same color.
+
+To optimize the program, we can make the following modifications:
+
+1. **Use a bitset for memoization**: The program currently uses a boolean array `memo` with size `1 << 24` to store whether a particular state has been visited or not. This requires a large amount of memory. Instead, we can use a `std::bitset<1 << 24>` to store the same information in a more memory-efficient way.
+
+2. **Precompute circle distances**: The program calculates the distance between two circles using the formula `(x[i] - x[a]) * (x[i] - x[a]) + (y[i] - y[a]) * (y[i] - y[a])` inside the `ok` function. We can precompute and store the squared distances between all pairs of circles in a 2D array to avoid redundant calculations.
+
+3. **Reduce unnecessary function calls**: The program currently calls the `ok` function multiple times for the same circle pair and state. We can reduce the number of function calls by storing the result of `ok` in a temporary variable.
+
+4. **Optimize the DFS loop**: The program uses nested loops to iterate over all possible circle pairs. We can optimize this loop by starting the inner loop from `i + 1` instead of `0` and breaking out of the inner loop once the colors of the circles differ.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <bitset>
+#include <algorithm>
+using namespace std;
+
+int n;
+int x[24], y[24], r[24], c[24];
+bitset<1 << 24> memo;
+int dist[24][24];
+
+bool ok(int a, int bit) {
+  for (int i = 0; i < a; i++) {
+    if (((bit >> i) & 1) == 0)
+      continue;
+    int sum = (r[i] + r[a]) * (r[i] + r[a]);
+    if (dist[i][a] < sum)
+      return false;
+  }
+  return true;
+}
+
+int dfs(int bit) {
+  memo[bit] = true;
+  int ret = n;
+  for (int i = 0; i < n; i++)
+    if ((bit >> i) & 1)
+      ret--;
+
+  for (int i = 0; i < n; i++) {
+    if (((bit >> i) & 1) == 0 || ok(i, bit) == false)
+      continue;
+    for (int j = i + 1; j < n; j++) {
+      if (((bit >> j) & 1) == 0 || c[i] != c[j])
+        break;
+      int to_bit = (bit ^ (1 << i)) ^ (1 << j);
+      if (ok(j, bit) && !memo[to_bit]) {
+        ret = max(ret, dfs(to_bit));
+      }
+    }
+  }
+  return ret;
+}
+
+void solve() {
+  memo.reset();
+  cout << dfs((1 << n) - 1) << endl;
+}
+
+bool input() {
+  cin >> n;
+  if (!n)
+    return false;
+  for (int i = 0; i < n; i++)
+    cin >> x[i] >> y[i] >> r[i] >> c[i];
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < i; j++) {
+      int dx = x[i] - x[j];
+      int dy = y[i] - y[j];
+      dist[i][j] = dist[j][i] = dx * dx + dy * dy;
+    }
+  }
+
+  return true;
+}
+
+int main() {
+  while (input())
+    solve();
+  return 0;
+}
+```
+
+By making these optimizations, the program should run faster and use less memory.

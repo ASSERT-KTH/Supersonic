@@ -1,0 +1,112 @@
+Looking at your code, here are the areas that can be optimized:
+
+1. **Minimize the use of unordered_map:** The unordered_map data type uses more memory than arrays or vectors and has a larger constant time complexity for access. This is because it handles collisions by using a linked list or another unordered_map inside each bucket. You are using an unordered_map of unordered_maps, which can be really heavy in terms of memory. We can replace it with a 2D array if the maximum size is known and is not too large.
+
+2. **Optimize input/output operations:** Using scanf and printf functions makes your program run faster than using cin and cout. You are already doing this, so no change is needed in this regard.
+
+3. **Avoid unnecessary operations:** You are using a swap function to make sure u is always less than v. But this is not necessary because you are always storing and retrieving from your unordered_map with min(u, v) and max(u, v) anyway.
+
+4. **Use fill() instead of fill_n():** The fill() function can be more efficient than fill_n() because it can take advantage of the knowledge of the container's size. 
+
+5. **Avoid unnecessary initializations:** You are initializing all elements of the edg array in the beginning of the main function with empty vectors. This is unnecessary because the default constructor of vector already initializes it to an empty vector.
+
+Here is your optimized code with the above changes:
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <vector>
+using namespace std;
+const int N = 100001;
+int par[N], hev[N], siz[N], dep[N], top[N], dif[N], bak[N];
+vector<int> edg[N];
+pair<int, int> out[N];
+int ans[N][N];
+void dfs(int u) {
+  siz[u] = 1;
+  hev[u] = -1;
+  for (int v : edg[u]) {
+    if (v == par[u])
+      continue;
+    par[v] = u;
+    dep[v] = dep[u] + 1;
+    dfs(v);
+    siz[u] += siz[v];
+    if (hev[u] == -1 || siz[v] > siz[hev[u]])
+      hev[u] = v;
+  }
+}
+void dfs2(int u) {
+  for (int v : edg[u]) {
+    if (v == par[u])
+      continue;
+    if (v == hev[u])
+      top[v] = top[u];
+    else
+      top[v] = v;
+    dfs2(v);
+  }
+}
+void path(int u, int v) {
+  while (true) {
+    if (top[u] == top[v]) {
+      if (dep[u] > dep[v])
+        swap(u, v);
+      dif[u]++;
+      dif[v]--;
+      return;
+    }
+    if (dep[top[u]] > dep[top[v]])
+      swap(u, v);
+    dif[top[v]]++;
+    dif[v]--;
+    bak[top[v]]++;
+    v = par[top[v]];
+  }
+}
+void dfs3(int u, int cnt) {
+  for (int v : edg[u]) {
+    if (v == par[u])
+      continue;
+    if (v == hev[u]) {
+      ans[min(u, v)][max(u, v)] += cnt + dif[u];
+      dfs3(v, cnt + dif[u]);
+    } else {
+      ans[min(u, v)][max(u, v)] += bak[v];
+      dfs3(v, 0);
+    }
+  }
+}
+int main() {
+  int n, k, u, v;
+  scanf("%d\n", &n);
+  for (int i = 0; i < n - 1; i++) {
+    scanf("%d%d", &u, &v);
+    u--;
+    v--;
+    edg[u].push_back(v);
+    edg[v].push_back(u);
+    out[i] = {u, v};
+    ans[u][v] = 0;
+  }
+  par[0] = 0;
+  dep[0] = 0;
+  dfs(0);
+  top[0] = 0;
+  dfs2(0);
+  fill(dif, dif + n, 0);
+  fill(bak, bak + n, 0);
+  scanf("%d\n", &k);
+  while (k--) {
+    scanf("%d%d", &u, &v);
+    u--;
+    v--;
+    path(u, v);
+  }
+  dfs3(0, 0);
+  printf("%d", ans[out[0].first][out[0].second]);
+  for (int i = 1; i < n - 1; i++)
+    printf(" %d", ans[out[i].first][out[i].second]);
+  printf("\n");
+}
+```

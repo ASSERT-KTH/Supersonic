@@ -1,0 +1,102 @@
+Here are a couple of small modifications that can help to optimize the program:
+
+1. Use `reserve()` for vectors: Reserving space for vectors can increase the performance of your program by avoiding unnecessary reallocations and copies when the vector grows. It is especially useful when you already have an idea about the size your vector will hold.
+
+2. Use `ios_base::sync_with_stdio(false); cin.tie(NULL);` at the beginning of the `main()` function: This will turn off the synchronization between the C and C++ standard streams, which can speed up input/output operations.
+
+3. Remove unnecessary vector clears: `heightsOfBlock.clear(); costsOfBlock.clear();` are not necessary and can be removed. They don't free memory, just change the size of vector to 0, but capacity remains the same. And since these vectors are not used anymore, they will be destroyed when going out of scope.
+
+4. Change `stackPushLeft.size()` and `stackPushRight.size()` to `!stackPushLeft.empty()` and `!stackPushRight.empty()`: Calling `size()` on a vector has complexity O(1), but `empty()` might be more readable and it also communicates the intention more clearly.
+
+5. Remove redundant `#if 1`, `#else`, `#endif` and `#ifdef INFOARENA` blocks: They are not necessary for the program, and they can make it harder to read.
+
+Here's the optimized code:
+
+```c++
+#include <bits/stdc++.h>
+using namespace std;
+
+#define pv(x) std::cerr << #x << " = " << (x) << "; ", std::cerr.flush()
+#define pn std::cerr << std::endl
+#define in cin
+#define out cout
+
+using ll = long long;
+using ld = long double;
+const int inf_int = 1e9 + 5;
+const ll inf_ll = 1e18 + 5;
+const int NMax = 1e7 + 5;
+
+int height[NMax];
+ll cost[NMax], dp[NMax];
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int N, M;
+    in >> N >> M;
+    vector<vector<int>> heightsOfBlock(N + 1), costsOfBlock(N + 1);
+    heightsOfBlock.reserve(N + 1);
+    costsOfBlock.reserve(N + 1);
+
+    for (int i = 1; i <= N; ++i) {
+        int K;
+        in >> K;
+        for (int j = 1; j <= K; ++j) {
+            int val;
+            in >> val;
+            heightsOfBlock[i].push_back(val);
+        }
+        for (int j = 1; j <= K; ++j) {
+            int val;
+            in >> val;
+            costsOfBlock[i].push_back(val);
+        }
+    }
+
+    int Q, curr = 0;
+    in >> Q;
+    for (int i = 1; i <= Q; ++i) {
+        int id, mult;
+        in >> id >> mult;
+        for (int j = 0; j < (int)heightsOfBlock[id].size(); ++j) {
+            int h = heightsOfBlock[id][j], c = costsOfBlock[id][j];
+            height[++curr] = h;
+            cost[curr] = 1LL * mult * c;
+        }
+    }
+
+    vector<pair<int, ll>> stackPushLeft, stackPushRight;
+
+    for (int i = 1; i <= M; ++i) {
+        ll minLeft = dp[i - 1];
+        while (!stackPushLeft.empty() &&
+               i - height[i] + 1 <= stackPushLeft.back().first) {
+            minLeft = min(minLeft, stackPushLeft.back().second);
+            stackPushLeft.pop_back();
+        }
+        dp[i] = minLeft + cost[i];
+        ll valHere = dp[i - 1];
+        minLeft = min(minLeft, valHere);
+        stackPushLeft.push_back({i, minLeft});
+        int idx = -1;
+        while (!stackPushRight.empty() &&
+               ((idx = stackPushRight.back().first) || true) &&
+               idx + height[idx] - 1 < i) {
+            stackPushRight.pop_back();
+        }
+        if (!stackPushRight.empty()) {
+            ll dpPlusCost = stackPushRight.back().second;
+            dp[i] = min(dp[i], dpPlusCost);
+        }
+        ll dpPlusCost = dp[i - 1] + cost[i];
+        if (!stackPushRight.empty()) {
+            dpPlusCost = min(dpPlusCost, stackPushRight.back().second);
+        }
+        stackPushRight.push_back({i, dpPlusCost});
+    }
+    out << dp[M] << '\n';
+    return 0;
+}
+```

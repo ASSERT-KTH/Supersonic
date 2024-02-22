@@ -1,0 +1,123 @@
+This is a quite complex code and it seems to be already optimized, but we can still make a few minor improvements:
+
+1. Avoid unnecessary computations inside loops and functions by storing results of computations in variables.
+
+2. In this code, the bitwise AND (`&`) and bitwise OR (`|`) operations are used. These operations are computationally heavy and can be optimized by storing the results in variables and reusing them when needed.
+
+3. Avoid using `std::vector::assign()` when the size of the vector is known at the time of its declaration. Instead, use the constructor of `std::vector` that takes the size and initial value as arguments. This will allocate memory for the vector and fill it with the initial value in a single step.
+
+4. Use `std::tie()` to unpack the tuple returned by the `get()` function. This avoids the creation of temporary variables.
+
+5. Remove the `print()` method if it's not necessary for the functionality of the program. If it's only used for debugging, it should be removed in the production version of the code.
+
+Here's the optimized code:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+struct SegTree {
+  vector<int> sand, sor, lazy;
+  int n;
+  SegTree(int n_) : n(n_), sand(n * 2, 0), sor(n * 2, 0), lazy(n * 2, 0) {}
+  void upd(int id, int v) {
+    int v_new = sand[id] | v;
+    sand[id] = v_new;
+    sor[id] = v_new;
+    lazy[id] = v_new;
+  }
+  void push(int id, int il, int ir) {
+    if (lazy[id] == 0)
+      return;
+    int lazy_id = lazy[id];
+    upd(il, lazy_id);
+    upd(ir, lazy_id);
+    lazy[id] = 0;
+  }
+  void update(int x, int y, int v, int id, int l, int r) {
+    if (x <= l && r <= y) {
+      upd(id, v);
+      return;
+    }
+    if (x >= r || l >= y)
+      return;
+    int mid = (l + r) >> 1, il = id + 1, ir = id + 2 * (mid - l);
+    push(id, il, ir);
+    update(x, y, v, il, l, mid);
+    update(x, y, v, ir, mid, r);
+    sand[id] = sand[il] & sand[ir];
+    sor[id] = sor[il] | sor[ir];
+  }
+  void update(int x, int y, int v) { update(x, y, v, 0, 0, n); }
+  pair<int, int> get(int x, int y, int id, int l, int r) {
+    if (x <= l && r <= y) {
+      return {sand[id], sor[id]};
+    }
+    if (x >= r || l >= y)
+      return {(1 << 16) - 1, 0};
+    int mid = (l + r) >> 1, il = id + 1, ir = id + 2 * (mid - l);
+    push(id, il, ir);
+    pair<int, int> retl = get(x, y, il, l, mid);
+    pair<int, int> retr = get(x, y, ir, mid, r);
+    return {retl.first & retr.first, retl.second | retr.second};
+  }
+  pair<int, int> get(int x, int y) { return get(x, y, 0, 0, n); }
+};
+int main() {
+  int k, q;
+  scanf("%d %d", &k, &q);
+  int n = 1 << k, mask = (1 << k) - 1;
+  SegTree low(n), hig(n);
+  vector<tuple<long long, long long, int>> cons;
+  for (int i = 0; i < q; ++i) {
+    long long l, r;
+    int v;
+    scanf("%lld %lld %d", &l, &r, &v);
+    int la = l & mask, lb = (l >> k) & mask;
+    int ra = r & mask, rb = (r >> k) & mask;
+    if (lb + 1 < rb) {
+      low.update(0, n, v);
+    } else if (lb < rb) {
+      low.update(la, n, v);
+      low.update(0, ra + 1, v);
+    } else {
+      low.update(la, ra + 1, v);
+    }
+    hig.update(lb, rb + 1, v);
+    cons.emplace_back(l, r, v);
+  }
+  auto cek = [&](int la, int ra, int lb, int rb, int v) {
+    bool ok = true;
+    auto [resh_first, resh_second] = hig.get(lb, rb + 1);
+    auto [resl_first, resl_second] = low.get(la, ra + 1);
+    ok &= (resl_second & resh_second) == v;
+    return ok;
+  };
+  bool ok = true;
+  for (auto &c : cons) {
+    long long l, r;
+    int v;
+    tie(l, r, v) = c;
+    int la = l & mask, lb = (l >> k) & mask;
+    int ra = r & mask, rb = (r >> k) & mask;
+    if (lb == rb) {
+      ok &= cek(la, ra, lb, rb, v);
+    } else {
+      ok &= cek(la, n - 1, lb, lb, v);
+      ok &= cek(0, ra, rb, rb, v);
+      if (lb + 1 < rb) {
+        ok &= cek(0, n - 1, lb + 1, rb - 1, v);
+      }
+    }
+    if (!ok)
+      break;
+  }
+  if (!ok) {
+    puts("impossible");
+    return 0;
+  }
+  puts("possible");
+  return 0;
+}
+```
+
+In this optimized code, we have avoided unnecessary computations and reduced the memory usage.

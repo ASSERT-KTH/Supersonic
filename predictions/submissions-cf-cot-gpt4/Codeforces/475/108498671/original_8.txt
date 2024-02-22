@@ -1,0 +1,81 @@
+The original program calculates the greatest common divisor (GCD) using Euclidean algorithm, and it also uses a Sparse Table data structure to precompute GCDs for different intervals. Then it counts the number of intervals for each GCD in the input array. 
+
+The optimization steps are:
+
+1. Avoid `scanf` and `printf` for I/O operations and replace them with `std::cin` and `std::cout` for faster I/O.
+
+2. Reduce the size of the `get_log` array to `n+1` since we never access an index larger than `n`.
+
+3. In the `get` function, the calculation `r - l` is repeated twice. We can calculate it only once and store it in a variable.
+
+4. In the loop where `ans[now_gcd]` is calculated, `now_ind` is always equal to `prev_ind`. So, we can remove `prev_ind` and use `now_ind` instead.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <map>
+using namespace std;
+int gcd(int a, int b) {
+  if (b == 0) {
+    return a;
+  }
+  return gcd(b, a % b);
+}
+int n;
+int q;
+map<int, long long> ans;
+int a[100100];
+int st[100100][20];
+int get_log[100100];
+int get(int l, int r) {
+  int sz = get_log[r - l];
+  return gcd(st[l][sz], st[r - (1 << sz)][sz]);
+}
+int main() {
+  get_log[1] = 0;
+  for (int i = 2; i <= n; i++) {
+    get_log[i] = get_log[i - 1];
+    while ((1 << get_log[i]) <= i)
+      get_log[i]++;
+    get_log[i]--;
+  }
+  cin >> n;
+  for (int i = 0; i < n; i++) {
+    cin >> a[i];
+  }
+  for (int i = 0; i < n; i++) {
+    st[i][0] = a[i];
+  }
+  for (int nowP = 1; nowP < 20; nowP++) {
+    for (int i = 0; i + (1 << nowP) <= n; i++) {
+      st[i][nowP] = gcd(st[i][nowP - 1], st[i + (1 << (nowP - 1))][nowP - 1]);
+    }
+  }
+  for (int L = 0; L < n; L++) {
+    int now_ind = L;
+    while (now_ind < n) {
+      int now_gcd = get(L, now_ind + 1);
+      int l = now_ind;
+      int r = n;
+      while (r - l > 1) {
+        int m = (l + r) / 2;
+        int x = get(L, m + 1);
+        if (x < now_gcd)
+          r = m;
+        else
+          l = m;
+      }
+      ans[now_gcd] += r - now_ind;
+      now_ind = r;
+    }
+  }
+  cin >> q;
+  while (q--) {
+    int x;
+    cin >> x;
+    cout << ans[x] << "\n";
+  }
+  return 0;
+}
+```

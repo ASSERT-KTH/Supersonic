@@ -1,0 +1,15 @@
+This code is quite complex and it is not straightforward to optimize as it contains many calculations and mathematical operations. However, there are a few steps we can take to improve its performance:
+
+1. Avoid redundant computations by storing the results of frequently used operations: For operations that are frequently used in loops, saving the results to a variable can significantly improve performance. This is especially true for operations that involve floating point calculations, as they are typically costly.
+
+2. Use pre-increment instead of post-increment: In loops, use pre-increment (++i) instead of post-increment (i++). In some cases, pre-increment can be faster because it doesn't need to create a temporary variable to hold the original value. However, the impact on performance is usually negligible and can be ignored in most cases.
+
+3. Avoid unnecessary type casting: In several places, the code casts integer values to long double type. If it's not necessary, you should avoid it, as type casting can lead to performance degradation.
+
+4. Minimize the use of the 'auto' keyword: While 'auto' can make the code more readable, it can also lead to inefficiencies because it might cause the compiler to use a larger or more complex type than necessary. Therefore, you should minimize the use of 'auto' and use explicit types where possible.
+
+5. Replace recursion with iteration where possible: Recursion can be slower than iteration due to the overhead of function calls. If it's possible to rewrite recursive functions using loops, you should do so.
+
+6. Use 'const' where possible: If a variable is not modified, you should declare it as 'const'. This can help the compiler optimize the code.
+
+7. Optimize I/O operations: If the program reads or writes a lot of data, I/O operations can become a bottleneck. In such cases, you can use faster I/O methods, such as fread/fwrite or memory-mapped I/O.

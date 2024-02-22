@@ -1,0 +1,122 @@
+To optimize the given C/C++ program, we can make the following modifications:
+
+1. Remove unnecessary headers: The `<bits/stdc++.h>` header includes a lot of unnecessary headers. We can remove it and only include the necessary headers, such as `<iostream>` and `<utility>`.
+
+2. Use `constexpr` instead of `const`: Instead of using `const` for the constants `maxLig`, `maxCol`, `maxReq`, and `sqr`, we can use `constexpr` to indicate that they are compile-time constants.
+
+3. Use a more efficient data structure: Instead of using a 2D array to represent the grid (`grille`) and the processed cells (`proc`), we can use a 1D array and flatten the grid. This can reduce memory usage and improve cache locality.
+
+4. Avoid unnecessary function calls: In the `comp` function, we can avoid unnecessary function calls by checking if the current cell has already been processed. If it has, we can simply return.
+
+5. Use references instead of pairs: Instead of returning pairs from the `comp` and `getFin` functions, we can pass references to modify the variables directly.
+
+6. Optimize the `compBloc` function: Instead of using a loop to iterate over each block, we can calculate the start and end indices of each block directly. This can improve the efficiency of the function.
+
+7. Avoid unnecessary duplicate computations: In the `compBloc` function, we can avoid computing the block reference for each cell in the block by storing it in a variable and reusing it.
+
+8. Optimize the main loop: Instead of using an infinite loop and breaking when `compBloc` returns false, we can use a for loop with a condition based on the number of blocks.
+
+9. Use a more efficient input method: Instead of using `cin` to read input character by character, we can use `scanf` to read the input in a more efficient manner.
+
+Here is the optimized C++ program:
+
+```cpp
+#include <iostream>
+#include <utility>
+using namespace std;
+
+constexpr int maxLig = 100005;
+constexpr int maxCol = 12;
+constexpr int maxReq = 100005;
+constexpr int sqr = 600;
+
+int nbLig, nbCol, nbReq;
+char grille[maxLig * maxCol];
+int proc[maxLig * maxCol];
+int tps = 0;
+pair<int, int> go[maxLig * maxCol];
+
+void comp(int lig, int col, int safeLig) {
+  int index = lig * nbCol + col;
+  if (proc[index] == tps)
+    return;
+  proc[index] = tps;
+  int nextLig = lig, nextCol = col;
+  char currentCell = grille[index];
+  if (currentCell == '<')
+    --nextCol;
+  else if (currentCell == '>')
+    ++nextCol;
+  else if (currentCell == '^')
+    --nextLig;
+  if (nextLig == safeLig || grille[nextLig * nbCol + nextCol] == '~') {
+    go[index] = {nextLig, nextCol};
+  } else if (currentCell != '^' && grille[lig * nbCol + nextCol] != '^' &&
+             currentCell != grille[lig * nbCol + nextCol]) {
+    go[index] = {0, 0};
+  } else {
+    comp(nextLig, nextCol, safeLig);
+    go[index] = go[nextLig * nbCol + nextCol];
+  }
+}
+
+void getFin(int& lig, int& col) {
+  int index = lig * nbCol + col;
+  while (grille[index] != '~') {
+    pair<int, int> e = go[index];
+    lig = e.first;
+    col = e.second;
+    index = lig * nbCol + col;
+  }
+}
+
+int blocRef[maxLig];
+bool compBloc(int bloc) {
+  int deb = bloc * sqr, fin = min(nbLig, (bloc + 1) * sqr);
+  if (deb >= nbLig)
+    return false;
+  for (int lig = deb + 1; lig <= fin; ++lig) {
+    int blockRef = bloc;
+    for (int col = 1; col <= nbCol; ++col) {
+      comp(lig, col, deb);
+    }
+    blocRef[lig] = blockRef;
+  }
+  return true;
+}
+
+int main() {
+  scanf("%d %d %d", &nbLig, &nbCol, &nbReq);
+  fill_n(grille, maxLig * maxCol, '~');
+  for (int lig = 1; lig <= nbLig; ++lig) {
+    for (int col = 1; col <= nbCol; ++col) {
+      scanf(" %c", &grille[lig * nbCol + col]);
+    }
+  }
+  ++tps;
+  for (int bloc = 0; compBloc(bloc); ++bloc);
+
+  for (int req = 0; req < nbReq; ++req) {
+    char mode;
+    int lig, col;
+    scanf(" %c %d %d", &mode, &lig, &col);
+    if (mode == 'A') {
+      getFin(lig, col);
+      if (lig == 0 && col == 0)
+        printf("-1 -1\n");
+      else
+        printf("%d %d\n", lig, col);
+    } else {
+      ++tps;
+      char nv;
+      scanf(" %c", &nv);
+      grille[lig * nbCol + col] = nv;
+      int bloc = blocRef[lig];
+      compBloc(bloc);
+      if (bloc)
+        compBloc(bloc - 1);
+    }
+  }
+  return 0;
+}
+```

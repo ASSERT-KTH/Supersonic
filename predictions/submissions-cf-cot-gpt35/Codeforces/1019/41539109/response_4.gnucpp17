@@ -1,0 +1,138 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+struct POINT {
+  int x, y;
+  POINT() : x(0), y(0) {}
+  POINT(int x, int y) : x(x), y(y) {}
+  POINT operator+(const POINT &t) const { return POINT(x + t.x, y + t.y); }
+  POINT operator-(const POINT &t) const { return POINT(x - t.x, y - t.y); }
+  POINT operator!() const { return POINT(-y, x); }
+};
+
+inline int64_t dot(const POINT &a, const POINT &b) {
+  return (int64_t)a.x * b.x + (int64_t)a.y * b.y;
+}
+
+inline int64_t cross(const POINT &a, const POINT &b) {
+  return (int64_t)a.x * b.y - (int64_t)a.y * b.x;
+}
+
+inline int64_t cross(const POINT &a, const POINT &b, const POINT &c) {
+  return cross(a - c, b - c);
+}
+
+inline bool halfPlane(const POINT &p) {
+  if (p.y == 0)
+    return p.x < 0;
+  return p.y < 0;
+}
+
+inline bool angSortCmp(const POINT &a, const POINT &b) {
+  bool ha = halfPlane(a);
+  bool hb = halfPlane(b);
+  if (ha != hb)
+    return ha < hb;
+  return cross(a, b) > 0;
+}
+
+const int N = 2000;
+
+int main() {
+  ios_base::sync_with_stdio(0);
+  int n;
+  int64_t S;
+  cin >> n >> S;
+  S *= 2;
+  
+  vector<POINT> tab(n + 1);
+  for (int i = 1; i <= n; ++i)
+    cin >> tab[i].x >> tab[i].y;
+  
+  sort(tab.begin() + 1, tab.end(), [](const POINT &a, const POINT &b) -> bool {
+    if (a.x == b.x)
+      return a.y > b.y;
+    return a.x < b.x;
+  });
+  
+  vector<int> poz(n + 1);
+  vector<POINT> stab(n + 1);
+  
+  for (int i = 1; i <= n; ++i) {
+    poz[i] = i;
+    stab[i] = tab[i];
+  }
+  
+  vector<POINT> kol((n * (n - 1)) / 2);
+  int it = 0;
+  
+  for (int i = 1; i <= n; ++i) {
+    for (int j = i + 1; j <= n; ++j) {
+      kol[it].x = tab[j].y - tab[i].y;
+      kol[it].y = tab[i].x - tab[j].x;
+      it++;
+    }
+  }
+  
+  for (int i = 0; i < kol.size(); ++i) {
+    for (int j = i + 1; j < kol.size(); ++j) {
+      if (angSortCmp(kol[i], kol[j])) {
+        swap(kol[i], kol[j]);
+        swap(stab[poz[kol[i].x]], stab[poz[kol[i].y]]);
+        swap(poz[kol[i].x], poz[kol[i].y]);
+      }
+    }
+  }
+  
+  for (POINT u : kol) {
+    int p = u.x;
+    int q = u.y;
+    int l = 1;
+    int r = n;
+    int64_t ww = cross(tab[q], stab[l], tab[p]);
+    
+    while (l <= r) {
+      int s = (l + r) / 2;
+      if (ww == S) {
+        cout << "Yes" << endl;
+        cout << tab[p].x << ' ' << tab[p].y << endl;
+        cout << tab[q].x << ' ' << tab[q].y << endl;
+        cout << stab[s].x << ' ' << stab[s].y << endl;
+        return 0;
+      }
+      if (ww > S)
+        r = s - 1;
+      else
+        l = s + 1;
+      
+      ww = cross(tab[q], stab[s], tab[p]);
+    }
+    
+    l = 1;
+    r = n;
+    ww = cross(tab[q], stab[l], tab[p]);
+    
+    while (l <= r) {
+      int s = (l + r) / 2;
+      if (ww == -S) {
+        cout << "Yes" << endl;
+        cout << tab[p].x << ' ' << tab[p].y << endl;
+        cout << tab[q].x << ' ' << tab[q].y << endl;
+        cout << stab[s].x << ' ' << stab[s].y << endl;
+        return 0;
+      }
+      if (ww > -S)
+        r = s - 1;
+      else
+        l = s + 1;
+      
+      ww = cross(tab[q], stab[s], tab[p]);
+    }
+  }
+  
+  cout << "No" << endl;
+  return 0;
+}

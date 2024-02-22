@@ -1,0 +1,115 @@
+To optimize the given program, we can make the following changes:
+
+1. Remove the unnecessary `#include <bits/stdc++.h>`. This is a non-standard header and includes a large number of other headers, which can slow down the compilation process.
+
+2. Remove the unused `pv` and `pn` macros. These are not used in the program and can be safely removed.
+
+3. Change the `in` and `out` streams to use `std::cin` and `std::cout` instead of `ifstream` and `ofstream`. This eliminates the need for the `INFOARENA` macro and simplifies the code.
+
+4. Change the `vector<vector<int>> heightsOfBlock` and `vector<vector<int>> costsOfBlock` to `vector<int> heightsOfBlock` and `vector<int> costsOfBlock`. This removes unnecessary nested vectors and improves memory usage.
+
+5. Replace the range-based for loop `for (int j = 0; j < (int)heightsOfBlock[id].size(); ++j)` with a simpler for loop `for (int j = 0; j < K; ++j)`. This avoids the need to call `heightsOfBlock[id].size()` multiple times.
+
+6. Replace the `heightsOfBlock.clear()` and `costsOfBlock.clear()` calls with `heightsOfBlock.resize(0)` and `costsOfBlock.resize(0)`. This avoids unnecessary deallocation and reallocation of memory.
+
+7. Replace the `stackPushLeft.push_back({i, minLeft})` and `stackPushRight.push_back({i, dpPlusCost})` calls with `stackPushLeft.emplace_back(i, minLeft)` and `stackPushRight.emplace_back(i, dpPlusCost)`. This is a more efficient way to construct pairs.
+
+8. Remove the unnecessary `stackPushRight.back().first || true` condition in the while loop. This condition is always true and can be safely removed.
+
+Here is the optimized C++ program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <utility>
+#include <algorithm>
+
+using namespace std;
+
+const int NMax = 1e7 + 5;
+
+int height[NMax];
+long long cost[NMax], dp[NMax];
+
+int main() {
+  int N, M;
+  cin >> N >> M;
+
+  vector<int> heightsOfBlock(N + 1), costsOfBlock(N + 1);
+
+  for (int i = 1; i <= N; ++i) {
+    int K;
+    cin >> K;
+    
+    heightsOfBlock.resize(K);
+    costsOfBlock.resize(K);
+    
+    for (int j = 0; j < K; ++j) {
+      cin >> heightsOfBlock[j];
+    }
+    
+    for (int j = 0; j < K; ++j) {
+      cin >> costsOfBlock[j];
+    }
+  }
+
+  int Q, curr = 0;
+  cin >> Q;
+
+  for (int i = 1; i <= Q; ++i) {
+    int id, mult;
+    cin >> id >> mult;
+    
+    int K = heightsOfBlock[id].size();
+    
+    for (int j = 0; j < K; ++j) {
+      int h = heightsOfBlock[id][j], c = costsOfBlock[id][j];
+      height[++curr] = h;
+      cost[curr] = 1LL * mult * c;
+    }
+  }
+
+  heightsOfBlock.resize(0);
+  costsOfBlock.resize(0);
+
+  vector<pair<int, long long>> stackPushLeft, stackPushRight;
+
+  for (int i = 1; i <= M; ++i) {
+    long long minLeft = dp[i - 1];
+
+    while (stackPushLeft.size() && i - height[i] + 1 <= stackPushLeft.back().first) {
+      minLeft = min(minLeft, stackPushLeft.back().second);
+      stackPushLeft.pop_back();
+    }
+
+    dp[i] = minLeft + cost[i];
+
+    long long valHere = dp[i - 1];
+    minLeft = min(minLeft, valHere);
+    stackPushLeft.emplace_back(i, minLeft);
+
+    int idx = -1;
+
+    while (stackPushRight.size() && (idx = stackPushRight.back().first) && idx + height[idx] - 1 < i) {
+      stackPushRight.pop_back();
+    }
+
+    if (stackPushRight.size()) {
+      long long dpPlusCost = stackPushRight.back().second;
+      dp[i] = min(dp[i], dpPlusCost);
+    }
+
+    long long dpPlusCost = dp[i - 1] + cost[i];
+    
+    if (stackPushRight.size()) {
+      dpPlusCost = min(dpPlusCost, stackPushRight.back().second);
+    }
+    
+    stackPushRight.emplace_back(i, dpPlusCost);
+  }
+
+  cout << dp[M] << '\n';
+
+  return 0;
+}
+```

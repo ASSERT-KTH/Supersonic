@@ -1,0 +1,137 @@
+This is a well-structured C++ program that uses DFS (Depth-First Search) to manipulate tree representations of data. Here are few optimization steps that can be applied:
+
+1. Use `std::ios_base::sync_with_stdio(false);` and `cin.tie(NULL);` to improve I/O performance.
+2. Use `reserve()` for vectors: This will avoid unnecessary re-allocations and copying of the entire vector when it grows.
+3. In the `path()` function, we can reduce the number of operations by reducing the number of times the `swap()` function is called. We can do this by determining at the beginning of the function which of `u` or `v` has the greater 'depth', and then proceeding accordingly, rather than using `swap()` multiple times.
+4. Use `printf` and `scanf` instead of `cin` and `cout` for faster I/O operations.
+5. Declare variables in the smallest possible scope. For example, the variables `u` and `v` are used in different blocks of code. We can declare them each time before they are used.
+
+Now let's apply these optimizations.
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+using namespace std;
+const int N = 100001;
+
+// Declaring all the arrays at the beginning
+int par[N], hev[N], siz[N], dep[N], top[N], dif[N], bak[N];
+vector<int> edg[N];
+pair<int, int> out[N];
+unordered_map<int, unordered_map<int, int>> ans;
+
+void dfs(int u) {
+  siz[u] = 1;
+  hev[u] = -1;
+  for (int v : edg[u]) {
+    if (v == par[u])
+      continue;
+    par[v] = u;
+    dep[v] = dep[u] + 1;
+    dfs(v);
+    siz[u] += siz[v];
+    if (hev[u] == -1 || siz[v] > siz[hev[u]])
+      hev[u] = v;
+  }
+}
+
+void dfs2(int u) {
+  for (int v : edg[u]) {
+    if (v == par[u])
+      continue;
+    if (v == hev[u])
+      top[v] = top[u];
+    else
+      top[v] = v;
+    dfs2(v);
+  }
+}
+
+void path(int u, int v) {
+  int temp;
+  if (dep[top[u]] > dep[top[v]]) {
+    temp = u;
+    u = v;
+    v = temp;
+  }
+  while (true) {
+    if (top[u] == top[v]) {
+      if (dep[u] > dep[v]) {
+        temp = u;
+        u = v;
+        v = temp;
+      }
+      dif[u]++;
+      dif[v]--;
+      return;
+    }
+    dif[top[v]]++;
+    dif[v]--;
+    bak[top[v]]++;
+    v = par[top[v]];
+  }
+}
+
+void dfs3(int u, int cnt) {
+  for (int v : edg[u]) {
+    if (v == par[u])
+      continue;
+    if (v == hev[u]) {
+      ans[min(u, v)][max(u, v)] += cnt + dif[u];
+      dfs3(v, cnt + dif[u]);
+    } else {
+      ans[min(u, v)][max(u, v)] += bak[v];
+      dfs3(v, 0);
+    }
+  }
+}
+
+int main() {
+  std::ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  
+  int n;
+  scanf("%d\n", &n);
+  for (int i = 0; i < n; i++)
+    edg[i].reserve(n);
+  for (int i = 0; i < n - 1; i++) {
+    int u, v;
+    scanf("%d%d", &u, &v);
+    u--;
+    v--;
+    if (u > v)
+      swap(u, v);
+    edg[u].push_back(v);
+    edg[v].push_back(u);
+    out[i] = {u, v};
+    ans[u][v] = 0;
+  }
+  par[0] = 0;
+  dep[0] = 0;
+  dfs(0);
+  top[0] = 0;
+  dfs2(0);
+  fill_n(dif, n, 0);
+  fill_n(bak, n, 0);
+  
+  int k;
+  scanf("%d\n", &k);
+  while (k--) {
+    int u, v;
+    scanf("%d%d", &u, &v);
+    u--;
+    v--;
+    path(u, v);
+  }
+  dfs3(0, 0);
+  printf("%d", ans[out[0].first][out[0].second]);
+  for (int i = 1; i < n - 1; i++)
+    printf(" %d", ans[out[i].first][out[i].second]);
+  printf("\n");
+}
+```
+
+Remember, the optimization of code can always vary depending on the specific use case, input data size, and hardware specifics.

@@ -1,0 +1,15 @@
+The provided code calculates the maximum sum of a subarray of length `k` in an input array `ac`. The array `ac` stores the cumulative sum of elements. The code reads the values of `n` and `k` from the input and then reads the elements of the array `ac`. It then iterates over the array `ac` to find the maximum sum of subarrays of length `k` by calculating the difference between `ac[i]` and `ac[i-k]` for each `i` from `k` to `n`.
+
+To optimize this code, we can focus on the following aspects:
+
+1. Unnecessary Includes: The code includes unnecessary headers, such as `<algorithm>`, `<cstring>`, `<map>`, and `<string>`. These headers are not used in the code and can be removed.
+
+2. Excessive use of `std` Namespace: The code uses the `using namespace std;` directive, which brings all names from the `std` namespace into the global namespace. This can lead to potential naming conflicts and is generally considered bad practice. It is better to explicitly qualify the names from the `std` namespace (e.g., `std::cin`, `std::cout`) or use individual `using` declarations for specific names.
+
+3. Avoiding `std::endl`: The code uses `std::endl` to insert a newline character and flush the output stream. However, `std::endl` is slower than the newline character `'\n'` because it flushes the output buffer. It is more efficient to use `'\n'` instead of `std::endl` in cases where flushing is not necessary.
+
+4. Optimization of the Cumulative Sum Calculation: The code calculates the cumulative sum by iterating over the array `ac` and adding the previous element. This can be optimized by using prefix sum techniques, where each element is calculated as the sum of the current element and the previous prefix sum. This reduces the time complexity from O(n) to O(1) for each cumulative sum calculation.
+
+5. Optimization of the Maximum Sum Calculation: The code uses a simple loop to iterate over the subarrays of length `k` and calculate the maximum sum. This can be optimized by using a sliding window technique, where we maintain the sum of the current subarray and update it by subtracting the element going out of the window and adding the element coming into the window. This reduces the time complexity from O(n) to O(1) for each maximum sum calculation.
+
+6. Efficient Initialization of `res`: The variable `res` is initialized to `-LLONG_MAX`, which is unnecessary. It can be initialized to the first maximum sum found in the subarray of length `k` for better efficiency.

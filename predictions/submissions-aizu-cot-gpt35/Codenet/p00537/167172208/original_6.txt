@@ -1,0 +1,110 @@
+The given program is a C++ implementation of a segment tree data structure. The segment tree is used to efficiently calculate the sum of values in a range and perform range updates.
+
+To optimize this program, we can make the following improvements:
+
+1. Avoid using the `bits/stdc++.h` header. It is not a standard C++ header and includes unnecessary libraries. Instead, include only the required headers explicitly.
+
+2. Use a more efficient representation for the segment tree. The current implementation uses a vector to store the segment tree nodes and another vector for lazy updates. Instead, we can use a single vector to store both the segment tree nodes and lazy updates. This reduces memory usage and improves cache locality.
+
+3. Modify the `Add` function to use lazy propagation. Currently, the `Add` function updates the segment tree recursively for each node in the range. By using lazy propagation, we can postpone the updates and perform them only when necessary. This reduces the number of updates and improves the overall performance.
+
+4. Modify the `Query` function to use lazy updates. Similar to the `Add` function, the `Query` function can be modified to consider the lazy updates when calculating the sum. This avoids unnecessary recursive calls and improves the query performance.
+
+5. Replace the `scanf` and `printf` functions with the more efficient `cin` and `cout` streams.
+
+Here is the optimized version of the program:
+
+```cpp
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+struct SegmentTree {
+  vector<int> tree;
+  int sz;
+  SegmentTree(int n) {
+    sz = 1;
+    while (sz < n)
+      sz *= 2;
+    tree.assign(sz * 2, 0);
+  }
+  
+  void propagate(int k, int l, int r) {
+    if (tree[k] != 0) {
+      tree[k] += (r - l) * tree[k];
+      if (r - l > 1) {
+        tree[2 * k + 1] += tree[k];
+        tree[2 * k + 2] += tree[k];
+      }
+      tree[k] = 0;
+    }
+  }
+
+  void add(int a, int b, int x, int k, int l, int r) {
+    propagate(k, l, r);
+    if (a >= r || b <= l) {
+      return;
+    } else if (a <= l && r <= b) {
+      tree[k] += x;
+      propagate(k, l, r);
+    } else {
+      int m = (l + r) / 2;
+      add(a, b, x, 2 * k + 1, l, m);
+      add(a, b, x, 2 * k + 2, m, r);
+      tree[k] = tree[2 * k + 1] + tree[2 * k + 2];
+    }
+  }
+
+  int query(int a, int b, int k, int l, int r) {
+    propagate(k, l, r);
+    if (a >= r || b <= l)
+      return 0;
+    if (a <= l && r <= b)
+      return tree[k];
+    int m = (l + r) / 2;
+    return query(a, b, 2 * k + 1, l, m) +
+           query(a, b, 2 * k + 2, m, r);
+  }
+
+  void add(int a, int b, int x) { add(a, b, x, 0, 0, sz); }
+
+  int query(int a, int b) { return query(a, b, 0, 0, sz); }
+};
+
+int main() {
+  int N, M, P[100000];
+  cin >> N >> M;
+  SegmentTree segtree(N);
+  for (int i = 0; i < M; i++) {
+    cin >> P[i];
+    --P[i];
+  }
+  for (int i = 1; i < M; i++) {
+    int u = min(P[i - 1], P[i]), v = max(P[i - 1], P[i]);
+    segtree.add(u, v, 1);
+  }
+  long long ret = 0;
+  for (int i = 0; i < N - 1; i++) {
+    long long used = segtree.query(i, i + 1);
+    int A, B, C;
+    cin >> A >> B >> C;
+    ret += min(used * A, C + used * B);
+  }
+  cout << ret << endl;
+}
+```
+
+Explanation of the optimization steps:
+
+1. We removed the `bits/stdc++.h` header and included only the required headers, `iostream` and `vector`.
+
+2. We replaced the separate `seg` and `add` vectors with a single `tree` vector to store both the segment tree nodes and lazy updates.
+
+3. We added a `propagate` function to handle lazy updates. This function is called before accessing a node to ensure that all pending updates are applied.
+
+4. We modified the `add` function to include lazy propagation. The `propagate` function is called before performing any updates, and the `propagate` function is also called after updating a node.
+
+5. We modified the `query` function to include lazy updates. The `propagate` function is called before calculating the sum, ensuring that all pending updates are applied.
+
+6. We replaced the `scanf` and `printf` functions with the more efficient `cin` and `cout` streams for input and output.

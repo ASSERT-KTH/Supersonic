@@ -1,0 +1,115 @@
+#include <algorithm>
+#include <iostream>
+#include <vector>
+using namespace std;
+
+const int M = 100000 + 10;
+const int N = 50 * M;
+
+int n, m, d;
+vector<int> e[N], escc[N];
+int nscc, idscc[N], dfn[N], lowlink[N], clo;
+int stk[N], top;
+bool instk[N];
+
+void tarjan(int k) {
+  dfn[k] = lowlink[k] = ++clo;
+  stk[top++] = k;
+  instk[k] = true;
+
+  for (int p : e[k]) {
+    if (dfn[p] == 0) {
+      tarjan(p);
+      lowlink[k] = min(lowlink[k], lowlink[p]);
+    } else if (instk[p]) {
+      lowlink[k] = min(lowlink[k], dfn[p]);
+    }
+  }
+
+  if (lowlink[k] == dfn[k]) {
+    ++nscc;
+    while (top > 0) {
+      int v = stk[--top];
+      instk[v] = false;
+      idscc[v] = nscc;
+      if (v == k) break;
+    }
+  }
+}
+
+void getSCC(int n) {
+  for (int k = 1; k <= n; ++k) {
+    if (dfn[k] == 0) {
+      tarjan(k);
+    }
+  }
+
+  for (int k = 1; k <= n; ++k) {
+    for (int p : e[k]) {
+      if (idscc[k] != idscc[p]) {
+        escc[idscc[k]].push_back(idscc[p]);
+      }
+    }
+  }
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(nullptr);
+  cout.tie(nullptr);
+
+  cin >> n >> m >> d;
+
+  for (int i = 1; i <= m; ++i) {
+    int u, v;
+    cin >> u >> v;
+    for (int j = 1; j <= d; ++j) {
+      e[(u - 1) * d + j].push_back((v - 1) * d + j % d + 1);
+    }
+  }
+
+  vector<bool> open(N);
+  for (int i = 1; i <= n; ++i) {
+    for (int j = 1; j <= d; ++j) {
+      char c;
+      cin >> c;
+      open[(i - 1) * d + j] = c - '0';
+    }
+  }
+
+  getSCC(n * d);
+
+  vector<int> ops(N, 0);
+  for (int i = 1; i <= n; ++i) {
+    vector<int> tmp;
+    for (int j = 1; j <= d; ++j) {
+      if (open[(i - 1) * d + j]) {
+        tmp.push_back(idscc[(i - 1) * d + j]);
+      }
+    }
+    sort(tmp.begin(), tmp.end());
+    tmp.erase(unique(tmp.begin(), tmp.end()), tmp.end());
+    for (int j : tmp) {
+      ++ops[j];
+    }
+  }
+
+  vector<int> dp(N, 0);
+  vector<bool> vis(N, false);
+
+  function<int(int)> dfsdp = [&](int k) -> int {
+    if (vis[k]) {
+      return dp[k];
+    }
+    for (int p : escc[k]) {
+      dp[k] = max(dp[k], dfsdp(p));
+    }
+    dp[k] += ops[k];
+    vis[k] = true;
+    return dp[k];
+  };
+
+  cout << dfsdp(idscc[(1 - 1) * d + 1]) << endl;
+
+  return 0;
+}

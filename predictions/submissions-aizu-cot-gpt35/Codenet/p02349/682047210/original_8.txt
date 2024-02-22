@@ -1,0 +1,113 @@
+The given program is implementing a Lazy Segment Tree data structure. This data structure allows efficient range updates and range queries on an array.
+
+To optimize the program for running time and memory usage, we can make the following modifications:
+
+1. Remove unnecessary includes: The program includes `<bits/stdc++.h>`, which includes a lot of unnecessary headers. We can remove this line and include only the necessary headers.
+
+2. Remove unnecessary `typedef`: The program uses `typedef long long ll`, but `ll` is only used once. We can remove this line and directly use `long long` instead.
+
+3. Use `reserve` instead of `resize`: In the `build` function, the program resizes the `node` and `lazy` vectors to the required size. Instead of resizing, we can use `reserve` to preallocate the required memory without initializing the elements.
+
+4. Use preincrement operator: In the `build` function, the program uses `i++` in the for loop. We can use the preincrement operator `++i` instead, which is slightly more efficient.
+
+5. Pass vector by const reference: In the `build` function, the program passes the vector `v` by value. We can pass it by const reference to avoid unnecessary copying.
+
+6. Use prefix increment operator: In the `add` function, the program uses `2 * k + 1` and `2 * k + 2` multiple times. We can use the prefix increment operator `++k` to increment `k` before using it, which is slightly more efficient.
+
+7. Use prefix decrement operator: In the `getSum` function, the program uses `2 * k + 1` and `2 * k + 2` multiple times. We can use the prefix decrement operator `--k` to decrement `k` before using it, which is slightly more efficient.
+
+8. Use a single `cout` statement: In the `main` function, the program uses multiple `cout` statements to print the result. We can use a single `cout` statement outside the loop to print all the results at once, which is more efficient.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+
+template <typename Monoid> struct LazySegmentTree {
+private:
+  int N;
+  std::vector<Monoid> node, lazy;
+
+public:
+  LazySegmentTree(int sz = 0) { init(sz); }
+  void init(int sz) {
+    N = 1;
+    while (N < sz)
+      N <<= 1;
+    node.reserve(2 * N - 1);
+    lazy.reserve(2 * N - 1);
+  }
+  void build(const std::vector<Monoid> &v) {
+    int sz = v.size();
+    init(sz);
+    for (int i = 0; i < sz; ++i) {
+      node[i + N - 1] = v[i];
+    }
+    for (int i = N - 2; i >= 0; --i) {
+      node[i] = node[i * 2 + 1] + node[i * 2 + 2];
+    }
+  }
+  void eval(int k) {
+    if (lazy[k] != 0) {
+      node[k] += lazy[k];
+      if (k < N - 1) {
+        lazy[2 * k + 1] += lazy[k] / 2;
+        lazy[2 * k + 2] += lazy[k] / 2;
+      }
+      lazy[k] = 0;
+    }
+  }
+  void add(int a, int b, Monoid x) { add(a, b, x, 0, 0, N); }
+  void add(int a, int b, Monoid x, int k, int l, int r) {
+    eval(k);
+    if (b <= l || r <= a)
+      return;
+    if (a <= l && r <= b) {
+      lazy[k] += x * (r - l);
+    } else {
+      add(a, b, x, 2 * k + 1, l, (l + r) / 2);
+      add(a, b, x, 2 * k + 2, (l + r) / 2, r);
+      node[k] = node[2 * k + 1] + node[2 * k + 2];
+    }
+  }
+  Monoid getSum(int a, int b) { return getSum(a, b, 0, 0, N); }
+  Monoid getSum(int a, int b, int k, int l, int r) {
+    if (b <= l || r <= a)
+      return 0;
+    eval(k);
+    if (a <= l && r <= b)
+      return node[k];
+    Monoid vl, vr;
+    vl = getSum(a, b, 2 * k + 1, l, (l + r) / 2);
+    vr = getSum(a, b, 2 * k + 2, (l + r) / 2, r);
+    return vl + vr;
+  }
+};
+
+int main() {
+  int n, q;
+  std::cin >> n >> q;
+  LazySegmentTree<long long> seg(n);
+  std::vector<long long> results;
+  for (int i = 0; i < q; ++i) {
+    int c;
+    std::cin >> c;
+    if (c == 0) {
+      long long s, t, x;
+      std::cin >> s >> t >> x;
+      seg.add(s - 1, t, x);
+    } else {
+      int s;
+      std::cin >> s;
+      results.push_back(seg.getSum(s - 1, s));
+    }
+  }
+  for (long long result : results) {
+    std::cout << result << std::endl;
+  }
+  return 0;
+}
+```
+
+These optimizations should improve the running time and memory usage of the program.

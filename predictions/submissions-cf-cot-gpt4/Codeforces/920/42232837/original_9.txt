@@ -1,0 +1,87 @@
+The given C++ program is a prime number related problem. It looks for the number of prime numbers under a certain value and does a binary search to find the kth non-prime number. 
+
+There are several areas where it can be optimized:
+
+1. **Sieve of Eratosthenes Algorithm Optimizations**: The program uses the Sieve of Eratosthenes to generate prime numbers up to `maxn`. This algorithm can be optimized by starting the inner loop from `i*i` instead of `2*i`. This is because, for a prime number `i`, all the numbers `n*i` where `n<i` would have already been marked as non-prime by the time we reach `i`. Also, in the inner loop, we can increment `j` by `2*i` instead of `i` when `i>2`, this is because all even numbers are non-prime.
+
+2. **Avoiding unnecessary operations**: In the `fac` function, the program checks `if (i * i > x)` after checking `if (x % i != 0)`. The former can be checked first to avoid the modulus operation for larger values. Also, the loop can be broken as soon as `x == 1` after `x /= i;`, because there will be no further factors. 
+
+3. **Using bitwise operations**: In `solve` function, instead of checking `ct % 2` to decide whether to add or subtract, we can use bitwise AND operation `ct & 1` which is faster.
+
+Here is the optimized version of your program:
+
+```c++
+#include <bits/stdc++.h>
+using namespace std;
+const int maxn = 1.8e7;
+bool pr[maxn + 100];
+vector<long long> pint, f;
+void fac(int x) {
+  f.clear();
+  for (auto i : pint) {
+    if (i * i > x)
+      break;
+    if (x % i != 0)
+      continue;
+    f.push_back(i);
+    while (x % i == 0) {
+      x /= i;
+      if (x == 1)
+        break;
+    }
+  }
+  if (x != 1)
+    f.push_back(x);
+}
+int solve(int val) {
+  int ret = 0;
+  int lim = 1 << f.size();
+  for (int j = 1; j < lim; j++) {
+    int tp = 1, ct = 0;
+    for (int i = 0; i < (int)f.size(); i++) {
+      if ((j >> i) & 1) {
+        tp *= f[i];
+        ct++;
+      }
+    }
+    ret += ((ct & 1) ? 1 : -1) * val / tp;
+  }
+  return val - ret;
+}
+int cas, x, p, k;
+int main() {
+  memset(pr, true, sizeof(pr));
+  pr[0] = pr[1] = false;
+  for (int i = 2; i <= maxn; i++) {
+    if (pr[i]) {
+      if (i > 2) {
+        for (int j = i * i; j <= maxn; j += 2 * i)
+          pr[j] = false;
+      } else {
+        for (int j = i * i; j <= maxn; j += i)
+          pr[j] = false;
+      }
+    }
+  }
+  for (int i = 2; i <= maxn; i++)
+    if (pr[i])
+      pint.push_back(i);
+  cin >> cas;
+  while (cas--) {
+    scanf("%d%d%d", &x, &p, &k);
+    fac(p);
+    int a1 = solve(x), L = x + 1, R = maxn, ans = 0;
+    while (L <= R) {
+      int mid = (L + R) / 2;
+      int val = solve(mid) - a1;
+      if (val >= k)
+        R = mid - 1, ans = mid;
+      else
+        L = mid + 1;
+    }
+    printf("%d\n", ans);
+  }
+  return 0;
+}
+```
+Please note that in real-world scenarios, you should avoid including `bits/stdc++.h` as it includes all Standard Library headers and can significantly slow down the compilation process. Instead, you should include only the specific headers that you need.

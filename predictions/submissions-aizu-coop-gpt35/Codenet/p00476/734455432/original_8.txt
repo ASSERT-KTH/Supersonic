@@ -1,0 +1,240 @@
+Code Analysis:
+- The code defines several data structures and functions for solving a specific problem.
+- It uses segment trees to efficiently update and query ranges of values.
+- It also uses a range maximum query (RMQ) data structure to find the maximum value and its index in a given range.
+- The main function reads input data, calls the solve function, and prints the result.
+
+Potential Performance Bottlenecks:
+1. Memory Usage: The code uses large arrays, such as d[100000] and h[100000], which might consume a significant amount of memory.
+2. Function Calls: The code makes recursive calls to seg_add and _rmq_getMax functions, which might introduce overhead and affect performance.
+3. Redundant Computations: Some computations, such as seg_getMax(fl, fl + 1), are performed multiple times in the same loop iteration, which can be optimized.
+4. Loop Iterations: The main loop iterates N times, which might lead to unnecessary iterations and affect performance.
+
+Optimization Strategy:
+1. Data Structures:
+   - Replace the fixed-size arrays d[100000] and h[100000] with dynamically allocated arrays or vectors to reduce memory usage.
+   - Consider using a more memory-efficient data structure, such as a bitset, if the range of values is small.
+2. Loop Unrolling:
+   - Unroll the main loop to reduce the number of iterations and eliminate the need for seg_getMax(fl, fl + 1) computations.
+   - This can be achieved by processing multiple elements per iteration, for example, by incrementing the loop variable by a fixed step size.
+3. Tail Recursion:
+   - Convert the recursive calls in seg_add and _rmq_getMax functions into iterative loops to eliminate recursion overhead.
+4. Compiler Optimizations:
+   - Enable compiler optimizations, such as loop unrolling, function inlining, and vectorization, to automatically optimize the code.
+   - Use compiler-specific pragmas or directives to provide hints to the compiler for further optimization.
+
+Step-by-Step Explanation:
+1. Data Structures:
+   - Replace the fixed-size arrays d[100000] and h[100000] with dynamically allocated arrays or vectors.
+   - This will reduce memory usage when the actual number of elements is smaller than the maximum size.
+   - To do this, replace the array declarations with vector declarations:
+     ```
+     vector<int> d(N), h(N);
+     ```
+2. Loop Unrolling:
+   - Unroll the main loop to reduce the number of iterations and eliminate the need for seg_getMax(fl, fl + 1) computations.
+   - Modify the loop to process multiple elements per iteration, for example, by incrementing the loop variable by a fixed step size.
+   - To do this, replace the main loop with the following code:
+     ```
+     for (int fl = 0; fl < N; fl += 2) {
+       // Process two elements per iteration
+       if (seg_getMax(fl, fl + 1) > H) {
+         seg_add(fl, N, H - seg_getMax(fl, fl + 1));
+       }
+       seg_add(fl, N, -d[fl]);
+       if (seg_getMax(fl, fl + 1) > 0)
+         continue;
+       while (true) {
+         int idx = rmq_getMaxIdx(0, fl);
+         if (h[idx] > H - seg_getMax(idx, fl)) {
+           h[idx] = H - seg_getMax(idx, fl);
+           rmq_update(idx, h[idx]);
+           continue;
+         }
+         int s = (H - seg_getMax(idx, fl)) / h[idx];
+         int hp = seg_getMax(fl, fl + 1);
+         int need = -hp + 1;
+         int t = (need / h[idx]) + !!(need % h[idx]);
+         int num = min(s, t);
+         seg_add(idx, N, h[idx] * num);
+         res += num;
+         if (seg_getMax(fl, fl + 1) > 0)
+           break;
+       }
+       // Process the second element in the pair
+       int fl2 = fl + 1;
+       if (fl2 < N) {
+         if (seg_getMax(fl2, fl2 + 1) > H) {
+           seg_add(fl2, N, H - seg_getMax(fl2, fl2 + 1));
+         }
+         seg_add(fl2, N, -d[fl2]);
+         if (seg_getMax(fl2, fl2 + 1) > 0)
+           continue;
+         while (true) {
+           int idx = rmq_getMaxIdx(0, fl2);
+           if (h[idx] > H - seg_getMax(idx, fl2)) {
+             h[idx] = H - seg_getMax(idx, fl2);
+             rmq_update(idx, h[idx]);
+             continue;
+           }
+           int s = (H - seg_getMax(idx, fl2)) / h[idx];
+           int hp = seg_getMax(fl2, fl2 + 1);
+           int need = -hp + 1;
+           int t = (need / h[idx]) + !!(need % h[idx]);
+           int num = min(s, t);
+           seg_add(idx, N, h[idx] * num);
+           res += num;
+           if (seg_getMax(fl2, fl2 + 1) > 0)
+             break;
+         }
+       }
+     }
+     ```
+3. Tail Recursion:
+   - Convert the recursive calls in seg_add and _rmq_getMax functions into iterative loops.
+   - To do this, replace the recursive calls with while loops:
+     ```
+     void seg_add(int l, int r, int x, int k = 0, int a = 0, int b = size) {
+       while (!(b <= l || r <= a)) {
+         if (l <= a && b <= r) {
+           seg_a[k] += x;
+           while (k) {
+             k = (k - 1) / 2;
+             seg_v[k] = max(seg_v[k * 2 + 1] + seg_a[k * 2 + 1],
+                            seg_v[k * 2 + 2] + seg_a[k * 2 + 2]);
+           }
+           return;
+         }
+         int m = (a + b) / 2;
+         if (r <= m) {
+           k = k * 2 + 1;
+           b = m;
+         } else if (l >= m) {
+           k = k * 2 + 2;
+           a = m;
+         } else {
+           seg_add(l, r, x, k * 2 + 1, a, m);
+           seg_add(l, r, x, k * 2 + 2, m, b);
+           return;
+         }
+       }
+     }
+     ```
+     ```
+     Pr _rmq_getMax(int l, int r, int k = 0, int a = 0, int b = size) {
+       while (!(b <= l || r <= a)) {
+         if (l <= a && b <= r)
+           return rmq[k];
+         int m = (a + b) / 2;
+         if (r <= m) {
+           k = k * 2 + 1;
+           b = m;
+         } else if (l >= m) {
+           k = k * 2 + 2;
+           a = m;
+         } else {
+           Pr vl = _rmq_getMax(l, r, k * 2 + 1, a, m);
+           Pr vr = _rmq_getMax(l, r, k * 2 + 2, m, b);
+           return max(vl, vr);
+         }
+       }
+       return Pr(-INF, -1);
+     }
+     ```
+4. Compiler Optimizations:
+   - Enable compiler optimizations by passing appropriate flags to the compiler.
+   - For example, if using GCC, compile the code with the `-O3` flag: `g++ -O3 program.cpp`.
+   - Use compiler-specific pragmas or directives to provide hints to the compiler for further optimization. This can be done by adding appropriate directives before the seg_add and _rmq_getMax function definitions, for example:
+     ```
+     #pragma GCC optimize("unroll-loops")
+     void seg_add(int l, int r, int x, int k = 0, int a = 0, int b = size) {
+       // Function definition
+     }
+     ```
+
+Optimized Code Block:
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+const int INF = 1 << 28;
+typedef pair<int, int> Pr;
+
+void seg_add(int l, int r, int x, int k = 0, int a = 0, int b = size);
+int seg_getMax(int l, int r, int k = 0, int a = 0, int b = size);
+void rmq_update(int k, int x);
+Pr _rmq_getMax(int l, int r, int k = 0, int a = 0, int b = size);
+
+void solve() {
+  long long int res = 0;
+  for (int i = 0; i < N; i++) {
+    rmq_update(i, h[i]);
+  }
+  seg_add(0, N, H);
+  for (int fl = 0; fl < N; fl += 2) {
+    if (seg_getMax(fl, fl + 1) > H) {
+      seg_add(fl, N, H - seg_getMax(fl, fl + 1));
+    }
+    seg_add(fl, N, -d[fl]);
+    if (seg_getMax(fl, fl + 1) > 0)
+      continue;
+    while (true) {
+      int idx = rmq_getMaxIdx(0, fl);
+      if (h[idx] > H - seg_getMax(idx, fl)) {
+        h[idx] = H - seg_getMax(idx, fl);
+        rmq_update(idx, h[idx]);
+        continue;
+      }
+      int s = (H - seg_getMax(idx, fl)) / h[idx];
+      int hp = seg_getMax(fl, fl + 1);
+      int need = -hp + 1;
+      int t = (need / h[idx]) + !!(need % h[idx]);
+      int num = min(s, t);
+      seg_add(idx, N, h[idx] * num);
+      res += num;
+      if (seg_getMax(fl, fl + 1) > 0)
+        break;
+    }
+
+    // Process the second element in the pair
+    int fl2 = fl + 1;
+    if (fl2 < N) {
+      if (seg_getMax(fl2, fl2 + 1) > H) {
+        seg_add(fl2, N, H - seg_getMax(fl2, fl2 + 1));
+      }
+      seg_add(fl2, N, -d[fl2]);
+      if (seg_getMax(fl2, fl2 + 1) > 0)
+        continue;
+      while (true) {
+        int idx = rmq_getMaxIdx(0, fl2);
+        if (h[idx] > H - seg_getMax(idx, fl2)) {
+          h[idx] = H - seg_getMax(idx, fl2);
+          rmq_update(idx, h[idx]);
+          continue;
+        }
+        int s = (H - seg_getMax(idx, fl2)) / h[idx];
+        int hp = seg_getMax(fl2, fl2 + 1);
+        int need = -hp + 1;
+        int t = (need / h[idx]) + !!(need % h[idx]);
+        int num = min(s, t);
+        seg_add(idx, N, h[idx] * num);
+        res += num;
+        if (seg_getMax(fl2, fl2 + 1) > 0)
+          break;
+      }
+    }
+  }
+  printf("%lld\n", res);
+}
+
+int main() {
+  scanf("%d %d", &N, &H);
+  vector<int> d(N), h(N);
+  for (int i = 0; i < N - 1; i++) {
+    scanf("%d %d", &d[i + 1], &h[i]);
+  }
+  solve();
+}
+```
+
+Trade-offs:
+1. Memory Usage: By replacing the fixed-size arrays with dynamically allocated arrays or vectors, the memory usage can be reduced. However, dynamic memory allocation comes with a small overhead and might slightly increase the code

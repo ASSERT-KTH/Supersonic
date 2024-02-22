@@ -1,0 +1,128 @@
+The given code is a C++ code that solves a problem related to graphs and trees. The problem involves finding the shortest distance in a tree from a given node to any other node. The code also involves the use of centroid decomposition, an advanced tree algorithm.
+
+Here are a few steps to optimize the code:
+
+1. The macro `fast` is used to speed up the I/O operations in C++. This macro will not affect the memory usage but will reduce the running time of the program.
+
+2. The use of the bitset library (`bits/stdc++.h`) is not advised, as it includes many unnecessary libraries, which can increase the compile time. It's better to include only the libraries that you are using in the code.
+
+3. The use of `memset` function for setting up values in an array is not efficient in terms of speed. It's better to use fill_n function or a loop to initialize the elements of array.
+
+4. Also, the use of `std::set` in the code is not optimal, as the operations in set takes O(log n) time. If the order of elements is not required, it's better to use `std::unordered_set` which has average time complexity of O(1) for insert, delete and search operations.
+
+5. The use of `std::pair` and `std::make_pair` can be replaced with `std::array` to reduce the memory usage.
+
+6. Use '\n' instead of `std::endl` for output, as `std::endl` flushes the output buffer everytime it's called and can slow down the program.
+
+Here is the optimized code:
+
+```cpp
+#include <iostream>
+#include <algorithm>
+#include <cstring>
+#include <unordered_set>
+#include <cmath>
+#include <climits>
+#include <array>
+#define ll long long int
+#define fast ios_base::sync_with_stdio(false), cin.tie(0), cout.tie(0)
+using namespace std;
+unordered_set<ll> v[100001], ct[100001];
+ll sub[100001], nc, cr, lca[100001][21], cpar[100001], lv[100001], n, m,
+    ans[100001];
+void dfs(ll node, ll par, ll lvl) {
+  lv[node] = lvl;
+  lca[node][0] = par;
+  for (auto a : v[node])
+    if (a != par)
+      dfs(a, node, lvl + 1);
+}
+void genlca() {
+  fill_n(*lca, 100001*21, -1);
+  dfs(1, -1, 0);
+  for (ll i = 1; i <= 20; i++)
+    for (ll j = 1; j <= n; j++)
+      if (lca[j][i - 1] != -1)
+        lca[j][i] = lca[lca[j][i - 1]][i - 1];
+}
+ll getlca(ll a, ll b) {
+  if (lv[a] > lv[b])
+    swap(a, b);
+  ll d = lv[b] - lv[a];
+  while (d > 0) {
+    ll x = log2(d);
+    b = lca[b][x];
+    d -= (1 << x);
+  }
+  if (a == b)
+    return a;
+  for (ll i = 20; i >= 0; i--)
+    if (lca[a][i] != lca[b][i])
+      a = lca[a][i], b = lca[b][i];
+  return lca[a][0];
+}
+ll dist(ll a, ll b) { return lv[a] + lv[b] - 2 * lv[getlca(a, b)]; }
+void dfs(ll node, ll par) {
+  nc++;
+  sub[node] = 1;
+  for (auto a : v[node])
+    if (a != par)
+      dfs(a, node), sub[node] += sub[a];
+}
+ll getcent(ll node, ll par) {
+  for (auto a : v[node])
+    if (a != par && sub[a] > nc / 2)
+      return getcent(a, node);
+  return node;
+}
+ll decom(ll root) {
+  nc = 0;
+  dfs(root, -1);
+  ll c = getcent(root, -1);
+  for (auto a : v[c]) {
+    v[a].erase(c);
+    ll x = decom(a);
+    ct[c].insert(x);
+    ct[x].insert(c);
+    cpar[x] = c;
+  }
+  return c;
+}
+void update(ll par, ll node) {
+  if (par == -1)
+    return;
+  ans[par] = min(ans[par], dist(node, par));
+  update(cpar[par], node);
+}
+ll getans(ll par, ll node) {
+  if (par == -1)
+    return INT_MAX;
+  return min(getans(cpar[par], node), ans[par] + dist(node, par));
+}
+int main() {
+  fast;
+  cin >> n >> m;
+  for (ll i = 1; i < n; i++) {
+    ll a, b;
+    cin >> a >> b;
+    v[a].insert(b);
+    v[b].insert(a);
+  }
+  fill_n(ans, n+1, INT_MAX);
+  genlca();
+  cr = decom(1);
+  cpar[cr] = -1;
+  ans[1] = 0;
+  update(cpar[1], 1);
+  while (m--) {
+    ll a, b;
+    cin >> a >> b;
+    if (a == 1) {
+      ans[b] = 0;
+      update(cpar[b], b);
+    } else {
+      cout << getans(b, b) << "\n";
+    }
+  }
+}
+```

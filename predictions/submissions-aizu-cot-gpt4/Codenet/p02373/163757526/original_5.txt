@@ -1,0 +1,84 @@
+This program makes use of pair data structure (ii), vector (vi), and Sparse Table (ST) to perform depth-first search (DFS) and find least common ancestors (LCA) in a graph.
+
+Optimization Steps:
+1. "bits/stdc++.h" is a GCC specific library that includes many standard libraries. It's convenient for contests, but it's not portable and slows down the compile time. Include only needed standard libraries for better performance and portability.
+2. Use of "using namespace std" is generally considered bad practice. It can lead to name conflicts when the codebase grows or if integrated with other code. Instead, use "std::" prefix when necessary.
+3. The depth-first search (DFS) function is being called recursively. This could lead to stack overflow for large inputs. However, in this case, it is not so straightforward to convert it to iterative as it uses postorder DFS. Leave it as is because changing would be a significant modification of the program.
+4. In the build function, the height "h" is calculated using "ceil(log2(n+1))". This can be optimized by using "__builtin_clz" function which returns the number of leading zeros, instead of using "log2". This will also remove the need to include the cmath library.
+5. In the main function, instead of using scanf and printf for input and output, use cin and cout with ios::sync_with_stdio(false) and cin.tie(NULL) at the beginning of main(). This will disable the synchronization of all the C++ standard streams with their corresponding standard C streams and untie cin from cout. This can significantly increase the I/O speed and reduce the running time.
+6. Use '\n' instead of endl to print a newline. endl also flushes the stream which is not necessary and can slow down the program.
+
+Optimized Program:
+
+```
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+#define fi first
+#define se second
+typedef std::pair<int, int> ii;
+typedef std::vector<int> vi;
+const int MAXN = 100005;
+const int LOGN = 20;
+int idx_in_path[MAXN];
+ii path[MAXN << 1];
+vi adjList[MAXN];
+int path_size = 0;
+
+void dfs(int u, int depth = 0) {
+  idx_in_path[u] = path_size;
+  path[path_size++] = ii(depth, u);
+  for (int v : adjList[u]) {
+    dfs(v, depth + 1);
+    path[path_size++] = ii(depth, u);
+  }
+}
+
+ii ST[LOGN][MAXN << 1];
+void build(int n) {
+  int h = __builtin_clz(1) - __builtin_clz(n);
+  for (int i = 0; i < n; i++)
+    ST[0][i] = path[i];
+  for (int i = 1; i < h; i++)
+    for (int j = 0; j + (1 << i) <= n; j++)
+      ST[i][j] = min(ST[i - 1][j], ST[i - 1][j + (1 << (i - 1))]);
+}
+
+int lca(int u, int v) {
+  int l = idx_in_path[u], r = idx_in_path[v];
+  if (l > r)
+    std::swap(l, r);
+  r++;
+  int p = 31 - __builtin_clz(r - l);
+  return min(ST[p][l], ST[p][r - (1 << p)]).se;
+}
+
+int main() {
+  std::ios::sync_with_stdio(false);
+  std::cin.tie(NULL);
+
+  int num_nodes;
+  std::cin >> num_nodes;
+  for (int u = 0; u < num_nodes; u++) {
+    int num_neighbors;
+    std::cin >> num_neighbors;
+    for (int i = 0; i < num_neighbors; i++) {
+      int v;
+      std::cin >> v;
+      adjList[u].push_back(v);
+    }
+  }
+  dfs(0);
+  build(path_size);
+
+  int num_queries;
+  std::cin >> num_queries;
+  for (int i = 0; i < num_queries; i++) {
+    int u, v;
+    std::cin >> u >> v;
+    std::cout << lca(u, v) << '\n';
+  }
+  return 0;
+}
+```

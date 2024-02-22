@@ -1,0 +1,82 @@
+This program uses the Rolling Hash technique and Set data structure to solve a problem. It reads a number of strings, calculates their hashes and stores them in a set. Then it reads another number of strings, and checks if there's a string in the previously read set that differs in exactly one character.
+
+Here are some optimization steps:
+
+1. Avoid using `std::set` for storing hashes. `std::set` is a Red-Black tree under the hood and its operations are O(log n). However, we can use a `std::unordered_set` which is a hash table and its operations are O(1) on average. 
+
+2. The `check` function could be optimized. In the worst case, it checks all the possible substitutions of each character in the string, which is not efficient. Instead, we can generate all strings that differ in exactly one character, calculate their hash and check if it exists in the set. This way, we avoid recalculating the hash for every possible character.
+
+3. Do not use `std::ios::sync_with_stdio(false);` and `std::cin.tie(0);` unless you really need to mix C and C++ buffered I/O or use multi-threading. In your program, only `std::cin` and `std::cout` are being used, so there's no need to unsync them from C's `stdin` and `stdout`.
+
+4. Use `std::string::reserve` to avoid multiple memory allocations when reading strings.
+
+Here is the optimized version of your program:
+
+```cpp
+#include <unordered_set>
+#include <vector>
+#include <iostream>
+#include <string>
+
+typedef long long ll;
+
+const int base = 257;
+const int mod = 1e9 + 7;
+const int N = 1e6;
+
+std::unordered_set<ll> st;
+ll f[N];
+
+void init() {
+    f[0] = 1;
+    for (int i = 1; i < N; i++)
+        f[i] = f[i - 1] * base % mod;
+}
+
+ll get_hash(const std::string& s) {
+    ll val = 0;
+    for (int i = 0; i < s.size(); i++) {
+        val = (val * base + s[i]) % mod;
+    }
+    return val;
+}
+
+bool check(const std::string& t) {
+    ll original_hash = get_hash(t);
+    for (int i = 0; i < t.size(); i++) {
+        char original_char = t[i];
+        for (char c = 'a'; c <= 'c'; c++) {
+            if (c != original_char) {
+                std::string copy(t);
+                copy[i] = c;
+                ll new_hash = get_hash(copy);
+                if (st.find(new_hash) != st.end())
+                    return true;
+            }
+        }
+    }
+    return false;
+}
+
+int main() {
+    init();
+    int n, m;
+    std::cin >> n >> m;
+
+    std::string s;
+    s.reserve(N);
+    for (int i = 0; i < n; i++) {
+        std::cin >> s;
+        st.insert(get_hash(s));
+    }
+
+    std::string t;
+    t.reserve(N);
+    for (int i = 0; i < m; i++) {
+        std::cin >> t;
+        std::cout << (check(t) ? "YES" : "NO") << std::endl;
+    }
+
+    return 0;
+}
+```

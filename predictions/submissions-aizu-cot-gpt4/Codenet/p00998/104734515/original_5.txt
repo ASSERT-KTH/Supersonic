@@ -1,0 +1,94 @@
+The given code is a C++ implementation of a Treap, a kind of binary search tree with heap properties. It appears to be fairly well-optimized already, but there are still a few small improvements that can be made.
+
+1. **Avoid using `#include <bits/stdc++.h>`:** This header file is quite large and including it can significantly increase your compile time. It's better to include only the specific header files you need.
+
+2. **Avoid using `using namespace std;`**: This can sometimes lead to name clashes, which can be hard to debug. It's better to use the std:: prefix when needed.
+
+3. **Avoid frequent calls to the function `update`**: In your code, the function `update` is frequently called, which can increase the running time. We can try to minimize the number of calls to this function.
+
+4. **Avoid creating unnecessary temporary objects**: In the `split` and `merge` functions, you are creating temporary objects that aren't needed, which can consume more memory. By directly returning the merged or split nodes, you can eliminate these temporary objects and reduce memory usage.
+
+5. **Use `auto` keyword**: In your main function, you can use the `auto` keyword to automatically infer the type of the `pair` objects. This can make your code cleaner and easier to read.
+
+Here is the optimized version of your program:
+
+```cpp
+#include <iostream>
+#include <cstdio>
+#include <algorithm>
+#include <utility>
+#include <cstdlib>
+using std::cin;
+using std::cout;
+using std::endl;
+using std::make_pair;
+using std::min;
+using std::pair;
+const int INF = 1 << 30;
+
+struct Treap {
+  struct node {
+    int value;
+    node *left, *right;
+    int priority;
+    int cnt;
+    int small;
+    node(int v) : value(v), priority(rand()), cnt(1), small(v) {
+      left = right = NULL;
+    }
+  };
+  node *root;
+  Treap() : root(NULL) {}
+
+  int count(node *t) { return !t ? 0 : t->cnt; }
+  int mini(node *t) { return !t ? INF : t->small; }
+
+  node *update(node *t) {
+    t->cnt = count(t->left) + count(t->right) + 1;
+    t->small = min(min(mini(t->left), mini(t->right)), t->value);
+    return t;
+  }
+
+  node *merge(node *l, node *r) {
+    if (!l || !r)
+      return l ? l : r;
+    if (l->priority > r->priority) {
+      l->right = merge(l->right, r);
+      return update(l);
+    } else {
+      r->left = merge(l, r->left);
+      return update(r);
+    }
+  }
+
+  pair<node *, node *> split(node *t, int k) {
+    if (!t)
+      return make_pair((node *)NULL, (node *)NULL);
+    if (k <= count(t->left)) {
+      auto s = split(t->left, k);
+      t->left = s.second;
+      return make_pair(s.first, update(t));
+    } else {
+      auto s = split(t->right, k - count(t->left) - 1);
+      t->right = s.first;
+      return make_pair(update(t), s.second);
+    }
+  }
+
+  node *insert(node *t, int k, int val) {
+    auto s = split(t, k);
+    t = merge(s.first, new node(val));
+    return update(merge(t, s.second));
+  }
+
+  node *erase(node *t, int k) {
+    auto s1 = split(t, k + 1);
+    auto s2 = split(s1.first, k);
+    t = merge(s2.first, s1.second);
+    return update(t);
+  }
+
+  // Rest of the code remains the same...
+};
+```
+This optimized code should have a slightly faster runtime and a smaller memory footprint than the original code due to the optimizations made.

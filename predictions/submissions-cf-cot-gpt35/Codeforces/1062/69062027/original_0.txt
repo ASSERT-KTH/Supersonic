@@ -1,0 +1,122 @@
+To optimize the given C/C++ program, we can make the following modifications:
+
+1. Remove unnecessary header files: The program includes the `<bits/stdc++.h>` header, which is not a standard C++ header and may lead to longer compilation times. We can remove this header as it is not used in the program.
+
+2. Remove unnecessary typedefs: The program includes several typedefs that are not used. We can remove the typedefs `ll`, `ld`, `vi`, `pi`, `vpi` as they are not used in the program.
+
+3. Use `const` for constant variables: The program uses the constant variable `mod` but does not declare it as `const`. We can declare it as `const` to indicate that its value should not be modified.
+
+4. Modify the `combine` function: The `combine` function in the program can be modified to use references instead of copying the `dat` objects. This can help reduce memory usage and improve performance.
+
+5. Modify the `build` function: The `build` function in the program can be modified to use references instead of copying the `dat` objects. This can help reduce memory usage and improve performance.
+
+6. Modify the `get` function: The `get` function in the program can be modified to use references instead of copying the `dat` objects. This can help reduce memory usage and improve performance.
+
+7. Use `emplace_back` instead of `push_back` for vector resizing: The program uses `push_back` to resize vectors. We can use `emplace_back` instead to construct the objects directly in the vector, avoiding unnecessary copies.
+
+8. Use `reserve` for vector capacity: The program does not use `reserve` to preallocate memory for vectors. We can use `reserve` to improve performance by avoiding unnecessary reallocations.
+
+9. Avoid unnecessary calculations: The program performs unnecessary calculations in the `combine` function. We can optimize these calculations to reduce the number of operations.
+
+Here is the optimized C/C++ program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+struct dat {
+  pair<int, int> mx;
+  pair<int, int> mn;
+};
+
+const int MAXN = 100100;
+vector<vector<int>> adj;
+vector<int> a;
+vector<dat> t;
+dat zero;
+
+dat& combine(dat& x, dat& y) {
+  dat& res = t.emplace_back();
+  res.mx.fs = (a[x.mx.fs] > a[y.mx.fs]) ? x.mx.fs : y.mx.fs;
+  res.mx.sc = (a[x.mx.fs] > a[y.mx.fs]) ? ((a[x.mx.sc] > a[y.mx.fs]) ? x.mx.sc : y.mx.fs) : ((a[x.mx.fs] > a[y.mx.sc]) ? x.mx.fs : y.mx.sc);
+  res.mn.fs = (a[x.mn.fs] < a[y.mn.fs]) ? x.mn.fs : y.mn.fs;
+  res.mn.sc = (a[x.mn.fs] < a[y.mn.fs]) ? ((a[x.mn.sc] < a[y.mn.fs]) ? x.mn.sc : y.mn.fs) : ((a[x.mn.fs] < a[y.mn.sc]) ? x.mn.fs : y.mn.sc);
+  return res;
+}
+
+void build(int v, int tl, int tr) {
+  if (tl == tr) {
+    t[v].mn = {tl, n + 1};
+    t[v].mx = {tl, n + 2};
+  } else {
+    int tm = (tl + tr) / 2;
+    build(2 * v, tl, tm);
+    build(2 * v + 1, tm + 1, tr);
+    t[v] = combine(t[2 * v], t[2 * v + 1]);
+  }
+}
+
+dat& get(int v, int tl, int tr, int l, int r) {
+  if (l > r) return zero;
+  if (l == tl && r == tr) return t[v];
+  int tm = (tl + tr) / 2;
+  return combine(get(v * 2, tl, tm, l, min(r, tm)),
+                 get(v * 2 + 1, tm + 1, tr, max(l, tm + 1), r));
+}
+
+int main() {
+  ios::sync_with_stdio(0);
+  cin.tie(0);
+  cout.tie(0);
+
+  int n, q;
+  cin >> n >> q;
+
+  zero.mx = {n + 2, n + 2};
+  zero.mn = {n + 1, n + 1};
+
+  adj.resize(n + 1);
+  a.resize(n + 3); // Increase size to accommodate a[n+1] and a[n+2]
+  for (int i = 1; i < n; i++) {
+    int x;
+    cin >> x;
+    adj[x - 1].emplace_back(i);
+  }
+
+  for (int i = 0; i < n; i++) {
+    a[i] = i;
+  }
+
+  t.reserve(4 * n); // Reserve memory for t vector
+
+  build(1, 0, n - 1);
+
+  while (q--) {
+    int l, r;
+    cin >> l >> r;
+    l--;
+    r--;
+    if (r - l < 2) {
+      int ans = r, d = hld.dep[l];
+      if (d < hld.dep[r]) {
+        ans = l;
+        d = hld.dep[r];
+      }
+      cout << ans + 1 << " " << d << endl;
+      continue;
+    }
+    dat cur = get(1, 0, n - 1, l, r);
+    int lc1 = hld.lca(cur.mx.fs, cur.mn.sc);
+    int lc2 = hld.lca(cur.mx.sc, cur.mn.fs);
+    if (hld.dep[lc1] > hld.dep[lc2]) {
+      cout << cur.mn.fs + 1 << " " << hld.dep[lc1] << endl;
+    } else {
+      cout << cur.mx.fs + 1 << " " << hld.dep[lc2] << endl;
+    }
+  }
+
+  return 0;
+}
+```

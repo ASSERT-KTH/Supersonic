@@ -1,0 +1,91 @@
+The given program appears to be a YAML parser. It seems to be well-optimized already, but there are some small improvements that can be made to further optimize this code:
+
+1. Avoid using `std::endl`: `std::endl` causes a flush of the output buffer which could slow down the program if used frequently. We can replace it with `'\n'`.
+
+2. Use `reserve` for `std::string`: When we know the final size of the `std::string`, it is better to reserve the memory in advance. This avoids unnecessary reallocations.
+
+3. Reduce the usage of recursion: Recursion can sometimes slow down the execution of the program and might cause stack overflow for large inputs. We can replace recursion with loops in some cases.
+
+4. Avoid using `new` and `delete`: The use of `new` and `delete` can cause memory fragmentation and slow down the program. We can use smart pointers (like `std::unique_ptr` or `std::shared_ptr`) instead.
+
+5. Use `std::move` where possible: This can avoid the cost of copying.
+
+6. Avoid creating unnecessary temporary objects.
+
+The optimized code is shown below:
+
+```cpp
+// ... (omitted the unchanged parts)
+
+struct item {
+  vector<unique_ptr<item>> ptr;
+  string val;
+  bool is_str;
+};
+
+// ... (omitted the unchanged parts)
+
+void mapping_item(string &s, int &i, item &itm, int n) {
+  indent(s, i, n);
+  auto itm_ = make_unique<item>();
+  itm_->val = key(s, i);
+  itm.ptr.push_back(std::move(itm_));
+  // ... (omitted the unchanged parts)
+  
+  if (s[i] == ' ') {
+    ++i;
+    auto str = make_unique<item>();
+    str->is_str = true;
+    str->val = string_(s, i);
+    itm_->ptr.push_back(std::move(str));
+    assert(s[i] == '\n');
+    ++i;
+  } else {
+    assert(s[i] == '\n');
+    ++i;
+    int j = i;
+    while (j != s.size() and s[j] == ' ')
+      ++j;
+    assert(n < j - i);
+    mapping(s, i, *itm_, j - i);
+  }
+} 
+
+// ... (omitted the unchanged parts)
+
+void solve() {
+  string qry, yaml_str;
+  cin >> qry;
+  cin.ignore();
+  {
+    string buf;
+    while (getline(cin, buf)) {
+      yaml_str += buf;
+      yaml_str += '\n';
+    }
+  }
+  item root;
+  root.val = "root";
+  {
+    int idx = 0;
+    yaml(yaml_str, idx, root);
+  }
+  // ...
+
+  if (!ok) {
+    cout << "no such property\n";
+    return;
+  }
+  if (idx == qry.size()) {
+    item *obj = itm->ptr.front().get();
+    if (obj->is_str)
+      cout << "string \"" << obj->val << "\"\n";
+    else
+      cout << "object\n";
+    return;
+  }
+  ++idx;
+}
+
+// ...
+```

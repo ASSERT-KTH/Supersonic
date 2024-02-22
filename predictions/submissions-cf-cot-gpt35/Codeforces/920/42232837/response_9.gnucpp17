@@ -1,0 +1,110 @@
+#include <iostream>
+#include <vector>
+#include <unordered_set>
+#include <algorithm>
+using namespace std;
+
+const int maxn = 1.8e7;
+
+vector<long long> pint;
+vector<bool> pr(maxn + 100, true);
+vector<int> prefix_sums(maxn + 101, 0);
+
+void generate_primes() {
+    pr[0] = pr[1] = false;
+    for (int i = 2; i * i <= maxn; i++) {
+        if (pr[i]) {
+            for (int j = i * i; j <= maxn; j += i) {
+                pr[j] = false;
+            }
+        }
+    }
+    for (int i = 2; i <= maxn; i++) {
+        if (pr[i]) {
+            pint.push_back(i);
+        }
+    }
+}
+
+void generate_prefix_sums() {
+    int sum = 0;
+    for (int i = 2; i <= maxn; i++) {
+        if (pr[i]) {
+            sum++;
+        }
+        prefix_sums[i] = sum;
+    }
+}
+
+unordered_set<int> factorize(int x) {
+    unordered_set<int> factors;
+    for (auto i : pint) {
+        if (x % i != 0) {
+            continue;
+        }
+        if (i * i > x) {
+            break;
+        }
+        factors.insert(i);
+        while (x % i == 0) {
+            x /= i;
+        }
+    }
+    if (x != 1) {
+        factors.insert(x);
+    }
+    return factors;
+}
+
+int solve(int val, const unordered_set<int>& factors) {
+    int ret = 0;
+    int lim = 1 << factors.size();
+    for (int j = 1; j < lim; j++) {
+        int tp = 1, ct = 0;
+        int idx = 0;
+        for (auto i : factors) {
+            if ((j >> idx) & 1) {
+                tp *= i;
+                ct++;
+            }
+            idx++;
+        }
+        ret += (ct % 2 ? 1 : -1) * val / tp;
+    }
+    return val - ret;
+}
+
+int binary_search(int x, const unordered_set<int>& factors, int k) {
+    int L = x + 1, R = maxn, ans = 0;
+    while (L <= R) {
+        int mid = (L + R) / 2;
+        int val = solve(mid, factors) - prefix_sums[x];
+        if (val >= k) {
+            R = mid - 1;
+            ans = mid;
+        } else {
+            L = mid + 1;
+        }
+    }
+    return ans;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    generate_primes();
+    generate_prefix_sums();
+
+    int cas, x, p, k;
+    cin >> cas;
+    while (cas--) {
+        cin >> x >> p >> k;
+        unordered_set<int> factors = factorize(p);
+        int a1 = prefix_sums[x];
+        int ans = binary_search(x, factors, k);
+        cout << ans << endl;
+    }
+
+    return 0;
+}

@@ -1,0 +1,104 @@
+Step 1: Remove unnecessary includes and use specific includes
+The program uses '#include <bits/stdc++.h>', this header file includes all standard library header files which may increase compile time. The program should include only the necessary headers.
+
+Step 2: Replace C-style arrays with std::array or std::vector
+C-style arrays like max_r[2000], max_l[2000] are not recommended because they do not know their own size. This can lead to buffer overflow errors. Replacing them with std::array or std::vector can also provide additional functions like size(), empty(), etc.
+
+Step 3: Avoid using 'std::endl'
+std::endl can cause unnecessary flushing of the buffer and decrease the performance. It's better to use "\n" instead.
+
+Step 4: Avoid using global variables
+Global variables like n, k, p[2000], v, max_r[2000], max_l[2000] can be moved inside the main function to avoid unnecessary memory usage.
+
+Step 5: Avoid using 'using namespace std'
+It's better to avoid 'using namespace std' because it can lead to name conflicts if the program is using or will use other libraries.
+
+Step 6: Use 'reserve()' for vector before 'push_back()'
+If you know the size of elements that will be inserted into vector, it's better to use 'reserve()' before 'push_back()'. It can avoid unnecessary reallocations.
+
+Optimized code:
+```
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <complex>
+#include <iomanip>
+#include <algorithm>
+
+#define rep(i, n) for (int i = 0; i < (int)n; i++)
+#define fs first
+#define sc second
+
+typedef double D;
+typedef std::pair<D, D> pdd;
+typedef std::vector<D> vd;
+const D EPS = 1e-8;
+const D PI = std::acos(-1);
+
+inline void modify(D &seta) {
+  if (seta > PI)
+    seta -= 2 * PI;
+  if (seta < -PI)
+    seta += 2 * PI;
+}
+
+inline bool in_upper(const D &seta) { return (EPS < seta && seta < PI - EPS); }
+
+inline bool comp(const pdd &a, const pdd &b) {
+  return std::abs(a.fs - b.fs) < EPS ? a.sc + EPS < b.sc : a.fs < b.fs;
+}
+
+int main() {
+  std::ios::sync_with_stdio(0);
+  int n, k;
+  std::cin >> n >> k;
+  std::vector<pdd> p(n), v;
+  std::vector<int> max_r(n), max_l(n);
+  v.reserve(n);
+  rep(i, n) {
+    D x, y, r;
+    std::cin >> x >> y >> r;
+    std::complex<D> c(x, y);
+    D d = std::abs(c), s = std::arg(c), a = std::sqrt(d * d - r * r);
+    D ds = std::acos((d * d + a * a - r * r) / (2 * d * a));
+    D start = s - ds, end = s + ds;
+    modify(start);
+    modify(end);
+    pdd tmp = pdd(in_upper(start) ? start : 0, in_upper(end) ? end : PI);
+    if (tmp.fs < EPS && PI - EPS < tmp.sc)
+      continue;
+    v.push_back(tmp);
+  }
+  std::sort(v.begin(), v.end(), comp);
+  rep(i, v.size()) rep(j, v.size()) {
+    if (i == j)
+      continue;
+    if (v[j].fs - EPS < v[i].fs && v[i].sc < v[j].sc + EPS) {
+      v.erase(v.begin() + i);
+      i--;
+      break;
+    }
+  }
+  int m = v.size();
+  rep(i, m) {
+    pdd dummy(v[i].sc, 0);
+    max_l[i] = std::upper_bound(v.begin(), v.end(), dummy, comp) - v.begin();
+    max_r[i] = max_l[i] - 1;
+  }
+  std::vector<vd> dp1(m + 1, vd(k + 1, 0)), dp2 = dp1;
+  rep(i, m) rep(j, k + 1) {
+    dp1[i + 1][j] = std::max(dp1[i + 1][j], dp1[i][j]);
+    if (j + 1 <= k) {
+      D use = std::max(dp1[i][j], dp2[i][j]);
+      dp1[max_l[i]][j + 1] = std::max(dp1[max_l[i]][j + 1], use + v[i].sc - v[i].fs);
+      if (max_r[i] != i) {
+        dp2[max_r[i]][j + 1] =
+            std::max(dp2[max_r[i]][j + 1], use + v[max_r[i]].fs - v[i].fs);
+      }
+    }
+  }
+  D ans = 0;
+  rep(i, k + 1) ans = std::max(ans, dp1[m][i]);
+  std::cout << std::fixed << std::setprecision(10) << ans / PI << "\n";
+}
+```

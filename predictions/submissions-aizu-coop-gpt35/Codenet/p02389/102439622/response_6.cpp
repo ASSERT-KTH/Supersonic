@@ -1,0 +1,7 @@
+The provided code calculates the area and perimeter of a rectangle based on user input. While the code is simple and straightforward, there are a few areas where optimization can be applied to improve performance and minimize memory usage.
+
+1. Remove Unnecessary Variables: The variables 'area' and 'c' are used only once to print the result. We can directly print the values of 'a * b' and 'a * 2 + b * 2' instead of storing them in separate variables.
+
+2. Reduce I/O Operations: The code uses the 'scanf' function to read the input and 'printf' to print the output. However, these functions can be relatively slow compared to other operations. To optimize this, we can use the 'gets' function to read a line of input and then parse it manually to extract the values of 'a' and 'b'. Similarly, we can use the 'puts' function to print the output instead of 'printf'.
+
+3. Use Inline Arithmetic: Instead of multiplying 'a' by 2 and 'b' by 2 separately, we can simplify the calculation by using 'a' and 'b' directly in the expression 'a * 2 + b * 2'.

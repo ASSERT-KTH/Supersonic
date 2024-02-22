@@ -1,0 +1,95 @@
+#include <iostream>
+#include <vector>
+#include <map>
+#include <algorithm>
+#include <cmath>
+using namespace std;
+
+#define fastio ios_base::sync_with_stdio(0), cin.tie(0), cout.tie(0)
+const int N = 2e5 + 100;
+
+vector<int> g[N], val(N), d(N), primes;
+vector<int> dp[N];
+
+struct max2 {
+  int mx = 0;
+  void rlx(int z) {
+    if (z >= mx) {
+      mx = z;
+    }
+  }
+  int sum() { return mx; }
+};
+
+vector<int> get(int x) {
+  vector<int> ret;
+  ret.reserve(10);
+  while (d[x] > 1) {
+    ret.push_back(d[x]);
+    x /= d[x];
+  }
+  if (x != 1) {
+    ret.push_back(x);
+  }
+  return ret;
+}
+
+int main() {
+  fastio;
+  for (int i = 2; i < N; i++) {
+    if (d[i] == 0) {
+      d[i] = i;
+      primes.push_back(i);
+    }
+    for (int j = 0; j < primes.size() && primes[j] <= d[i] && primes[j] * i < N; j++) {
+      d[primes[j] * i] = primes[j];
+    }
+  }
+  int n;
+  cin >> n;
+  val.resize(n);
+  for (int i = 0; i < n; i++) {
+    cin >> val[i];
+  }
+  for (int i = 0, a, b; i < n - 1; i++) {
+    cin >> a >> b;
+    a--;
+    b--;
+    g[a].push_back(b);
+    g[b].push_back(a);
+  }
+  
+  vector<int> stack;
+  vector<int> parent(n, -1);
+  stack.push_back(0);
+  while (!stack.empty()) {
+    int v = stack.back();
+    stack.pop_back();
+    if (v != 0 && g[v].size() == 1) {
+      max2 t;
+      int p = parent[v];
+      for (int i = 0; i < dp[p].size(); i++) {
+        int x = dp[p][i];
+        if (dp[v].size() > i) {
+          t.rlx(dp[v][i]);
+        }
+        dp[v][i] = t.sum() + 1;
+      }
+    }
+    else {
+      stack.push_back(v);
+      for (const auto& u : g[v]) {
+        if (u != parent[v]) {
+          parent[u] = v;
+          stack.push_back(u);
+        }
+      }
+    }
+  }
+
+  int ans = 0;
+  for (int i = 0; i < dp[0].size(); i++) {
+    ans = max(ans, dp[0][i]);
+  }
+  cout << ans << '\n';
+}

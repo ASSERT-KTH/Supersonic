@@ -1,0 +1,176 @@
+#include <algorithm>
+#include <cstdlib>
+#include <iostream>
+#include <unordered_map>
+#include <vector>
+
+constexpr int N = 5e4, M = 1e5, LOGN = 16;
+
+class CT {
+public:
+  void create(int r, int t) {
+    yseed = (yseed ? yseed : rand()) * (RAND_MAX + 1u) + rand();
+    storage.push_back({r, yseed, t, nullptr, nullptr});
+    if (!add(root, storage.size() - 1)) {
+      storage.pop_back();
+    }
+  }
+
+  int mintlq(int r) const {
+    int res = M;
+    CTPtr pos = root;
+    while (pos) {
+      if (pos->x > r) {
+        pos = pos->l;
+      } else {
+        res = pos->t;
+        pos = pos->r;
+      }
+    }
+    return res;
+  }
+
+private:
+  struct CTVertex {
+    int x, y, t;
+    CTVertex *l, *r;
+  };
+  using CTPtr = CTVertex*;
+
+  CTPtr root = nullptr;
+  std::vector<CTVertex> storage;
+  static unsigned yseed;
+
+  bool add(CTPtr& t, CTPtr el) {
+    bool adding = false;
+    CTPtr tt;
+    if (!t) {
+      t = el;
+      adding = true;
+    } else if (t->y > el->y) {
+      std::tie(adding, tt) = split(t, el->x, el->l, el->r, el->t);
+      if (adding) {
+        t = el;
+        filterjoin(el->r, nullptr, el->r, el->t);
+      } else {
+        t = tt;
+      }
+    } else if (t->x > el->x) {
+      adding = add(t->l, el);
+      if (t->t > el->t) {
+        filterjoin(t, t->l, t->r, el->t);
+      }
+    } else if (t->x == el->x) {
+      t->t = std::min(t->t, el->t);
+      filterjoin(t->r, nullptr, t->r, el->t);
+    } else if (t->t > el->t) {
+      adding = add(t->r, el);
+    }
+    return adding;
+  }
+
+  std::pair<bool, CTPtr> split(CTPtr t, int x, CTPtr& l, CTPtr& r, int tval) {
+    bool splitting = false;
+    CTPtr tt;
+    if (!t) {
+      l = r = t;
+      splitting = true;
+    } else if (t->x > x) {
+      std::tie(splitting, tt) = split(t->l, x, l, t->l, tval);
+      if (splitting) {
+        r = t;
+      } else {
+        t->l = tt;
+        if (t->t > tval) {
+          filterjoin(t, t->l, t->r, tval);
+        }
+      }
+    } else if (t->x == x) {
+      t->t = std::min(t->t, tval);
+      filterjoin(t->r, nullptr, t->r, tval);
+    } else if (t->t > tval) {
+      std::tie(splitting, tt) = split(t->r, x, t->r, r, tval);
+      if (splitting) {
+        l = t;
+      } else {
+        t->r = tt;
+      }
+    }
+    return {splitting, t};
+  }
+
+  void filterjoin(CTPtr& t, CTPtr l, CTPtr r, int tval) {
+    while (r && r->t > tval) {
+      r = r->r;
+    }
+    if (!r) {
+      t = l;
+    } else if (!l || l->y > r->y) {
+      filterjoin(r->l, l, r->l, tval);
+      t = r;
+    } else {
+      filterjoin(l->r, l->r, r, tval);
+      t = l;
+    }
+  }
+};
+
+unsigned CT::yseed{};
+
+using interval = std::pair<int, int>;
+
+std::vector<interval> rent(M + 1);
+std::unordered_map<int, std::vector<int>> by_length;
+std::vector<int> ans(N + 1);
+CT ft[N];
+
+void add(int t) {
+  for (int i = N - rent[t].first - 1; i < N; i |= i + 1) {
+    ft[i].create(rent[t].second, t);
+  }
+}
+
+int query(int l, int r) {
+  int res = M;
+  for (int i = N - l; i > N - r; i &= i - 1) {
+    res = std::min(res, ft[i - 1].mintlq(r));
+  }
+  return res;
+}
+
+int main() {
+  std::cin.tie(0), std::ios_base::sync_with_stdio(0);
+
+  int n, m;
+  std::cin >> n >> m;
+
+  for (int i = 0; i < m; ++i) {
+    std::cin >> rent[i].first >> rent[i].second;
+    --rent[i].first;
+    by_length[rent[i].second - rent[i].first].push_back(i);
+  }
+
+  std::vector<interval> for_rent;
+  for (int epoch = n; epoch; --epoch) {
+    for (int i : by_length[epoch]) {
+      add(i);
+    }
+    for_rent.emplace_back(0, n);
+    int ptr = 0;
+    while (ptr < for_rent.size()) {
+      auto [l, r] = for_rent[ptr++];
+      int t = query(l, r);
+      if (t != M) {
+        ans[epoch] += rent[t].second - rent[t].first;
+        for_rent.emplace_back(l, rent[t].first);
+        for_rent.emplace_back(rent[t].second, r);
+      }
+    }
+  }
+
+  for (int rented = 1; rented <= n; ++rented) {
+    std::cout << ans[rented] << '\n';
+  }
+
+  return 0;
+}

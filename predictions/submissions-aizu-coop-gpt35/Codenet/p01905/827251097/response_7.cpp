@@ -1,0 +1,7 @@
+The provided code is a simple program that reads two integers from the user and then prints the difference between them minus 1. While this code is straightforward, there are a few optimizations we can make to improve its efficiency.
+
+1. Eliminate unnecessary header inclusion: The line `#include <bits/stdc++.h>` includes a large number of standard library headers, which can increase compilation time and memory usage. Since we only need `cstdio` for `scanf` and `printf`, we can replace the `#include <bits/stdc++.h>` line with `#include <cstdio>`.
+
+2. Use `iostream` instead of `cstdio`: While the `cstdio` library functions `scanf` and `printf` are efficient, they are not as flexible or type-safe as the `iostream` library. By using `cin` and `cout` from `iostream`, we can achieve the same functionality with improved readability and type safety.
+
+3. Remove unnecessary subtraction: The code currently subtracts `m` from `n` and then subtracts 1 from the result. Instead, we can directly subtract 1 from `n` before subtracting `m`. This eliminates the need for one subtraction operation.

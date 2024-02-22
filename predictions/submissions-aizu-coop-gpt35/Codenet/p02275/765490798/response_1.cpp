@@ -1,0 +1,1 @@
+A.reserve(n);

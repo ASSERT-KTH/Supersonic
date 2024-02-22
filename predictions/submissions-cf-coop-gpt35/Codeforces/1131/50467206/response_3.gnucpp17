@@ -1,0 +1,93 @@
+#include <iostream>
+#include <vector>
+#include <utility>
+#include <algorithm>
+
+struct Block {
+    int height;
+    long long cost;
+};
+
+int main() {
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+
+    int N, M;
+    std::cin >> N >> M;
+
+    std::vector<Block> blocks;
+    blocks.reserve(N + 1);
+
+    for (int i = 1; i <= N; ++i) {
+        int K;
+        std::cin >> K;
+        blocks.resize(blocks.size() + K);
+        for (int j = 0; j < K; ++j) {
+            std::cin >> blocks.back().height;
+        }
+        for (int j = 0; j < K; ++j) {
+            std::cin >> blocks.back().cost;
+        }
+    }
+
+    int Q, curr = 0;
+    std::cin >> Q;
+
+    std::vector<Block> selectedBlocks;
+    selectedBlocks.reserve(Q * N);
+
+    for (int i = 0; i < Q; ++i) {
+        int id, mult;
+        std::cin >> id >> mult;
+
+        for (const Block& block : blocks) {
+            Block selectedBlock;
+            selectedBlock.height = block.height;
+            selectedBlock.cost = mult * block.cost;
+            selectedBlocks.push_back(selectedBlock);
+        }
+    }
+
+    std::vector<long long> dp(M + 1);
+
+    std::vector<std::pair<int, long long>> stack;
+    stack.reserve(M + 1);
+
+    for (int i = 1; i <= M; ++i) {
+        long long minLeft = dp[i - 1];
+
+        while (!stack.empty() && (i - selectedBlocks[stack.back().first].height + 1) <= i) {
+            minLeft = std::min(minLeft, stack.back().second);
+            stack.pop_back();
+        }
+
+        dp[i] = minLeft + selectedBlocks[i].cost;
+
+        long long valHere = dp[i - 1];
+        minLeft = std::min(minLeft, valHere);
+        stack.push_back({i, minLeft});
+
+        int idx = -1;
+
+        while (!stack.empty() && ((idx = stack.back().first) || true) && (idx + selectedBlocks[idx].height - 1) < i) {
+            stack.pop_back();
+        }
+
+        if (!stack.empty()) {
+            long long dpPlusCost = stack.back().second;
+            dp[i] = std::min(dp[i], dpPlusCost);
+        }
+
+        long long dpPlusCost = dp[i - 1] + selectedBlocks[i].cost;
+
+        if (!stack.empty()) {
+            dpPlusCost = std::min(dpPlusCost, stack.back().second);
+        }
+
+        stack.push_back({i, dpPlusCost});
+    }
+
+    std::cout << dp[M] << '\n';
+
+    return 0;
+}

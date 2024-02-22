@@ -1,0 +1,110 @@
+1. Code Analysis:
+    - A BFS (Breadth-First Search) algorithm is used to solve the problem. However, it uses three nested loops in the BFS, which can lead to inefficiency when dealing with large input.
+    - The time complexity of the BFS in worst case scenario is O(n^3) due to three for-loops, where n is the number of vertices in the graph.
+    - The "check" function is called for each vertex, which can be expensive in terms of computation.
+    - There is a large size of memory allocated to the 'vis' array, which might not be necessary and may lead to inefficient memory usage. 
+
+2. Optimization Strategy:
+    1. Instead of checking each vertex to see if it is visited, a more efficient way is to use a hash set data structure. This will reduce the memory usage and also the time complexity of checking if a vertex is visited.
+    2. The "check" function can be optimized by reducing the number of operations inside the function. 
+    3. It's possible to avoid multiple nested loops by restructuring the BFS algorithm.
+
+3. Step-by-Step Explanation:
+    1. Replace array 'vis' with a unordered_set data structure. This will make the lookup time constant and will also reduce memory usage. This is because an unordered_set only stores unique elements and does not reserve extra space like an array.
+    2. Optimize the "check" function by reducing the number of operations inside the function. For example, the bitwise shift and bitwise AND operations can be optimized.
+    3. Instead of having three nested loops inside the BFS, we can have a single loop and use a queue to store the vertices. This will reduce the number of iterations and hence, improve the performance.
+    
+4. Optimized Code Block:
+
+```C++
+#include <cctype>
+#include <cstdio>
+#include <cstring>
+#include <queue>
+#include <unordered_set>
+using namespace std;
+unordered_set<int> vis;
+char c[16][20];
+bool wall[256];
+int tm0;
+
+inline bool check(int u, int v) {
+  for (int i = 0; i < 24; i += 8) {
+    int p1 = v >> i & 255;
+    if (p1) {
+      int j = i == 16 ? 0 : i + 8;
+      if (wall[p1]) {
+        return false;
+      }
+      int p2 = (v >> j % 24) & 255;
+      if (p1 == p2) {
+        return false;
+      }
+      if (p1 == (u >> j % 24 & 255) && p2 == (u >> i % 24 & 255)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+int solve(int start, int goal) {
+  const int dif[5] = {0, -1, 1, -16, 16};
+  queue<int> q;
+  q.push(start);
+  q.push(-1);
+  int tm = tm0 + 1;
+  while (!q.empty()) {
+    int u = q.front();
+    q.pop();
+    if (u < 0) {
+      if(!q.empty()) q.push(-1);
+      ++tm;
+    } else {
+      for (int i = u & 255 ? 4 : 0; i >= 0; --i) {
+        int v = u + dif[i];
+        if (vis.find(v) != vis.end()) {
+          continue;
+        }
+        if (check(u, v)) {
+          if (v == goal) {
+            return tm;
+          }
+          vis.insert(v);
+          q.push(v);
+        }
+      }
+    }
+  }
+}
+
+int main() {
+  int w, h;
+  while (scanf("%d%d%*d ", &w, &h), w) {
+    for (int i = 0; i < h; ++i) {
+      fgets(c[i], 20, stdin);
+    }
+    int goal = 0;
+    int start = 0;
+    for (int i = 0; i < h; ++i) {
+      for (int j = 0; j < w; ++j) {
+        if (c[i][j] == '#') {
+          wall[i << 4 | j] = true;
+        } else {
+          wall[i << 4 | j] = false;
+          if (isupper(c[i][j])) {
+            goal |= (i << 4 | j) << (c[i][j] - 'A') * 8;
+          } else if (islower(c[i][j])) {
+            start |= (i << 4 | j) << (c[i][j] - 'a') * 8;
+          }
+        }
+      }
+    }
+    vis.clear();
+    int tm = solve(start, goal);
+    printf("%d\n", tm - tm0);
+    tm0 = tm + 1;
+  }
+}
+```
+Please note that these optimizations may not lead to a significant performance improvement for small inputs, but will be more noticeable as the size of the input grows. Also, using a hash set instead of an array increases the code complexity a bit.

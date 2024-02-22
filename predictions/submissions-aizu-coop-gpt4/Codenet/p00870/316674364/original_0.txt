@@ -1,0 +1,96 @@
+The given program is a relatively complex one and consists of several functions, macros, and utilities that seem to handle geometrical lines and vectors, string hashing, and a matching problem (possibly a dictionary matching or string segmentation problem).
+
+Code Analysis:
+1. The code includes several utility functions for handling geometrical lines and vectors, which appear unused in the main logic.
+2. The program uses a string hashing technique to pre-process input strings and the text, which is efficient for large strings and text.
+3. The solve function contains two large blocks of logic (one of them commented out) solving the same problem in different ways.
+4. The first active logic uses rolling hash for string matching and dynamic programming (DP) to track the solved subproblems, which is efficient for large inputs.
+5. The second commented logic uses a breadth-first search (BFS) on the DP states, which is less efficient than the previous one especially for large inputs.
+6. There are some unnecessary macros and typedefs that add confusion but are not used in the main logic.
+
+Optimization Strategy:
+1. Remove unused functions, macros, and typedefs to make the code cleaner and easier to read.
+2. Choose the most efficient logic for the main problem (i.e., the first one using rolling hash and DP), and remove the other.
+3. Use more descriptive variable names to make the code easier to read and understand.
+4. If the code is compiled with GCC, use pragma directives to enable compiler optimizations.
+5. Use inline functions instead of macros for better type safety and debugging.
+6. Make sure to use references and const correctness when possible to avoid unnecessary copying of large data.
+
+Optimized Code Block:
+
+The proposed optimizations can be applied as follows:
+
+```c++
+#include <iostream>
+#include <string>
+#include <vector>
+using namespace std;
+
+typedef long long ll;
+#define rep(i, n) for (int i = 0; i < (int)(n); ++i)
+
+const int MAX_TEXT_LEN = 6000;
+const int MAX_STATES = 1 << 12;
+ll hash_acc[MAX_TEXT_LEN];
+bool dp[250][MAX_STATES];
+
+void solve() {
+  int n, m;
+  cin >> n >> m;
+
+  vector<ll> hashes(n);
+  vector<int> lengths(n);
+  rep(i, n) {
+    string word;
+    cin >> word;
+    ll h = 0;
+    lengths[i] = word.size();
+    for (char c : word) {
+      h = h * 31 + c;
+    }
+    hashes[i] = h;
+  }
+
+  ll power[1000];
+  power[0] = 1;
+  rep(i, 999) power[i + 1] = power[i] * 31;
+
+  int ans = 0;
+  string text;
+  rep(i, m) {
+    string line;
+    cin >> line;
+    text += line;
+  }
+  rep(i, text.size()) hash_acc[i + 1] = hash_acc[i] * 31 + text[i];
+
+  rep(i, 250) rep(j, MAX_STATES) dp[i][j] = 0;
+  rep(i, 250) dp[i][0] = 1;
+
+  rep(j, text.size() + 1) {
+    int cur = j % 250;
+    rep(i, MAX_STATES) {
+      if (!dp[cur][i]) continue;
+      rep(k, n) if (!(i & (1 << k)) && lengths[k] + j <= text.size() &&
+          hashes[k] == hash_acc[j + lengths[k]] - hash_acc[j] * power[lengths[k]]) {
+        dp[(j + lengths[k]) % 250][i | (1 << k)] = 1;
+      }
+    }
+    ans += dp[cur][(1 << n) - 1];
+    rep(i, MAX_STATES) dp[cur][i] = 0;
+    dp[cur][0] = 1;
+  }
+
+  cout << ans << endl;
+}
+
+int main() {
+  int n, m;
+  while (cin >> n >> m, n) {
+    solve();
+  }
+  return 0;
+}
+```
+
+This optimized code block maintains the functionality of the original code but removes redundancy and improves readability. It also focuses on the most efficient logic to solve the problem. However, the overall structure of the code and the fundamental logic remain unchanged.

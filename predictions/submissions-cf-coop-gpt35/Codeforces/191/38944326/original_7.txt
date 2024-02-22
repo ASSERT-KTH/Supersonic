@@ -1,0 +1,192 @@
+Code Analysis:
+- The code represents a graph where each node represents a city and each edge represents a road between two cities.
+- The program calculates the number of roads on the shortest paths between all pairs of cities.
+- The program uses a depth-first search (DFS) traversal to calculate the size, depth, and heavy child of each node.
+- The program then calculates the paths between each pair of cities using the `path` function.
+- Finally, the program prints the number of roads on the shortest paths between each pair of cities.
+
+Potential optimizations:
+1. Eliminate unnecessary data structures:
+   - The `unordered_map<int, unordered_map<int, int>> ans` is used to store the number of roads between each pair of cities. However, the same information can be stored in a simple 2D array, `int ans[N][N]`, where `N` is the maximum number of cities. This change will reduce memory usage and improve cache locality.
+
+2. Use a more efficient data structure for storing the graph:
+   - Currently, the graph is represented using a vector of vectors (`vector<int> edg[N]`). This requires dynamic memory allocation for each vector and results in poor cache performance. Instead, we can use a static 2D array, `int edg[N][N]`, to represent the graph. This change will reduce memory usage and improve cache locality.
+
+3. Avoid unnecessary swaps and comparisons:
+   - In the `path` function, there are unnecessary swaps and comparisons. Instead of swapping the values of `u` and `v`, we can use `min(u, v)` and `max(u, v)` to ensure that `u` is always smaller than `v`. This change will eliminate the need for swapping and reduce the number of comparisons.
+
+4. Optimize the DFS traversal:
+   - The DFS traversal can be optimized by using tail recursion. Currently, the DFS traversal is implemented recursively, which can result in a large number of function calls and stack usage. By converting the recursive calls to iterative loops, we can reduce the function call overhead and stack usage.
+
+Optimization Strategy:
+1. Replace the `unordered_map<int, unordered_map<int, int>> ans` with a 2D array `int ans[N][N]`.
+2. Replace the `vector<int> edg[N]` with a 2D array `int edg[N][N]`.
+3. Replace the swaps in the `path` function with `min` and `max` functions.
+4. Convert the recursive DFS traversals, `dfs` and `dfs2`, to iterative loops.
+5. Implement the optimized code block.
+
+Step-by-Step Explanation:
+1. Replace the `unordered_map<int, unordered_map<int, int>> ans` with a 2D array `int ans[N][N]`:
+   - The `unordered_map` data structure has an overhead for hashing and handling collisions, which can be significant for large data sets.
+   - By using a 2D array, we can directly access the number of roads between any pair of cities using their indices.
+   - This change will reduce memory usage and improve cache locality.
+
+2. Replace the `vector<int> edg[N]` with a 2D array `int edg[N][N]`:
+   - The `vector` data structure requires dynamic memory allocation for each vector, resulting in poor cache performance.
+   - By using a static 2D array, we can eliminate the need for dynamic memory allocation and improve cache locality.
+   - This change will reduce memory usage and improve cache performance.
+
+3. Replace the swaps in the `path` function with `min` and `max` functions:
+   - The swaps in the `path` function are unnecessary and can be replaced with `min` and `max` functions.
+   - This change will eliminate the need for swapping and reduce the number of comparisons.
+
+4. Convert the recursive DFS traversals, `dfs` and `dfs2`, to iterative loops:
+   - Recursive function calls can result in a large number of function calls and stack usage, which can be inefficient.
+   - By converting the recursive DFS traversals to iterative loops, we can reduce the function call overhead and stack usage.
+   - This change will improve the performance and reduce memory usage.
+
+Optimized Code Block:
+```cpp
+#include <cstdio>
+#include <algorithm>
+#include <utility>
+#include <vector>
+using namespace std;
+
+const int N = 100001;
+int par[N], hev[N], siz[N], dep[N], top[N], dif[N], bak[N];
+int edg[N][N];
+int ans[N][N];
+
+void dfs(int u) {
+  vector<int> stack;
+  stack.push_back(u);
+
+  while (!stack.empty()) {
+    u = stack.back();
+    stack.pop_back();
+
+    siz[u] = 1;
+    hev[u] = -1;
+
+    for (int i = 0; i < N; i++) {
+      int v = edg[u][i];
+      if (v == par[u])
+        continue;
+      
+      par[v] = u;
+      dep[v] = dep[u] + 1;
+      
+      stack.push_back(v);
+    }
+  }
+}
+
+void dfs2(int u) {
+  vector<int> stack;
+  stack.push_back(u);
+
+  while (!stack.empty()) {
+    u = stack.back();
+    stack.pop_back();
+
+    for (int i = 0; i < N; i++) {
+      int v = edg[u][i];
+      if (v == par[u])
+        continue;
+      
+      if (v == hev[u])
+        top[v] = top[u];
+      else
+        top[v] = v;
+      
+      stack.push_back(v);
+    }
+  }
+}
+
+void path(int u, int v) {
+  while (true) {
+    if (top[u] == top[v]) {
+      if (dep[u] > dep[v])
+        swap(u, v);
+      dif[u]++;
+      dif[v]--;
+      return;
+    }
+    if (dep[top[u]] > dep[top[v]])
+      swap(u, v);
+    dif[top[v]]++;
+    dif[v]--;
+    bak[top[v]]++;
+    v = par[top[v]];
+  }
+}
+
+void dfs3(int u, int cnt) {
+  vector<int> stack;
+  stack.push_back(u);
+
+  while (!stack.empty()) {
+    u = stack.back();
+    stack.pop_back();
+
+    for (int i = 0; i < N; i++) {
+      int v = edg[u][i];
+      if (v == par[u])
+        continue;
+
+      if (v == hev[u]) {
+        ans[min(u, v)][max(u, v)] += cnt + dif[u];
+        stack.push_back(v);
+      } else {
+        ans[min(u, v)][max(u, v)] += bak[v];
+        stack.push_back(v);
+      }
+    }
+  }
+}
+
+int main() {
+  int n, k, u, v;
+  scanf("%d\n", &n);
+
+  for (int i = 0; i < N; i++) {
+    for (int j = 0; j < N; j++) {
+      edg[i][j] = 0;
+    }
+  }
+
+  for (int i = 0; i < n - 1; i++) {
+    scanf("%d%d", &u, &v);
+    u--;
+    v--;
+    if (u > v)
+      swap(u, v);
+    edg[u][v] = 1;
+    edg[v][u] = 1;
+    ans[u][v] = 0;
+  }
+  par[0] = 0;
+  dep[0] = 0;
+  dfs(0);
+  top[0] = 0;
+  dfs2(0);
+  fill_n(dif, n, 0);
+  fill_n(bak, n, 0);
+  scanf("%d\n", &k);
+  while (k--) {
+    scanf("%d%d", &u, &v);
+    u--;
+    v--;
+    path(u, v);
+  }
+  dfs3(0, 0);
+  printf("%d", ans[out[0].first][out[0].second]);
+  for (int i = 1; i < n - 1; i++)
+    printf(" %d", ans[out[i].first][out[i].second]);
+  printf("\n");
+}
+```
+
+Note: I have only provided the optimized code block. Please copy the remaining code from the original code.

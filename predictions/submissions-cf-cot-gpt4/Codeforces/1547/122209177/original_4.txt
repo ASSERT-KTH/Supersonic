@@ -1,0 +1,87 @@
+This code is already optimized in terms of time complexity and memory usage. It uses a segment tree to calculate the greatest common divisor (GCD) within a given range, which is an efficient data structure for this kind of task. 
+
+However, there are a few areas where the code could be slightly improved:
+
+1. Avoid using `#include <bits/stdc++.h>`, as it includes more than necessary which increases the compilation time. Instead, include only the headers that are actually used in the program.
+
+2. Avoid using `using namespace std`, as it can lead to name collisions if the program is extended in the future. Instead, use the `std::` prefix when necessary.
+
+3. Avoid using `#define` for constants and use `const` instead. This is because `#define` is a preprocessor macro and does not respect scope rules and type safety.
+
+4. The `ios::sync_with_stdio(0); cin.tie(0);` calls in `main()` are used to speed up I/O operations, but they are not necessary in this program since it doesn't mix C and C++ style I/O. Removing these lines will not affect the performance.
+
+5. Use `std::array` or `std::vector` for the array `a[N]`. This allows the use of range-based for loops, which can simplify the code and potentially improve performance.
+
+Here is the optimized code after making these changes:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+const long long MAX_N = 4e5 + 5;
+std::vector<long long> seg_tree(4 * MAX_N + 5, 0);
+std::vector<long long> a(2 * MAX_N);
+
+void build_tree(int tree_index, int strt_i, int end_i) {
+  if (strt_i == end_i) {
+    seg_tree[tree_index] = a[strt_i];
+    return;
+  }
+  int mid = (strt_i + end_i) / 2;
+  build_tree(tree_index * 2, strt_i, mid);
+  build_tree(tree_index * 2 + 1, mid + 1, end_i);
+  seg_tree[tree_index] = std::gcd(seg_tree[tree_index * 2], seg_tree[tree_index * 2 + 1]);
+}
+
+long long query(int tree_index, int strt_i, int end_i, int q_strt, int q_end) {
+  if (strt_i > q_end || end_i < q_strt)
+    return 0;
+  if (q_strt <= strt_i && q_end >= end_i)
+    return seg_tree[tree_index];
+  int mid = (strt_i + end_i) / 2;
+  long long l = query(2 * tree_index, strt_i, mid, q_strt, q_end);
+  long long r = query(2 * tree_index + 1, mid + 1, end_i, q_strt, q_end);
+  return std::gcd(l, r);
+}
+
+void solve() {
+  int n;
+  std::cin >> n;
+  for (int i = 1; i <= n; ++i) {
+    std::cin >> a[i];
+    a[i + n] = a[i];
+  }
+  build_tree(1, 1, 2 * n);
+  long long ans = 0, g = 0;
+  for (int i = 1; i <= n; ++i) {
+    g = std::gcd(g, a[i]);
+  }
+  for (int i = 1; i <= n; ++i) {
+    int r = 2 * n, l = i + 1, cnt = 0;
+    long long temp = 1e18;
+    if (a[i] == g)
+      continue;
+    while (l <= r) {
+      int mid = (l + r) / 2;
+      long long x = query(1, 1, 2 * n, l, mid);
+      long long y = std::gcd(x, a[i]);
+      if (y == g)
+        temp = std::min(temp, mid - l + 1 + (long long)cnt), r = mid - 1;
+      else
+        a[i] = std::gcd(a[i], x), cnt += mid - l + 1, l = mid + 1;
+    }
+    ans = std::max(ans, temp);
+  }
+  std::cout << ans << std::endl;
+}
+
+int main() {
+  int t;
+  std::cin >> t;
+  while(t--) {
+    solve();
+  }
+  return 0;
+}
+```

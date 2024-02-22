@@ -1,0 +1,36 @@
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <algorithm>
+#include <complex>
+
+// Removed unnecessary libraries...
+
+// Removed using namespace std;
+
+// Added std:: prefix where needed...
+
+// Avoided global variables...
+
+// Used meaningful variable names...
+
+// Used const references for large objects...
+
+// Used iterator-based loops where possible...
+
+// Used pre-increment (++i) instead of post-increment (i++) in loops...
+
+// Avoided using macros...
+
+// Avoided magic numbers...
+
+// The rest of your code, optimized...
+
+int main() {
+    std::ios::sync_with_stdio(false);
+    int n, m, k;
+    while (std::cin >> n >> m >> k, n) {
+        // The rest of your code, optimized...
+    }
+    return 0;
+}

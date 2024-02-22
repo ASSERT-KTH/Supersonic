@@ -1,0 +1,108 @@
+#include <iostream>
+#include <vector>
+#include <cstring>
+using namespace std;
+
+struct Coord {
+    int first, second;
+};
+
+const int maxCol = 12;
+const int sqr = 600;
+
+int main() {
+    int nbLig, nbCol, nbReq;
+    cin >> nbLig >> nbCol >> nbReq;
+
+    char grille[maxCol][maxCol];
+    memset(grille, '~', sizeof(grille));
+
+    for (int lig = 1; lig <= nbLig; ++lig) {
+        for (int col = 1; col <= nbCol; ++col) {
+            cin >> grille[lig][col];
+        }
+    }
+
+    int tps = 0;
+    vector<vector<int>> proc(nbLig + 1, vector<int>(nbCol + 1, 0));
+    vector<vector<Coord>> go(nbLig + 1, vector<Coord>(nbCol + 1));
+
+    auto comp = [&](int lig, int col, int safeLig) {
+        if (proc[lig][col] == tps)
+            return;
+        proc[lig][col] = tps;
+        int nextLig = lig, nextCol = col;
+        if (grille[lig][col] == '<')
+            --nextCol;
+        else if (grille[lig][col] == '>')
+            ++nextCol;
+        else if (grille[lig][col] == '^')
+            --nextLig;
+        while (nextLig != safeLig && grille[nextLig][nextCol] != '~') {
+            lig = nextLig;
+            col = nextCol;
+            nextLig = lig;
+            nextCol = col;
+            if (grille[lig][col] == '<')
+                --nextCol;
+            else if (grille[lig][col] == '>')
+                ++nextCol;
+            else if (grille[lig][col] == '^')
+                --nextLig;
+        }
+        go[lig][col] = {nextLig, nextCol};
+    };
+
+    auto getFin = [&](int lig, int col) {
+        while (grille[lig][col] != '~') {
+            lig = go[lig][col].first;
+            col = go[lig][col].second;
+        }
+        return Coord{lig, col};
+    };
+
+    vector<int> blocRef(nbLig + 1);
+
+    auto compBloc = [&](int bloc) {
+        int deb = bloc * sqr, fin = min(nbLig, (bloc + 1) * sqr);
+        if (deb > nbLig)
+            return false;
+        for (int col = 1; col <= nbCol; ++col) {
+            for (int lig = deb + 1; lig <= fin; ++lig) {
+                blocRef[lig] = bloc;
+                comp(lig, col, deb);
+            }
+        }
+        return true;
+    };
+
+    ++tps;
+    for (int bloc = 0;; ++bloc) {
+        if (!compBloc(bloc))
+            break;
+    }
+
+    for (int req = 0; req < nbReq; ++req) {
+        char mode;
+        cin >> mode;
+        int lig, col;
+        cin >> lig >> col;
+        if (mode == 'A') {
+            Coord res = getFin(lig, col);
+            if (res.first == 0 && res.second == 0)
+                res = {-1, -1};
+            cout << res.first << " " << res.second << "\n";
+        } else {
+            ++tps;
+            char nv;
+            cin >> nv;
+            grille[lig][col] = nv;
+            int bloc = blocRef[lig];
+            compBloc(bloc);
+            if (bloc)
+                compBloc(bloc - 1);
+        }
+    }
+
+    return 0;
+}

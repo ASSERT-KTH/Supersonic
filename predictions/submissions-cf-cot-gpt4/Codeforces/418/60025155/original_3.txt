@@ -1,0 +1,69 @@
+The given C++ program is a competitive programming solution for a problem requiring efficient data manipulation and computation. 
+
+There are a few minor tweaks we can make to optimize the code without changing the overall structure:
+
+1. **Inlining Functions**: Inline functions are a useful way to reduce function call overhead, especially for small functions that are called frequently. We can hint to the compiler that a function should be inlined using the `inline` keyword. However, whether or not the function is actually inlined is ultimately up to the compiler. In our case, `get`, `query2`, `query3`, and `upd` functions could be inlined.
+
+2. **Avoiding Unnecessary Heap Allocations**: Dynamically allocated memory takes longer to access, so we should avoid unnecessary heap allocations. In our case, the `ok` vector in the `query3` function is potentially being reallocated multiple times which can be avoided.
+
+3. **Reuse Variables**: In the `query3` function, we create a new vector `ok` every time the function is called. We can avoid this by creating a single vector `ok` at the global scope and reusing it in the `query3` function.
+
+Here is the optimized version of the code:
+
+```cpp
+inline int get(int x) {
+  if (!m.count(x)) {
+    int sz = sz(m);
+    m[x] = sz;
+  }
+  return m[x];
+}
+
+void upd(int p, int inc) {
+  int v = a[p];
+  FOR(i, (p + BLOCK - 1) / BLOCK, N / BLOCK + 1) {
+    CNT[i][cnt[i][v]]--;
+    cnt[i][v] += inc;
+    CNT[i][cnt[i][v]]++;
+    int c = cnt[i][v];
+    if (c > 0 && !in[i][c]) {
+      in[i][c] = 1;
+      con[i].pb(c);
+    }
+  }
+}
+
+inline int query2(int y) {
+  int b = y / BLOCK;
+  int ans = cnt[b][a[y]];
+  FOR(i, BLOCK * b + 1, y + 1) ans += a[i] == a[y];
+  return ans;
+}
+
+vi ok;
+inline int query3(int y) {
+  int mn = query2(y), ans = 0;
+  int b = y / BLOCK;
+  ok.clear();
+  trav(i, con[b]) {
+    if (!CNT[b][i]) {
+      in[b][i] = 0;
+      continue;
+    }
+    ok.pb(i);
+    if (i >= mn)
+      ans += CNT[b][i];
+  }
+  swap(con[b], ok);
+  FOR(i, BLOCK * b + 1, y + 1) {
+    cnt[b][a[i]]++;
+    ans += cnt[b][a[i]] == mn;
+  }
+  FOR(i, BLOCK * b + 1, y + 1) cnt[b][a[i]]--;
+  return ans;
+}
+
+// Rest of the code remains the same
+```
+
+Remember that modern compilers are quite good at optimizing code, so these improvements might not have a noticeable impact on performance. It's always a good idea to profile your code to see where the bottlenecks are and focus your optimization efforts there.

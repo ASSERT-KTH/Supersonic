@@ -1,0 +1,136 @@
+Step 1: Remove unnecessary header files
+
+The program includes several header files that are not used in the program. We can remove them to reduce the overhead of including unnecessary files.
+
+Step 2: Remove unused macros
+
+The program defines several macros that are not used in the program. We can remove them to simplify the code.
+
+Step 3: Optimize the StaticRMQ class constructor
+
+The constructor of the StaticRMQ class initializes several variables and allocates memory for arrays. However, it uses some unnecessary calculations and allocations. We can optimize this by removing unnecessary calculations and allocations.
+
+Step 4: Optimize the StaticRMQ class operator() function
+
+The operator() function of the StaticRMQ class is used to query the minimum value in a given range. However, it uses some unnecessary calculations and bitwise operations. We can optimize this by removing unnecessary calculations and bitwise operations.
+
+Step 5: Remove unnecessary code in the main function
+
+The main function of the program includes some unnecessary code. We can remove it to simplify the code.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+
+template <typename T>
+class StaticRMQ {
+  T *a;
+  std::vector<uint32_t *> table, t, R, L, part;
+  uint32_t bitmaskr[32] = {
+      0xFFFFFFFF, 0xFFFFFFFE, 0xFFFFFFFC, 0xFFFFFFF8, 0xFFFFFFF0, 0xFFFFFFE0,
+      0xFFFFFFC0, 0xFFFFFF80, 0xFFFFFF00, 0xFFFFFE00, 0xFFFFFC00, 0xFFFFF800,
+      0xFFFFF000, 0xFFFFE000, 0xFFFFC000, 0xFFFF8000, 0xFFFF0000, 0xFFFE0000,
+      0xFFFC0000, 0xFFF80000, 0xFFF00000, 0xFFE00000, 0xFFC00000, 0xFF800000,
+      0xFF000000, 0xFE000000, 0xFC000000, 0xF8000000, 0xF0000000, 0xE0000000,
+      0xC0000000, 0x80000000,
+  };
+  uint32_t bitmaskl[32] = {
+      0x00000001, 0x00000003, 0x00000007, 0x0000000F, 0x0000001F, 0x0000003F,
+      0x0000007F, 0x000000FF, 0x000001FF, 0x000003FF, 0x000007FF, 0x00000FFF,
+      0x00001FFF, 0x00003FFF, 0x00007FFF, 0x0000FFFF, 0x0001FFFF, 0x0003FFFF,
+      0x0007FFFF, 0x000FFFFF, 0x001FFFFF, 0x003FFFFF, 0x007FFFFF, 0x00FFFFFF,
+      0x01FFFFFF, 0x03FFFFFF, 0x07FFFFFF, 0x0FFFFFFF, 0x1FFFFFFF, 0x3FFFFFFF,
+      0x7FFFFFFF, 0xFFFFFFFF};
+
+public:
+  StaticRMQ(std::vector<T> &array) {
+    a = new T[array.size()];
+    R.resize((array.size() + 0x1F) >> 5);
+    L.resize((array.size() + 0x1F) >> 5);
+    part.resize(array.size());
+    uint32_t s = std::max((uint32_t)(31 ^ __builtin_clrsb(array.size() >> 5)), (uint32_t)1);
+    table.resize(s + 1);
+    uint32_t m = (array.size() >> 5) + 1;
+    for (uint32_t i = 0; i <= s; ++i) {
+      table[i] = new uint32_t[m];
+      m -= (1 << i);
+    }
+    for (uint32_t i = 0; i < array.size(); ++i) {
+      a[i] = array[i];
+      part[i] = 1 << (i & 0x1F);
+      if (!(i & 0x1F)) {
+        m = array[i];
+        R[i >> 5] = 1;
+        table[0][i >> 5] = i;
+      }
+      uint32_t c = i;
+      while (c) {
+        if (!(array[i] < array[--c])) {
+          part[i] |= part[c];
+          break;
+        }
+      }
+      if (array[i] < m) {
+        m = array[i];
+        R[i >> 5] |= 1 << (i & 0x1F);
+        table[0][i >> 5] = i;
+      }
+      if (!((~i) & 0x1F)) {
+        L[i >> 5] = part[i];
+      }
+    }
+    uint32_t s_minus_1 = s - 1;
+    for (uint32_t i = 0; i < s_minus_1; ++i) {
+      for (uint32_t j = 0; j < (uint32_t)(table[i + 2] - table[i + 1]); ++j) {
+        table[i + 1][j] = a[table[i][j]] < a[table[i][j + (1 << i)]]
+                              ? table[i][j]
+                              : table[i][j + (1 << i)];
+      }
+    }
+  }
+  uint32_t operator()(uint32_t begin, uint32_t end) {
+    uint32_t l = (begin >> 5) + 1;
+    uint32_t r = --end >> 5;
+    if (l < r) {
+      uint32_t t = 31 ^ __builtin_clz(r - l);
+      t = std::min(a[table[t][l]], a[table[t][r - (1 << t)]]);
+      t = std::min(a[(begin & ~0x1F) |
+                     __builtin_ctz(L[begin >> 5] & bitmaskr[begin & 0x1F])],
+                   t);
+      return std::min(
+          a[(end & ~0x1F) |
+            (31 ^ __builtin_clz(R[end >> 5] & bitmaskl[end & 0x1F]))],
+          t);
+    }
+    if (l == r) {
+      uint32_t t = a[(begin & ~0x1F) |
+            __builtin_ctz(L[begin >> 5] & bitmaskr[begin & 0x1F])];
+      return std::min(
+          a[(end & ~0x1F) |
+            (31 ^ __builtin_clz(R[end >> 5] & bitmaskl[end & 0x1F]))],
+          t);
+    }
+    return a[(end & ~0x1F) | __builtin_ctz(part[end] & bitmaskr[begin & 0x1F])];
+  }
+};
+
+int main(void) {
+  std::ios::sync_with_stdio(false);
+  std::cin.tie(0);
+  uint32_t n, l;
+  std::cin >> n >> l;
+  std::vector<uint32_t> a(n);
+  for (uint32_t i = 0; i < n; ++i) {
+    std::cin >> a[i];
+  }
+  StaticRMQ<uint32_t> S(a);
+  std::cout << S(0, l);
+  for (uint32_t i = 1; i < n - l + 1; ++i) {
+    std::cout << " " << S(i, i + l);
+  }
+  std::cout << "\n";
+  return 0;
+}
+```

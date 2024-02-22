@@ -1,0 +1,160 @@
+The given program seems to be a complex graph problem that implements Dijkstra's algorithm for finding shortest paths.
+
+Here are some general optimization strategies:
+
+1. **Avoid repeated calculations**: The map v2id is repeatedly accessed using the same keys. Instead, we can cache the computed value in a variable and use this variable. This will save us from unnecessary map lookups, which are relatively expensive operations.
+
+2. **Prefer pre-increment over post-increment**: For non-primitive types like iterators, pre-increment (i.e., ++itr) is generally faster than post-increment (i.e., itr++) because post-increment involves an additional temporary object.
+
+3. **Minimize the use of expensive operations**: The insert operation on set is expensive. If possible, we should minimize its usage.
+
+4. **Use fast input/output methods**: The scanf and printf functions are slower than the cin and cout functions with ios_base::sync_with_stdio(false), cin.tie(NULL), and cout.tie(NULL).
+
+5. **Choosing the right data structures**: In some cases, using unordered_map can be faster than using map because it has constant time complexity for search, insert, and delete operations, but this depends on the nature of the problem.
+
+Here is the optimized code with the above strategies implemented:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+using ll = long long;
+#define rep(i, n) for (int(i) = 0; (i) < (int)(n); ++(i))
+#define all(x) (x).begin(), (x).end()
+#define pb push_back
+#define fi first
+#define se second
+using pi = pair<int, int>;
+using P = pair<ll, int>;
+struct edge {
+  int to;
+  ll cost;
+};
+const int V = 100000;
+const int VV = 1000000;
+const ll INF = LLONG_MAX / 3;
+vector<edge> G[V], gg[VV];
+set<int> height[V];
+int n, m;
+ll X;
+int H[V];
+map<pi, int> v2id;
+int max_h[V] = {};
+ll d[VV];
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  cin >> n >> m >> X;
+  rep(i, n) cin >> H[i];
+  rep(i, m) {
+    int a, b, t;
+    cin >> a >> b >> t;
+    --a;
+    --b;
+    G[a].pb({b, t});
+    G[b].pb({a, t});
+  }
+  int ct = 1;
+  priority_queue<pi> que;
+  que.push(pi(X, 0));
+  v2id[pi(0, X)] = 0;
+  max_h[0] = X;
+  height[0].insert(X);
+  while (!que.empty()) {
+    pi p = que.top();
+    que.pop();
+    int v = p.se, h = p.fi;
+    if (h < max_h[v])
+      continue;
+    for (const auto &e : G[v]) {
+      int bh = h;
+      int nh = h - e.cost;
+      if (nh < 0)
+        continue;
+      if (nh > H[e.to]) {
+        bh = H[e.to] + e.cost;
+        nh = H[e.to];
+      }
+      if (nh > max_h[e.to]) {
+        int &id1 = v2id[pi(v, bh)];
+        if (!id1) {
+          id1 = ct++;
+          height[v].insert(bh);
+        }
+        int &id2 = v2id[pi(e.to, nh)];
+        if (!id2) {
+          id2 = ct++;
+          height[e.to].insert(nh);
+        }
+        int uu = id1, vv = id2;
+        gg[uu].pb({vv, e.cost});
+        max_h[e.to] = nh;
+        que.push(pi(max_h[e.to], e.to));
+      }
+    }
+  }
+  rep(i, n) for (const auto &e : G[i]) {
+    if (H[i] < e.cost)
+      continue;
+    int &id1 = v2id[pi(i, e.cost)];
+    if (!id1) {
+      id1 = ct++;
+      height[i].insert(e.cost);
+    }
+    int &id2 = v2id[pi(e.to, 0)];
+    if (!id2) {
+      id2 = ct++;
+      height[e.to].insert(0);
+    }
+    int uu = id1;
+    int vv = id2;
+    gg[uu].pb({vv, e.cost});
+  }
+  int &id = v2id[pi(n - 1, H[n - 1])];
+  if (!id) {
+    id = ct++;
+    height[n - 1].insert(H[n - 1]);
+  }
+  rep(i, n) {
+    int S = height[i].size();
+    auto itr = height[i].begin();
+    rep(j, S - 1) {
+      auto nx = ++itr;
+      itr--;
+      int &id1 = v2id[pi(i, *itr)];
+      int &id2 = v2id[pi(i, *nx)];
+      int uu = id1;
+      int vv = id2;
+      int dist = *nx - *itr;
+      gg[uu].pb({vv, dist});
+      gg[vv].pb({uu, dist});
+      itr = nx;
+    }
+  }
+  int start = v2id[pi(0, X)];
+  int goal = id;
+  fill(d, d + VV, INF);
+  d[start] = 0;
+  priority_queue<P, vector<P>, greater<P>> pq;
+  pq.push(pi(0, start));
+  while (!pq.empty()) {
+    P now = pq.top();
+    pq.pop();
+    int v = now.se;
+    if (now.fi > d[v])
+      continue;
+    for (const auto &e : gg[v]) {
+      if (d[e.to] > d[v] + e.cost) {
+        d[e.to] = d[v] + e.cost;
+        pq.push(pi(d[e.to], e.to));
+      }
+    }
+  }
+  ll ans = d[goal];
+  if (ans == INF)
+    ans = -1;
+  cout << ans << '\n';
+  return 0;
+}
+```
+
+Please note that without a specific problem description and input/output samples, it's hard to verify the correctness and performance of the optimized code.

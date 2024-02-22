@@ -1,0 +1,25 @@
+Analysis:
+- The program reads input from the user, which consists of a number of idols and their attributes.
+- It then calculates the maximum values of three attributes (V, D, L) based on a given budget (M) and idol costs (C).
+- The program uses a dynamic programming approach to calculate the maximum values.
+- The final result is printed to the console.
+
+Potential optimizations:
+1. Avoid unnecessary includes: The program includes several unnecessary headers. We can remove them to reduce compilation time.
+2. Avoid unnecessary global defines: The program defines `_USE_MATH_DEFINES` and `INF`, but they are not used. We can remove them to simplify the code.
+3. Use more efficient data structures:
+   - The program uses a vector to store idols. However, since the number of idols is fixed, we can use an array instead.
+   - The program uses a 2D array `dp` to store intermediate results. We can optimize memory usage by using a 1D array instead.
+4. Improve loop efficiency:
+   - The innermost loop checks if `i - idols[j].mC * k < 0` repeatedly. We can calculate this value once outside the loop.
+   - The innermost loop goes up to 300, but the maximum value of `k` is determined by the budget `M` and idol cost `C`. We can optimize the loop bound.
+5. Use more efficient algorithms:
+   - Currently, the program uses a brute-force approach to calculate the maximum values. We can potentially improve the algorithm to reduce the number of calculations.
+
+Optimization strategy:
+1. Remove unnecessary includes and defines.
+2. Replace the vector with an array to store idols.
+3. Replace the 2D array `dp` with a 1D array.
+4. Move the calculation of `i - idols[j].mC * k` outside the innermost loop.
+5. Optimize the loop bounds in the innermost loop.
+6. Improve the algorithm to reduce redundant calculations.

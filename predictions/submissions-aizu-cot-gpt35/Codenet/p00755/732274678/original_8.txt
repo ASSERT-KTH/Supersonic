@@ -1,0 +1,119 @@
+The given program has a recursive function `on()` which is called multiple times with different parameters. This results in a lot of redundant computations and memory usage. 
+
+To optimize the program, we can modify the `on()` function to use dynamic programming. We can use a 3D array to store the results of previous computations. This way, we can avoid recomputing the same subproblems multiple times.
+
+Here are the steps to optimize the program:
+
+1. Remove the global variables `temp` and `tres` as they are not needed.
+
+2. Modify the `on()` function to take an additional parameter `dp` which is a 3D array of size `(h+1) x (w+1) x 7`. Initialize all elements of `dp` to `-1` to indicate that the result has not been computed yet.
+
+3. Inside the `on()` function, before making any recursive calls, check if the result for the current state `(N, count, c)` has already been computed. If it has, return the precomputed result. This can be done by checking the value of `dp[N[0][0]][count][c]`. If it is not `-1`, return it.
+
+4. Before returning the result for the current state, update the value of `dp[N[0][0]][count][c]` with the computed result.
+
+5. Modify the `solve()` function to initialize the `dp` array and pass it to the `on()` function.
+
+6. After each call to `on()`, update the value of `res` with the maximum result obtained so far.
+
+7. Finally, print the value of `res` after all iterations.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <queue>
+#include <string.h>
+#include <string>
+#include <vector>
+using namespace std;
+
+int w, h, Col;
+typedef pair<int, int> C;
+typedef vector<vector<int>> P;
+P V;
+int dx[4] = {0, 1, 0, -1};
+int dy[4] = {1, 0, -1, 0};
+int res;
+int dp[8][6][7]; // Dynamic programming array
+
+void calc(int y, int x, P& temp) {
+  if (y < 0 || x < 0 || x >= w || y >= h)
+    return;
+  if (temp[y][x] == Col) {
+    temp[y][x] = 0;
+    for (int r = 0; r < 4; r++)
+      calc(y + dy[r], x + dx[r], temp);
+  }
+}
+
+int on(P& N, int count, int c, int dp[8][6][7]) {
+  if (count == 5) {
+    P temp = N;
+    int tres = 0;
+    calc(0, 0, temp);
+    return tres;
+  }
+  if (dp[N[0][0]][count][c] != -1) {
+    return dp[N[0][0]][count][c]; // Return precomputed result
+  }
+  int nc = N[0][0];
+  queue<C> Q;
+  Q.push(make_pair(0, 0));
+  bool used[8][8];
+  memset(used, false, sizeof(used));
+  int tres = 0;
+  while (!Q.empty()) {
+    C now = Q.front();
+    Q.pop();
+    if (used[now.first][now.second])
+      continue;
+    used[now.first][now.second] = true;
+    N[now.first][now.second] = c;
+    for (int r = 0; r < 4; r++) {
+      int ny = now.first + dy[r], nx = now.second + dx[r];
+      if (ny < 0 || nx < 0 || ny >= h || nx >= w)
+        continue;
+      if (N[ny][nx] == nc)
+        Q.push(make_pair(ny, nx));
+    }
+  }
+  int result;
+  if (count != 4) {
+    result = 0;
+    for (int i = 1; i <= 6; i++)
+      result = max(result, on(N, count + 1, i, dp));
+  } else {
+    result = on(N, count + 1, Col, dp);
+  }
+  dp[N[0][0]][count][c] = result; // Store computed result
+  return result;
+}
+
+void solve() {
+  res = 0;
+  V.clear();
+  V.resize(h);
+  for (int y = 0; y < h; y++)
+    for (int x = 0; x < w; x++) {
+      int t;
+      cin >> t;
+      V[y].push_back(t);
+    }
+  memset(dp, -1, sizeof(dp)); // Initialize dp array
+  for (int i = 1; i <= 6; i++) {
+    if (V[0][0] != i)
+      res = max(res, on(V, 0, i, dp));
+  }
+  cout << res << endl;
+}
+
+int main() {
+  while (cin >> h >> w >> Col) {
+    if (w == 0)
+      break;
+    solve();
+  }
+  return 0;
+}
+```

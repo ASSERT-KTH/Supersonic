@@ -1,0 +1,1 @@
+std::copy(ans.begin(), ans.end(), std::ostream_iterator<int>(std::cout, "\n"));

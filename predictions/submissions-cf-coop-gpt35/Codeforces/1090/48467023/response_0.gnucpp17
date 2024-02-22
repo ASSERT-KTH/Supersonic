@@ -1,0 +1,79 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+const int INF = int(1e9);
+const int N = 250 * 1000 + 555;
+const int M = 30 * 1000 * 1000 + 555;
+
+struct SegmentTreeNode {
+  int sum;
+  int sval;
+  SegmentTreeNode* left;
+  SegmentTreeNode* right;
+  SegmentTreeNode() : sum(0), sval(-1), left(nullptr), right(nullptr) {}
+  SegmentTreeNode(int sum, int sval, SegmentTreeNode* left, SegmentTreeNode* right)
+      : sum(sum), sval(sval), left(left), right(right) {}
+};
+
+SegmentTreeNode nodes[M];
+int szn = 0;
+
+SegmentTreeNode* getSegmentTreeNode(int sum, int sval, SegmentTreeNode* left, SegmentTreeNode* right) {
+  assert(szn < M);
+  nodes[szn] = SegmentTreeNode(sum, sval, left, right);
+  return &nodes[szn++];
+}
+
+int getSum(SegmentTreeNode* t, int len) {
+  if (!t) return 0;
+  if (t->sval != -1) return len * t->sval;
+  return t->sum;
+}
+
+int push(SegmentTreeNode* t) {
+  int pushed = t->sval;
+  t->sval = -1;
+  return pushed;
+}
+
+void update(SegmentTreeNode* t, int l1, int l2) {
+  t->sum = getSum(t->left, l1) + getSum(t->right, l2);
+}
+
+SegmentTreeNode* setVal(SegmentTreeNode* t, int l, int r, int lf, int rg, int val, int pushed = -1) {
+  SegmentTreeNode* nt = t ? getSegmentTreeNode(t->sum, t->sval, t->left, t->right) : getSegmentTreeNode(0, -1, nullptr, nullptr);
+  if (pushed != -1) nt->sval = pushed;
+  if (l == lf && r == rg) {
+    nt->sval = val;
+    return nt;
+  }
+  int mid = (l + r) >> 1;
+  pushed = push(nt);
+  if (lf < mid) nt->left = setVal(nt->left, l, mid, lf, min(mid, rg), val, pushed);
+  else if (pushed != -1) nt->left = nt->left ? getSegmentTreeNode(nt->right->sum, pushed, nt->right->left, nt->right->right) : getSegmentTreeNode(0, pushed, nullptr, nullptr);
+  if (rg > mid) nt->right = setVal(nt->right, mid, r, max(lf, mid), rg, val, pushed);
+  else if (pushed != -1) nt->right = nt->right ? getSegmentTreeNode(nt->left->sum, pushed, nt->left->left, nt->left->right) : getSegmentTreeNode(0, pushed, nullptr, nullptr);
+  update(nt, mid - l, r - mid);
+  return nt;
+}
+
+int getPosition(SegmentTreeNode* t, int l, int r, int lf, int rg) {
+  if (!t) return -1;
+  if (l == lf && r == rg) {
+    if (l + 1 == r) return getSum(t, 1) ? l : -1;
+    if (getSum(t, r - l) == 0) return -1;
+  }
+  if (t->sval != -1) return t->sval > 0 ? rg - 1 : -1;
+  int mid = (l + r) >> 1;
+  int ans = -1;
+  if (rg > mid && ans == -1) ans = max(ans, getPosition(t->right, mid, r, max(lf, mid), rg));
+  if (lf < mid && ans == -1) ans = max(ans, getPosition(t->left, l, mid, lf, min(mid, rg)));
+  return ans;
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(0), cout.tie(0);
+  cout << fixed << setprecision(15);
+
+  int n;

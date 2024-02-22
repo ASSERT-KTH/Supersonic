@@ -1,0 +1,17 @@
+The provided code calculates the minimum number of coins needed to make a given value 'n' using a set of coins with different denominations 'c'. The code uses dynamic programming to solve the problem by iteratively calculating the minimum number of coins for each value from 0 to 'n'.
+
+However, there are several areas in the code that can be optimized:
+
+1. Unnecessary Header Files: The code includes unnecessary header files such as <cstdio> and <math.h>. Since these headers are not used in the code, they can be removed.
+
+2. Unnecessary Namespace: The code uses the "using namespace std" directive, which brings all the names from the std namespace into the global namespace. This can lead to potential naming conflicts and is generally considered bad practice. It's better to use the std:: prefix for specific names from the std namespace.
+
+3. Redundant Initialization: The code initializes the array 'mini' with INF for each index before the dynamic programming loop. This is unnecessary because the 'mini' array is already initialized to INF for each index in the previous line.
+
+4. Sorting of Coins: The code sorts the coins array 'c' using the std::sort function. However, sorting the coins is not necessary for the dynamic programming solution. The coins can be processed in their given order without affecting the correctness of the algorithm.
+
+5. Loop Optimization: The inner loop iterates from 0 to n-c[i]. However, this can be optimized by starting the loop from c[i] instead of 0, as the values before c[i] are already calculated in previous iterations.
+
+6. Minimization Operation: The code uses the std::min function to calculate the minimum value between mini[j] + 1 and mini[j + c[i]]. However, this can be optimized by using a simple if condition to avoid the function call overhead.
+
+7. Compiler Optimizations: The code can benefit from compiler optimizations such as loop unrolling and vectorization. These optimizations can be achieved by providing appropriate compiler hints using pragmas or compiler-specific attributes.

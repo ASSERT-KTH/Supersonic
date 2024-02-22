@@ -1,0 +1,161 @@
+The given program is implementing a square root decomposition algorithm to efficiently answer range sum queries on a vector. The program first reads the input string and converts it into two vectors `x1` and `x2`. Then it creates two `sqrt_decomp` objects `f` and `g` using these vectors. In the main loop, it reads queries and performs corresponding updates on `f` and `g`, and then outputs the difference between the sums of `f` and `g`.
+
+To optimize the program, we can make the following changes:
+
+1. Remove unnecessary includes: The program includes `<bits/stdc++.h>` which is a non-standard header and includes a lot of unnecessary libraries. We should remove it and only include the necessary headers: `<iostream>`, `<vector>`, and `<string>`.
+
+2. Remove unnecessary macros: The program defines macros `rep` and `debug` which are not used. We can remove them.
+
+3. Remove unnecessary typedefs: The program typedefs `int64_t` and `i64` which are not used. We can remove them.
+
+4. Remove unnecessary debug code: The program defines a `print` macro for debugging, but it is not used. We can remove it.
+
+5. Optimize the `sum` function: The `sum` function is the most time-consuming part of the program. It iterates over all the buckets and calculates the sum based on the update status. However, we can optimize it by maintaining a global sum variable that keeps track of the sum of all the buckets. Whenever a bucket is updated, we can update the global sum accordingly. Then the `sum` function can simply return the global sum. This will reduce the time complexity from O(n) to O(1).
+
+6. Optimize the `query` function: The `query` function updates the buckets and the bucket sums based on the given range and value. However, it unnecessarily updates the buckets even if the value is the same as the previous value. We can optimize it by checking if the given value is different from the previous value before updating the buckets.
+
+7. Optimize the `at` function: The `at` function retrieves the value at a specific index. However, it unnecessarily checks if the bucket update status is less than 2. We can optimize it by removing the unnecessary check and directly accessing the value from the bucket.
+
+8. Use `emplace_back` instead of `push_back`: In the `solve` function, the program uses `push_back` to add elements to `x1` and `x2` vectors. However, `emplace_back` can be used instead to construct the elements in-place, which can be more efficient.
+
+9. Remove unnecessary memory allocation: The program initializes the `buckets`, `update`, and `bucket_sum` vectors with the maximum possible size. However, we can optimize it by reserving the necessary space in advance. The `buckets` vector can reserve space for `bucket_num` buckets, and the `update` and `bucket_sum` vectors can reserve space for `bucket_num` elements.
+
+10. Use `'\n'` instead of `std::endl`: The program uses `std::endl` to output a new line. However, `std::endl` also flushes the output buffer, which can be unnecessary and slow. We can use `'\n'` instead, which only outputs a new line.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <string>
+using namespace std;
+
+struct sqrt_decomp {
+  const int bucket_size = 256;
+  int length, bucket_num;
+  vector<vector<int>> buckets;
+  vector<int> update, bucket_sum;
+  int global_sum;
+  
+  sqrt_decomp(const vector<int>& x)
+    : length(x.size()),
+      bucket_num((x.size() + bucket_size - 1) / bucket_size),
+      global_sum(0)
+  {
+    buckets.reserve(bucket_num);
+    update.reserve(bucket_num);
+    bucket_sum.reserve(bucket_num);
+    
+    for (int i = 0; i < x.size(); ++i) {
+      if (i % bucket_size == 0) {
+        buckets.emplace_back();
+        update.emplace_back(2);
+        bucket_sum.emplace_back(0);
+      }
+      
+      buckets.back().push_back(x[i]);
+      bucket_sum.back() += x[i];
+      global_sum += x[i];
+    }
+  }
+  
+  int sum() {
+    return global_sum;
+  }
+  
+  void query(int l, int r, int b) {
+    l = max(0, l);
+    r = min(length - 1, r);
+    
+    while (l % bucket_size != 0 && l <= r) {
+      int bucket_index = l / bucket_size;
+      
+      if (buckets[bucket_index][l % bucket_size] != b) {
+        global_sum -= buckets[bucket_index][l % bucket_size];
+        global_sum += b;
+        buckets[bucket_index][l % bucket_size] = b;
+      }
+      
+      ++l;
+    }
+    
+    while ((r + 1) % bucket_size != 0 && l <= r) {
+      int bucket_index = r / bucket_size;
+      
+      if (buckets[bucket_index][r % bucket_size] != b) {
+        global_sum -= buckets[bucket_index][r % bucket_size];
+        global_sum += b;
+        buckets[bucket_index][r % bucket_size] = b;
+      }
+      
+      --r;
+    }
+    
+    if (l > r)
+      return;
+    
+    int start_bucket = l / bucket_size;
+    int end_bucket = r / bucket_size;
+    
+    for (int i = start_bucket; i <= end_bucket; ++i) {
+      update[i] = b;
+    }
+  }
+  
+  int at(int i) {
+    int bucket_index = i / bucket_size;
+    return buckets[bucket_index][i % bucket_size];
+  }
+};
+
+void solve() {
+  int n, q;
+  string s;
+  cin >> n >> s >> q;
+  
+  vector<int> x1, x2;
+  x1.reserve(n);
+  x2.reserve(n - 1);
+  
+  for (int i = 0; i < n; ++i) {
+    x1.emplace_back(s[i] - '0');
+    
+    if (i + 1 < n)
+      x2.emplace_back((s[i] - '0') * (s[i + 1] - '0'));
+  }
+  
+  sqrt_decomp f(x1), g(x2);
+  
+  for (int i = 0; i < q; i++) {
+    int l, r, b;
+    cin >> l >> r >> b;
+    l--;
+    r--;
+    f.query(l, r, b);
+    
+    if (b == 0)
+      g.query(l - 1, r, 0);
+    else {
+      int l_ = l, r_ = r - 1;
+      if (0 <= l - 1 && f.at(l - 1))
+        --l_;
+      if (r + 1 < n && f.at(r + 1))
+        ++r_;
+      g.query(l_, r_, 1);
+    }
+    
+    cout << f.sum() - g.sum() << '\n';
+  }
+}
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+  cout.setf(ios::fixed);
+  cout.precision(10);
+  solve();
+  return 0;
+}
+```
+
+By making these optimizations, the program should run faster and use less memory compared to the original program.

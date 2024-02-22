@@ -1,0 +1,101 @@
+#include <bits/stdc++.h>
+using namespace std;
+using pii = pair<int, int>;
+const int maxLig = (1e5) + 5;
+const int maxCol = 12;
+const int maxReq = (1e5) + 5;
+const int sqr = 600;
+int nbLig, nbCol, nbReq;
+char grille[maxLig][maxCol];
+int tps = 0;
+pair<int, int> go[maxLig][maxCol];
+pair<int, int> goCache[maxLig][maxCol];
+int processed[maxLig][maxCol];
+int blocRef[maxLig];
+
+void comp(int lig, int col, int safeLig) {
+  if (processed[lig][col] == tps)
+    return;
+  processed[lig][col] = tps;
+  int nextLig = lig, nextCol = col;
+  if (grille[lig][col] == '<')
+    --nextCol;
+  else if (grille[lig][col] == '>')
+    ++nextCol;
+  else if (grille[lig][col] == '^')
+    --nextLig;
+  if (nextLig == safeLig || grille[nextLig][nextCol] == '~') {
+    go[lig][col] = {nextLig, nextCol};
+  } else if (grille[lig][col] != '^' && grille[lig][nextCol] != '^' &&
+             grille[lig][col] != grille[lig][nextCol]) {
+    go[lig][col] = {0, 0};
+  } else {
+    if (goCache[nextLig][nextCol] == make_pair(-1, -1)) {
+      comp(nextLig, nextCol, safeLig);
+      goCache[nextLig][nextCol] = go[nextLig][nextCol];
+    }
+    go[lig][col] = goCache[nextLig][nextCol];
+  }
+}
+
+pair<int, int> getFin(int lig, int col) {
+  while (grille[lig][col] != '~') {
+    pii e = go[lig][col];
+    lig = e.first;
+    col = e.second;
+  }
+  return {lig, col};
+}
+
+bool compBloc(int bloc, int startLig, int endLig) {
+  if (startLig > nbLig)
+    return false;
+  for (int lig = startLig; lig <= endLig; ++lig) {
+    blocRef[lig] = bloc;
+    for (int col = 1; col <= nbCol; ++col) {
+      if (processed[lig][col] == tps)
+        continue;
+      comp(lig, col, bloc * sqr);
+    }
+  }
+  return true;
+}
+
+int main() {
+  cin >> nbLig >> nbCol >> nbReq;
+  fill_n(&grille[0][0], maxLig * maxCol, '~');
+  memset(processed, 0, sizeof(processed));
+  memset(goCache, -1, sizeof(goCache));
+  
+  for (int lig = 1; lig <= nbLig; ++lig) {
+    for (int col = 1; col <= nbCol; ++col) {
+      cin >> grille[lig][col];
+    }
+  }
+  ++tps;
+  for (int bloc = 0;; ++bloc) {
+    if (!compBloc(bloc, bloc * sqr + 1, min(nbLig, (bloc + 1) * sqr)))
+      break;
+  }
+  for (int req = 0; req < nbReq; ++req) {
+    char mode;
+    cin >> mode;
+    int lig, col;
+    cin >> lig >> col;
+    if (mode == 'A') {
+      pii res = getFin(lig, col);
+      if (res == pii{0, 0})
+        res = {-1, -1};
+      cout << res.first << " " << res.second << "\n";
+    } else {
+      ++tps;
+      char nv;
+      cin >> nv;
+      grille[lig][col] = nv;
+      int bloc = blocRef[lig];
+      compBloc(bloc, bloc * sqr + 1, min(nbLig, (bloc + 1) * sqr));
+      if (bloc)
+        compBloc(bloc - 1, (bloc - 1) * sqr + 1, min(nbLig, bloc * sqr));
+    }
+  }
+}

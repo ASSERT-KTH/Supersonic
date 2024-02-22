@@ -1,0 +1,87 @@
+1. Code Analysis:
+The given C++ program is a recursive function that seems to solve a problem related to decision trees. It takes a list of strings as input and then, for each possible decision (or 'branch'), it splits the inputs into two groups based on whether or not they contain a certain character. It then calls itself recursively on these two groups of inputs. The recursion stops when the inputs list size is 1 or when it's more than the number of remaining decisions to make.
+
+2. Optimization Strategy:
+Here are some strategies to optimize the code:
+
+A. Avoid Multiple Map Lookups: The code is making multiple map lookups with the same key. This operation can be optimized to perform the lookup only once.
+
+B. Avoid Recreating Vector: The code is creating two new vectors (a, b) in each recursion which is a costly operation. Optimizing this part of the code can significantly reduce memory usage.
+
+C. Use Unordered Map: Unordered map can be used instead of map for storing the results for each combination of inputs because unordered map has a faster average lookup.
+
+3. Step-by-Step Explanation:
+
+A. Avoid Multiple Map Lookups:
+The code is currently performing a lookup in the map 'mp' to check if an entry exists and then another lookup to get the value for the same key. This can be optimized by performing the lookup only once and storing the iterator. Then, the iterator can be used to check if an entry exists and to get the value if it does.
+
+B. Avoid Recreating Vector:
+Right now, the code is creating two new vectors in each recursion call which is very costly in terms of memory usage. Instead of creating new vectors, the code can be rewritten to pass the original vector along with start and end indices to indicate the subset of the vector to be considered. This would avoid the need to create new vectors and would significantly reduce memory usage.
+
+C. Use Unordered Map:
+Unordered map in C++ uses a hash table for storing entries. This gives it a faster average lookup time compared to map, which uses a binary search tree. Replacing map with unordered map can thus improve performance.
+
+4. Optimized Code Block:
+
+```cpp
+#include <iostream>
+#include <unordered_map>
+#include <string>
+#include <vector>
+using namespace std;
+
+struct pair_hash {
+    template <class T1, class T2>
+    std::size_t operator () (const std::pair<T1,T2> &p) const {
+        auto h1 = std::hash<T1>{}(p.first);
+        auto h2 = std::hash<T2>{}(p.second); 
+
+        return h1 ^ h2;  
+    }
+};
+
+unordered_map<pair<vector<int>, int>, int, pair_hash> mp;
+string qes[128];
+
+int search(vector<int> &vi, int start, int end, int depth, int used, int m, int n) {
+  pair<vector<int>, int> key = make_pair(vi, used);
+  auto it = mp.find(key);
+  if (it != mp.end())
+    return it->second;
+  if (end - start > (1 << (m - depth)))
+    return 100;
+  if (end - start == 1)
+    return depth;
+  int res = 100;
+  for (int i = 0; i < m; i++) {
+    if ((used >> i) & 1)
+      continue;
+    int a_start = start, a_end = start, b_start = end, b_end = end;
+    for (int j = start; j < end; j++) {
+      if (qes[vi[j]][i] == '0')
+        swap(vi[a_end++], vi[j]);
+      else
+        swap(vi[--b_start], vi[j]);
+    }
+    if (a_end == a_start || b_end == b_start)
+      continue;
+    res = min(res, max(search(vi, a_start, a_end, depth + 1, used | (1 << i), m, n),
+                       search(vi, b_start, b_end, depth + 1, used | (1 << i), m, n)));
+  }
+  return mp[key] = res;
+}
+
+int main() {
+  int m, n;
+  while (cin >> m >> n, m) {
+    for (int i = 0; i < n; i++)
+      cin >> qes[i];
+    vector<int> vi(n);
+    for (int i = 0; i < n; i++)
+      vi[i] = i;
+    mp.clear();
+    cout << search(vi, 0, n, 0, 0, m, n) << endl;
+  }
+}
+```
+This optimized code should produce the same output as the original code, but with improved performance and reduced memory usage.

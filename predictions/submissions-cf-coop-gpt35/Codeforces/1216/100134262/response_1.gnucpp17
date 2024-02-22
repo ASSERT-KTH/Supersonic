@@ -1,0 +1,165 @@
+#pragma GCC optimize("Ofast")
+#pragma GCC optimize("unroll-loops")
+#pragma GCC target("sse,sse2,sse3,ssse3,sse4,popcnt,abm,mmx,avx,tune=native")
+#pragma comment(linker, "/stack:200000000")
+#include <algorithm>
+#include <cassert>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <map>
+#include <vector>
+#define int long long
+#define fast                                                                   \
+  ios_base::sync_with_stdio(false);                                            \
+  cin.tie(NULL);
+#define mod 1000000007
+#define MAXN 301
+#define endl '\n'
+using namespace std;
+
+int spf[MAXN];
+vector<pair<int, int>> fac[MAXN];
+
+void sieve() {
+  spf[1] = 1;
+  for (int i = 2; i < MAXN; i++)
+    spf[i] = i;
+  for (int i = 4; i < MAXN; i += 2)
+    spf[i] = 2;
+  for (int i = 3; i * i < MAXN; i++) {
+    if (spf[i] == i) {
+      for (int j = i * i; j < MAXN; j += i)
+        if (spf[j] == j)
+          spf[j] = i;
+    }
+  }
+}
+
+vector<pair<int, int>> getfactor(int a) {
+  vector<pair<int, int>> factors;
+  while (a > 1) {
+    int prime = spf[a];
+    int count = 0;
+    while (a % prime == 0) {
+      a /= prime;
+      count++;
+    }
+    factors.push_back({prime, count});
+  }
+  return factors;
+}
+
+int power(int x, int y, int p) {
+  int res = 1;
+  if (x == 0)
+    return 0;
+  while (y > 0) {
+    if (y & 1)
+      res = (res * x) % p;
+    y = y >> 1;
+    x = (x * x) % p;
+  }
+  return res;
+}
+
+int gcd(int a, int b) {
+  while (a != 0) {
+    int temp = a;
+    a = b % a;
+    b = temp;
+  }
+  return b;
+}
+
+int inverse(int a, int p) { return power(a, p - 2, p); }
+
+int ncr(int n, int r, int p) {
+  if (r > n)
+    return 0;
+  if (r == 0)
+    return 1;
+  int res = 1;
+  for (auto factor : fac[n]) {
+    int prime = factor.first;
+    int count = factor.second;
+    int numerator = power(prime, count, p);
+    int denominator = (inverse(power(prime, r, p), p) *
+                       inverse(power(prime, n - r, p), p)) %
+                      p;
+    res = (res * numerator) % p;
+    res = (res * denominator) % p;
+  }
+  return res;
+}
+
+int dp[4000000], lazy[4000000];
+
+void push(int id, int l, int r) {
+  dp[id] = min(dp[id], lazy[id]);
+  if (l != r) {
+    lazy[id << 1] = min(lazy[id << 1], lazy[id]);
+    lazy[id << 1 | 1] = min(lazy[id << 1 | 1], lazy[id]);
+  }
+  lazy[id] = INT_MAX;
+}
+
+void upd(int id, int l, int r, int lq, int rq, int val) {
+  push(id, l, r);
+  if (l > r || l > rq || r < lq)
+    return;
+  if (lq <= l and r <= rq) {
+    lazy[id] = min(lazy[id], val);
+    push(id, l, r);
+    return;
+  }
+  int mid = (l + r) >> 1;
+  upd(id << 1, l, mid, lq, rq, val);
+  upd(id << 1 | 1, mid + 1, r, lq, rq, val);
+  dp[id] = min(dp[id << 1], dp[id << 1 | 1]);
+}
+
+int get(int id, int l, int r, int lq, int rq) {
+  push(id, l, r);
+  if (l > r || l > rq || r < lq)
+    return INT_MAX;
+  if (lq <= l and r <= rq)
+    return dp[id];
+  int mid = (l + r) >> 1;
+  return min(get(id << 1, l, mid, lq, rq),
+             get(id << 1 | 1, mid + 1, r, lq, rq));
+}
+
+void solve() {
+  for (int i = 0; i <= 2000000; i++) {
+    dp[i] = INT_MAX;
+    lazy[i] = INT_MAX;
+  }
+  int n, k;
+  cin >> n >> k;
+  string s;
+  cin >> s;
+  int m = 2 * n;
+  for (int i = 1; i <= n; i++) {
+    if (i == 1)
+      upd(1, 1, m, i, i, i);
+    else
+      upd(1, 1, m, i, i, get(1, 1, m, i - 1, i - 1) + i);
+    if (i <= k + 1 && s[i - 1] == '1')
+      upd(1, 1, m, i + 1, i + k, i);
+    else if (s[i - 1] == '1' && i >= k + 2) {
+      int gg = get(1, 1, m, i - k - 1, i);
+      upd(1, 1, m, i - k, i + k, gg + i);
+    }
+  }
+  cout << get(1, 1, m, n, n) << endl;
+}
+
+signed main() {
+  fast int test = 1;
+  while (test--) {
+    solve();
+  }
+}

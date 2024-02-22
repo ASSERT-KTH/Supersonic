@@ -1,0 +1,146 @@
+Code Analysis:
+- The code uses a segment tree to efficiently calculate the greatest common divisor (GCD) of subarrays.
+- The `build_tree` function constructs the segment tree by recursively calculating the GCD of subarrays.
+- The `query` function is used to find the GCD of a range of elements in the segment tree.
+- The `solve` function reads the input, builds the segment tree, and performs the required calculations to find the maximum length of a subarray with a specific GCD.
+
+Optimization Strategy:
+1. Avoid unnecessary calculations:
+   - The `build_tree` function currently calculates the GCD of all subarrays, even though only the GCD of the entire array is needed. We can optimize this by modifying the function to calculate the GCD of the entire array only.
+   - The `solve` function calculates the GCD of the entire array twice. We can optimize this by calculating it once and storing the result in a variable.
+
+2. Efficient data structure:
+   - The `seg_tree` vector is currently used to store the segment tree. However, it is initialized with a size of 4 * N + 5, which might be excessive. We can optimize this by using a dynamically allocated array instead.
+
+3. Compiler optimizations:
+   - We can enable compiler optimizations by using compiler-specific pragmas or flags, such as `-O2` or `-O3`, to hint the compiler to optimize the code.
+
+Step-by-Step Explanation:
+1. Remove the unnecessary GCD calculations in the `build_tree` function by modifying it as follows:
+   ```cpp
+   void build_tree(int tree_index, int strt_i, int end_i) {
+     if (strt_i == end_i) {
+       seg_tree[tree_index] = a[strt_i];
+       return;
+     }
+     int mid = (strt_i + end_i) / 2;
+     build_tree(tree_index * 2, strt_i, mid);
+     build_tree(tree_index * 2 + 1, mid + 1, end_i);
+     if (strt_i == 1 && end_i == 2 * n) {
+       seg_tree[tree_index] = __gcd(seg_tree[tree_index * 2], seg_tree[tree_index * 2 + 1]);
+     }
+   }
+   ```
+   This change ensures that the GCD of the entire array is only calculated once during the build process.
+
+2. Modify the `solve` function to calculate the GCD of the entire array once and store it in a variable:
+   ```cpp
+   void solve() {
+     int n;
+     cin >> n;
+     rep(i, 1, n + 1) cin >> a[i], a[i + n] = a[i];
+     build_tree(1, 1, 2 * n);
+     int ans = 0;
+     int g = __gcd(a[1], a[2]);
+     rep(i, 1, n + 1) {
+       // ...
+     }
+     cout << ans << endl;
+     return;
+   }
+   ```
+   This change avoids redundant GCD calculations in the loop.
+
+3. Change the `seg_tree` vector to a dynamically allocated array:
+   ```cpp
+   int* seg_tree = new int[4 * N + 5];
+   ```
+   This change reduces memory usage by avoiding the unnecessary overhead of a vector.
+
+4. Enable compiler optimizations by adding the following pragma directive at the beginning of the code:
+   ```cpp
+   #pragma GCC optimize("O2")
+   ```
+
+Optimized Code Block:
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+#define int long long int
+#define pb push_back
+#define ppb pop_back
+#define rep(i, a, n) for (int i = a; i < n; i++)
+#define repr(i, n, a) for (int i = n; i >= a; i--)
+#define yes cout << "YES\n"
+#define no cout << "NO\n"
+#define dbg(x) cout << #x << " " << x << " "
+#define F first
+#define S second
+#define endl "\n"
+const int mod = 1e9 + 7;
+const int INF = 1e18;
+const int N = 4e5 + 5;
+int* seg_tree = new int[4 * N + 5];
+int a[N];
+
+void build_tree(int tree_index, int strt_i, int end_i) {
+  if (strt_i == end_i) {
+    seg_tree[tree_index] = a[strt_i];
+    return;
+  }
+  int mid = (strt_i + end_i) / 2;
+  build_tree(tree_index * 2, strt_i, mid);
+  build_tree(tree_index * 2 + 1, mid + 1, end_i);
+  if (strt_i == 1 && end_i == 2 * n) {
+    seg_tree[tree_index] = __gcd(seg_tree[tree_index * 2], seg_tree[tree_index * 2 + 1]);
+  }
+}
+
+int query(int tree_index, int strt_i, int end_i, int q_strt, int q_end) {
+  if (strt_i > q_end || end_i < q_strt)
+    return 0;
+  if (q_strt <= strt_i && q_end >= end_i)
+    return seg_tree[tree_index];
+  int mid = (strt_i + end_i) / 2;
+  int l = query(2 * tree_index, strt_i, mid, q_strt, q_end);
+  int r = query(2 * tree_index + 1, mid + 1, end_i, q_strt, q_end);
+  return __gcd(l, r);
+}
+
+void solve() {
+  int n;
+  cin >> n;
+  rep(i, 1, n + 1) cin >> a[i], a[i + n] = a[i];
+  build_tree(1, 1, 2 * n);
+  int ans = 0;
+  int g = __gcd(a[1], a[2]);
+  rep(i, 1, n + 1) {
+    int r = 2 * n, l = i + 1, temp = INF, cnt = 0;
+    if (a[i] == g)
+      continue;
+    while (l <= r) {
+      int mid = (l + r) / 2;
+      int x = query(1, 1, 2 * n, l, mid);
+      int y = __gcd(x, a[i]);
+      if (y == g)
+        temp = min(temp, mid - l + 1 + cnt), r = mid - 1;
+      else
+        a[i] = __gcd(a[i], x), cnt += mid - l + 1, l = mid + 1;
+    }
+    ans = max(ans, temp);
+  }
+  cout << ans << endl;
+  return;
+}
+
+signed main() {
+  #pragma GCC optimize("O2")
+  ios::sync_with_stdio(0);
+  cin.tie(0);
+  int t = 1;
+  cin >> t;
+  rep(i, 1, t + 1) { solve(); }
+  return 0;
+}
+```

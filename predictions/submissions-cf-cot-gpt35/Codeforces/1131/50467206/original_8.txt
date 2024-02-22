@@ -1,0 +1,110 @@
+To optimize the given program, we can make the following modifications:
+
+1. Remove unnecessary includes: The program includes the `<bits/stdc++.h>` header, which includes a lot of unnecessary headers. We can remove this line and include only the necessary headers.
+
+2. Remove unnecessary macros: The program defines two macros `pv(x)` and `pn` for debugging purposes. We can remove these macros since they are not used in the program.
+
+3. Replace `using` declarations with specific types: The program uses `using` declarations to define type aliases. Instead of using `using namespace std`, we can replace the `using` declarations with specific types to avoid polluting the global namespace.
+
+4. Use `reserve` for vectors: The program uses vectors `heightsOfBlock` and `costsOfBlock` to store data. We can use the `reserve` function to pre-allocate memory for these vectors, as we know their size in advance.
+
+5. Use `emplace_back` instead of `push_back`: The program uses `push_back` to add elements to the vectors `heightsOfBlock` and `costsOfBlock`. We can use `emplace_back` instead, which constructs the elements in-place, saving unnecessary copies.
+
+6. Remove unnecessary clearing of vectors: After populating the vectors `heightsOfBlock` and `costsOfBlock`, the program clears them using the `clear` function. Since these vectors are no longer needed, we can remove these lines.
+
+7. Use `resize` instead of `push_back` for `height` and `cost` arrays: The program uses arrays `height` and `cost` to store data. Instead of using `push_back` to add elements to these arrays, we can use `resize` to set their size in advance and assign values directly to the elements.
+
+8. Use a single stack for both left and right push: The program uses two stacks `stackPushLeft` and `stackPushRight` to store minimum values. Instead of using two separate stacks, we can use a single stack and keep track of both left and right push values.
+
+9. Remove unnecessary condition in the while loop: The program has an unnecessary condition `|| true` in the while loop. We can remove this condition as it doesn't affect the program logic.
+
+10. Avoid unnecessary assignment of `minLeft` in the while loop: The program assigns `minLeft` to `valHere` in the while loop, which is unnecessary. We can remove this assignment to optimize the loop.
+
+11. Use `emplace_back` instead of `push_back` for `stackPushLeft` and `stackPushRight`: The program uses `push_back` to add elements to `stackPushLeft` and `stackPushRight`. We can use `emplace_back` instead to avoid unnecessary copies.
+
+12. Use `back` instead of `size` to access the last element in the stack: The program uses `size` to access the last element in the stack. We can use `back` instead, which is more efficient.
+
+13. Use `const auto&` for range-based loops: The program uses range-based loops to iterate over vectors. We can use `const auto&` to avoid unnecessary copies.
+
+Here is the optimized program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <utility>
+#include <fstream>
+using namespace std;
+
+const int NMax = 1e7 + 5;
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  ifstream in("bellmanford.in");
+  ofstream out("bellmanford.out");
+
+  int N, M;
+  in >> N >> M;
+  vector<vector<int>> heightsOfBlock(N + 1);
+  vector<vector<ll>> costsOfBlock(N + 1);
+  heightsOfBlock.reserve(N + 1);
+  costsOfBlock.reserve(N + 1);
+  for (int i = 1; i <= N; ++i) {
+    int K;
+    in >> K;
+    heightsOfBlock[i].reserve(K);
+    costsOfBlock[i].reserve(K);
+    for (int j = 1; j <= K; ++j) {
+      int val;
+      in >> val;
+      heightsOfBlock[i].emplace_back(val);
+    }
+    for (int j = 1; j <= K; ++j) {
+      int val;
+      in >> val;
+      costsOfBlock[i].emplace_back(val);
+    }
+  }
+
+  int Q, curr = 0;
+  in >> Q;
+  vector<int> height(M + 1);
+  vector<ll> cost(M + 1);
+  for (int i = 1; i <= Q; ++i) {
+    int id, mult;
+    in >> id >> mult;
+    const auto& hBlock = heightsOfBlock[id];
+    const auto& cBlock = costsOfBlock[id];
+    for (int j = 0; j < (int)hBlock.size(); ++j) {
+      height[++curr] = hBlock[j];
+      cost[curr] = 1LL * mult * cBlock[j];
+    }
+  }
+
+  vector<pair<int, ll>> stackPush;
+  stackPush.reserve(M + 1);
+  vector<ll> dp(M + 1);
+  for (int i = 1; i <= M; ++i) {
+    ll minLeft = dp[i - 1];
+    while (!stackPush.empty() && i - height[i] + 1 <= stackPush.back().first) {
+      minLeft = min(minLeft, stackPush.back().second);
+      stackPush.pop_back();
+    }
+    dp[i] = minLeft + cost[i];
+    ll minLeftHere = minLeft;
+    if (!stackPush.empty()) {
+      ll dpPlusCost = stackPush.back().second;
+      dp[i] = min(dp[i], dpPlusCost);
+    }
+    ll dpPlusCost = dp[i - 1] + cost[i];
+    if (!stackPush.empty()) {
+      dpPlusCost = min(dpPlusCost, stackPush.back().second);
+    }
+    stackPush.emplace_back(i, dpPlusCost);
+  }
+
+  out << dp[M] << '\n';
+  return 0;
+}
+```

@@ -1,0 +1,77 @@
+To optimize the given C/C++ program, we can make the following modifications:
+
+1. Remove unnecessary include statements: The program includes the `<bits/stdc++.h>` header, which is not a standard C++ header and includes a large number of other headers. We can remove this line and include only the necessary headers.
+
+2. Change the parameter of the `topological_sort` function to pass by reference: Currently, the `topological_sort` function takes the `Adj_list` parameter by value, which involves making a copy of the entire graph. We can modify the function to take the `Adj_list` parameter by reference to avoid unnecessary copying.
+
+3. Use `reserve` to allocate memory for vectors: The `S` and `topological_order` vectors are resized multiple times during the execution of the program. We can improve performance by using the `reserve` function to pre-allocate memory for these vectors based on the expected size.
+
+4. Use `emplace_back` instead of `push_back` for vector insertion: The `emplace_back` function can be used instead of `push_back` to directly construct the `Edge` object in the vector, avoiding the need for an additional copy.
+
+5. Use `size_t` instead of `int` for loop variables: The loop variables `i` and `v` can be changed to `size_t` type, which is the appropriate type for indexing vectors.
+
+Here is the optimized version of the program:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <cassert>
+
+struct Edge {
+  int tgt_;
+  Edge(int t) { tgt_ = t; }
+};
+
+typedef std::vector<std::vector<Edge>> Adj_list;
+
+std::vector<int> topological_sort(Adj_list& G) {
+  const size_t V = G.size();
+  std::vector<int> S;
+  std::vector<int> inorder(V, 0);
+  for (size_t i = 0; i < V; i++) {
+    for (Edge& e : G[i]) {
+      inorder[e.tgt_]++;
+    }
+  }
+  for (size_t i = 0; i < V; i++) {
+    if (inorder[i] == 0) {
+      S.push_back(i);
+    }
+  }
+  assert(S.size() > 0);
+  std::vector<int> topological_order;
+  topological_order.reserve(V);
+  while (!S.empty()) {
+    size_t v = S.back();
+    S.pop_back();
+    topological_order.emplace_back(v);
+    for (size_t i = G[v].size(); i > 0; i--) {
+      Edge e = G[v][i - 1];
+      inorder[e.tgt_]--;
+      if (inorder[e.tgt_] == 0) {
+        S.push_back(e.tgt_);
+      }
+    }
+  }
+  for (size_t i = 0; i < V; i++) {
+    assert(inorder[i] == 0);
+  }
+  return topological_order;
+}
+
+int main() {
+  int V, E;
+  std::cin >> V >> E;
+  Adj_list G(V);
+  for (int i = 0; i < E; i++) {
+    int s, t;
+    std::cin >> s >> t;
+    G[s].emplace_back(t);
+  }
+  std::vector<int> ans = topological_sort(G);
+  for (int i = 0; i < V; i++) {
+    std::cout << ans[i] << std::endl;
+  }
+  return 0;
+}
+```

@@ -1,0 +1,78 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <limits>
+
+const int MAXV = 61;
+const int INF = std::numeric_limits<int>::max();
+
+template <typename T>
+void ckmin(T &a, const T &b) {
+    a = std::min(a, b);
+}
+
+int main() {
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+    std::cout << std::fixed << std::setprecision(15);
+
+    int N;
+    std::cin >> N;
+    int a[N];
+    for (int i = 0; i < N; i++) {
+        std::cin >> a[i];
+    }
+
+    std::vector<int> pri;
+    for (int v = 2; v < MAXV; v++) {
+        bool ok = true;
+        for (int p : pri) {
+            if (v % p == 0) {
+                ok = false;
+                break;
+            }
+        }
+        if (ok) {
+            pri.push_back(v);
+        }
+    }
+
+    int mask[MAXV];
+    std::fill(mask, mask + MAXV, 0);
+    for (int v = 1; v < MAXV; v++) {
+        for (int i = 0; i < pri.size(); i++) {
+            if (v % pri[i] == 0) {
+                mask[v] |= 1 << i;
+            }
+        }
+    }
+
+    std::vector<std::vector<std::pair<int, int>>> dp(N + 1, std::vector<std::pair<int, int>>(1 << pri.size(), {INF, -1}));
+    dp[0][0].first = -1;
+    for (int i = 0; i < N; i++) {
+        for (int m = 0; m < (1 << pri.size()); m++) {
+            if (dp[i][m].first < INF) {
+                for (int v = 1; v < MAXV; v++) {
+                    if (!(mask[v] & m)) {
+                        ckmin(dp[i + 1][m ^ mask[v]].first, dp[i][m].first + std::abs(v - a[i]));
+                        ckmin(dp[i + 1][m ^ mask[v]].second, v);
+                    }
+                }
+            }
+        }
+    }
+
+    std::vector<int> b(N);
+    int m = std::min_element(dp.back().begin(), dp.back().end()) - dp.back().begin();
+    for (int i = N - 1; i >= 0; i--) {
+        b[i] = dp[i + 1][m].second;
+        m ^= mask[b[i]];
+    }
+
+    for (int x : b) {
+        std::cout << x << " ";
+    }
+    std::cout << "\n";
+
+    return 0;
+}

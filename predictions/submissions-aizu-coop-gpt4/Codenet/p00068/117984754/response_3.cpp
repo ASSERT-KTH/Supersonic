@@ -1,0 +1,1 @@
+g++ -O3 code.cpp -o optimized_program
