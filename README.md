@@ -11,7 +11,7 @@ This is the GitHub repository for [***Supersonic: Learning to Generate Source Co
  institution = {arXiv},
 }
 ```
-The model is uploaded to [Huggingface](https://huggingface.co/zimin/Supersonic), and the filtered dataset used to train Supersonic is upladed to [Zenodo](https://zenodo.org/record/8386875). The unfiltered dataset is also uploaded to [Zenodo](https://zenodo.org/record/8388731). 
+The model is uploaded to [Zenodo](https://zenodo.org/records/10889066), and the filtered dataset used to train Supersonic is upladed to [Zenodo](https://zenodo.org/record/8386875). The unfiltered dataset is also uploaded to [Zenodo](https://zenodo.org/record/8388731). 
 
 ## Predictions
 
