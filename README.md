@@ -1,16 +1,18 @@
 # Supersonic: Learning to Generate Source Code Optimisations in C/C++
 
-This is the GitHub repository for [***Supersonic: Learning to Generate Source Code Optimisations in C/C++***](https://arxiv.org/abs/2309.14846).
+This is the GitHub repository for [***Supersonic: Learning to Generate Source Code Optimisations in C/C++***](https://arxiv.org/abs/2309.14846) (IEEE TSE, 2024).
+
 ```bibtex
-@techreport{supersonic2309.14846,
+@article{supersonic,
  title = {Supersonic: Learning to Generate Source Code Optimizations in C/C++},
- year = {2023},
+ journal = {IEEE Transactions on Software Engineering},
+ year = {2024},
+ doi = {10.1109/TSE.2024.3423769},
  author = {Zimin Chen and Sen Fang and Martin Monperrus},
  url = {http://arxiv.org/pdf/2309.14846},
- number = {2309.14846},
- institution = {arXiv},
 }
 ```
+
 The model is uploaded to [Zenodo](https://zenodo.org/records/10889066), and the filtered dataset used to train Supersonic is upladed to [Zenodo](https://zenodo.org/record/8386875). The unfiltered dataset is also uploaded to [Zenodo](https://zenodo.org/record/8388731). 
 
 ## Predictions
